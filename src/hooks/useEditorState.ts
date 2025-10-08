@@ -95,7 +95,7 @@ const initialHistoryItem: HistoryItem = {
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
   const [exifData, setExifData] = useState<any | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);

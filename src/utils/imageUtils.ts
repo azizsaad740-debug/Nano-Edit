@@ -12,6 +12,7 @@ const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null =
     image,
     crop,
     transforms,
+    frame,
   } = options;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -75,6 +76,22 @@ const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null =
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  // Apply frame if specified
+  if (frame && frame.type === 'solid' && frame.width > 0) {
+    const frameWidth = frame.width;
+    const framedCanvas = document.createElement('canvas');
+    framedCanvas.width = canvas.width + frameWidth * 2;
+    framedCanvas.height = canvas.height + frameWidth * 2;
+    const frameCtx = framedCanvas.getContext('2d');
+
+    if (frameCtx) {
+      frameCtx.fillStyle = frame.color;
+      frameCtx.fillRect(0, 0, framedCanvas.width, framedCanvas.height);
+      frameCtx.drawImage(canvas, frameWidth, frameWidth);
+      return framedCanvas;
+    }
   }
 
   return canvas;
