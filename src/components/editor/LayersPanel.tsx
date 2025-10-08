@@ -36,11 +36,12 @@ interface Layer {
 
 interface LayerItemProps {
   layer: Layer;
-  editingId: string | null;
+  isEditing: boolean;
   tempName: string;
   setTempName: (name: string) => void;
   startRename: (layer: Layer) => void;
   confirmRename: (id: string) => void;
+  cancelRename: () => void;
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
   onEditTextLayer: (id: string) => void;
@@ -48,11 +49,12 @@ interface LayerItemProps {
 
 function LayerItem({
   layer,
-  editingId,
+  isEditing,
   tempName,
   setTempName,
   startRename,
   confirmRename,
+  cancelRename,
   onToggleVisibility,
   onDelete,
   onEditTextLayer,
@@ -64,6 +66,7 @@ function LayerItem({
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ id: layer.id, disabled: isBackground });
 
   const style = {
@@ -71,13 +74,16 @@ function LayerItem({
     transition,
   };
 
+  const handleButtonMouseDown = (e: React.MouseEvent) => e.preventDefault();
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center justify-between p-2 border rounded-md",
-        isBackground ? "bg-muted/50" : "bg-background"
+        "flex items-center justify-between p-2 border rounded-md transition-shadow",
+        isBackground ? "bg-muted/50" : "bg-background",
+        isDragging && "shadow-lg z-10 relative"
       )}
     >
       <div className="flex items-center gap-2">
@@ -95,19 +101,27 @@ function LayerItem({
           checked={layer.visible}
           onCheckedChange={() => onToggleVisibility(layer.id)}
         />
-        {editingId === layer.id ? (
+        {isEditing ? (
           <Input
-            className="w-32"
+            className="w-32 h-8"
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}
             onBlur={() => confirmRename(layer.id)}
             onKeyDown={(e) => {
               if (e.key === "Enter") confirmRename(layer.id);
+              if (e.key === "Escape") cancelRename();
             }}
             autoFocus
           />
         ) : (
-          <span className="font-medium">{layer.name}</span>
+          <span
+            className="font-medium cursor-pointer"
+            onDoubleClick={() => {
+              if (!isBackground) startRename(layer);
+            }}
+          >
+            {layer.name}
+          </span>
         )}
       </div>
       <div className="flex items-center gap-1">
@@ -115,6 +129,7 @@ function LayerItem({
           <Button
             variant="ghost"
             size="icon"
+            onMouseDown={handleButtonMouseDown}
             onClick={() => onEditTextLayer(layer.id)}
           >
             <Edit2 className="h-4 w-4" />
@@ -123,6 +138,7 @@ function LayerItem({
         <Button
           variant="ghost"
           size="icon"
+          onMouseDown={handleButtonMouseDown}
           onClick={() => startRename(layer)}
           disabled={isBackground}
         >
@@ -131,6 +147,7 @@ function LayerItem({
         <Button
           variant="ghost"
           size="icon"
+          onMouseDown={handleButtonMouseDown}
           onClick={() => onDelete(layer.id)}
           disabled={isBackground}
         >
@@ -177,7 +194,13 @@ export const LayersPanel = ({
   };
 
   const confirmRename = (id: string) => {
-    onRename(id, tempName.trim() || "Untitled");
+    if (editingId === id) {
+      onRename(id, tempName.trim() || "Untitled");
+      setEditingId(null);
+    }
+  };
+
+  const cancelRename = () => {
     setEditingId(null);
   };
 
@@ -189,7 +212,6 @@ export const LayersPanel = ({
       const oldReversedIndex = reversedLayers.findIndex((l) => l.id === active.id);
       const newReversedIndex = reversedLayers.findIndex((l) => l.id === over.id);
       
-      // Convert reversed indices back to original `layers` array indices
       const oldIndex = layers.length - 1 - oldReversedIndex;
       const newIndex = layers.length - 1 - newReversedIndex;
 
@@ -219,11 +241,12 @@ export const LayersPanel = ({
               <LayerItem
                 key={layer.id}
                 layer={layer}
-                editingId={editingId}
+                isEditing={editingId === layer.id}
                 tempName={tempName}
                 setTempName={setTempName}
                 startRename={startRename}
                 confirmRename={confirmRename}
+                cancelRename={cancelRename}
                 onToggleVisibility={onToggleVisibility}
                 onDelete={onDelete}
                 onEditTextLayer={onEditTextLayer}
