@@ -3,6 +3,7 @@ import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
 import History from "@/components/editor/History";
+import Effects from "@/components/editor/Effects";
 
 interface EditorControlsProps {
   adjustments: {
@@ -11,6 +12,11 @@ interface EditorControlsProps {
     saturation: number;
   };
   onAdjustmentChange: (adjustment: string, value: number) => void;
+  effects: {
+    blur: number;
+    hueShift: number;
+  };
+  onEffectChange: (effect: string, value: number) => void;
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -23,6 +29,8 @@ interface EditorControlsProps {
 const EditorControls = ({ 
   adjustments, 
   onAdjustmentChange, 
+  effects,
+  onEffectChange,
   onFilterChange, 
   selectedFilter, 
   onTransformChange,
@@ -50,6 +58,14 @@ const EditorControls = ({
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
           />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Effects</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Effects effects={effects} onEffectChange={onEffectChange} />
         </CardContent>
       </Card>
       <Card>

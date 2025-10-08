@@ -13,6 +13,10 @@ interface WorkspaceProps {
     contrast: number;
     saturation: number;
   };
+  effects: {
+    blur: number;
+    hueShift: number;
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -21,7 +25,7 @@ interface WorkspaceProps {
   };
 }
 
-const Workspace = ({ image, onImageUpload, adjustments, selectedFilter, transforms }: WorkspaceProps) => {
+const Workspace = ({ image, onImageUpload, adjustments, effects, selectedFilter, transforms }: WorkspaceProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const triggerFileInput = () => {
@@ -29,7 +33,7 @@ const Workspace = ({ image, onImageUpload, adjustments, selectedFilter, transfor
   };
 
   const imageStyle = {
-    filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`,
+    filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`,
     transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
   };
 

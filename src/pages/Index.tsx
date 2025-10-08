@@ -13,6 +13,10 @@ interface EditState {
     contrast: number;
     saturation: number;
   };
+  effects: {
+    blur: number;
+    hueShift: number;
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -23,6 +27,7 @@ interface EditState {
 
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
+  effects: { blur: 0, hueShift: 0 },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
 };
@@ -33,7 +38,7 @@ const Index = () => {
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
 
   const currentState = history[currentHistoryIndex];
-  const { adjustments, selectedFilter, transforms } = currentState;
+  const { adjustments, effects, selectedFilter, transforms } = currentState;
 
   const recordHistory = (newState: EditState) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
@@ -57,6 +62,11 @@ const Index = () => {
   const handleAdjustmentChange = (adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
     recordHistory({ ...currentState, adjustments: newAdjustments });
+  };
+
+  const handleEffectChange = (effect: string, value: number) => {
+    const newEffects = { ...currentState.effects, [effect]: value };
+    recordHistory({ ...currentState, effects: newEffects });
   };
 
   const handleFilterChange = (filterValue: string) => {
@@ -116,7 +126,7 @@ const Index = () => {
       canvas.width = w;
       canvas.height = h;
       
-      const filterString = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`;
+      const filterString = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`;
       ctx.filter = filterString;
       
       ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -138,6 +148,8 @@ const Index = () => {
   const editorProps = {
     adjustments,
     onAdjustmentChange: handleAdjustmentChange,
+    effects,
+    onEffectChange: handleEffectChange,
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
@@ -180,6 +192,7 @@ const Index = () => {
             image={image}
             onImageUpload={handleImageUpload}
             adjustments={adjustments} 
+            effects={effects}
             selectedFilter={selectedFilter} 
             transforms={transforms}
           />
