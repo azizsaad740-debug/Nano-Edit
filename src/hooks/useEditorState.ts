@@ -92,6 +92,7 @@ export const useEditorState = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
@@ -150,6 +151,7 @@ export const useEditorState = () => {
     setHistory([initialHistoryItem]);
     setCurrentHistoryIndex(0);
     setSelectedLayerId(null);
+    setPendingCrop(undefined);
     showSuccess(successMsg);
   }, []);
 
@@ -277,13 +279,15 @@ export const useEditorState = () => {
   }, [currentState, recordHistory]);
 
   /* ---------- Crop ---------- */
-  const handleCropChange = useCallback((c: Crop) => {
-    updateCurrentState({ crop: c });
-  }, [updateCurrentState]);
+  const applyCrop = useCallback(() => {
+    if (!pendingCrop) return;
+    recordHistory("Crop Image", { ...currentState, crop: pendingCrop });
+    setPendingCrop(undefined);
+  }, [currentState, recordHistory, pendingCrop]);
 
-  const handleCropComplete = useCallback((c: Crop) => {
-    recordHistory("Crop Image", { ...currentState, crop: c });
-  }, [currentState, recordHistory]);
+  const cancelCrop = useCallback(() => {
+    setPendingCrop(undefined);
+  }, []);
 
   /* ---------- Undo / Redo / Reset ---------- */
   const handleUndo = useCallback(() => {
@@ -297,6 +301,7 @@ export const useEditorState = () => {
   const handleReset = useCallback(() => {
     recordHistory("Reset All", initialEditState, initialLayers);
     setSelectedLayerId(null);
+    setPendingCrop(undefined);
   }, [recordHistory]);
 
   const jumpToHistory = useCallback((index: number) => {
@@ -318,15 +323,15 @@ export const useEditorState = () => {
   }, [currentState]);
 
   /* ---------- Layer management ---------- */
-  const addTextLayer = useCallback(() => {
+  const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
     const newLayer: Layer = {
       id: uuidv4(),
       type: "text",
       name: `Text ${currentLayers.filter((l) => l.type === "text").length + 1}`,
       visible: true,
       content: "New Text",
-      x: 50,
-      y: 50,
+      x: coords?.x ?? 50,
+      y: coords?.y ?? 50,
       fontSize: 48,
       color: "#FFFFFF",
       fontFamily: "Roboto",
@@ -334,6 +339,7 @@ export const useEditorState = () => {
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);
     setSelectedLayerId(newLayer.id);
+    setActiveTool(null);
   }, [currentLayers, currentState, recordHistory]);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
@@ -416,6 +422,10 @@ export const useEditorState = () => {
   useHotkeys("b", () => setActiveTool("brush"), { enabled: !!image });
   useHotkeys("t", () => setActiveTool("text"), { enabled: !!image });
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
+  useHotkeys("escape", () => {
+    if (pendingCrop) cancelCrop();
+    if (activeTool) setActiveTool(null);
+  }, { enabled: !!image });
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
@@ -443,8 +453,10 @@ export const useEditorState = () => {
     handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
-    handleCropChange,
-    handleCropComplete,
+    pendingCrop,
+    setPendingCrop,
+    applyCrop,
+    cancelCrop,
     handleReset,
     handleUndo,
     handleRedo,

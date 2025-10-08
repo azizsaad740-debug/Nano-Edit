@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { UploadCloud } from "lucide-react";
+import { UploadCloud, Check, X } from "lucide-react";
 import ReactCrop, { type Crop } from "react-image-crop";
 import { cn } from "@/lib/utils";
 import SampleImages from "./SampleImages";
@@ -40,13 +40,16 @@ interface WorkspaceProps {
     scaleY: number;
   };
   crop: Crop | undefined;
-  onCropChange: (crop: Crop) => void;
-  onCropComplete: (crop: Crop) => void;
+  pendingCrop: Crop | undefined;
+  onCropChange: (crop: Crop | undefined) => void;
+  onApplyCrop: () => void;
+  onCancelCrop: () => void;
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
   activeTool?: "lasso" | "brush" | "text" | null;
   layers: Layer[];
+  onAddTextLayer: (coords: { x: number; y: number }) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
@@ -65,13 +68,16 @@ const Workspace = (props: WorkspaceProps) => {
     selectedFilter,
     transforms,
     crop,
+    pendingCrop,
     onCropChange,
-    onCropComplete,
+    onApplyCrop,
+    onCancelCrop,
     aspect,
     imgRef,
     isPreviewingOriginal,
     activeTool,
     layers,
+    onAddTextLayer,
     onLayerUpdate,
     onLayerCommit,
     selectedLayerId,
@@ -101,6 +107,15 @@ const Workspace = (props: WorkspaceProps) => {
     e.preventDefault();
     setIsDragging(false);
     onFileSelect(e.dataTransfer.files?.[0]);
+  };
+
+  const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (activeTool === 'text' && imageContainerRef.current) {
+      const rect = imageContainerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      onAddTextLayer({ x, y });
+    }
   };
 
   const imageFilterStyle = isPreviewingOriginal
@@ -135,12 +150,14 @@ const Workspace = (props: WorkspaceProps) => {
     <div
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all",
-        isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20"
+        isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
+        activeTool === 'text' && 'cursor-crosshair'
       )}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onClick={handleWorkspaceClick}
     >
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
@@ -150,10 +167,15 @@ const Workspace = (props: WorkspaceProps) => {
       )}
       {image ? (
         <div className="relative max-w-full max-h-full p-4">
+          {pendingCrop && (
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+              <Button size="sm" onClick={onApplyCrop}><Check className="h-4 w-4 mr-2" /> Apply Crop</Button>
+              <Button size="sm" variant="destructive" onClick={onCancelCrop}><X className="h-4 w-4 mr-2" /> Cancel</Button>
+            </div>
+          )}
           <ReactCrop
-            crop={crop}
-            onChange={(c) => onCropChange(c)}
-            onComplete={(c) => onCropComplete(c)}
+            crop={pendingCrop ?? crop}
+            onChange={(_, percentCrop) => onCropChange(percentCrop)}
             aspect={aspect}
           >
             <div style={wrapperTransformStyle}>

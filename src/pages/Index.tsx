@@ -52,8 +52,10 @@ const Index = () => {
     handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
-    handleCropChange,
-    handleCropComplete,
+    pendingCrop,
+    setPendingCrop,
+    applyCrop,
+    cancelCrop,
     handleReset,
     handleUndo,
     handleRedo,
@@ -247,14 +249,17 @@ const Index = () => {
                 grading={grading}
                 selectedFilter={selectedFilter}
                 transforms={transforms}
-                crop={crop}
-                onCropChange={handleCropChange}
-                onCropComplete={handleCropComplete}
+                crop={currentState.crop}
+                pendingCrop={pendingCrop}
+                onCropChange={setPendingCrop}
+                onApplyCrop={applyCrop}
+                onCancelCrop={cancelCrop}
                 aspect={aspect}
                 imgRef={imgRef}
                 isPreviewingOriginal={isPreviewingOriginal}
                 activeTool={activeTool}
                 layers={layers}
+                onAddTextLayer={addTextLayer}
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}
