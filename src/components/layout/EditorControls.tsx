@@ -85,6 +85,7 @@ interface EditorControlsProps {
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
   onEditTextLayer: (id: string) => void;
+  reorderLayers: (oldIndex: number, newIndex: number) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -122,6 +123,7 @@ const EditorControls = (props: EditorControlsProps) => {
     renameLayer,
     deleteLayer,
     onEditTextLayer,
+    reorderLayers,
   } = props;
 
   if (!hasImage) {
@@ -302,6 +304,7 @@ const EditorControls = (props: EditorControlsProps) => {
           onDelete={deleteLayer}
           onAddTextLayer={addTextLayer}
           onEditTextLayer={onEditTextLayer}
+          onReorder={reorderLayers}
         />
       </TabsContent>
     </Tabs>

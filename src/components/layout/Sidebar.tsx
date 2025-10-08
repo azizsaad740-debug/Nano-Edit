@@ -49,6 +49,7 @@ interface SidebarProps {
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
   onEditTextLayer: (id: string) => void;
+  reorderLayers: (oldIndex: number, newIndex: number) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

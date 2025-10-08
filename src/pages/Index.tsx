@@ -75,6 +75,7 @@ const Index = () => {
     deleteLayer,
     updateLayer,
     commitLayerChange,
+    reorderLayers,
     // tool state
     activeTool,
     setActiveTool,
@@ -184,6 +185,7 @@ const Index = () => {
     renameLayer,
     deleteLayer,
     onEditTextLayer: handleOpenEditDialog,
+    reorderLayers,
   };
 
   return (

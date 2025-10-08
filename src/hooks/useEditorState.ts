@@ -6,6 +6,7 @@ import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
 import ExifReader from "exifreader";
 import type { Preset } from "./usePresets";
 import { v4 as uuidv4 } from "uuid";
+import { arrayMove } from "@dnd-kit/sortable";
 
 export interface EditState {
   adjustments: {
@@ -357,10 +358,10 @@ export const useEditorState = () => {
     recordHistory("Delete Layer", currentState, updated);
   }, [currentLayers, currentState, recordHistory]);
 
-  const editTextLayerContent = useCallback((id: string, newContent: string) => {
-    const updated = currentLayers.map(l => (l.id === id && l.type === "text") ? { ...l, content: newContent } : l);
-    updateCurrentLayers(updated);
-  }, [currentLayers, updateCurrentLayers]);
+  const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
+    const updated = arrayMove(currentLayers, oldIndex, newIndex);
+    recordHistory("Reorder Layers", currentState, updated);
+  }, [currentLayers, currentState, recordHistory]);
 
   /* ---------- Generative fill (stub) ---------- */
   const applyGenerativeResult = useCallback((url: string) => {
@@ -441,9 +442,9 @@ export const useEditorState = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    editTextLayerContent,
     updateLayer,
     commitLayerChange,
+    reorderLayers,
     // Tool state
     activeTool,
     setActiveTool,
