@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 import { type Crop } from 'react-image-crop';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 interface EditState {
   adjustments: {
@@ -45,20 +46,20 @@ const Index = () => {
   const currentState = history[currentHistoryIndex];
   const { adjustments, effects, selectedFilter, transforms, crop } = currentState;
 
-  const recordHistory = (newState: EditState) => {
+  const recordHistory = useCallback((newState: EditState) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     setHistory([...newHistory, newState]);
     setCurrentHistoryIndex(newHistory.length);
-  };
+  }, [history, currentHistoryIndex]);
 
-  const updateCurrentState = (updates: Partial<EditState>) => {
+  const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     const newState = { ...currentState, ...updates };
     const newHistory = [...history];
     newHistory[currentHistoryIndex] = newState;
     setHistory(newHistory);
-  };
+  }, [currentState, history, currentHistoryIndex]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       const reader = new FileReader();
@@ -69,23 +70,23 @@ const Index = () => {
       };
       reader.readAsDataURL(file);
     }
-  };
+  }, []);
 
-  const handleAdjustmentChange = (adjustment: string, value: number) => {
+  const handleAdjustmentChange = useCallback((adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
     recordHistory({ ...currentState, adjustments: newAdjustments });
-  };
+  }, [currentState, recordHistory]);
 
-  const handleEffectChange = (effect: string, value: number) => {
+  const handleEffectChange = useCallback((effect: string, value: number) => {
     const newEffects = { ...currentState.effects, [effect]: value };
     recordHistory({ ...currentState, effects: newEffects });
-  };
+  }, [currentState, recordHistory]);
 
-  const handleFilterChange = (filterValue: string) => {
+  const handleFilterChange = useCallback((filterValue: string) => {
     recordHistory({ ...currentState, selectedFilter: filterValue });
-  };
+  }, [currentState, recordHistory]);
 
-  const handleTransformChange = (transformType: string) => {
+  const handleTransformChange = useCallback((transformType: string) => {
     const newTransforms = { ...currentState.transforms };
     switch (transformType) {
       case "rotate-left":
@@ -104,33 +105,33 @@ const Index = () => {
         return;
     }
     recordHistory({ ...currentState, transforms: newTransforms });
-  };
+  }, [currentState, recordHistory]);
 
-  const handleCropChange = (newCrop: Crop) => {
+  const handleCropChange = useCallback((newCrop: Crop) => {
     updateCurrentState({ crop: newCrop });
-  };
+  }, [updateCurrentState]);
 
-  const handleCropComplete = (newCrop: Crop) => {
+  const handleCropComplete = useCallback((newCrop: Crop) => {
     recordHistory({ ...currentState, crop: newCrop });
-  };
+  }, [currentState, recordHistory]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     recordHistory(initialEditState);
-  };
+  }, [recordHistory]);
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (currentHistoryIndex > 0) {
       setCurrentHistoryIndex(currentHistoryIndex - 1);
     }
-  };
+  }, [currentHistoryIndex]);
 
-  const handleRedo = () => {
+  const handleRedo = useCallback(() => {
     if (currentHistoryIndex < history.length - 1) {
       setCurrentHistoryIndex(currentHistoryIndex + 1);
     }
-  };
+  }, [currentHistoryIndex, history.length]);
 
-  const handleDownload = () => {
+  const handleDownload = useCallback(() => {
     const img = imgRef.current;
     if (!image || !img) return;
 
@@ -182,7 +183,10 @@ const Index = () => {
     link.download = 'edited-image.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
-  };
+  }, [image, currentState]);
+
+  useHotkeys('ctrl+z, cmd+z', handleUndo, { preventDefault: true });
+  useHotkeys('ctrl+y, cmd+shift+z', handleRedo, { preventDefault: true });
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
