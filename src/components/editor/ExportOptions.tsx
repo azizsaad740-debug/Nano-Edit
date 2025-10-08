@@ -4,8 +4,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -42,7 +42,7 @@ export const ExportOptions = ({
   const [quality, setQuality] = useState(90);
   const [width, setWidth] = useState(dimensions?.width || 0);
   const [height, setHeight] = useState(dimensions?.height || 0);
-  const [keepAspect, setKeepAspect] = useState(true);
+  const [keepAspectRatio, setKeepAspectRatio] = useState(true);
 
   useEffect(() => {
     if (open && dimensions) {
@@ -52,20 +52,20 @@ export const ExportOptions = ({
   }, [open, dimensions]);
 
   const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const w = parseInt(e.target.value, 10) || 0;
-    setWidth(w);
-    if (keepAspect && dimensions && dimensions.height) {
-      const ratio = dimensions.width / dimensions.height;
-      setHeight(Math.round(w / ratio));
+    const newWidth = parseInt(e.target.value, 10) || 0;
+    setWidth(newWidth);
+    if (keepAspectRatio && dimensions && dimensions.height > 0) {
+      const aspect = dimensions.width / dimensions.height;
+      setHeight(Math.round(newWidth / aspect));
     }
   };
 
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const h = parseInt(e.target.value, 10) || 0;
-    setHeight(h);
-    if (keepAspect && dimensions && dimensions.width) {
-      const ratio = dimensions.width / dimensions.height;
-      setWidth(Math.round(h * ratio));
+    const newHeight = parseInt(e.target.value, 10) || 0;
+    setHeight(newHeight);
+    if (keepAspectRatio && dimensions && dimensions.width > 0) {
+      const aspect = dimensions.width / dimensions.height;
+      setWidth(Math.round(newHeight * aspect));
     }
   };
 
@@ -143,8 +143,8 @@ export const ExportOptions = ({
             <div className="col-span-3 flex items-center space-x-2">
               <Checkbox
                 id="keep-aspect"
-                checked={keepAspect}
-                onCheckedChange={(c) => setKeepAspect(Boolean(c))}
+                checked={keepAspectRatio}
+                onCheckedChange={(c) => setKeepAspectRatio(Boolean(c))}
               />
               <Label htmlFor="keep-aspect" className="text-sm font-medium">
                 Keep aspect ratio
@@ -160,3 +160,5 @@ export const ExportOptions = ({
     </Dialog>
   );
 };
+
+export default ExportOptions;

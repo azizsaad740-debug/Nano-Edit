@@ -27,6 +27,7 @@ export const GenerativeDialog = ({
   apiKey,
 }: GenerativeDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
 
   const handleGenerate = async () => {
     if (!apiKey) {
@@ -43,8 +44,14 @@ export const GenerativeDialog = ({
       // Stubbed call – replace with real Nano Banana endpoint
       await new Promise((res) => setTimeout(res, 1500));
       const placeholderResult = "https://via.placeholder.com/800x600.png?text=Generated";
-      onApply(placeholderResult);
-      showSuccess("Generated image ready.");
+      setPreviewUrl(placeholderResult);
+      // Simulate a short delay before applying
+      setTimeout(() => {
+        onApply(placeholderResult);
+        showSuccess("Generated image ready.");
+        setPreviewUrl(null);
+        onOpenChange(false);
+      }, 500);
     } catch (e) {
       console.error(e);
       showError("Generation failed.");
@@ -68,6 +75,11 @@ export const GenerativeDialog = ({
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
+          {previewUrl && (
+            <div className="mt-2 flex justify-center">
+              <img src={previewUrl} alt="Generated preview" className="max-w-full max-h-48 rounded-md shadow" />
+            </div>
+          )}
         </div>
         <DialogFooter>
           <Button onClick={handleGenerate}>Generate</Button>

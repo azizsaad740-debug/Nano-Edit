@@ -115,6 +115,14 @@ const Workspace = (props: WorkspaceProps) => {
     <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />
   );
 
+  // Simple visual cue for brush (a semi‑transparent circle at the center)
+  const brushOverlay =
+    activeTool === "brush" && (
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-24 h-24 border-2 border-dashed border-green-500 rounded-full opacity-50" />
+      </div>
+    );
+
   return (
     <div
       className={cn(
@@ -152,6 +160,8 @@ const Workspace = (props: WorkspaceProps) => {
                 />
                 {/* Lasso visual cue */}
                 {lassoOverlay}
+                {/* Brush visual cue */}
+                {brushOverlay}
                 {!isPreviewingOriginal && effects.vignette > 0 && (
                   <div
                     className="absolute inset-0 pointer-events-none rounded-lg"

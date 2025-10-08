@@ -25,6 +25,8 @@ import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ToolsBar } from "@/components/editor/ToolsBar";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
+import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
+import { useHotkeys } from "react-hotkeys-hook";
 
 const Index = () => {
   const {
@@ -84,6 +86,17 @@ const Index = () => {
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
   const [openGenerative, setOpenGenerative] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
+
+  // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
+  useHotkeys(
+    "ctrl+i, cmd+i",
+    (e) => {
+      e.preventDefault();
+      setOpenImport(true);
+    },
+    { enabled: true }
+  );
 
   // Paste handling (unchanged)
   useEffect(() => {
@@ -172,6 +185,8 @@ const Index = () => {
         canRedo={canRedo}
         openSettings={openSettings}
         setOpenSettings={setOpenSettings}
+        openImport={openImport}
+        setOpenImport={setOpenImport}
       >
         <div className="md:hidden">
           <Sheet>
@@ -252,6 +267,7 @@ const Index = () => {
         onApply={applyGenerativeResult}
         apiKey={apiKey}
       />
+      <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
     </div>
   );
 };

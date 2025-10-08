@@ -46,8 +46,14 @@ const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
       {/* Brush placeholder */}
       <div className="pt-4 border-t">
         <Label className="block mb-2">Brush (coming soon)</Label>
-        <p className="text-sm text-muted-foreground">
-          The brush tool will allow freehand painting. Stay tuned!
+        <div className="space-y-2">
+          <Label htmlFor="brush-size">Size</Label>
+          <Slider id="brush-size" min={1} max={100} step={1} disabled />
+          <Label htmlFor="brush-opacity">Opacity</Label>
+          <Slider id="brush-opacity" min={0} max={100} step={5} disabled />
+        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Brush tool will allow freehand painting. Stay tuned!
         </p>
       </div>
     </div>
