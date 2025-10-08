@@ -23,6 +23,7 @@ interface WorkspaceProps {
   effects: {
     blur: number;
     hueShift: number;
+    vignette: number;
   };
   grading: {
     grayscale: number;
@@ -74,7 +75,7 @@ const Workspace = (props: WorkspaceProps) => {
     onFileSelect(e.dataTransfer.files?.[0]);
   };
 
-  const imageStyle = isPreviewingOriginal ? {} : {
+  const imageFilterStyle = isPreviewingOriginal ? {} : {
     filter: [
       selectedFilter,
       `brightness(${adjustments.brightness}%)`,
@@ -86,6 +87,9 @@ const Workspace = (props: WorkspaceProps) => {
       `sepia(${grading.sepia}%)`,
       `invert(${grading.invert}%)`,
     ].join(' '),
+  };
+
+  const wrapperTransformStyle = isPreviewingOriginal ? {} : {
     transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
   };
 
@@ -114,14 +118,26 @@ const Workspace = (props: WorkspaceProps) => {
             onComplete={c => onCropComplete(c)}
             aspect={aspect}
           >
-            <img
-              ref={imgRef}
-              src={image}
-              alt="Uploaded preview"
-              className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-              style={imageStyle}
-              onLoad={onImageLoad}
-            />
+            <div style={wrapperTransformStyle}>
+              <div className="relative">
+                <img
+                  ref={imgRef}
+                  src={image}
+                  alt="Uploaded preview"
+                  className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+                  style={imageFilterStyle}
+                  onLoad={onImageLoad}
+                />
+                {!isPreviewingOriginal && effects.vignette > 0 && (
+                  <div
+                    className="absolute inset-0 pointer-events-none rounded-lg"
+                    style={{
+                      boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`
+                    }}
+                  />
+                )}
+              </div>
+            </div>
           </ReactCrop>
         </div>
       ) : (

@@ -53,6 +53,8 @@ const getEditedImageCanvas = ({
     `invert(${grading.invert}%)`,
   ].join(' ');
   
+  ctx.save();
+
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(transforms.rotation * Math.PI / 180);
   ctx.scale(transforms.scaleX, transforms.scaleY);
@@ -68,6 +70,24 @@ const getEditedImageCanvas = ({
     pixelCrop.width,
     pixelCrop.height
   );
+
+  ctx.restore();
+
+  if (effects.vignette > 0) {
+    const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
+    const innerRadius = outerRadius * (1 - (effects.vignette / 100) * 1.2);
+
+    const gradient = ctx.createRadialGradient(
+        canvas.width / 2, canvas.height / 2, innerRadius,
+        canvas.width / 2, canvas.height / 2, outerRadius
+    );
+    
+    gradient.addColorStop(0, 'rgba(0,0,0,0)');
+    gradient.addColorStop(1, `rgba(0,0,0,${effects.vignette / 100 * 0.7})`);
+    
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
 
   return canvas;
 };
