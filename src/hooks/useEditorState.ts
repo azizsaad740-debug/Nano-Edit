@@ -76,50 +76,67 @@ export const useEditorState = () => {
     }
   }, []);
 
-  const handleFileSelect = useCallback((file: File | undefined) => {
-    if (file) {
-      if (file.type.startsWith('image/')) {
-        setDimensions(null);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImage(reader.result as string);
-          setHistory([initialHistoryItem]);
-          setCurrentHistoryIndex(0);
-          showSuccess("Image uploaded successfully.");
-        };
-        reader.readAsDataURL(file);
-      } else {
-        showError("Invalid file type. Please upload an image.");
-      }
-    }
+  const loadImageData = useCallback((imageData: string, successMessage: string) => {
+    setImage(imageData);
+    setHistory([initialHistoryItem]);
+    setCurrentHistoryIndex(0);
+    showSuccess(successMessage);
   }, []);
+
+  const handleFileSelect = useCallback((file: File | undefined) => {
+    if (!file) return;
+
+    const toastId = showLoading("Uploading image...");
+    if (!file.type.startsWith('image/')) {
+      dismissToast(toastId);
+      showError("Invalid file type. Please upload an image.");
+      return;
+    }
+    
+    setDimensions(null);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      dismissToast(toastId);
+      loadImageData(reader.result as string, "Image uploaded successfully.");
+    };
+    reader.onerror = () => {
+      dismissToast(toastId);
+      showError("Failed to read the image file.");
+    };
+    reader.readAsDataURL(file);
+  }, [loadImageData]);
 
   const handleUrlImageLoad = useCallback(async (url: string) => {
     const toastId = showLoading("Loading image from URL...");
     try {
       setDimensions(null);
       const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Network response was not ok, status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`Network response was not ok, status: ${response.status}`);
+      
       const blob = await response.blob();
-
       if (!blob.type.startsWith('image/')) {
         dismissToast(toastId);
         showError("The provided URL does not point to a valid image.");
         return;
       }
 
-      const filename = url.substring(url.lastIndexOf('/') + 1).split('?')[0] || 'image.jpg';
-      const file = new File([blob], filename, { type: blob.type });
-      dismissToast(toastId);
-      handleFileSelect(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        dismissToast(toastId);
+        loadImageData(reader.result as string, "Image loaded successfully.");
+      };
+      reader.onerror = () => {
+        dismissToast(toastId);
+        showError("Failed to read the image file from URL.");
+      };
+      reader.readAsDataURL(blob);
+
     } catch (error) {
       dismissToast(toastId);
       console.error("Failed to fetch image from URL:", error);
       showError("Could not load image. Check the URL and CORS policy.");
     }
-  }, [handleFileSelect]);
+  }, [loadImageData]);
 
   const handleAdjustmentChange = useCallback((adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
