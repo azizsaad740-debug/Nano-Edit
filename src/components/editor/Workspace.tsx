@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud, Check, X } from "lucide-react";
@@ -11,6 +11,8 @@ import UrlUploader from "./UrlUploader";
 import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
 import type { Layer } from "@/hooks/useEditorState";
+import { WorkspaceControls } from "./WorkspaceControls";
+import { useHotkeys } from "react-hotkeys-hook";
 
 interface WorkspaceProps {
   image: string | null;
@@ -84,7 +86,50 @@ const Workspace = (props: WorkspaceProps) => {
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
+  const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 5));
+  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.1));
+
+  const handleFitScreen = useCallback(() => {
+    if (!imgRef.current || !workspaceContainerRef.current) return;
+
+    const { naturalWidth, naturalHeight } = imgRef.current;
+    const { clientWidth: containerWidth, clientHeight: containerHeight } = workspaceContainerRef.current;
+    
+    if (naturalWidth === 0 || naturalHeight === 0) return;
+
+    const padding = 64; // Account for padding around the workspace
+    const widthRatio = (containerWidth - padding) / naturalWidth;
+    const heightRatio = (containerHeight - padding) / naturalHeight;
+    
+    const newZoom = Math.min(widthRatio, heightRatio, 1);
+    setZoom(newZoom);
+  }, [imgRef]);
+
+  useEffect(() => {
+    if (image) {
+      const img = imgRef.current;
+      const onImgLoad = () => {
+        setTimeout(handleFitScreen, 100);
+      };
+      if (img) {
+        img.addEventListener('load', onImgLoad, { once: true });
+        if (img.complete) {
+          onImgLoad();
+        }
+        return () => img.removeEventListener('load', onImgLoad);
+      }
+    } else {
+      setZoom(1);
+    }
+  }, [image, handleFitScreen, imgRef]);
+
+  useHotkeys("+, =", handleZoomIn, { preventDefault: true });
+  useHotkeys("-", handleZoomOut, { preventDefault: true });
+  useHotkeys("f", handleFitScreen, { preventDefault: true });
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -163,8 +208,9 @@ const Workspace = (props: WorkspaceProps) => {
 
   return (
     <div
+      ref={workspaceContainerRef}
       className={cn(
-        "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all",
+        "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
         activeTool === 'text' && 'cursor-crosshair'
       )}
@@ -181,52 +227,65 @@ const Workspace = (props: WorkspaceProps) => {
         </div>
       )}
       {image ? (
-        <div className="relative max-w-full max-h-full p-4">
-          {pendingCrop && (
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
-              <Button size="sm" onClick={onApplyCrop}><Check className="h-4 w-4 mr-2" /> Apply Crop</Button>
-              <Button size="sm" variant="destructive" onClick={onCancelCrop}><X className="h-4 w-4 mr-2" /> Cancel</Button>
-            </div>
-          )}
-          <ReactCrop
-            crop={pendingCrop ?? crop}
-            onChange={(_, percentCrop) => onCropChange(percentCrop)}
-            aspect={aspect}
+        <>
+          <div 
+            className="transition-transform duration-200" 
+            style={{ transform: `scale(${zoom})` }}
           >
-            <div style={wrapperTransformStyle}>
-              <div ref={imageContainerRef} className="relative" style={containerStyle}>
-                <img
-                  ref={imgRef}
-                  src={image}
-                  alt="Uploaded preview"
-                  className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                  style={imageStyle}
-                  onLoad={onImageLoad}
-                />
-                {lassoOverlay}
-                {brushOverlay}
-                {!isPreviewingOriginal && effects.vignette > 0 && (
-                  <div
-                    className="absolute inset-0 pointer-events-none rounded-lg"
-                    style={{
-                      boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
-                    }}
-                  />
-                )}
-                {layers.map((layer) => (
-                  <TextLayer
-                    key={layer.id}
-                    layer={layer}
-                    containerRef={imageContainerRef}
-                    onUpdate={onLayerUpdate}
-                    onCommit={onLayerCommit}
-                    isSelected={layer.id === selectedLayerId}
-                  />
-                ))}
-              </div>
+            <div className="relative max-w-full max-h-full p-4">
+              {pendingCrop && (
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
+                  <Button size="sm" onClick={onApplyCrop}><Check className="h-4 w-4 mr-2" /> Apply Crop</Button>
+                  <Button size="sm" variant="destructive" onClick={onCancelCrop}><X className="h-4 w-4 mr-2" /> Cancel</Button>
+                </div>
+              )}
+              <ReactCrop
+                crop={pendingCrop ?? crop}
+                onChange={(_, percentCrop) => onCropChange(percentCrop)}
+                aspect={aspect}
+              >
+                <div style={wrapperTransformStyle}>
+                  <div ref={imageContainerRef} className="relative" style={containerStyle}>
+                    <img
+                      ref={imgRef}
+                      src={image}
+                      alt="Uploaded preview"
+                      className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+                      style={imageStyle}
+                      onLoad={onImageLoad}
+                    />
+                    {lassoOverlay}
+                    {brushOverlay}
+                    {!isPreviewingOriginal && effects.vignette > 0 && (
+                      <div
+                        className="absolute inset-0 pointer-events-none rounded-lg"
+                        style={{
+                          boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
+                        }}
+                      />
+                    )}
+                    {layers.map((layer) => (
+                      <TextLayer
+                        key={layer.id}
+                        layer={layer}
+                        containerRef={imageContainerRef}
+                        onUpdate={onLayerUpdate}
+                        onCommit={onLayerCommit}
+                        isSelected={layer.id === selectedLayerId}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </ReactCrop>
             </div>
-          </ReactCrop>
-        </div>
+          </div>
+          <WorkspaceControls 
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFitScreen={handleFitScreen}
+          />
+        </>
       ) : (
         <div className="w-full max-w-md">
           <Card className="border-2 border-dashed">
