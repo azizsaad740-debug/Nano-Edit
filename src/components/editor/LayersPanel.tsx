@@ -28,7 +28,6 @@ interface LayersPanelProps {
   onRename: (id: string, newName: string) => void;
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
-  onEditTextLayer: (id: string) => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -40,7 +39,6 @@ export const LayersPanel = ({
   onRename,
   onDelete,
   onAddTextLayer,
-  onEditTextLayer,
   onReorder,
   selectedLayerId,
   onSelectLayer,
@@ -117,7 +115,6 @@ export const LayersPanel = ({
                 cancelRename={cancelRename}
                 onToggleVisibility={onToggleVisibility}
                 onDelete={onDelete}
-                onEditTextLayer={onEditTextLayer}
                 isSelected={editingId ? false : selectedLayerId === layer.id}
                 onSelect={onSelectLayer}
               />

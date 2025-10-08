@@ -24,6 +24,7 @@ import {
   Info as InfoIcon,
   Image as ImageIcon,
   Layers as LayersIcon,
+  Type,
 } from "lucide-react";
 
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
@@ -38,6 +39,9 @@ import { LayersPanel } from "@/components/editor/LayersPanel";
 import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
+import type { Layer } from "@/hooks/useEditorState";
+import { cn } from "@/lib/utils";
+import TextProperties from "@/components/editor/TextProperties";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -79,16 +83,18 @@ interface EditorControlsProps {
   onSavePreset: () => void;
   onDeletePreset: (name: string) => void;
   // Layer props
-  layers: any[];
+  layers: Layer[];
   addTextLayer: () => void;
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  onEditTextLayer: (id: string) => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
+  // Layer editing
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -125,12 +131,20 @@ const EditorControls = (props: EditorControlsProps) => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    onEditTextLayer,
     reorderLayers,
     // selection
     selectedLayerId,
     onSelectLayer,
+    // layer editing
+    onLayerUpdate,
+    onLayerCommit,
   } = props;
+
+  const selectedLayer = React.useMemo(() => {
+    return layers.find(l => l.id === selectedLayerId);
+  }, [layers, selectedLayerId]);
+
+  const isTextLayerSelected = selectedLayer?.type === 'text';
 
   if (!hasImage) {
     return (
@@ -145,7 +159,7 @@ const EditorControls = (props: EditorControlsProps) => {
   return (
     <Tabs defaultValue="adjust" className="w-full">
       <TooltipProvider>
-        <TabsList className="grid w-full grid-cols-6 h-12">
+        <TabsList className={cn("grid w-full h-12", isTextLayerSelected ? "grid-cols-7" : "grid-cols-6")}>
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="adjust" className="h-10">
@@ -211,6 +225,19 @@ const EditorControls = (props: EditorControlsProps) => {
               <p>Layers</p>
             </TooltipContent>
           </Tooltip>
+
+          {isTextLayerSelected && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="text" className="h-10">
+                  <Type className="h-5 w-5" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Text</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
         </TabsList>
       </TooltipProvider>
 
@@ -309,12 +336,22 @@ const EditorControls = (props: EditorControlsProps) => {
           onRename={renameLayer}
           onDelete={deleteLayer}
           onAddTextLayer={addTextLayer}
-          onEditTextLayer={onEditTextLayer}
           onReorder={reorderLayers}
           selectedLayerId={selectedLayerId}
           onSelectLayer={onSelectLayer}
         />
       </TabsContent>
+
+      {/* Text tab */}
+      {isTextLayerSelected && selectedLayer && (
+        <TabsContent value="text" className="mt-4">
+          <TextProperties 
+            layer={selectedLayer}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+          />
+        </TabsContent>
+      )}
     </Tabs>
   );
 };

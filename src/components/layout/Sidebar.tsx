@@ -48,11 +48,13 @@ interface SidebarProps {
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  onEditTextLayer: (id: string) => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
+  // Layer editing
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

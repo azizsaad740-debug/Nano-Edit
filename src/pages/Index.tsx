@@ -26,7 +26,6 @@ import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ToolsBar } from "@/components/editor/ToolsBar";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
-import { EditTextDialog } from "@/components/editor/EditTextDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 
 const Index = () => {
@@ -93,19 +92,6 @@ const Index = () => {
   const [openSettings, setOpenSettings] = useState(false);
   const [openGenerative, setOpenGenerative] = useState(false);
   const [openImport, setOpenImport] = useState(false);
-  const [editingLayer, setEditingLayer] = useState<Layer | null>(null);
-
-  const handleOpenEditDialog = (layerId: string) => {
-    const layerToEdit = layers.find((l) => l.id === layerId);
-    if (layerToEdit) {
-      setEditingLayer(layerToEdit);
-    }
-  };
-
-  const handleSaveEditText = (id: string, updates: Partial<Layer>) => {
-    updateLayer(id, updates);
-    commitLayerChange(id);
-  };
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
@@ -187,11 +173,13 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    onEditTextLayer: handleOpenEditDialog,
     reorderLayers,
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
+    // layer editing
+    onLayerUpdate: updateLayer,
+    onLayerCommit: commitLayerChange,
   };
 
   return (
@@ -294,12 +282,6 @@ const Index = () => {
         apiKey={apiKey}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
-      <EditTextDialog
-        open={!!editingLayer}
-        onOpenChange={(open) => !open && setEditingLayer(null)}
-        layer={editingLayer}
-        onSave={handleSaveEditText}
-      />
     </div>
   );
 };

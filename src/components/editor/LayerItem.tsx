@@ -20,7 +20,6 @@ interface LayerItemProps {
   cancelRename: () => void;
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
-  onEditTextLayer: (id: string) => void;
   isSelected: boolean;
   onSelect: (id: string) => void;
 }
@@ -35,7 +34,6 @@ const LayerItem = ({
   cancelRename,
   onToggleVisibility,
   onDelete,
-  onEditTextLayer,
   isSelected,
   onSelect,
 }: LayerItemProps) => {
@@ -108,16 +106,6 @@ const LayerItem = ({
         )}
       </div>
       <div className="flex items-center gap-1">
-        {layer.type === "text" && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onMouseDown={handleButtonMouseDown}
-            onClick={() => onEditTextLayer(layer.id)}
-          >
-            <Edit2 className="h-4 w-4" />
-          </Button>
-        )}
         <Button
           variant="ghost"
           size="icon"
