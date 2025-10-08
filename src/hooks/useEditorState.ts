@@ -151,6 +151,10 @@ export const useEditorState = () => {
   useHotkeys('ctrl+y, cmd+shift+z', handleRedo, { preventDefault: true });
   useHotkeys('ctrl+s, cmd+s', (e) => { e.preventDefault(); handleDownload(); }, { enabled: !!image }, [handleDownload]);
   useHotkeys('ctrl+shift+c, cmd+shift+c', (e) => { e.preventDefault(); handleCopy(); }, { enabled: !!image }, [handleCopy]);
+  useHotkeys('r', () => handleTransformChange('rotate-right'), { enabled: !!image, preventDefault: true });
+  useHotkeys('shift+r', () => handleTransformChange('rotate-left'), { enabled: !!image, preventDefault: true });
+  useHotkeys('h', () => handleTransformChange('flip-horizontal'), { enabled: !!image, preventDefault: true });
+  useHotkeys('v', () => handleTransformChange('flip-vertical'), { enabled: !!image, preventDefault: true });
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
