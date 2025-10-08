@@ -10,7 +10,7 @@ import {
 
 interface HeaderProps {
   onReset: () => void;
-  onDownload: () => void;
+  onDownloadClick: () => void;
   onCopy: () => void;
   hasImage: boolean;
   onTogglePreview: (isPreviewing: boolean) => void;
@@ -21,7 +21,7 @@ interface HeaderProps {
   children?: React.ReactNode;
 }
 
-const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, onUndo, onRedo, canUndo, canRedo, children }: HeaderProps) => {
+const Header = ({ onReset, onDownloadClick, onCopy, hasImage, onTogglePreview, onUndo, onRedo, canUndo, canRedo, children }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
       <div className="flex items-center gap-2">
@@ -97,7 +97,7 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, onUndo
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button size="sm" onClick={onDownload} disabled={!hasImage}>
+            <Button size="sm" onClick={onDownloadClick} disabled={!hasImage}>
               <Download className="h-4 w-4 md:mr-2" />
               <span className="hidden md:inline">Download</span>
             </Button>

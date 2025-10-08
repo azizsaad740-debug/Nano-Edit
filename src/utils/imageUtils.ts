@@ -76,13 +76,17 @@ const getEditedImageCanvas = ({
   return canvas;
 };
 
-export const downloadImage = (options: ImageOptions) => {
+export const downloadImage = (options: ImageOptions, exportOptions: { format: string; quality: number }) => {
   const canvas = getEditedImageCanvas(options);
   if (!canvas) return;
 
+  const { format, quality } = exportOptions;
+  const mimeType = `image/${format}`;
+  const fileExtension = format;
+
   const link = document.createElement('a');
-  link.download = 'edited-image.png';
-  link.href = canvas.toDataURL('image/png');
+  link.download = `edited-image.${fileExtension}`;
+  link.href = canvas.toDataURL(mimeType, quality);
   link.click();
   showSuccess("Image downloaded successfully.");
 };

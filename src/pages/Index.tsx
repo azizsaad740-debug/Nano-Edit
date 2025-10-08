@@ -12,6 +12,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { ExportOptions } from "@/components/editor/ExportOptions";
 
 const Index = () => {
   const {
@@ -39,6 +40,8 @@ const Index = () => {
     setAspect,
     isPreviewingOriginal,
     setIsPreviewingOriginal,
+    isExporting,
+    setIsExporting,
   } = useEditorState();
 
   useEffect(() => {
@@ -84,7 +87,7 @@ const Index = () => {
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
       <Header 
         onReset={handleReset}
-        onDownload={handleDownload}
+        onDownloadClick={() => setIsExporting(true)}
         onCopy={handleCopy}
         hasImage={!!image}
         onTogglePreview={setIsPreviewingOriginal}
@@ -140,6 +143,11 @@ const Index = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
+      <ExportOptions
+        open={isExporting}
+        onOpenChange={setIsExporting}
+        onExport={handleDownload}
+      />
     </div>
   );
 };
