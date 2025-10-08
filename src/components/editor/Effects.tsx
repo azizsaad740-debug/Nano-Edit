@@ -1,5 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface EffectsProps {
   effects: {
@@ -10,10 +12,20 @@ interface EffectsProps {
 }
 
 const Effects = ({ effects, onEffectChange }: EffectsProps) => {
+  const handleReset = (effect: string) => {
+    onEffectChange(effect, 0);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-2">
-        <Label htmlFor="blur">Blur</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="blur">Blur</Label>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("blur")}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset Blur</span>
+          </Button>
+        </div>
         <Slider
           id="blur"
           min={0}
@@ -24,7 +36,13 @@ const Effects = ({ effects, onEffectChange }: EffectsProps) => {
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="hueShift">Hue Shift</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="hueShift">Hue Shift</Label>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("hueShift")}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset Hue Shift</span>
+          </Button>
+        </div>
         <Slider
           id="hueShift"
           min={0}

@@ -1,5 +1,7 @@
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { RotateCcw } from "lucide-react";
 
 interface LightingAdjustmentsProps {
   adjustments: {
@@ -11,10 +13,20 @@ interface LightingAdjustmentsProps {
 }
 
 const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjustmentsProps) => {
+  const handleReset = (adjustment: string) => {
+    onAdjustmentChange(adjustment, 100);
+  };
+
   return (
     <div className="space-y-4">
       <div className="grid gap-2">
-        <Label htmlFor="brightness">Brightness</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="brightness">Brightness</Label>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("brightness")}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset Brightness</span>
+          </Button>
+        </div>
         <Slider
           id="brightness"
           min={0}
@@ -25,7 +37,13 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="contrast">Contrast</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="contrast">Contrast</Label>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("contrast")}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset Contrast</span>
+          </Button>
+        </div>
         <Slider
           id="contrast"
           min={0}
@@ -36,7 +54,13 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="saturation">Saturation</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="saturation">Saturation</Label>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("saturation")}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset Saturation</span>
+          </Button>
+        </div>
         <Slider
           id="saturation"
           min={0}
