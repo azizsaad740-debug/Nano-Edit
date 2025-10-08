@@ -77,6 +77,7 @@ const Index = () => {
   const { adjustments, effects, grading, selectedFilter, transforms, crop } = currentState;
 
   const editorProps = {
+    hasImage: !!image,
     adjustments,
     onAdjustmentChange: handleAdjustmentChange,
     onAdjustmentCommit: handleAdjustmentCommit,

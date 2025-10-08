@@ -16,7 +16,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SlidersHorizontal, Crop as CropIcon, Wand2, History as HistoryIcon, Info as InfoIcon } from "lucide-react";
+import { SlidersHorizontal, Crop as CropIcon, Wand2, History as HistoryIcon, Info as InfoIcon, Image as ImageIcon } from "lucide-react";
 
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
@@ -28,6 +28,7 @@ import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
 
 interface EditorControlsProps {
+  hasImage: boolean;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -61,6 +62,7 @@ interface EditorControlsProps {
 
 const EditorControls = (props: EditorControlsProps) => {
   const { 
+    hasImage,
     adjustments, onAdjustmentChange, onAdjustmentCommit,
     effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit,
@@ -70,6 +72,16 @@ const EditorControls = (props: EditorControlsProps) => {
     history, currentHistoryIndex, onHistoryJump,
     dimensions
   } = props;
+
+  if (!hasImage) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
+        <ImageIcon className="h-12 w-12 mb-4" />
+        <h3 className="text-lg font-semibold">No Image Loaded</h3>
+        <p className="text-sm">Upload an image to begin editing.</p>
+      </div>
+    );
+  }
 
   return (
     <Tabs defaultValue="adjust" className="w-full">

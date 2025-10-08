@@ -1,6 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 
 interface SidebarProps {
+  hasImage: boolean;
   adjustments: {
     brightness: number;
     contrast: number;
