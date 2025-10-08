@@ -57,6 +57,7 @@ const Index = () => {
       const items = event.clipboardData?.items;
       if (!items) return;
 
+      // Check for image data first
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
           const file = items[i].getAsFile();
@@ -67,13 +68,26 @@ const Index = () => {
           }
         }
       }
+
+      // If no image, check for a URL in plain text
+      const pastedText = event.clipboardData?.getData('text/plain');
+      if (pastedText) {
+        try {
+          // Check if the pasted text is a valid URL
+          new URL(pastedText);
+          handleUrlImageLoad(pastedText);
+          event.preventDefault();
+        } catch (_) {
+          // Not a valid URL, do nothing
+        }
+      }
     };
 
     document.addEventListener("paste", handlePaste);
     return () => {
       document.removeEventListener("paste", handlePaste);
     };
-  }, [handleFileSelect]);
+  }, [handleFileSelect, handleUrlImageLoad]);
 
   const { adjustments, effects, grading, selectedFilter, transforms, crop } = currentState;
 
