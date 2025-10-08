@@ -54,9 +54,8 @@ export const useEditorState = () => {
     setHistory(newHistory);
   }, [currentState, history, currentHistoryIndex]);
 
-  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
+  const handleFileSelect = useCallback((file: File | undefined) => {
+    if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
@@ -157,7 +156,7 @@ export const useEditorState = () => {
     aspect,
     canUndo,
     canRedo,
-    handleImageUpload,
+    handleFileSelect,
     handleAdjustmentChange,
     handleEffectChange,
     handleFilterChange,

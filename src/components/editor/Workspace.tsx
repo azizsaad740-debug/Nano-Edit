@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
 import ReactCrop, { type Crop } from 'react-image-crop';
+import { cn } from "@/lib/utils";
 
 interface WorkspaceProps {
   image: string | null;
-  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileSelect: (file: File | undefined) => void;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -34,13 +35,33 @@ interface WorkspaceProps {
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
-    image, onImageUpload, adjustments, effects, selectedFilter, transforms,
+    image, onFileSelect, adjustments, effects, selectedFilter, transforms,
     crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onFileSelect(event.target.files?.[0]);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    onFileSelect(e.dataTransfer.files?.[0]);
   };
 
   const imageStyle = isPreviewingOriginal ? {} : {
@@ -49,7 +70,22 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   return (
-    <div className="flex items-center justify-center h-full w-full bg-muted/20 rounded-lg">
+    <div 
+      className={cn(
+        "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all",
+        isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20"
+      )}
+      onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
+          <UploadCloud className="h-16 w-16 text-primary" />
+          <p className="mt-2 text-lg font-semibold text-primary">Drop image to upload</p>
+        </div>
+      )}
       {image ? (
         <div className="relative max-w-full max-h-full p-4">
           <ReactCrop
@@ -75,7 +111,7 @@ const Workspace = (props: WorkspaceProps) => {
             </div>
             <h2 className="text-2xl font-semibold">Upload an Image</h2>
             <p className="text-muted-foreground">
-              Click the button below to select an image from your device to start editing.
+              Drag and drop an image here, or click the button below to select one.
             </p>
             <Button onClick={triggerFileInput}>
               Select Image
@@ -83,7 +119,7 @@ const Workspace = (props: WorkspaceProps) => {
             <input
               type="file"
               ref={fileInputRef}
-              onChange={onImageUpload}
+              onChange={handleFileInputChange}
               className="hidden"
               accept="image/png, image/jpeg, image/webp"
             />

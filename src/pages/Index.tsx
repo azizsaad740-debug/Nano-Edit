@@ -15,7 +15,7 @@ const Index = () => {
     aspect,
     canUndo,
     canRedo,
-    handleImageUpload,
+    handleFileSelect,
     handleAdjustmentChange,
     handleEffectChange,
     handleFilterChange,
@@ -83,7 +83,7 @@ const Index = () => {
         <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <Workspace 
             image={image}
-            onImageUpload={handleImageUpload}
+            onFileSelect={handleFileSelect}
             adjustments={adjustments} 
             effects={effects}
             selectedFilter={selectedFilter} 
