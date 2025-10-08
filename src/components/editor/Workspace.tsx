@@ -94,7 +94,13 @@ const Workspace = (props: WorkspaceProps) => {
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  
+  // Zoom and Pan state
   const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
+  const isSpaceDownRef = useRef(false);
 
   const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 5));
   const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.1));
@@ -107,53 +113,64 @@ const Workspace = (props: WorkspaceProps) => {
     
     if (naturalWidth === 0 || naturalHeight === 0) return;
 
-    const padding = 64; // Account for padding around the workspace
+    const padding = 64;
     const widthRatio = (containerWidth - padding) / naturalWidth;
     const heightRatio = (containerHeight - padding) / naturalHeight;
     
     const newZoom = Math.min(widthRatio, heightRatio, 1);
     setZoom(newZoom);
+    setPanOffset({ x: 0, y: 0 }); // Reset pan on fit
   }, [imgRef]);
 
   useEffect(() => {
     if (image) {
       const img = imgRef.current;
-      const onImgLoad = () => {
-        setTimeout(handleFitScreen, 100);
-      };
+      const onImgLoad = () => setTimeout(handleFitScreen, 100);
       if (img) {
         img.addEventListener('load', onImgLoad, { once: true });
-        if (img.complete) {
-          onImgLoad();
-        }
+        if (img.complete) onImgLoad();
         return () => img.removeEventListener('load', onImgLoad);
       }
     } else {
       setZoom(1);
+      setPanOffset({ x: 0, y: 0 });
     }
   }, [image, handleFitScreen, imgRef]);
 
+  // Panning logic
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isSpaceDownRef.current && image) {
+      e.preventDefault();
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isPanning) {
+      e.preventDefault();
+      setPanOffset({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  useHotkeys('space', () => { isSpaceDownRef.current = true; }, { keydown: true });
+  useHotkeys('space', () => { isSpaceDownRef.current = false; }, { keyup: true });
   useHotkeys("+, =", handleZoomIn, { preventDefault: true });
   useHotkeys("-", handleZoomOut, { preventDefault: true });
   useHotkeys("f", handleFitScreen, { preventDefault: true });
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    onFileSelect(event.target.files?.[0]);
-  };
-
+  const triggerFileInput = () => fileInputRef.current?.click();
+  const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => onFileSelect(event.target.files?.[0]);
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
@@ -172,27 +189,9 @@ const Workspace = (props: WorkspaceProps) => {
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
 
-  const imageFilterStyle = isPreviewingOriginal
-    ? {}
-    : {
-        filter: getFilterString({
-          adjustments,
-          effects,
-          grading,
-          selectedFilter,
-        }),
-      };
-
-  const imageStyle: React.CSSProperties = {
-    ...imageFilterStyle,
-    visibility: isBackgroundVisible ? 'visible' : 'hidden',
-  };
-
-  const wrapperTransformStyle = isPreviewingOriginal
-    ? {}
-    : {
-        transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
-      };
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: getFilterString({ adjustments, effects, grading, selectedFilter }) };
+  const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
+  const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
   
   const containerStyle: React.CSSProperties = {};
   if (!isBackgroundVisible) {
@@ -201,16 +200,8 @@ const Workspace = (props: WorkspaceProps) => {
     containerStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
   }
 
-  const lassoOverlay = activeTool === "lasso" && (
-    <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />
-  );
-
-  const brushOverlay =
-    activeTool === "brush" && (
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-24 h-24 border-2 border-dashed border-green-500 rounded-full opacity-50" />
-      </div>
-    );
+  const lassoOverlay = activeTool === "lasso" && <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />;
+  const brushOverlay = activeTool === "brush" && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-24 h-24 border-2 border-dashed border-green-500 rounded-full opacity-50" /></div>;
 
   return (
     <div
@@ -218,13 +209,18 @@ const Workspace = (props: WorkspaceProps) => {
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
-        activeTool === 'text' && 'cursor-crosshair'
+        activeTool === 'text' && 'cursor-crosshair',
+        isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={handleWorkspaceClick}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
@@ -236,7 +232,7 @@ const Workspace = (props: WorkspaceProps) => {
         <>
           <div 
             className="transition-transform duration-200" 
-            style={{ transform: `scale(${zoom})` }}
+            style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})` }}
           >
             <div className="relative max-w-full max-h-full p-4">
               {pendingCrop && (
