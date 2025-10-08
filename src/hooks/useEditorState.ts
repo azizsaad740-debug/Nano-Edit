@@ -349,6 +349,11 @@ export const useEditorState = () => {
   }, [currentLayers, updateCurrentLayers]);
 
   const renameLayer = useCallback((id: string, newName: string) => {
+    const layerToRename = currentLayers.find(l => l.id === id);
+    if (layerToRename && layerToRename.type === 'image') {
+      showError("The background layer cannot be renamed.");
+      return;
+    }
     const updated = currentLayers.map(l => l.id === id ? { ...l, name: newName } : l);
     recordHistory(`Rename Layer to "${newName}"`, currentState, updated);
   }, [currentLayers, currentState, recordHistory]);

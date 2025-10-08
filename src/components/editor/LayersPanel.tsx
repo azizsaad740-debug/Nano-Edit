@@ -23,6 +23,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 
 interface Layer {
@@ -66,7 +67,7 @@ function LayerItem({
   } = useSortable({ id: layer.id, disabled: isBackground });
 
   const style = {
-    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
+    transform: CSS.Transform.toString(transform),
     transition,
   };
 
@@ -74,7 +75,10 @@ function LayerItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between p-2 border rounded-md bg-background"
+      className={cn(
+        "flex items-center justify-between p-2 border rounded-md",
+        isBackground ? "bg-muted/50" : "bg-background"
+      )}
     >
       <div className="flex items-center gap-2">
         <div
@@ -127,7 +131,6 @@ function LayerItem({
         <Button
           variant="ghost"
           size="icon"
-  
           onClick={() => onDelete(layer.id)}
           disabled={isBackground}
         >
@@ -178,16 +181,21 @@ export const LayersPanel = ({
     setEditingId(null);
   };
 
+  const reversedLayers = React.useMemo(() => [...layers].reverse(), [layers]);
+
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (active.id !== over.id) {
-      const oldIndex = layers.findIndex((l) => l.id === active.id);
-      const newIndex = layers.findIndex((l) => l.id === over.id);
+      const oldReversedIndex = reversedLayers.findIndex((l) => l.id === active.id);
+      const newReversedIndex = reversedLayers.findIndex((l) => l.id === over.id);
+      
+      // Convert reversed indices back to original `layers` array indices
+      const oldIndex = layers.length - 1 - oldReversedIndex;
+      const newIndex = layers.length - 1 - newReversedIndex;
+
       onReorder(oldIndex, newIndex);
     }
   };
-
-  const reversedLayers = React.useMemo(() => [...layers].reverse(), [layers]);
 
   return (
     <Card className="mt-4">
