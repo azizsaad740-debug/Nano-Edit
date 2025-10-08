@@ -111,7 +111,7 @@ const Workspace = (props: WorkspaceProps) => {
             </div>
             <h2 className="text-2xl font-semibold">Upload an Image</h2>
             <p className="text-muted-foreground">
-              Drag and drop an image here, or click the button below to select one.
+              Drag & drop, paste from clipboard, or click the button to upload an image.
             </p>
             <Button onClick={triggerFileInput}>
               Select Image

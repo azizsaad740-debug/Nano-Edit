@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -36,6 +37,29 @@ const Index = () => {
     isPreviewingOriginal,
     setIsPreviewingOriginal,
   } = useEditorState();
+
+  useEffect(() => {
+    const handlePaste = (event: ClipboardEvent) => {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf("image") !== -1) {
+          const file = items[i].getAsFile();
+          if (file) {
+            handleFileSelect(file);
+            event.preventDefault();
+            return;
+          }
+        }
+      }
+    };
+
+    document.addEventListener("paste", handlePaste);
+    return () => {
+      document.removeEventListener("paste", handlePaste);
+    };
+  }, [handleFileSelect]);
 
   const { adjustments, effects, selectedFilter, transforms, crop } = currentState;
 
