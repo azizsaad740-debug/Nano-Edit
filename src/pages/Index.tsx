@@ -73,6 +73,8 @@ const Index = () => {
     renameLayer,
     deleteLayer,
     editTextLayerContent,
+    updateLayer,
+    commitLayerChange,
     // tool state
     activeTool,
     setActiveTool,
@@ -243,6 +245,9 @@ const Index = () => {
                 imgRef={imgRef}
                 isPreviewingOriginal={isPreviewingOriginal}
                 activeTool={activeTool}
+                layers={layers}
+                onLayerUpdate={updateLayer}
+                onLayerCommit={commitLayerChange}
               />
             </div>
           </ResizablePanel>

@@ -32,13 +32,18 @@ export interface EditState {
   crop: Crop | undefined;
 }
 
-/** Layer definition – only text layers are editable for now */
+/** Layer definition */
 export interface Layer {
   id: string;
   type: "image" | "text";
   name: string;
   visible: boolean;
-  content?: string; // text content for text layers
+  // Text layer specific properties
+  content?: string;
+  x?: number; // percentage from left
+  y?: number; // percentage from top
+  fontSize?: number; // pixels
+  color?: string;
 }
 
 export interface HistoryItem {
@@ -312,14 +317,28 @@ export const useEditorState = () => {
     const newLayer: Layer = {
       id: uuidv4(),
       type: "text",
-      name: "Text Layer",
+      name: `Text ${currentLayers.filter((l) => l.type === "text").length + 1}`,
       visible: true,
       content: "New Text",
+      x: 50,
+      y: 50,
+      fontSize: 48,
+      color: "#FFFFFF",
     };
     const updated = [...currentLayers, newLayer];
-    updateCurrentLayers(updated);
     recordHistory("Add Text Layer", currentState, updated);
-  }, [currentLayers, currentState, recordHistory, updateCurrentLayers]);
+  }, [currentLayers, currentState, recordHistory]);
+
+  const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
+    const updatedLayers = currentLayers.map((l) => (l.id === id ? { ...l, ...updates } : l));
+    updateCurrentLayers(updatedLayers);
+  }, [currentLayers, updateCurrentLayers]);
+
+  const commitLayerChange = useCallback((id: string) => {
+    const layer = currentLayers.find((l) => l.id === id);
+    if (!layer) return;
+    recordHistory(`Edit Layer "${layer.name}"`, currentState, currentLayers);
+  }, [currentState, currentLayers, recordHistory]);
 
   const toggleLayerVisibility = useCallback((id: string) => {
     const updated = currentLayers.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
@@ -328,14 +347,13 @@ export const useEditorState = () => {
 
   const renameLayer = useCallback((id: string, newName: string) => {
     const updated = currentLayers.map(l => l.id === id ? { ...l, name: newName } : l);
-    updateCurrentLayers(updated);
-  }, [currentLayers, updateCurrentLayers]);
+    recordHistory(`Rename Layer to "${newName}"`, currentState, updated);
+  }, [currentLayers, currentState, recordHistory]);
 
   const deleteLayer = useCallback((id: string) => {
     const updated = currentLayers.filter(l => l.id !== id);
-    updateCurrentLayers(updated);
     recordHistory("Delete Layer", currentState, updated);
-  }, [currentLayers, currentState, recordHistory, updateCurrentLayers]);
+  }, [currentLayers, currentState, recordHistory]);
 
   const editTextLayerContent = useCallback((id: string, newContent: string) => {
     const updated = currentLayers.map(l => (l.id === id && l.type === "text") ? { ...l, content: newContent } : l);
@@ -422,6 +440,8 @@ export const useEditorState = () => {
     renameLayer,
     deleteLayer,
     editTextLayerContent,
+    updateLayer,
+    commitLayerChange,
     // Tool state
     activeTool,
     setActiveTool,

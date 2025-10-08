@@ -4,7 +4,6 @@ import {
   RotateCw,
   ArrowLeftRight,
   ArrowUpDown,
-  Type,
 } from "lucide-react";
 import {
   Tooltip,
@@ -61,18 +60,6 @@ const Transform = ({ onTransformChange }: TransformProps) => {
         </TooltipTrigger>
         <TooltipContent>
           <p>Shortcut: V</p>
-        </TooltipContent>
-      </Tooltip>
-      {/* Text tool placeholder */}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" onClick={() => alert("Text tool coming soon!")}>
-            <Type className="h-4 w-4 mr-2" />
-            Add Text
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Text tool (future feature)</p>
         </TooltipContent>
       </Tooltip>
     </div>

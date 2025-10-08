@@ -2,13 +2,15 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
 import ReactCrop, { type Crop } from "react-image-crop";
 import { cn } from "@/lib/utils";
 import SampleImages from "./SampleImages";
 import UrlUploader from "./UrlUploader";
 import { getFilterString } from "@/utils/filterUtils";
+import { TextLayer } from "./TextLayer";
+import type { Layer } from "@/hooks/useEditorState";
 
 interface WorkspaceProps {
   image: string | null;
@@ -43,8 +45,10 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  // New prop for active tool
   activeTool?: "lasso" | "brush" | "text" | null;
+  layers: Layer[];
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string) => void;
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -66,8 +70,12 @@ const Workspace = (props: WorkspaceProps) => {
     imgRef,
     isPreviewingOriginal,
     activeTool,
+    layers,
+    onLayerUpdate,
+    onLayerCommit,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const triggerFileInput = () => {
@@ -110,12 +118,10 @@ const Workspace = (props: WorkspaceProps) => {
         transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
       };
 
-  // Simple visual mask for lasso (just a semi‑transparent overlay)
   const lassoOverlay = activeTool === "lasso" && (
     <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />
   );
 
-  // Simple visual cue for brush (a semi‑transparent circle at the center)
   const brushOverlay =
     activeTool === "brush" && (
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -149,7 +155,7 @@ const Workspace = (props: WorkspaceProps) => {
             aspect={aspect}
           >
             <div style={wrapperTransformStyle}>
-              <div className="relative">
+              <div ref={imageContainerRef} className="relative">
                 <img
                   ref={imgRef}
                   src={image}
@@ -158,9 +164,7 @@ const Workspace = (props: WorkspaceProps) => {
                   style={imageFilterStyle}
                   onLoad={onImageLoad}
                 />
-                {/* Lasso visual cue */}
                 {lassoOverlay}
-                {/* Brush visual cue */}
                 {brushOverlay}
                 {!isPreviewingOriginal && effects.vignette > 0 && (
                   <div
@@ -170,6 +174,15 @@ const Workspace = (props: WorkspaceProps) => {
                     }}
                   />
                 )}
+                {layers.map((layer) => (
+                  <TextLayer
+                    key={layer.id}
+                    layer={layer}
+                    containerRef={imageContainerRef}
+                    onUpdate={onLayerUpdate}
+                    onCommit={onLayerCommit}
+                  />
+                ))}
               </div>
             </div>
           </ReactCrop>
