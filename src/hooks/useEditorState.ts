@@ -3,6 +3,7 @@ import { type Crop } from 'react-image-crop';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
+import ExifReader from 'exifreader';
 
 export interface EditState {
   adjustments: {
@@ -49,6 +50,7 @@ export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number, height: number } | null>(null);
   const [fileInfo, setFileInfo] = useState<{ name: string, size: number } | null>(null);
+  const [exifData, setExifData] = useState<any | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [aspect, setAspect] = useState<number | undefined>();
@@ -96,6 +98,11 @@ export const useEditorState = () => {
     
     setDimensions(null);
     setFileInfo({ name: file.name, size: file.size });
+    setExifData(null);
+    ExifReader.load(file).then(tags => {
+      setExifData(tags);
+    }).catch(() => setExifData(null));
+
     const reader = new FileReader();
     reader.onloadend = () => {
       dismissToast(toastId);
@@ -124,6 +131,10 @@ export const useEditorState = () => {
 
       const filename = url.split('/').pop()?.split('?')[0] || 'image.jpg';
       setFileInfo({ name: filename, size: blob.size });
+      setExifData(null);
+      ExifReader.load(blob).then(tags => {
+        setExifData(tags);
+      }).catch(() => setExifData(null));
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -272,6 +283,7 @@ export const useEditorState = () => {
     imgRef,
     dimensions,
     fileInfo,
+    exifData,
     currentState,
     history,
     currentHistoryIndex,

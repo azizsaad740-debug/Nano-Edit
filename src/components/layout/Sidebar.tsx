@@ -35,6 +35,7 @@ interface SidebarProps {
   dimensions: { width: number, height: number } | null;
   fileInfo: { name: string, size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
+  exifData: any;
 }
 
 const Sidebar = (props: SidebarProps) => {

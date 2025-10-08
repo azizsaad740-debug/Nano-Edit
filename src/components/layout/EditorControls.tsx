@@ -62,6 +62,7 @@ interface EditorControlsProps {
   dimensions: { width: number, height: number } | null;
   fileInfo: { name: string, size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
+  exifData: any;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -76,7 +77,8 @@ const EditorControls = (props: EditorControlsProps) => {
     history, currentHistoryIndex, onHistoryJump,
     dimensions,
     fileInfo,
-    imgRef
+    imgRef,
+    exifData
   } = props;
 
   if (!hasImage) {
@@ -201,7 +203,7 @@ const EditorControls = (props: EditorControlsProps) => {
       </TabsContent>
 
       <TabsContent value="info" className="mt-4">
-        <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} />
+        <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
       </TabsContent>
     </Tabs>
   );

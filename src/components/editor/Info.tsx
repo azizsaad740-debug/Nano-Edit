@@ -1,6 +1,7 @@
 import { formatBytes } from "@/lib/utils";
 import Histogram from "./Histogram";
 import React from "react";
+import ExifData from "./ExifData";
 
 interface InfoProps {
   dimensions: {
@@ -12,9 +13,10 @@ interface InfoProps {
     size: number;
   } | null;
   imgRef: React.RefObject<HTMLImageElement>;
+  exifData: any;
 }
 
-const Info = ({ dimensions, fileInfo, imgRef }: InfoProps) => {
+const Info = ({ dimensions, fileInfo, imgRef, exifData }: InfoProps) => {
   if (!dimensions || !fileInfo) {
     return <p className="text-sm text-muted-foreground">No image loaded.</p>;
   }
@@ -40,6 +42,7 @@ const Info = ({ dimensions, fileInfo, imgRef }: InfoProps) => {
         </div>
       </div>
       <Histogram imageElement={imgRef.current} />
+      <ExifData data={exifData} />
     </>
   );
 };

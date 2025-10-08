@@ -20,6 +20,7 @@ const Index = () => {
     imgRef,
     dimensions,
     fileInfo,
+    exifData,
     currentState,
     history,
     currentHistoryIndex,
@@ -113,6 +114,7 @@ const Index = () => {
     dimensions,
     fileInfo,
     imgRef,
+    exifData,
   };
 
   return (
