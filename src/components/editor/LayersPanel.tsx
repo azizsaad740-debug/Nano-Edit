@@ -23,7 +23,7 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
 
 interface Layer {
   id: string;
@@ -56,11 +56,17 @@ function LayerItem({
   onDelete,
   onEditTextLayer,
 }: LayerItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: layer.id });
+  const isBackground = layer.type === "image";
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: layer.id, disabled: isBackground });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
   };
 
@@ -74,7 +80,10 @@ function LayerItem({
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab touch-none p-1"
+          className={cn(
+            "cursor-grab touch-none p-1",
+            isBackground && "cursor-not-allowed opacity-50"
+          )}
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
@@ -111,13 +120,16 @@ function LayerItem({
           variant="ghost"
           size="icon"
           onClick={() => startRename(layer)}
+          disabled={isBackground}
         >
           <Edit2 className="h-4 w-4" />
         </Button>
         <Button
           variant="ghost"
           size="icon"
+  
           onClick={() => onDelete(layer.id)}
+          disabled={isBackground}
         >
           <Trash2 className="h-4 w-4 text-destructive" />
         </Button>
@@ -175,6 +187,8 @@ export const LayersPanel = ({
     }
   };
 
+  const reversedLayers = React.useMemo(() => [...layers].reverse(), [layers]);
+
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -190,10 +204,10 @@ export const LayersPanel = ({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={layers.map((l) => l.id)}
+            items={reversedLayers.map((l) => l.id)}
             strategy={verticalListSortingStrategy}
           >
-            {layers.map((layer) => (
+            {reversedLayers.map((layer) => (
               <LayerItem
                 key={layer.id}
                 layer={layer}

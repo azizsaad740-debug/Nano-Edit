@@ -354,11 +354,20 @@ export const useEditorState = () => {
   }, [currentLayers, currentState, recordHistory]);
 
   const deleteLayer = useCallback((id: string) => {
+    const layerToDelete = currentLayers.find(l => l.id === id);
+    if (layerToDelete && layerToDelete.type === 'image') {
+      showError("The background layer cannot be deleted.");
+      return;
+    }
     const updated = currentLayers.filter(l => l.id !== id);
     recordHistory("Delete Layer", currentState, updated);
   }, [currentLayers, currentState, recordHistory]);
 
   const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
+    if (currentLayers[oldIndex].type === 'image' || currentLayers[newIndex].type === 'image') {
+      showError("The background layer cannot be moved.");
+      return;
+    }
     const updated = arrayMove(currentLayers, oldIndex, newIndex);
     recordHistory("Reorder Layers", currentState, updated);
   }, [currentLayers, currentState, recordHistory]);
