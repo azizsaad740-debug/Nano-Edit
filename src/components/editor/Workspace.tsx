@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
 
 interface WorkspaceProps {
+  image: string | null;
+  onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -14,20 +16,8 @@ interface WorkspaceProps {
   selectedFilter: string;
 }
 
-const Workspace = ({ adjustments, selectedFilter }: WorkspaceProps) => {
-  const [image, setImage] = useState<string | null>(null);
+const Workspace = ({ image, onImageUpload, adjustments, selectedFilter }: WorkspaceProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
@@ -64,7 +54,7 @@ const Workspace = ({ adjustments, selectedFilter }: WorkspaceProps) => {
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleImageUpload}
+              onChange={onImageUpload}
               className="hidden"
               accept="image/png, image/jpeg, image/webp"
             />
