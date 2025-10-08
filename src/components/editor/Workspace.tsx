@@ -23,6 +23,11 @@ interface WorkspaceProps {
     blur: number;
     hueShift: number;
   };
+  grading: {
+    grayscale: number;
+    sepia: number;
+    invert: number;
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -39,7 +44,7 @@ interface WorkspaceProps {
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
-    image, onFileSelect, onSampleSelect, onUrlSelect, adjustments, effects, selectedFilter, transforms,
+    image, onFileSelect, onSampleSelect, onUrlSelect, adjustments, effects, grading, selectedFilter, transforms,
     crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -69,7 +74,17 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const imageStyle = isPreviewingOriginal ? {} : {
-    filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`,
+    filter: [
+      selectedFilter,
+      `brightness(${adjustments.brightness}%)`,
+      `contrast(${adjustments.contrast}%)`,
+      `saturate(${adjustments.saturation}%)`,
+      `blur(${effects.blur}px)`,
+      `hue-rotate(${effects.hueShift}deg)`,
+      `grayscale(${grading.grayscale}%)`,
+      `sepia(${grading.sepia}%)`,
+      `invert(${grading.invert}%)`,
+    ].join(' '),
     transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
   };
 

@@ -14,6 +14,11 @@ export interface EditState {
     blur: number;
     hueShift: number;
   };
+  grading: {
+    grayscale: number;
+    sepia: number;
+    invert: number;
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -31,6 +36,7 @@ export interface HistoryItem {
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0 },
+  grading: { grayscale: 0, sepia: 0, invert: 0 },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
   crop: undefined,
@@ -125,6 +131,17 @@ export const useEditorState = () => {
     const newEffects = { ...currentState.effects, [effect]: value };
     const name = `Adjust ${effect.charAt(0).toUpperCase() + effect.slice(1)}`;
     recordHistory(name, { ...currentState, effects: newEffects });
+  }, [currentState, recordHistory]);
+
+  const handleGradingChange = useCallback((gradingType: string, value: number) => {
+    const newGrading = { ...currentState.grading, [gradingType]: value };
+    updateCurrentState({ grading: newGrading });
+  }, [currentState.grading, updateCurrentState]);
+
+  const handleGradingCommit = useCallback((gradingType: string, value: number) => {
+    const newGrading = { ...currentState.grading, [gradingType]: value };
+    const name = `Adjust ${gradingType.charAt(0).toUpperCase() + gradingType.slice(1)}`;
+    recordHistory(name, { ...currentState, grading: newGrading });
   }, [currentState, recordHistory]);
 
   const handleFilterChange = useCallback((filterValue: string, filterName: string) => {
@@ -233,6 +250,8 @@ export const useEditorState = () => {
     handleAdjustmentCommit,
     handleEffectChange,
     handleEffectCommit,
+    handleGradingChange,
+    handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
     handleCropChange,

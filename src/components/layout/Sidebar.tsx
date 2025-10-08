@@ -14,6 +14,13 @@ interface SidebarProps {
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
+  grading: {
+    grayscale: number;
+    sepia: number;
+    invert: number;
+  };
+  onGradingChange: (gradingType: string, value: number) => void;
+  onGradingCommit: (gradingType: string, value: number) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;

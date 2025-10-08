@@ -1,24 +1,9 @@
 import { type Crop } from 'react-image-crop';
 import { showSuccess, showError } from "@/utils/toast";
+import { EditState } from '@/hooks/useEditorState';
 
-interface ImageOptions {
+interface ImageOptions extends EditState {
   image: HTMLImageElement;
-  crop: Crop | undefined;
-  adjustments: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-  };
-  effects: {
-    blur: number;
-    hueShift: number;
-  };
-  selectedFilter: string;
-  transforms: {
-    rotation: number;
-    scaleX: number;
-    scaleY: number;
-  };
 }
 
 const getEditedImageCanvas = ({
@@ -26,6 +11,7 @@ const getEditedImageCanvas = ({
   crop,
   adjustments,
   effects,
+  grading,
   selectedFilter,
   transforms,
 }: ImageOptions): HTMLCanvasElement | null => {
@@ -55,7 +41,17 @@ const getEditedImageCanvas = ({
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  ctx.filter = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`;
+  ctx.filter = [
+    selectedFilter,
+    `brightness(${adjustments.brightness}%)`,
+    `contrast(${adjustments.contrast}%)`,
+    `saturate(${adjustments.saturation}%)`,
+    `blur(${effects.blur}px)`,
+    `hue-rotate(${effects.hueShift}deg)`,
+    `grayscale(${grading.grayscale}%)`,
+    `sepia(${grading.sepia}%)`,
+    `invert(${grading.invert}%)`,
+  ].join(' ');
   
   ctx.translate(canvas.width / 2, canvas.height / 2);
   ctx.rotate(transforms.rotation * Math.PI / 180);

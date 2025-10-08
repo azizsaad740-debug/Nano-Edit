@@ -10,6 +10,7 @@ import Transform from "@/components/editor/Transform";
 import Effects from "@/components/editor/Effects";
 import Crop from "@/components/editor/Crop";
 import History from "@/components/editor/History";
+import ColorGrading from "@/components/editor/ColorGrading";
 
 interface EditorControlsProps {
   adjustments: {
@@ -25,6 +26,13 @@ interface EditorControlsProps {
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
+  grading: {
+    grayscale: number;
+    sepia: number;
+    invert: number;
+  };
+  onGradingChange: (gradingType: string, value: number) => void;
+  onGradingCommit: (gradingType: string, value: number) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -39,6 +47,7 @@ const EditorControls = (props: EditorControlsProps) => {
   const { 
     adjustments, onAdjustmentChange, onAdjustmentCommit,
     effects, onEffectChange, onEffectCommit,
+    grading, onGradingChange, onGradingCommit,
     onFilterChange, selectedFilter, 
     onTransformChange,
     onAspectChange, aspect,
@@ -60,6 +69,16 @@ const EditorControls = (props: EditorControlsProps) => {
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
             onAdjustmentCommit={onAdjustmentCommit}
+          />
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="color-grading">
+        <AccordionTrigger>Color Grading</AccordionTrigger>
+        <AccordionContent>
+          <ColorGrading 
+            grading={grading}
+            onGradingChange={onGradingChange}
+            onGradingCommit={onGradingCommit}
           />
         </AccordionContent>
       </AccordionItem>

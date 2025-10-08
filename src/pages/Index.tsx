@@ -30,6 +30,8 @@ const Index = () => {
     handleAdjustmentCommit,
     handleEffectChange,
     handleEffectCommit,
+    handleGradingChange,
+    handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
     handleCropChange,
@@ -70,7 +72,7 @@ const Index = () => {
     };
   }, [handleFileSelect]);
 
-  const { adjustments, effects, selectedFilter, transforms, crop } = currentState;
+  const { adjustments, effects, grading, selectedFilter, transforms, crop } = currentState;
 
   const editorProps = {
     adjustments,
@@ -79,6 +81,9 @@ const Index = () => {
     effects,
     onEffectChange: handleEffectChange,
     onEffectCommit: handleEffectCommit,
+    grading,
+    onGradingChange: handleGradingChange,
+    onGradingCommit: handleGradingCommit,
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
@@ -136,6 +141,7 @@ const Index = () => {
                 onUrlSelect={handleUrlImageLoad}
                 adjustments={adjustments} 
                 effects={effects}
+                grading={grading}
                 selectedFilter={selectedFilter} 
                 transforms={transforms}
                 crop={crop}
