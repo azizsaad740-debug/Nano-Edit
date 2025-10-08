@@ -8,6 +8,7 @@ import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 import { type Crop } from 'react-image-crop';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { showSuccess } from "@/utils/toast";
 
 interface EditState {
   adjustments: {
@@ -67,6 +68,7 @@ const Index = () => {
         setImage(reader.result as string);
         setHistory([initialEditState]);
         setCurrentHistoryIndex(0);
+        showSuccess("Image uploaded successfully.");
       };
       reader.readAsDataURL(file);
     }
@@ -117,6 +119,7 @@ const Index = () => {
 
   const handleReset = useCallback(() => {
     recordHistory(initialEditState);
+    showSuccess("All edits have been reset.");
   }, [recordHistory]);
 
   const handleUndo = useCallback(() => {
@@ -183,6 +186,7 @@ const Index = () => {
     link.download = 'edited-image.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
+    showSuccess("Image downloaded successfully.");
   }, [image, currentState]);
 
   useHotkeys('ctrl+z, cmd+z', handleUndo, { preventDefault: true });
