@@ -9,12 +9,17 @@ const Index = () => {
     contrast: 100,
     saturation: 100,
   });
+  const [selectedFilter, setSelectedFilter] = useState("");
 
   const handleAdjustmentChange = (adjustment: string, value: number) => {
     setAdjustments(prev => ({
       ...prev,
       [adjustment]: value,
     }));
+  };
+
+  const handleFilterChange = (filterValue: string) => {
+    setSelectedFilter(filterValue);
   };
 
   return (
@@ -24,9 +29,11 @@ const Index = () => {
         <Sidebar 
           adjustments={adjustments}
           onAdjustmentChange={handleAdjustmentChange}
+          onFilterChange={handleFilterChange}
+          selectedFilter={selectedFilter}
         />
         <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <Workspace adjustments={adjustments} />
+          <Workspace adjustments={adjustments} selectedFilter={selectedFilter} />
         </div>
       </main>
     </div>

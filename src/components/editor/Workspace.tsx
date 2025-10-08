@@ -11,9 +11,10 @@ interface WorkspaceProps {
     contrast: number;
     saturation: number;
   };
+  selectedFilter: string;
 }
 
-const Workspace = ({ adjustments }: WorkspaceProps) => {
+const Workspace = ({ adjustments, selectedFilter }: WorkspaceProps) => {
   const [image, setImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,7 +34,7 @@ const Workspace = ({ adjustments }: WorkspaceProps) => {
   };
 
   const imageStyle = {
-    filter: `brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`,
+    filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`,
   };
 
   return (

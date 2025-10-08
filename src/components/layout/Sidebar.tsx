@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
+import Filters from "@/components/editor/Filters";
 
 interface SidebarProps {
   adjustments: {
@@ -8,9 +9,11 @@ interface SidebarProps {
     saturation: number;
   };
   onAdjustmentChange: (adjustment: string, value: number) => void;
+  onFilterChange: (filterValue: string) => void;
+  selectedFilter: string;
 }
 
-const Sidebar = ({ adjustments, onAdjustmentChange }: SidebarProps) => {
+const Sidebar = ({ adjustments, onAdjustmentChange, onFilterChange, selectedFilter }: SidebarProps) => {
   return (
     <aside className="w-80 border-r bg-muted/40 p-4 hidden md:flex flex-col gap-4">
       <Card>
@@ -21,6 +24,17 @@ const Sidebar = ({ adjustments, onAdjustmentChange }: SidebarProps) => {
           <LightingAdjustments 
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
+          />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Filters</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Filters 
+            onFilterChange={onFilterChange}
+            selectedFilter={selectedFilter}
           />
         </CardContent>
       </Card>
