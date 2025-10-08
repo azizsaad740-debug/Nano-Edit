@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
-import ReactCrop, { type Crop } from 'react-image-crop';
+import ReactCrop, { type Crop } from "react-image-crop";
 import { cn } from "@/lib/utils";
 import SampleImages from "./SampleImages";
 import UrlUploader from "./UrlUploader";
@@ -43,12 +43,29 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
+  // New prop for active tool
+  activeTool?: "lasso" | "brush" | "text" | null;
 }
 
 const Workspace = (props: WorkspaceProps) => {
-  const { 
-    image, onFileSelect, onSampleSelect, onUrlSelect, onImageLoad, adjustments, effects, grading, selectedFilter, transforms,
-    crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
+  const {
+    image,
+    onFileSelect,
+    onSampleSelect,
+    onUrlSelect,
+    onImageLoad,
+    adjustments,
+    effects,
+    grading,
+    selectedFilter,
+    transforms,
+    crop,
+    onCropChange,
+    onCropComplete,
+    aspect,
+    imgRef,
+    isPreviewingOriginal,
+    activeTool,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -76,16 +93,30 @@ const Workspace = (props: WorkspaceProps) => {
     onFileSelect(e.dataTransfer.files?.[0]);
   };
 
-  const imageFilterStyle = isPreviewingOriginal ? {} : {
-    filter: getFilterString({ adjustments, effects, grading, selectedFilter }),
-  };
+  const imageFilterStyle = isPreviewingOriginal
+    ? {}
+    : {
+        filter: getFilterString({
+          adjustments,
+          effects,
+          grading,
+          selectedFilter,
+        }),
+      };
 
-  const wrapperTransformStyle = isPreviewingOriginal ? {} : {
-    transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
-  };
+  const wrapperTransformStyle = isPreviewingOriginal
+    ? {}
+    : {
+        transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
+      };
+
+  // Simple visual mask for lasso (just a semi‑transparent overlay)
+  const lassoOverlay = activeTool === "lasso" && (
+    <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />
+  );
 
   return (
-    <div 
+    <div
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20"
@@ -105,8 +136,8 @@ const Workspace = (props: WorkspaceProps) => {
         <div className="relative max-w-full max-h-full p-4">
           <ReactCrop
             crop={crop}
-            onChange={c => onCropChange(c)}
-            onComplete={c => onCropComplete(c)}
+            onChange={(c) => onCropChange(c)}
+            onComplete={(c) => onCropComplete(c)}
             aspect={aspect}
           >
             <div style={wrapperTransformStyle}>
@@ -119,11 +150,13 @@ const Workspace = (props: WorkspaceProps) => {
                   style={imageFilterStyle}
                   onLoad={onImageLoad}
                 />
+                {/* Lasso visual cue */}
+                {lassoOverlay}
                 {!isPreviewingOriginal && effects.vignette > 0 && (
                   <div
                     className="absolute inset-0 pointer-events-none rounded-lg"
                     style={{
-                      boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`
+                      boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
                     }}
                   />
                 )}
@@ -140,11 +173,9 @@ const Workspace = (props: WorkspaceProps) => {
               </div>
               <h2 className="text-2xl font-semibold">Upload an Image</h2>
               <p className="text-muted-foreground">
-                Drag & drop, paste from clipboard, or click the button to upload an image.
+                Drag &amp; drop, paste from clipboard, or click the button to upload an image.
               </p>
-              <Button onClick={triggerFileInput}>
-                Select Image
-              </Button>
+              <Button onClick={triggerFileInput}>Select Image</Button>
               <input
                 type="file"
                 ref={fileInputRef}

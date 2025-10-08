@@ -2,7 +2,13 @@ import { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
@@ -15,6 +21,9 @@ import {
 } from "@/components/ui/resizable";
 import { ExportOptions } from "@/components/editor/ExportOptions";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
+import { SettingsDialog } from "@/components/layout/SettingsDialog";
+import { ToolsBar } from "@/components/editor/ToolsBar";
+import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 
 const Index = () => {
   const {
@@ -54,11 +63,26 @@ const Index = () => {
     isExporting,
     setIsExporting,
     applyPreset,
+    // layer utilities
+    layers,
+    addTextLayer,
+    toggleLayerVisibility,
+    renameLayer,
+    deleteLayer,
+    editTextLayerContent,
+    // tool state
+    activeTool,
+    setActiveTool,
+    // generative
+    applyGenerativeResult,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
   const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
+  const [openGenerative, setOpenGenerative] = useState(false);
 
+  // Paste handling (unchanged)
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
       const items = event.clipboardData?.items;
@@ -75,7 +99,7 @@ const Index = () => {
         }
       }
 
-      const pastedText = event.clipboardData?.getData('text/plain');
+      const pastedText = event.clipboardData?.getData("text/plain");
       if (pastedText) {
         try {
           new URL(pastedText);
@@ -122,11 +146,18 @@ const Index = () => {
     onApplyPreset: applyPreset,
     onSavePreset: () => setIsSavingPreset(true),
     onDeletePreset: deletePreset,
+    // layers
+    layers,
+    addTextLayer,
+    toggleLayerVisibility,
+    renameLayer,
+    deleteLayer,
+    editTextLayerContent,
   };
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
-      <Header 
+      <Header
         onReset={handleReset}
         onDownloadClick={() => setIsExporting(true)}
         onCopy={handleCopy}
@@ -136,6 +167,8 @@ const Index = () => {
         onRedo={handleRedo}
         canUndo={canUndo}
         canRedo={canRedo}
+        openSettings={openSettings}
+        setOpenSettings={setOpenSettings}
       >
         <div className="md:hidden">
           <Sheet>
@@ -156,6 +189,16 @@ const Index = () => {
           </Sheet>
         </div>
       </Header>
+
+      {/* Tools bar (visible on desktop, hidden on mobile) */}
+      <div className="hidden md:block p-2 bg-muted/20">
+        <ToolsBar
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          openGenerativeDialog={() => setOpenGenerative(true)}
+        />
+      </div>
+
       <main className="flex-1">
         <ResizablePanelGroup direction="horizontal" className="h-full">
           <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="hidden md:block">
@@ -164,16 +207,16 @@ const Index = () => {
           <ResizableHandle withHandle className="hidden md:flex" />
           <ResizablePanel defaultSize={75}>
             <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
-              <Workspace 
+              <Workspace
                 image={image}
                 onFileSelect={handleFileSelect}
                 onSampleSelect={handleUrlImageLoad}
                 onUrlSelect={handleUrlImageLoad}
                 onImageLoad={handleImageLoad}
-                adjustments={adjustments} 
+                adjustments={adjustments}
                 effects={effects}
                 grading={grading}
-                selectedFilter={selectedFilter} 
+                selectedFilter={selectedFilter}
                 transforms={transforms}
                 crop={crop}
                 onCropChange={handleCropChange}
@@ -181,11 +224,13 @@ const Index = () => {
                 aspect={aspect}
                 imgRef={imgRef}
                 isPreviewingOriginal={isPreviewingOriginal}
+                activeTool={activeTool}
               />
             </div>
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
+
       <ExportOptions
         open={isExporting}
         onOpenChange={setIsExporting}
@@ -196,6 +241,13 @@ const Index = () => {
         open={isSavingPreset}
         onOpenChange={setIsSavingPreset}
         onSave={(name) => savePreset(name, currentState)}
+      />
+      <SettingsDialog open={openSettings} onOpenChange={setOpenSettings} />
+      <GenerativeDialog
+        open={openGenerative}
+        onOpenChange={setOpenGenerative}
+        onApply={applyGenerativeResult}
+        apiKey={""}
       />
     </div>
   );

@@ -16,17 +16,26 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { SlidersHorizontal, Crop as CropIcon, Wand2, History as HistoryIcon, Info as InfoIcon, Image as ImageIcon } from "lucide-react";
+import {
+  SlidersHorizontal,
+  Crop as CropIcon,
+  Wand2,
+  History as HistoryIcon,
+  Info as InfoIcon,
+  Image as ImageIcon,
+  Layers as LayersIcon,
+} from "lucide-react";
 
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
-import Effects from "@/components/editor/Effects";
 import Crop from "@/components/editor/Crop";
 import History from "@/components/editor/History";
 import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
 import Presets from "@/components/editor/Presets";
+import { LayersPanel } from "@/components/editor/LayersPanel";
+import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
 
@@ -61,31 +70,58 @@ interface EditorControlsProps {
   history: { name: string }[];
   currentHistoryIndex: number;
   onHistoryJump: (index: number) => void;
-  dimensions: { width: number, height: number } | null;
-  fileInfo: { name: string, size: number } | null;
+  dimensions: { width: number; height: number } | null;
+  fileInfo: { name: string; size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
   exifData: any;
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
   onSavePreset: () => void;
   onDeletePreset: (name: string) => void;
+  // Layer props
+  layers: any[];
+  addTextLayer: () => void;
+  toggleLayerVisibility: (id: string) => void;
+  renameLayer: (id: string, newName: string) => void;
+  deleteLayer: (id: string) => void;
+  editTextLayerContent: (id: string, newContent: string) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
-  const { 
+  const {
     hasImage,
-    adjustments, onAdjustmentChange, onAdjustmentCommit,
-    effects, onEffectChange, onEffectCommit,
-    grading, onGradingChange, onGradingCommit,
-    onFilterChange, selectedFilter, 
+    adjustments,
+    onAdjustmentChange,
+    onAdjustmentCommit,
+    effects,
+    onEffectChange,
+    onEffectCommit,
+    grading,
+    onGradingChange,
+    onGradingCommit,
+    onFilterChange,
+    selectedFilter,
     onTransformChange,
-    onAspectChange, aspect,
-    history, currentHistoryIndex, onHistoryJump,
+    onAspectChange,
+    aspect,
+    history,
+    currentHistoryIndex,
+    onHistoryJump,
     dimensions,
     fileInfo,
     imgRef,
     exifData,
-    presets, onApplyPreset, onSavePreset, onDeletePreset,
+    presets,
+    onApplyPreset,
+    onSavePreset,
+    onDeletePreset,
+    // layers
+    layers,
+    addTextLayer,
+    toggleLayerVisibility,
+    renameLayer,
+    deleteLayer,
+    editTextLayerContent,
   } = props;
 
   if (!hasImage) {
@@ -101,46 +137,88 @@ const EditorControls = (props: EditorControlsProps) => {
   return (
     <Tabs defaultValue="adjust" className="w-full">
       <TooltipProvider>
-        <TabsList className="grid w-full grid-cols-5 h-12">
+        <TabsList className="grid w-full grid-cols-6 h-12">
+          {/* Adjust */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="adjust" className="h-10"><SlidersHorizontal className="h-5 w-5" /></TabsTrigger>
+              <TabsTrigger value="adjust" className="h-10">
+                <SlidersHorizontal className="h-5 w-5" />
+              </TabsTrigger>
             </TooltipTrigger>
-            <TooltipContent><p>Adjust</p></TooltipContent>
+            <TooltipContent>
+              <p>Adjust</p>
+            </TooltipContent>
           </Tooltip>
+
+          {/* Transform */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="transform" className="h-10"><CropIcon className="h-5 w-5" /></TabsTrigger>
+              <TabsTrigger value="transform" className="h-10">
+                <CropIcon className="h-5 w-5" />
+              </TabsTrigger>
             </TooltipTrigger>
-            <TooltipContent><p>Transform</p></TooltipContent>
+            <TooltipContent>
+              <p>Transform</p>
+            </TooltipContent>
           </Tooltip>
+
+          {/* Effects */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="effects" className="h-10"><Wand2 className="h-5 w-5" /></TabsTrigger>
+              <TabsTrigger value="effects" className="h-10">
+                <Wand2 className="h-5 w-5" />
+              </TabsTrigger>
             </TooltipTrigger>
-            <TooltipContent><p>Effects</p></TooltipContent>
+            <TooltipContent>
+              <p>Effects</p>
+            </TooltipContent>
           </Tooltip>
+
+          {/* History */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="history" className="h-10"><HistoryIcon className="h-5 w-5" /></TabsTrigger>
+              <TabsTrigger value="history" className="h-10">
+                <HistoryIcon className="h-5 w-5" />
+              </TabsTrigger>
             </TooltipTrigger>
-            <TooltipContent><p>History</p></TooltipContent>
+            <TooltipContent>
+              <p>History</p>
+            </TooltipContent>
           </Tooltip>
+
+          {/* Info */}
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="info" className="h-10"><InfoIcon className="h-5 w-5" /></TabsTrigger>
+              <TabsTrigger value="info" className="h-10">
+                <InfoIcon className="h-5 w-5" />
+              </TabsTrigger>
             </TooltipTrigger>
-            <TooltipContent><p>Info</p></TooltipContent>
+            <TooltipContent>
+              <p>Info</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Layers */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="layers" className="h-10">
+                <LayersIcon className="h-5 w-5" />
+              </TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Layers</p>
+            </TooltipContent>
           </Tooltip>
         </TabsList>
       </TooltipProvider>
 
+      {/* Adjust tab */}
       <TabsContent value="adjust" className="mt-4">
-        <Accordion type="multiple" className="w-full" defaultValue={['lighting-color', 'color-grading']}>
+        <Accordion type="multiple" className="w-full" defaultValue={["lighting-color", "color-grading"]}>
           <AccordionItem value="lighting-color">
             <AccordionTrigger>Lighting & Color</AccordionTrigger>
             <AccordionContent>
-              <LightingAdjustments 
+              <LightingAdjustments
                 adjustments={adjustments}
                 onAdjustmentChange={onAdjustmentChange}
                 onAdjustmentCommit={onAdjustmentCommit}
@@ -150,7 +228,7 @@ const EditorControls = (props: EditorControlsProps) => {
           <AccordionItem value="color-grading">
             <AccordionTrigger>Color Grading</AccordionTrigger>
             <AccordionContent>
-              <ColorGrading 
+              <ColorGrading
                 grading={grading}
                 onGradingChange={onGradingChange}
                 onGradingCommit={onGradingCommit}
@@ -160,8 +238,9 @@ const EditorControls = (props: EditorControlsProps) => {
         </Accordion>
       </TabsContent>
 
+      {/* Transform tab */}
       <TabsContent value="transform" className="mt-4">
-        <Accordion type="multiple" className="w-full" defaultValue={['crop', 'transform']}>
+        <Accordion type="multiple" className="w-full" defaultValue={["crop", "transform"]}>
           <AccordionItem value="crop">
             <AccordionTrigger>Crop</AccordionTrigger>
             <AccordionContent>
@@ -177,8 +256,9 @@ const EditorControls = (props: EditorControlsProps) => {
         </Accordion>
       </TabsContent>
 
+      {/* Effects tab */}
       <TabsContent value="effects" className="mt-4">
-        <Accordion type="multiple" className="w-full" defaultValue={['presets', 'filters', 'effects']}>
+        <Accordion type="multiple" className="w-full" defaultValue={["presets", "filters", "effects"]}>
           <AccordionItem value="presets">
             <AccordionTrigger>Presets</AccordionTrigger>
             <AccordionContent>
@@ -193,18 +273,15 @@ const EditorControls = (props: EditorControlsProps) => {
           <AccordionItem value="filters">
             <AccordionTrigger>Filters</AccordionTrigger>
             <AccordionContent>
-              <Filters 
-                onFilterChange={onFilterChange}
-                selectedFilter={selectedFilter}
-              />
+              <Filters onFilterChange={onFilterChange} selectedFilter={selectedFilter} />
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="effects">
             <AccordionTrigger>Effects</AccordionTrigger>
             <AccordionContent>
-              <Effects 
-                effects={effects} 
-                onEffectChange={onEffectChange} 
+              <Effects
+                effects={effects}
+                onEffectChange={onEffectChange}
                 onEffectCommit={onEffectCommit}
               />
             </AccordionContent>
@@ -212,16 +289,26 @@ const EditorControls = (props: EditorControlsProps) => {
         </Accordion>
       </TabsContent>
 
+      {/* History tab */}
       <TabsContent value="history" className="mt-4">
-        <History 
-          history={history}
-          currentIndex={currentHistoryIndex}
-          onJump={onHistoryJump}
-        />
+        <History history={history} currentIndex={currentHistoryIndex} onJump={onHistoryJump} />
       </TabsContent>
 
+      {/* Info tab */}
       <TabsContent value="info" className="mt-4">
         <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
+      </TabsContent>
+
+      {/* Layers tab */}
+      <TabsContent value="layers" className="mt-4">
+        <LayersPanel
+          layers={layers}
+          onToggleVisibility={toggleLayerVisibility}
+          onRename={renameLayer}
+          onDelete={deleteLayer}
+          onAddTextLayer={addTextLayer}
+          onEditText={editTextLayerContent}
+        />
       </TabsContent>
     </Tabs>
   );

@@ -1,6 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
+import type { Layer } from "@/hooks/useEditorState";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -33,14 +34,21 @@ interface SidebarProps {
   history: { name: string }[];
   currentHistoryIndex: number;
   onHistoryJump: (index: number) => void;
-  dimensions: { width: number, height: number } | null;
-  fileInfo: { name: string, size: number } | null;
+  dimensions: { width: number; height: number } | null;
+  fileInfo: { name: string; size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
   exifData: any;
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
   onSavePreset: () => void;
   onDeletePreset: (name: string) => void;
+  // Layer props
+  layers: Layer[];
+  addTextLayer: () => void;
+  toggleLayerVisibility: (id: string) => void;
+  renameLayer: (id: string, newName: string) => void;
+  deleteLayer: (id: string) => void;
+  editTextLayerContent: (id: string, newContent: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

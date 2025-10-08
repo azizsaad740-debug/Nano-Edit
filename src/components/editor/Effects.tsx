@@ -21,6 +21,7 @@ const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Existing effect sliders */}
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="blur">Blur</Label>
@@ -42,47 +43,12 @@ const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
           onValueCommit={([value]) => onEffectCommit("blur", value)}
         />
       </div>
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="hueShift">Hue Shift</Label>
-          <div className="flex items-center gap-2">
-            <span className="w-10 text-right text-sm text-muted-foreground">{effects.hueShift}°</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("hueShift")}>
-              <RotateCcw className="h-3 w-3" />
-              <span className="sr-only">Reset Hue Shift</span>
-            </Button>
-          </div>
-        </div>
-        <Slider
-          id="hueShift"
-          min={0}
-          max={360}
-          step={1}
-          value={[effects.hueShift]}
-          onValueChange={([value]) => onEffectChange("hueShift", value)}
-          onValueCommit={([value]) => onEffectCommit("hueShift", value)}
-        />
-      </div>
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="vignette">Vignette</Label>
-          <div className="flex items-center gap-2">
-            <span className="w-10 text-right text-sm text-muted-foreground">{effects.vignette}%</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("vignette")}>
-              <RotateCcw className="h-3 w-3" />
-              <span className="sr-only">Reset Vignette</span>
-            </Button>
-          </div>
-        </div>
-        <Slider
-          id="vignette"
-          min={0}
-          max={100}
-          step={1}
-          value={[effects.vignette]}
-          onValueChange={([value]) => onEffectChange("vignette", value)}
-          onValueCommit={([value]) => onEffectCommit("vignette", value)}
-        />
+      {/* Brush placeholder */}
+      <div className="pt-4 border-t">
+        <Label className="block mb-2">Brush (coming soon)</Label>
+        <p className="text-sm text-muted-foreground">
+          The brush tool will allow freehand painting. Stay tuned!
+        </p>
       </div>
     </div>
   );
