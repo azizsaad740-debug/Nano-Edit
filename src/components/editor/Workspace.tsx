@@ -7,11 +7,13 @@ import { UploadCloud } from "lucide-react";
 import ReactCrop, { type Crop } from 'react-image-crop';
 import { cn } from "@/lib/utils";
 import SampleImages from "./SampleImages";
+import UrlUploader from "./UrlUploader";
 
 interface WorkspaceProps {
   image: string | null;
   onFileSelect: (file: File | undefined) => void;
   onSampleSelect: (url: string) => void;
+  onUrlSelect: (url: string) => void;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -37,7 +39,7 @@ interface WorkspaceProps {
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
-    image, onFileSelect, onSampleSelect, adjustments, effects, selectedFilter, transforms,
+    image, onFileSelect, onSampleSelect, onUrlSelect, adjustments, effects, selectedFilter, transforms,
     crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -128,6 +130,7 @@ const Workspace = (props: WorkspaceProps) => {
               />
             </CardContent>
           </Card>
+          <UrlUploader onUrlSelect={onUrlSelect} />
           <SampleImages onSelect={onSampleSelect} />
         </div>
       )}

@@ -22,7 +22,7 @@ const Index = () => {
     canUndo,
     canRedo,
     handleFileSelect,
-    handleSampleImageSelect,
+    handleUrlImageLoad,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
@@ -123,7 +123,8 @@ const Index = () => {
               <Workspace 
                 image={image}
                 onFileSelect={handleFileSelect}
-                onSampleSelect={handleSampleImageSelect}
+                onSampleSelect={handleUrlImageLoad}
+                onUrlSelect={handleUrlImageLoad}
                 adjustments={adjustments} 
                 effects={effects}
                 selectedFilter={selectedFilter} 

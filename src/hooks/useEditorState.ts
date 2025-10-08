@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { type Crop } from 'react-image-crop';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
 
 export interface EditState {
@@ -71,16 +71,29 @@ export const useEditorState = () => {
     }
   }, []);
 
-  const handleSampleImageSelect = useCallback(async (url: string) => {
+  const handleUrlImageLoad = useCallback(async (url: string) => {
+    const toastId = showLoading("Loading image from URL...");
     try {
       const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Network response was not ok, status: ${response.status}`);
+      }
       const blob = await response.blob();
-      const filename = url.substring(url.lastIndexOf('/') + 1) || 'sample.jpg';
+
+      if (!blob.type.startsWith('image/')) {
+        dismissToast(toastId);
+        showError("The provided URL does not point to a valid image.");
+        return;
+      }
+
+      const filename = url.substring(url.lastIndexOf('/') + 1).split('?')[0] || 'image.jpg';
       const file = new File([blob], filename, { type: blob.type });
+      dismissToast(toastId);
       handleFileSelect(file);
     } catch (error) {
-      console.error("Failed to fetch sample image:", error);
-      showError("Could not load the sample image.");
+      dismissToast(toastId);
+      console.error("Failed to fetch image from URL:", error);
+      showError("Could not load image. Check the URL and CORS policy.");
     }
   }, [handleFileSelect]);
 
@@ -190,7 +203,7 @@ export const useEditorState = () => {
     canUndo,
     canRedo,
     handleFileSelect,
-    handleSampleImageSelect,
+    handleUrlImageLoad,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
