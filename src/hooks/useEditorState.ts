@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { type Crop } from 'react-image-crop';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
 
 export interface EditState {
@@ -55,15 +55,19 @@ export const useEditorState = () => {
   }, [currentState, history, currentHistoryIndex]);
 
   const handleFileSelect = useCallback((file: File | undefined) => {
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result as string);
-        setHistory([initialEditState]);
-        setCurrentHistoryIndex(0);
-        showSuccess("Image uploaded successfully.");
-      };
-      reader.readAsDataURL(file);
+    if (file) {
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImage(reader.result as string);
+          setHistory([initialEditState]);
+          setCurrentHistoryIndex(0);
+          showSuccess("Image uploaded successfully.");
+        };
+        reader.readAsDataURL(file);
+      } else {
+        showError("Invalid file type. Please upload an image.");
+      }
     }
   }, []);
 

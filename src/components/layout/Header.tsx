@@ -39,8 +39,8 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, childr
               onTouchStart={() => onTogglePreview(true)}
               onTouchEnd={() => onTogglePreview(false)}
             >
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
+              <Eye className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Preview</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -50,8 +50,8 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, childr
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={onReset} disabled={!hasImage}>
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
+              <RotateCcw className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Reset</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -61,8 +61,8 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, childr
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={onCopy} disabled={!hasImage}>
-              <Copy className="h-4 w-4 mr-2" />
-              Copy
+              <Copy className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Copy</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -72,8 +72,8 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, childr
         <Tooltip>
           <TooltipTrigger asChild>
             <Button size="sm" onClick={onDownload} disabled={!hasImage}>
-              <Download className="h-4 w-4 mr-2" />
-              Download
+              <Download className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Download</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>
