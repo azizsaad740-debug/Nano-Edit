@@ -167,6 +167,8 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     color: layer.color,
     fontSize: `${layer.fontSize}px`,
     fontFamily: layer.fontFamily || 'Roboto',
+    fontWeight: layer.fontWeight || 'normal',
+    fontStyle: layer.fontStyle || 'normal',
     textShadow: "0 0 5px rgba(0,0,0,0.7)",
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "nowrap",

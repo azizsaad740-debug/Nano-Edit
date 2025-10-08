@@ -11,6 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Bold, Italic } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 
 interface TextPropertiesProps {
@@ -36,6 +38,20 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
     onCommit(layer.id);
   };
 
+  const handleStyleChange = (styles: string[]) => {
+    const isBold = styles.includes("bold");
+    const isItalic = styles.includes("italic");
+    handleUpdate({
+      fontWeight: isBold ? "bold" : "normal",
+      fontStyle: isItalic ? "italic" : "normal",
+    });
+    handleCommit();
+  };
+
+  const currentStyles = [];
+  if (layer.fontWeight === 'bold') currentStyles.push('bold');
+  if (layer.fontStyle === 'italic') currentStyles.push('italic');
+
   return (
     <div className="space-y-4">
       <div className="grid gap-2">
@@ -47,26 +63,39 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
           onBlur={handleCommit}
         />
       </div>
-      <div className="grid gap-2">
-        <Label htmlFor="font-family">Font</Label>
-        <Select 
-          value={layer.fontFamily} 
-          onValueChange={(value) => {
-            handleUpdate({ fontFamily: value });
-            handleCommit();
-          }}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select a font" />
-          </SelectTrigger>
-          <SelectContent>
-            {fonts.map(font => (
-              <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                {font}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="grid gap-2">
+          <Label htmlFor="font-family">Font</Label>
+          <Select 
+            value={layer.fontFamily} 
+            onValueChange={(value) => {
+              handleUpdate({ fontFamily: value });
+              handleCommit();
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a font" />
+            </SelectTrigger>
+            <SelectContent>
+              {fonts.map(font => (
+                <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                  {font}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-2">
+          <Label>Style</Label>
+          <ToggleGroup type="multiple" value={currentStyles} onValueChange={handleStyleChange}>
+            <ToggleGroupItem value="bold" aria-label="Toggle bold">
+              <Bold className="h-4 w-4" />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="italic" aria-label="Toggle italic">
+              <Italic className="h-4 w-4" />
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
