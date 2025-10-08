@@ -4,6 +4,20 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { SlidersHorizontal, Crop as CropIcon, Wand2, History as HistoryIcon, Info as InfoIcon } from "lucide-react";
+
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
@@ -58,75 +72,120 @@ const EditorControls = (props: EditorControlsProps) => {
   } = props;
 
   return (
-    <Accordion type="multiple" className="w-full" defaultValue={['lighting-color']}>
-      <AccordionItem value="info">
-        <AccordionTrigger>Information</AccordionTrigger>
-        <AccordionContent>
-          <Info dimensions={dimensions} />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="crop">
-        <AccordionTrigger>Crop</AccordionTrigger>
-        <AccordionContent>
-          <Crop onAspectChange={onAspectChange} currentAspect={aspect} />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="lighting-color">
-        <AccordionTrigger>Lighting & Color</AccordionTrigger>
-        <AccordionContent>
-          <LightingAdjustments 
-            adjustments={adjustments}
-            onAdjustmentChange={onAdjustmentChange}
-            onAdjustmentCommit={onAdjustmentCommit}
-          />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="color-grading">
-        <AccordionTrigger>Color Grading</AccordionTrigger>
-        <AccordionContent>
-          <ColorGrading 
-            grading={grading}
-            onGradingChange={onGradingChange}
-            onGradingCommit={onGradingCommit}
-          />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="effects">
-        <AccordionTrigger>Effects</AccordionTrigger>
-        <AccordionContent>
-          <Effects 
-            effects={effects} 
-            onEffectChange={onEffectChange} 
-            onEffectCommit={onEffectCommit}
-          />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="filters">
-        <AccordionTrigger>Filters</AccordionTrigger>
-        <AccordionContent>
-          <Filters 
-            onFilterChange={onFilterChange}
-            selectedFilter={selectedFilter}
-          />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="transform">
-        <AccordionTrigger>Transform</AccordionTrigger>
-        <AccordionContent>
-          <Transform onTransformChange={onTransformChange} />
-        </AccordionContent>
-      </AccordionItem>
-      <AccordionItem value="history">
-        <AccordionTrigger>History</AccordionTrigger>
-        <AccordionContent>
-          <History 
-            history={history}
-            currentIndex={currentHistoryIndex}
-            onJump={onHistoryJump}
-          />
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+    <Tabs defaultValue="adjust" className="w-full">
+      <TooltipProvider>
+        <TabsList className="grid w-full grid-cols-5 h-12">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="adjust" className="h-10"><SlidersHorizontal className="h-5 w-5" /></TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent><p>Adjust</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="transform" className="h-10"><CropIcon className="h-5 w-5" /></TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent><p>Transform</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="effects" className="h-10"><Wand2 className="h-5 w-5" /></TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent><p>Effects</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="history" className="h-10"><HistoryIcon className="h-5 w-5" /></TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent><p>History</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <TabsTrigger value="info" className="h-10"><InfoIcon className="h-5 w-5" /></TabsTrigger>
+            </TooltipTrigger>
+            <TooltipContent><p>Info</p></TooltipContent>
+          </Tooltip>
+        </TabsList>
+      </TooltipProvider>
+
+      <TabsContent value="adjust" className="mt-4">
+        <Accordion type="multiple" className="w-full" defaultValue={['lighting-color', 'color-grading']}>
+          <AccordionItem value="lighting-color">
+            <AccordionTrigger>Lighting & Color</AccordionTrigger>
+            <AccordionContent>
+              <LightingAdjustments 
+                adjustments={adjustments}
+                onAdjustmentChange={onAdjustmentChange}
+                onAdjustmentCommit={onAdjustmentCommit}
+              />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="color-grading">
+            <AccordionTrigger>Color Grading</AccordionTrigger>
+            <AccordionContent>
+              <ColorGrading 
+                grading={grading}
+                onGradingChange={onGradingChange}
+                onGradingCommit={onGradingCommit}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </TabsContent>
+
+      <TabsContent value="transform" className="mt-4">
+        <Accordion type="multiple" className="w-full" defaultValue={['crop', 'transform']}>
+          <AccordionItem value="crop">
+            <AccordionTrigger>Crop</AccordionTrigger>
+            <AccordionContent>
+              <Crop onAspectChange={onAspectChange} currentAspect={aspect} />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="transform">
+            <AccordionTrigger>Transform</AccordionTrigger>
+            <AccordionContent>
+              <Transform onTransformChange={onTransformChange} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </TabsContent>
+
+      <TabsContent value="effects" className="mt-4">
+        <Accordion type="multiple" className="w-full" defaultValue={['filters', 'effects']}>
+          <AccordionItem value="filters">
+            <AccordionTrigger>Filters</AccordionTrigger>
+            <AccordionContent>
+              <Filters 
+                onFilterChange={onFilterChange}
+                selectedFilter={selectedFilter}
+              />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="effects">
+            <AccordionTrigger>Effects</AccordionTrigger>
+            <AccordionContent>
+              <Effects 
+                effects={effects} 
+                onEffectChange={onEffectChange} 
+                onEffectCommit={onEffectCommit}
+              />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </TabsContent>
+
+      <TabsContent value="history" className="mt-4">
+        <History 
+          history={history}
+          currentIndex={currentHistoryIndex}
+          onJump={onHistoryJump}
+        />
+      </TabsContent>
+
+      <TabsContent value="info" className="mt-4">
+        <Info dimensions={dimensions} />
+      </TabsContent>
+    </Tabs>
   );
 };
 
