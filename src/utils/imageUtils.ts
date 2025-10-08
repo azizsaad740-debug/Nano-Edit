@@ -1,20 +1,18 @@
 import { type Crop } from 'react-image-crop';
 import { showSuccess, showError } from "@/utils/toast";
 import { EditState } from '@/hooks/useEditorState';
+import { getFilterString } from './filterUtils';
 
 interface ImageOptions extends EditState {
   image: HTMLImageElement;
 }
 
-const getEditedImageCanvas = ({
-  image,
-  crop,
-  adjustments,
-  effects,
-  grading,
-  selectedFilter,
-  transforms,
-}: ImageOptions): HTMLCanvasElement | null => {
+const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null => {
+  const {
+    image,
+    crop,
+    transforms,
+  } = options;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return null;
@@ -41,17 +39,7 @@ const getEditedImageCanvas = ({
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  ctx.filter = [
-    selectedFilter,
-    `brightness(${adjustments.brightness}%)`,
-    `contrast(${adjustments.contrast}%)`,
-    `saturate(${adjustments.saturation}%)`,
-    `blur(${effects.blur}px)`,
-    `hue-rotate(${effects.hueShift}deg)`,
-    `grayscale(${grading.grayscale}%)`,
-    `sepia(${grading.sepia}%)`,
-    `invert(${grading.invert}%)`,
-  ].join(' ');
+  ctx.filter = getFilterString(options);
   
   ctx.save();
 
@@ -73,9 +61,9 @@ const getEditedImageCanvas = ({
 
   ctx.restore();
 
-  if (effects.vignette > 0) {
+  if (options.effects.vignette > 0) {
     const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
-    const innerRadius = outerRadius * (1 - (effects.vignette / 100) * 1.2);
+    const innerRadius = outerRadius * (1 - (options.effects.vignette / 100) * 1.2);
 
     const gradient = ctx.createRadialGradient(
         canvas.width / 2, canvas.height / 2, innerRadius,
@@ -83,7 +71,7 @@ const getEditedImageCanvas = ({
     );
     
     gradient.addColorStop(0, 'rgba(0,0,0,0)');
-    gradient.addColorStop(1, `rgba(0,0,0,${effects.vignette / 100 * 0.7})`);
+    gradient.addColorStop(1, `rgba(0,0,0,${options.effects.vignette / 100 * 0.7})`);
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);

@@ -8,6 +8,7 @@ import ReactCrop, { type Crop } from 'react-image-crop';
 import { cn } from "@/lib/utils";
 import SampleImages from "./SampleImages";
 import UrlUploader from "./UrlUploader";
+import { getFilterString } from "@/utils/filterUtils";
 
 interface WorkspaceProps {
   image: string | null;
@@ -76,17 +77,7 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const imageFilterStyle = isPreviewingOriginal ? {} : {
-    filter: [
-      selectedFilter,
-      `brightness(${adjustments.brightness}%)`,
-      `contrast(${adjustments.contrast}%)`,
-      `saturate(${adjustments.saturation}%)`,
-      `blur(${effects.blur}px)`,
-      `hue-rotate(${effects.hueShift}deg)`,
-      `grayscale(${grading.grayscale}%)`,
-      `sepia(${grading.sepia}%)`,
-      `invert(${grading.invert}%)`,
-    ].join(' '),
+    filter: getFilterString({ adjustments, effects, grading, selectedFilter }),
   };
 
   const wrapperTransformStyle = isPreviewingOriginal ? {} : {
