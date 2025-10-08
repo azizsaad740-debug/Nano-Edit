@@ -86,6 +86,9 @@ interface EditorControlsProps {
   deleteLayer: (id: string) => void;
   onEditTextLayer: (id: string) => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
+  // Selection props
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -124,6 +127,9 @@ const EditorControls = (props: EditorControlsProps) => {
     deleteLayer,
     onEditTextLayer,
     reorderLayers,
+    // selection
+    selectedLayerId,
+    onSelectLayer,
   } = props;
 
   if (!hasImage) {
@@ -305,6 +311,8 @@ const EditorControls = (props: EditorControlsProps) => {
           onAddTextLayer={addTextLayer}
           onEditTextLayer={onEditTextLayer}
           onReorder={reorderLayers}
+          selectedLayerId={selectedLayerId}
+          onSelectLayer={onSelectLayer}
         />
       </TabsContent>
     </Tabs>

@@ -91,6 +91,7 @@ export const useEditorState = () => {
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
@@ -148,6 +149,7 @@ export const useEditorState = () => {
     setImage(dataUrl);
     setHistory([initialHistoryItem]);
     setCurrentHistoryIndex(0);
+    setSelectedLayerId(null);
     showSuccess(successMsg);
   }, []);
 
@@ -294,6 +296,7 @@ export const useEditorState = () => {
 
   const handleReset = useCallback(() => {
     recordHistory("Reset All", initialEditState, initialLayers);
+    setSelectedLayerId(null);
   }, [recordHistory]);
 
   const jumpToHistory = useCallback((index: number) => {
@@ -364,9 +367,12 @@ export const useEditorState = () => {
       showError("The background layer cannot be deleted.");
       return;
     }
+    if (id === selectedLayerId) {
+      setSelectedLayerId(null);
+    }
     const updated = currentLayers.filter(l => l.id !== id);
     recordHistory("Delete Layer", currentState, updated);
-  }, [currentLayers, currentState, recordHistory]);
+  }, [currentLayers, currentState, recordHistory, selectedLayerId]);
 
   const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
     if (currentLayers[oldIndex].type === 'image' || currentLayers[newIndex].type === 'image') {
@@ -464,5 +470,8 @@ export const useEditorState = () => {
     setActiveTool,
     // Generative
     applyGenerativeResult,
+    // Selection
+    selectedLayerId,
+    setSelectedLayer: setSelectedLayerId,
   };
 };

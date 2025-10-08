@@ -50,6 +50,9 @@ interface SidebarProps {
   deleteLayer: (id: string) => void;
   onEditTextLayer: (id: string) => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
+  // Selection props
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

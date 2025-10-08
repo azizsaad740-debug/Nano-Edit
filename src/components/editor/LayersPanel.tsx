@@ -30,6 +30,8 @@ interface LayersPanelProps {
   onAddTextLayer: () => void;
   onEditTextLayer: (id: string) => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string) => void;
 }
 
 export const LayersPanel = ({
@@ -40,6 +42,8 @@ export const LayersPanel = ({
   onAddTextLayer,
   onEditTextLayer,
   onReorder,
+  selectedLayerId,
+  onSelectLayer,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -114,6 +118,8 @@ export const LayersPanel = ({
                 onToggleVisibility={onToggleVisibility}
                 onDelete={onDelete}
                 onEditTextLayer={onEditTextLayer}
+                isSelected={editingId ? false : selectedLayerId === layer.id}
+                onSelect={onSelectLayer}
               />
             ))}
           </SortableContext>

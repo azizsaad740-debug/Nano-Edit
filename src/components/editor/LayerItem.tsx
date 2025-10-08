@@ -4,7 +4,7 @@ import * as React from "react";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, GripVertical } from "lucide-react";
+import { Trash2, Edit2, GripVertical, Type, Image as ImageIcon } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,8 @@ interface LayerItemProps {
   onToggleVisibility: (id: string) => void;
   onDelete: (id: string) => void;
   onEditTextLayer: (id: string) => void;
+  isSelected: boolean;
+  onSelect: (id: string) => void;
 }
 
 const LayerItem = ({
@@ -34,6 +36,8 @@ const LayerItem = ({
   onToggleVisibility,
   onDelete,
   onEditTextLayer,
+  isSelected,
+  onSelect,
 }: LayerItemProps) => {
   const isBackground = layer.type === "image";
   const {
@@ -56,10 +60,12 @@ const LayerItem = ({
     <div
       ref={setNodeRef}
       style={style}
+      onClick={() => onSelect(layer.id)}
       className={cn(
-        "flex items-center justify-between p-2 border rounded-md transition-shadow",
+        "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer",
         isBackground ? "bg-muted/50" : "bg-background",
-        isDragging && "shadow-lg z-10 relative"
+        isDragging && "shadow-lg z-10 relative",
+        isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring"
       )}
     >
       <div className="flex items-center gap-2">
@@ -77,6 +83,7 @@ const LayerItem = ({
           checked={layer.visible}
           onCheckedChange={() => onToggleVisibility(layer.id)}
         />
+        {layer.type === 'image' ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <Type className="h-4 w-4 text-muted-foreground" />}
         {isEditing ? (
           <Input
             className="w-32 h-8"
@@ -91,7 +98,7 @@ const LayerItem = ({
           />
         ) : (
           <span
-            className="font-medium cursor-pointer"
+            className="font-medium"
             onDoubleClick={() => {
               if (!isBackground) startRename(layer);
             }}

@@ -81,6 +81,9 @@ const Index = () => {
     setActiveTool,
     // generative
     applyGenerativeResult,
+    // selection
+    selectedLayerId,
+    setSelectedLayer,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -186,6 +189,9 @@ const Index = () => {
     deleteLayer,
     onEditTextLayer: handleOpenEditDialog,
     reorderLayers,
+    // selection
+    selectedLayerId,
+    onSelectLayer: setSelectedLayer,
   };
 
   return (
