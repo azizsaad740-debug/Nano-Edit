@@ -118,6 +118,9 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
+  const backgroundLayer = layers.find(l => l.type === 'image');
+  const isBackgroundVisible = backgroundLayer?.visible ?? true;
+
   const imageFilterStyle = isPreviewingOriginal
     ? {}
     : {
@@ -129,11 +132,23 @@ const Workspace = (props: WorkspaceProps) => {
         }),
       };
 
+  const imageStyle: React.CSSProperties = {
+    ...imageFilterStyle,
+    visibility: isBackgroundVisible ? 'visible' : 'hidden',
+  };
+
   const wrapperTransformStyle = isPreviewingOriginal
     ? {}
     : {
         transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
       };
+  
+  const containerStyle: React.CSSProperties = {};
+  if (!isBackgroundVisible) {
+    containerStyle.backgroundImage = 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+    containerStyle.backgroundSize = '20px 20px';
+    containerStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
+  }
 
   const lassoOverlay = activeTool === "lasso" && (
     <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />
@@ -179,13 +194,13 @@ const Workspace = (props: WorkspaceProps) => {
             aspect={aspect}
           >
             <div style={wrapperTransformStyle}>
-              <div ref={imageContainerRef} className="relative">
+              <div ref={imageContainerRef} className="relative" style={containerStyle}>
                 <img
                   ref={imgRef}
                   src={image}
                   alt="Uploaded preview"
                   className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                  style={imageFilterStyle}
+                  style={imageStyle}
                   onLoad={onImageLoad}
                 />
                 {lassoOverlay}
