@@ -13,6 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Layer } from "@/hooks/useEditorState";
 
 interface EditTextDialogProps {
@@ -21,6 +28,10 @@ interface EditTextDialogProps {
   layer: Layer | null;
   onSave: (id: string, updates: Partial<Layer>) => void;
 }
+
+const fonts = [
+  "Roboto", "Open Sans", "Lato", "Montserrat", "Playfair Display", "Lobster", "Pacifico"
+];
 
 export const EditTextDialog = ({
   open,
@@ -31,18 +42,20 @@ export const EditTextDialog = ({
   const [content, setContent] = React.useState("");
   const [fontSize, setFontSize] = React.useState(48);
   const [color, setColor] = React.useState("#FFFFFF");
+  const [fontFamily, setFontFamily] = React.useState("Roboto");
 
   React.useEffect(() => {
     if (layer) {
       setContent(layer.content || "");
       setFontSize(layer.fontSize || 48);
       setColor(layer.color || "#FFFFFF");
+      setFontFamily(layer.fontFamily || "Roboto");
     }
   }, [layer]);
 
   const handleSave = () => {
     if (layer) {
-      onSave(layer.id, { content, fontSize, color });
+      onSave(layer.id, { content, fontSize, color, fontFamily });
       onOpenChange(false);
     }
   };
@@ -69,6 +82,23 @@ export const EditTextDialog = ({
               onChange={(e) => setContent(e.target.value)}
               className="col-span-3"
             />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="font-family" className="text-right">
+              Font
+            </Label>
+            <Select value={fontFamily} onValueChange={setFontFamily}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select a font" />
+              </SelectTrigger>
+              <SelectContent>
+                {fonts.map(font => (
+                  <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                    {font}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="font-size" className="text-right">

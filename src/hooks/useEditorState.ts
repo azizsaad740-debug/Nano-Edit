@@ -44,6 +44,7 @@ export interface Layer {
   y?: number; // percentage from top
   fontSize?: number; // pixels
   color?: string;
+  fontFamily?: string;
 }
 
 export interface HistoryItem {
@@ -324,6 +325,7 @@ export const useEditorState = () => {
       y: 50,
       fontSize: 48,
       color: "#FFFFFF",
+      fontFamily: "Roboto",
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);

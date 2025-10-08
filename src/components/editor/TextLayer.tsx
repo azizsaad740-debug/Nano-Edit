@@ -74,6 +74,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
         transform: "translate(-50%, -50%)",
         color: layer.color,
         fontSize: `${layer.fontSize}px`,
+        fontFamily: layer.fontFamily || 'Roboto',
         textShadow: "0 0 5px rgba(0,0,0,0.7)",
         userSelect: "none",
         whiteSpace: "nowrap",
