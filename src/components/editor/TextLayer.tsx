@@ -14,8 +14,11 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
   const textRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const dragStartPos = React.useRef({ x: 0, y: 0 });
+  const [isEditing, setIsEditing] = React.useState(false);
+  const editableRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (isEditing) return;
     e.stopPropagation();
     setIsDragging(true);
     dragStartPos.current = { x: e.clientX, y: e.clientY };
@@ -59,28 +62,68 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  const handleDoubleClick = () => {
+    setIsEditing(true);
+  };
+
+  const handleBlur = () => {
+    if (editableRef.current) {
+      onUpdate(layer.id, { content: editableRef.current.innerText });
+    }
+    setIsEditing(false);
+    onCommit(layer.id);
+  };
+
+  React.useEffect(() => {
+    if (isEditing && editableRef.current) {
+      editableRef.current.focus();
+      // Select all text
+      const range = document.createRange();
+      range.selectNodeContents(editableRef.current);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(range);
+    }
+  }, [isEditing]);
+
   if (!layer.visible || layer.type !== "text") {
     return null;
   }
+
+  const style = {
+    color: layer.color,
+    fontSize: `${layer.fontSize}px`,
+    fontFamily: layer.fontFamily || 'Roboto',
+    textShadow: "0 0 5px rgba(0,0,0,0.7)",
+    userSelect: isEditing ? "text" : "none",
+    whiteSpace: "nowrap",
+  } as React.CSSProperties;
 
   return (
     <div
       ref={textRef}
       onMouseDown={handleMouseDown}
-      className="absolute cursor-move p-2"
+      onDoubleClick={handleDoubleClick}
+      className="absolute p-2"
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
         transform: "translate(-50%, -50%)",
-        color: layer.color,
-        fontSize: `${layer.fontSize}px`,
-        fontFamily: layer.fontFamily || 'Roboto',
-        textShadow: "0 0 5px rgba(0,0,0,0.7)",
-        userSelect: "none",
-        whiteSpace: "nowrap",
+        cursor: isEditing ? "text" : "move",
       }}
     >
-      {layer.content}
+      {isEditing ? (
+        <div
+          ref={editableRef}
+          contentEditable
+          suppressContentEditableWarning
+          onBlur={handleBlur}
+          style={style}
+          dangerouslySetInnerHTML={{ __html: layer.content || "" }}
+        />
+      ) : (
+        <div style={style}>{layer.content}</div>
+      )}
     </div>
   );
 };

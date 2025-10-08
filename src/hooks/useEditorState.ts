@@ -333,6 +333,7 @@ export const useEditorState = () => {
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);
+    setSelectedLayerId(newLayer.id);
   }, [currentLayers, currentState, recordHistory]);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
