@@ -75,10 +75,6 @@ const Index = () => {
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
-    onUndo: handleUndo,
-    onRedo: handleRedo,
-    canUndo,
-    canRedo,
     onAspectChange: setAspect,
     aspect,
   };
@@ -91,6 +87,10 @@ const Index = () => {
         onCopy={handleCopy}
         hasImage={!!image}
         onTogglePreview={setIsPreviewingOriginal}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       >
         <div className="md:hidden">
           <Sheet>

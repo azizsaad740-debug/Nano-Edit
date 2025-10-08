@@ -17,10 +17,6 @@ interface SidebarProps {
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
 }

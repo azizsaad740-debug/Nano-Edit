@@ -7,7 +7,6 @@ import {
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
-import History from "@/components/editor/History";
 import Effects from "@/components/editor/Effects";
 import Crop from "@/components/editor/Crop";
 
@@ -28,10 +27,6 @@ interface EditorControlsProps {
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
 }
@@ -42,18 +37,11 @@ const EditorControls = (props: EditorControlsProps) => {
     effects, onEffectChange, onEffectCommit,
     onFilterChange, selectedFilter, 
     onTransformChange,
-    onUndo, onRedo, canUndo, canRedo,
     onAspectChange, aspect
   } = props;
 
   return (
     <Accordion type="multiple" className="w-full" defaultValue={['lighting-color']}>
-      <AccordionItem value="history">
-        <AccordionTrigger>History</AccordionTrigger>
-        <AccordionContent>
-          <History onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
-        </AccordionContent>
-      </AccordionItem>
       <AccordionItem value="crop">
         <AccordionTrigger>Crop</AccordionTrigger>
         <AccordionContent>

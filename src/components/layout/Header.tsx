@@ -1,4 +1,4 @@
-import { Image as ImageIcon, RotateCcw, Download, Eye, Copy } from "lucide-react";
+import { Image as ImageIcon, RotateCcw, Download, Eye, Copy, Undo2, Redo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -14,10 +14,14 @@ interface HeaderProps {
   onCopy: () => void;
   hasImage: boolean;
   onTogglePreview: (isPreviewing: boolean) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   children?: React.ReactNode;
 }
 
-const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, children }: HeaderProps) => {
+const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, onUndo, onRedo, canUndo, canRedo, children }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
       <div className="flex items-center gap-2">
@@ -27,6 +31,28 @@ const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, childr
       <div className="flex items-center gap-2">
         {children}
         <ThemeToggle />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo}>
+              <Undo2 className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Undo</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Undo (Cmd+Z)</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo}>
+              <Redo2 className="h-4 w-4 md:mr-2" />
+              <span className="hidden md:inline">Redo</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Redo (Cmd+Shift+Z)</p>
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
