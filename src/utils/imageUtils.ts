@@ -1,7 +1,7 @@
 import { type Crop } from 'react-image-crop';
-import { showSuccess } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 
-interface DownloadImageOptions {
+interface ImageOptions {
   image: HTMLImageElement;
   crop: Crop | undefined;
   adjustments: {
@@ -21,17 +21,17 @@ interface DownloadImageOptions {
   };
 }
 
-export const downloadImage = ({
+const getEditedImageCanvas = ({
   image,
   crop,
   adjustments,
   effects,
   selectedFilter,
   transforms,
-}: DownloadImageOptions) => {
+}: ImageOptions): HTMLCanvasElement | null => {
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) return null;
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -73,9 +73,37 @@ export const downloadImage = ({
     pixelCrop.height
   );
 
+  return canvas;
+};
+
+export const downloadImage = (options: ImageOptions) => {
+  const canvas = getEditedImageCanvas(options);
+  if (!canvas) return;
+
   const link = document.createElement('a');
   link.download = 'edited-image.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
   showSuccess("Image downloaded successfully.");
+};
+
+export const copyImageToClipboard = (options: ImageOptions) => {
+  const canvas = getEditedImageCanvas(options);
+  if (!canvas) return;
+
+  canvas.toBlob(async (blob) => {
+    if (blob) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        showSuccess("Image copied to clipboard.");
+      } catch (err) {
+        console.error("Failed to copy image: ", err);
+        showError("Failed to copy image to clipboard.");
+      }
+    } else {
+      showError("Failed to create image blob.");
+    }
+  }, 'image/png');
 };

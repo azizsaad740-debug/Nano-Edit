@@ -1,4 +1,4 @@
-import { Image as ImageIcon, RotateCcw, Download, Eye } from "lucide-react";
+import { Image as ImageIcon, RotateCcw, Download, Eye, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import { ThemeToggle } from "./ThemeToggle";
@@ -6,12 +6,13 @@ import { ThemeToggle } from "./ThemeToggle";
 interface HeaderProps {
   onReset: () => void;
   onDownload: () => void;
+  onCopy: () => void;
   hasImage: boolean;
   onTogglePreview: (isPreviewing: boolean) => void;
   children?: React.ReactNode;
 }
 
-const Header = ({ onReset, onDownload, hasImage, onTogglePreview, children }: HeaderProps) => {
+const Header = ({ onReset, onDownload, onCopy, hasImage, onTogglePreview, children }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
       <div className="flex items-center gap-2">
@@ -37,6 +38,10 @@ const Header = ({ onReset, onDownload, hasImage, onTogglePreview, children }: He
         <Button variant="outline" size="sm" onClick={onReset} disabled={!hasImage}>
           <RotateCcw className="h-4 w-4 mr-2" />
           Reset
+        </Button>
+        <Button variant="outline" size="sm" onClick={onCopy} disabled={!hasImage}>
+          <Copy className="h-4 w-4 mr-2" />
+          Copy
         </Button>
         <Button size="sm" onClick={onDownload} disabled={!hasImage}>
           <Download className="h-4 w-4 mr-2" />

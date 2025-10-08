@@ -26,6 +26,7 @@ const Index = () => {
     handleUndo,
     handleRedo,
     handleDownload,
+    handleCopy,
     setAspect,
     isPreviewingOriginal,
     setIsPreviewingOriginal,
@@ -54,6 +55,7 @@ const Index = () => {
       <Header 
         onReset={handleReset}
         onDownload={handleDownload}
+        onCopy={handleCopy}
         hasImage={!!image}
         onTogglePreview={setIsPreviewingOriginal}
       >

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { type Crop } from 'react-image-crop';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { showSuccess } from "@/utils/toast";
-import { downloadImage } from "@/utils/imageUtils";
+import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
 
 export interface EditState {
   adjustments: {
@@ -136,6 +136,14 @@ export const useEditorState = () => {
     });
   }, [currentState]);
 
+  const handleCopy = useCallback(() => {
+    if (!imgRef.current) return;
+    copyImageToClipboard({
+      image: imgRef.current,
+      ...currentState,
+    });
+  }, [currentState]);
+
   useHotkeys('ctrl+z, cmd+z', handleUndo, { preventDefault: true });
   useHotkeys('ctrl+y, cmd+shift+z', handleRedo, { preventDefault: true });
 
@@ -160,6 +168,7 @@ export const useEditorState = () => {
     handleUndo,
     handleRedo,
     handleDownload,
+    handleCopy,
     setAspect,
     isPreviewingOriginal,
     setIsPreviewingOriginal,
