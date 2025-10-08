@@ -48,6 +48,7 @@ const initialHistoryItem: HistoryItem = { name: "Initial State", state: initialE
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number, height: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string, size: number } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [aspect, setAspect] = useState<number | undefined>();
@@ -94,6 +95,7 @@ export const useEditorState = () => {
     }
     
     setDimensions(null);
+    setFileInfo({ name: file.name, size: file.size });
     const reader = new FileReader();
     reader.onloadend = () => {
       dismissToast(toastId);
@@ -119,6 +121,9 @@ export const useEditorState = () => {
         showError("The provided URL does not point to a valid image.");
         return;
       }
+
+      const filename = url.split('/').pop()?.split('?')[0] || 'image.jpg';
+      setFileInfo({ name: filename, size: blob.size });
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -266,6 +271,7 @@ export const useEditorState = () => {
     image,
     imgRef,
     dimensions,
+    fileInfo,
     currentState,
     history,
     currentHistoryIndex,

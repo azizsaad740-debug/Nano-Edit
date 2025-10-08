@@ -59,6 +59,7 @@ interface EditorControlsProps {
   currentHistoryIndex: number;
   onHistoryJump: (index: number) => void;
   dimensions: { width: number, height: number } | null;
+  fileInfo: { name: string, size: number } | null;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -71,7 +72,8 @@ const EditorControls = (props: EditorControlsProps) => {
     onTransformChange,
     onAspectChange, aspect,
     history, currentHistoryIndex, onHistoryJump,
-    dimensions
+    dimensions,
+    fileInfo
   } = props;
 
   if (!hasImage) {
@@ -196,7 +198,7 @@ const EditorControls = (props: EditorControlsProps) => {
       </TabsContent>
 
       <TabsContent value="info" className="mt-4">
-        <Info dimensions={dimensions} />
+        <Info dimensions={dimensions} fileInfo={fileInfo} />
       </TabsContent>
     </Tabs>
   );

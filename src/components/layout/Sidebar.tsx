@@ -32,6 +32,7 @@ interface SidebarProps {
   currentHistoryIndex: number;
   onHistoryJump: (index: number) => void;
   dimensions: { width: number, height: number } | null;
+  fileInfo: { name: string, size: number } | null;
 }
 
 const Sidebar = (props: SidebarProps) => {
