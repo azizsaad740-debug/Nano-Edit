@@ -14,9 +14,14 @@ interface WorkspaceProps {
     saturation: number;
   };
   selectedFilter: string;
+  transforms: {
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
+  };
 }
 
-const Workspace = ({ image, onImageUpload, adjustments, selectedFilter }: WorkspaceProps) => {
+const Workspace = ({ image, onImageUpload, adjustments, selectedFilter, transforms }: WorkspaceProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const triggerFileInput = () => {
@@ -25,6 +30,7 @@ const Workspace = ({ image, onImageUpload, adjustments, selectedFilter }: Worksp
 
   const imageStyle = {
     filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`,
+    transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
   };
 
   return (
@@ -34,7 +40,7 @@ const Workspace = ({ image, onImageUpload, adjustments, selectedFilter }: Worksp
           <img
             src={image}
             alt="Uploaded preview"
-            className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+            className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg transition-transform duration-300"
             style={imageStyle}
           />
         </div>

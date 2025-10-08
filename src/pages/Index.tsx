@@ -11,6 +11,11 @@ const Index = () => {
     saturation: 100,
   });
   const [selectedFilter, setSelectedFilter] = useState("");
+  const [transforms, setTransforms] = useState({
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+  });
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -18,6 +23,7 @@ const Index = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
+        handleReset();
       };
       reader.readAsDataURL(file);
     }
@@ -34,9 +40,27 @@ const Index = () => {
     setSelectedFilter(filterValue);
   };
 
+  const handleTransformChange = (transformType: string) => {
+    setTransforms(prev => {
+      switch (transformType) {
+        case "rotate-left":
+          return { ...prev, rotation: (prev.rotation - 90 + 360) % 360 };
+        case "rotate-right":
+          return { ...prev, rotation: (prev.rotation + 90) % 360 };
+        case "flip-horizontal":
+          return { ...prev, scaleX: prev.scaleX * -1 };
+        case "flip-vertical":
+          return { ...prev, scaleY: prev.scaleY * -1 };
+        default:
+          return prev;
+      }
+    });
+  };
+
   const handleReset = () => {
     setAdjustments({ brightness: 100, contrast: 100, saturation: 100 });
     setSelectedFilter("");
+    setTransforms({ rotation: 0, scaleX: 1, scaleY: 1 });
   };
 
   const handleDownload = () => {
@@ -49,13 +73,20 @@ const Index = () => {
     const img = new Image();
     img.src = image;
     img.onload = () => {
-      canvas.width = img.width;
-      canvas.height = img.height;
+      const isSwapped = transforms.rotation === 90 || transforms.rotation === 270;
+      const w = isSwapped ? img.height : img.width;
+      const h = isSwapped ? img.width : img.height;
+      canvas.width = w;
+      canvas.height = h;
       
       const filterString = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`;
       ctx.filter = filterString;
       
-      ctx.drawImage(img, 0, 0);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(transforms.rotation * Math.PI / 180);
+      ctx.scale(transforms.scaleX, transforms.scaleY);
+      
+      ctx.drawImage(img, -img.width / 2, -img.height / 2);
 
       const link = document.createElement('a');
       link.download = 'edited-image.png';
@@ -77,6 +108,7 @@ const Index = () => {
           onAdjustmentChange={handleAdjustmentChange}
           onFilterChange={handleFilterChange}
           selectedFilter={selectedFilter}
+          onTransformChange={handleTransformChange}
         />
         <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <Workspace 
@@ -84,6 +116,7 @@ const Index = () => {
             onImageUpload={handleImageUpload}
             adjustments={adjustments} 
             selectedFilter={selectedFilter} 
+            transforms={transforms}
           />
         </div>
       </main>
