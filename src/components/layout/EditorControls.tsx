@@ -4,6 +4,7 @@ import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
 import History from "@/components/editor/History";
 import Effects from "@/components/editor/Effects";
+import Crop from "@/components/editor/Crop";
 
 interface EditorControlsProps {
   adjustments: {
@@ -24,21 +25,20 @@ interface EditorControlsProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onAspectChange: (aspect: number | undefined) => void;
+  aspect: number | undefined;
 }
 
-const EditorControls = ({ 
-  adjustments, 
-  onAdjustmentChange, 
-  effects,
-  onEffectChange,
-  onFilterChange, 
-  selectedFilter, 
-  onTransformChange,
-  onUndo,
-  onRedo,
-  canUndo,
-  canRedo
-}: EditorControlsProps) => {
+const EditorControls = (props: EditorControlsProps) => {
+  const { 
+    adjustments, onAdjustmentChange, 
+    effects, onEffectChange,
+    onFilterChange, selectedFilter, 
+    onTransformChange,
+    onUndo, onRedo, canUndo, canRedo,
+    onAspectChange, aspect
+  } = props;
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -47,6 +47,14 @@ const EditorControls = ({
         </CardHeader>
         <CardContent>
           <History onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Crop</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Crop onAspectChange={onAspectChange} currentAspect={aspect} />
         </CardContent>
       </Card>
       <Card>

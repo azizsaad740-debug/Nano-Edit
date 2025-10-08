@@ -19,6 +19,8 @@ interface SidebarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  onAspectChange: (aspect: number | undefined) => void;
+  aspect: number | undefined;
 }
 
 const Sidebar = (props: SidebarProps) => {

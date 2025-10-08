@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
+import { type Crop } from 'react-image-crop';
 
 interface EditState {
   adjustments: {
@@ -23,6 +24,7 @@ interface EditState {
     scaleX: number;
     scaleY: number;
   };
+  crop: Crop | undefined;
 }
 
 const initialEditState: EditState = {
@@ -30,20 +32,30 @@ const initialEditState: EditState = {
   effects: { blur: 0, hueShift: 0 },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
+  crop: undefined,
 };
 
 const Index = () => {
   const [image, setImage] = useState<string | null>(null);
   const [history, setHistory] = useState<EditState[]>([initialEditState]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const [aspect, setAspect] = useState<number | undefined>();
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex];
-  const { adjustments, effects, selectedFilter, transforms } = currentState;
+  const { adjustments, effects, selectedFilter, transforms, crop } = currentState;
 
   const recordHistory = (newState: EditState) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     setHistory([...newHistory, newState]);
     setCurrentHistoryIndex(newHistory.length);
+  };
+
+  const updateCurrentState = (updates: Partial<EditState>) => {
+    const newState = { ...currentState, ...updates };
+    const newHistory = [...history];
+    newHistory[currentHistoryIndex] = newState;
+    setHistory(newHistory);
   };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -94,6 +106,14 @@ const Index = () => {
     recordHistory({ ...currentState, transforms: newTransforms });
   };
 
+  const handleCropChange = (newCrop: Crop) => {
+    updateCurrentState({ crop: newCrop });
+  };
+
+  const handleCropComplete = (newCrop: Crop) => {
+    recordHistory({ ...currentState, crop: newCrop });
+  };
+
   const handleReset = () => {
     recordHistory(initialEditState);
   };
@@ -111,35 +131,57 @@ const Index = () => {
   };
 
   const handleDownload = () => {
-    if (!image) return;
+    const img = imgRef.current;
+    if (!image || !img) return;
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const img = new Image();
-    img.src = image;
-    img.onload = () => {
-      const isSwapped = transforms.rotation === 90 || transforms.rotation === 270;
-      const w = isSwapped ? img.height : img.width;
-      const h = isSwapped ? img.width : img.height;
-      canvas.width = w;
-      canvas.height = h;
-      
-      const filterString = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`;
-      ctx.filter = filterString;
-      
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate(transforms.rotation * Math.PI / 180);
-      ctx.scale(transforms.scaleX, transforms.scaleY);
-      
-      ctx.drawImage(img, -img.width / 2, -img.height / 2);
+    const scaleX = img.naturalWidth / img.width;
+    const scaleY = img.naturalHeight / img.height;
 
-      const link = document.createElement('a');
-      link.download = 'edited-image.png';
-      link.href = canvas.toDataURL('image/png');
-      link.click();
-    };
+    const pixelCrop = (crop && crop.width > 0)
+      ? {
+          x: crop.x * scaleX,
+          y: crop.y * scaleY,
+          width: crop.width * scaleX,
+          height: crop.height * scaleY,
+        }
+      : {
+          x: 0,
+          y: 0,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+        };
+
+    const { rotation } = transforms;
+    const isSwapped = rotation === 90 || rotation === 270;
+    canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
+    canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
+
+    ctx.filter = `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`;
+    
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(transforms.rotation * Math.PI / 180);
+    ctx.scale(transforms.scaleX, transforms.scaleY);
+    
+    ctx.drawImage(
+      img,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      -pixelCrop.width / 2,
+      -pixelCrop.height / 2,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    const link = document.createElement('a');
+    link.download = 'edited-image.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
   const canUndo = currentHistoryIndex > 0;
@@ -157,6 +199,8 @@ const Index = () => {
     onRedo: handleRedo,
     canUndo,
     canRedo,
+    onAspectChange: setAspect,
+    aspect,
   };
 
   return (
@@ -195,6 +239,11 @@ const Index = () => {
             effects={effects}
             selectedFilter={selectedFilter} 
             transforms={transforms}
+            crop={crop}
+            onCropChange={handleCropChange}
+            onCropComplete={handleCropComplete}
+            aspect={aspect}
+            imgRef={imgRef}
           />
         </div>
       </main>

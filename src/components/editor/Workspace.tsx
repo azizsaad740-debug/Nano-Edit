@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
+import ReactCrop, { type Crop } from 'react-image-crop';
 
 interface WorkspaceProps {
   image: string | null;
@@ -23,9 +24,18 @@ interface WorkspaceProps {
     scaleX: number;
     scaleY: number;
   };
+  crop: Crop | undefined;
+  onCropChange: (crop: Crop) => void;
+  onCropComplete: (crop: Crop) => void;
+  aspect: number | undefined;
+  imgRef: React.RefObject<HTMLImageElement>;
 }
 
-const Workspace = ({ image, onImageUpload, adjustments, effects, selectedFilter, transforms }: WorkspaceProps) => {
+const Workspace = (props: WorkspaceProps) => {
+  const { 
+    image, onImageUpload, adjustments, effects, selectedFilter, transforms,
+    crop, onCropChange, onCropComplete, aspect, imgRef
+  } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const triggerFileInput = () => {
@@ -41,12 +51,20 @@ const Workspace = ({ image, onImageUpload, adjustments, effects, selectedFilter,
     <div className="flex items-center justify-center h-full w-full bg-muted/20 rounded-lg">
       {image ? (
         <div className="relative max-w-full max-h-full p-4">
-          <img
-            src={image}
-            alt="Uploaded preview"
-            className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg transition-transform duration-300"
-            style={imageStyle}
-          />
+          <ReactCrop
+            crop={crop}
+            onChange={c => onCropChange(c)}
+            onComplete={c => onCropComplete(c)}
+            aspect={aspect}
+          >
+            <img
+              ref={imgRef}
+              src={image}
+              alt="Uploaded preview"
+              className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+              style={imageStyle}
+            />
+          </ReactCrop>
         </div>
       ) : (
         <Card className="w-full max-w-md border-2 border-dashed">
