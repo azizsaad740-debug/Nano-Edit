@@ -82,6 +82,7 @@ const initialLayers: Layer[] = [
     type: "image",
     name: "Background",
     visible: true,
+    opacity: 100,
   },
 ];
 
