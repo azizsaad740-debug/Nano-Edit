@@ -1,7 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import LightingAdjustments from "@/components/editor/LightingAdjustments";
-import Filters from "@/components/editor/Filters";
-import Transform from "@/components/editor/Transform";
+import EditorControls from "@/components/layout/EditorControls";
 
 interface SidebarProps {
   adjustments: {
@@ -15,39 +12,10 @@ interface SidebarProps {
   onTransformChange: (transformType: string) => void;
 }
 
-const Sidebar = ({ adjustments, onAdjustmentChange, onFilterChange, selectedFilter, onTransformChange }: SidebarProps) => {
+const Sidebar = (props: SidebarProps) => {
   return (
-    <aside className="w-80 border-r bg-muted/40 p-4 hidden md:flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>Lighting & Color</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LightingAdjustments 
-            adjustments={adjustments}
-            onAdjustmentChange={onAdjustmentChange}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Filters 
-            onFilterChange={onFilterChange}
-            selectedFilter={selectedFilter}
-          />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Transform</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Transform onTransformChange={onTransformChange} />
-        </CardContent>
-      </Card>
+    <aside className="w-80 border-r bg-muted/40 p-4 hidden md:block overflow-y-auto">
+      <EditorControls {...props} />
     </aside>
   );
 };

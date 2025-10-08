@@ -1,13 +1,15 @@
 import { Image as ImageIcon, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import React from "react";
 
 interface HeaderProps {
   onReset: () => void;
   onDownload: () => void;
   hasImage: boolean;
+  children?: React.ReactNode;
 }
 
-const Header = ({ onReset, onDownload, hasImage }: HeaderProps) => {
+const Header = ({ onReset, onDownload, hasImage, children }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
       <div className="flex items-center gap-2">
@@ -15,6 +17,7 @@ const Header = ({ onReset, onDownload, hasImage }: HeaderProps) => {
         <h1 className="text-lg font-semibold">NanoEdit</h1>
       </div>
       <div className="flex items-center gap-2">
+        {children}
         <Button variant="outline" size="sm" onClick={onReset} disabled={!hasImage}>
           <RotateCcw className="h-4 w-4 mr-2" />
           Reset

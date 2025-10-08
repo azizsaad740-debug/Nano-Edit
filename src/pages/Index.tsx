@@ -2,6 +2,10 @@ import { useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { SlidersHorizontal } from "lucide-react";
+import EditorControls from "@/components/layout/EditorControls";
 
 const Index = () => {
   const [image, setImage] = useState<string | null>(null);
@@ -95,21 +99,42 @@ const Index = () => {
     };
   };
 
+  const editorProps = {
+    adjustments,
+    onAdjustmentChange: handleAdjustmentChange,
+    onFilterChange: handleFilterChange,
+    selectedFilter,
+    onTransformChange: handleTransformChange,
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
       <Header 
         onReset={handleReset}
         onDownload={handleDownload}
         hasImage={!!image}
-      />
+      >
+        <div className="md:hidden">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="icon" disabled={!image}>
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="sr-only">Open edit controls</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[320px] sm:w-[400px] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle>Edit Image</SheetTitle>
+              </SheetHeader>
+              <div className="py-4">
+                <EditorControls {...editorProps} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </Header>
       <main className="flex flex-1 overflow-hidden">
-        <Sidebar 
-          adjustments={adjustments}
-          onAdjustmentChange={handleAdjustmentChange}
-          onFilterChange={handleFilterChange}
-          selectedFilter={selectedFilter}
-          onTransformChange={handleTransformChange}
-        />
+        <Sidebar {...editorProps} />
         <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <Workspace 
             image={image}
