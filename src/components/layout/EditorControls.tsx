@@ -1,4 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
@@ -40,62 +45,50 @@ const EditorControls = (props: EditorControlsProps) => {
   } = props;
 
   return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
-          <CardTitle>History</CardTitle>
-        </CardHeader>
-        <CardContent>
+    <Accordion type="multiple" className="w-full" defaultValue={['lighting-color']}>
+      <AccordionItem value="history">
+        <AccordionTrigger>History</AccordionTrigger>
+        <AccordionContent>
           <History onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Crop</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="crop">
+        <AccordionTrigger>Crop</AccordionTrigger>
+        <AccordionContent>
           <Crop onAspectChange={onAspectChange} currentAspect={aspect} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Lighting & Color</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="lighting-color">
+        <AccordionTrigger>Lighting & Color</AccordionTrigger>
+        <AccordionContent>
           <LightingAdjustments 
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
           />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Effects</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="effects">
+        <AccordionTrigger>Effects</AccordionTrigger>
+        <AccordionContent>
           <Effects effects={effects} onEffectChange={onEffectChange} />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="filters">
+        <AccordionTrigger>Filters</AccordionTrigger>
+        <AccordionContent>
           <Filters 
             onFilterChange={onFilterChange}
             selectedFilter={selectedFilter}
           />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Transform</CardTitle>
-        </CardHeader>
-        <CardContent>
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="transform">
+        <AccordionTrigger>Transform</AccordionTrigger>
+        <AccordionContent>
           <Transform onTransformChange={onTransformChange} />
-        </CardContent>
-      </Card>
-    </div>
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 };
 
