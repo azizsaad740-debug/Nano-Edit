@@ -1,0 +1,164 @@
+import { useState, useRef, useCallback } from "react";
+import { type Crop } from 'react-image-crop';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { showSuccess } from "@/utils/toast";
+import { downloadImage } from "@/utils/imageUtils";
+
+export interface EditState {
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+  effects: {
+    blur: number;
+    hueShift: number;
+  };
+  selectedFilter: string;
+  transforms: {
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
+  };
+  crop: Crop | undefined;
+}
+
+const initialEditState: EditState = {
+  adjustments: { brightness: 100, contrast: 100, saturation: 100 },
+  effects: { blur: 0, hueShift: 0 },
+  selectedFilter: "",
+  transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
+  crop: undefined,
+};
+
+export const useEditorState = () => {
+  const [image, setImage] = useState<string | null>(null);
+  const [history, setHistory] = useState<EditState[]>([initialEditState]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const [aspect, setAspect] = useState<number | undefined>();
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  const currentState = history[currentHistoryIndex];
+
+  const recordHistory = useCallback((newState: EditState) => {
+    const newHistory = history.slice(0, currentHistoryIndex + 1);
+    setHistory([...newHistory, newState]);
+    setCurrentHistoryIndex(newHistory.length);
+  }, [history, currentHistoryIndex]);
+
+  const updateCurrentState = useCallback((updates: Partial<EditState>) => {
+    const newState = { ...currentState, ...updates };
+    const newHistory = [...history];
+    newHistory[currentHistoryIndex] = newState;
+    setHistory(newHistory);
+  }, [currentState, history, currentHistoryIndex]);
+
+  const handleImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+        setHistory([initialEditState]);
+        setCurrentHistoryIndex(0);
+        showSuccess("Image uploaded successfully.");
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
+  const handleAdjustmentChange = useCallback((adjustment: string, value: number) => {
+    const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
+    recordHistory({ ...currentState, adjustments: newAdjustments });
+  }, [currentState, recordHistory]);
+
+  const handleEffectChange = useCallback((effect: string, value: number) => {
+    const newEffects = { ...currentState.effects, [effect]: value };
+    recordHistory({ ...currentState, effects: newEffects });
+  }, [currentState, recordHistory]);
+
+  const handleFilterChange = useCallback((filterValue: string) => {
+    recordHistory({ ...currentState, selectedFilter: filterValue });
+  }, [currentState, recordHistory]);
+
+  const handleTransformChange = useCallback((transformType: string) => {
+    const newTransforms = { ...currentState.transforms };
+    switch (transformType) {
+      case "rotate-left":
+        newTransforms.rotation = (newTransforms.rotation - 90 + 360) % 360;
+        break;
+      case "rotate-right":
+        newTransforms.rotation = (newTransforms.rotation + 90) % 360;
+        break;
+      case "flip-horizontal":
+        newTransforms.scaleX *= -1;
+        break;
+      case "flip-vertical":
+        newTransforms.scaleY *= -1;
+        break;
+      default:
+        return;
+    }
+    recordHistory({ ...currentState, transforms: newTransforms });
+  }, [currentState, recordHistory]);
+
+  const handleCropChange = useCallback((newCrop: Crop) => {
+    updateCurrentState({ crop: newCrop });
+  }, [updateCurrentState]);
+
+  const handleCropComplete = useCallback((newCrop: Crop) => {
+    recordHistory({ ...currentState, crop: newCrop });
+  }, [currentState, recordHistory]);
+
+  const handleReset = useCallback(() => {
+    recordHistory(initialEditState);
+    showSuccess("All edits have been reset.");
+  }, [recordHistory]);
+
+  const handleUndo = useCallback(() => {
+    if (currentHistoryIndex > 0) {
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+    }
+  }, [currentHistoryIndex]);
+
+  const handleRedo = useCallback(() => {
+    if (currentHistoryIndex < history.length - 1) {
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+    }
+  }, [currentHistoryIndex, history.length]);
+
+  const handleDownload = useCallback(() => {
+    if (!imgRef.current) return;
+    downloadImage({
+      image: imgRef.current,
+      ...currentState,
+    });
+  }, [currentState]);
+
+  useHotkeys('ctrl+z, cmd+z', handleUndo, { preventDefault: true });
+  useHotkeys('ctrl+y, cmd+shift+z', handleRedo, { preventDefault: true });
+
+  const canUndo = currentHistoryIndex > 0;
+  const canRedo = currentHistoryIndex < history.length - 1;
+
+  return {
+    image,
+    imgRef,
+    currentState,
+    aspect,
+    canUndo,
+    canRedo,
+    handleImageUpload,
+    handleAdjustmentChange,
+    handleEffectChange,
+    handleFilterChange,
+    handleTransformChange,
+    handleCropChange,
+    handleCropComplete,
+    handleReset,
+    handleUndo,
+    handleRedo,
+    handleDownload,
+    setAspect,
+  };
+};
