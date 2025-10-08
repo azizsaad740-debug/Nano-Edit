@@ -73,10 +73,20 @@ export const useEditorState = () => {
 
   const handleAdjustmentChange = useCallback((adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
+    updateCurrentState({ adjustments: newAdjustments });
+  }, [currentState.adjustments, updateCurrentState]);
+
+  const handleAdjustmentCommit = useCallback((adjustment: string, value: number) => {
+    const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
     recordHistory({ ...currentState, adjustments: newAdjustments });
   }, [currentState, recordHistory]);
 
   const handleEffectChange = useCallback((effect: string, value: number) => {
+    const newEffects = { ...currentState.effects, [effect]: value };
+    updateCurrentState({ effects: newEffects });
+  }, [currentState.effects, updateCurrentState]);
+
+  const handleEffectCommit = useCallback((effect: string, value: number) => {
     const newEffects = { ...currentState.effects, [effect]: value };
     recordHistory({ ...currentState, effects: newEffects });
   }, [currentState, recordHistory]);
@@ -168,7 +178,9 @@ export const useEditorState = () => {
     canRedo,
     handleFileSelect,
     handleAdjustmentChange,
+    handleAdjustmentCommit,
     handleEffectChange,
+    handleEffectCommit,
     handleFilterChange,
     handleTransformChange,
     handleCropChange,

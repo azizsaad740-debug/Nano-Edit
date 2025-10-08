@@ -10,11 +10,13 @@ interface LightingAdjustmentsProps {
     saturation: number;
   };
   onAdjustmentChange: (adjustment: string, value: number) => void;
+  onAdjustmentCommit: (adjustment: string, value: number) => void;
 }
 
-const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjustmentsProps) => {
+const LightingAdjustments = ({ adjustments, onAdjustmentChange, onAdjustmentCommit }: LightingAdjustmentsProps) => {
   const handleReset = (adjustment: string) => {
     onAdjustmentChange(adjustment, 100);
+    onAdjustmentCommit(adjustment, 100);
   };
 
   return (
@@ -37,6 +39,7 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
           step={1}
           value={[adjustments.brightness]}
           onValueChange={([value]) => onAdjustmentChange("brightness", value)}
+          onValueCommit={([value]) => onAdjustmentCommit("brightness", value)}
         />
       </div>
       <div className="grid gap-2">
@@ -57,6 +60,7 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
           step={1}
           value={[adjustments.contrast]}
           onValueChange={([value]) => onAdjustmentChange("contrast", value)}
+          onValueCommit={([value]) => onAdjustmentCommit("contrast", value)}
         />
       </div>
       <div className="grid gap-2">
@@ -77,6 +81,7 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
           step={1}
           value={[adjustments.saturation]}
           onValueChange={([value]) => onAdjustmentChange("saturation", value)}
+          onValueCommit={([value]) => onAdjustmentCommit("saturation", value)}
         />
       </div>
     </div>

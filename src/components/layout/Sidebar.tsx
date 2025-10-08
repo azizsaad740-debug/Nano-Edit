@@ -7,11 +7,13 @@ interface SidebarProps {
     saturation: number;
   };
   onAdjustmentChange: (adjustment: string, value: number) => void;
+  onAdjustmentCommit: (adjustment: string, value: number) => void;
   effects: {
     blur: number;
     hueShift: number;
   };
   onEffectChange: (effect: string, value: number) => void;
+  onEffectCommit: (effect: string, value: number) => void;
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;

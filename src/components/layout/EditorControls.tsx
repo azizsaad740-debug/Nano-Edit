@@ -18,11 +18,13 @@ interface EditorControlsProps {
     saturation: number;
   };
   onAdjustmentChange: (adjustment: string, value: number) => void;
+  onAdjustmentCommit: (adjustment: string, value: number) => void;
   effects: {
     blur: number;
     hueShift: number;
   };
   onEffectChange: (effect: string, value: number) => void;
+  onEffectCommit: (effect: string, value: number) => void;
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -36,8 +38,8 @@ interface EditorControlsProps {
 
 const EditorControls = (props: EditorControlsProps) => {
   const { 
-    adjustments, onAdjustmentChange, 
-    effects, onEffectChange,
+    adjustments, onAdjustmentChange, onAdjustmentCommit,
+    effects, onEffectChange, onEffectCommit,
     onFilterChange, selectedFilter, 
     onTransformChange,
     onUndo, onRedo, canUndo, canRedo,
@@ -64,13 +66,18 @@ const EditorControls = (props: EditorControlsProps) => {
           <LightingAdjustments 
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
+            onAdjustmentCommit={onAdjustmentCommit}
           />
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="effects">
         <AccordionTrigger>Effects</AccordionTrigger>
         <AccordionContent>
-          <Effects effects={effects} onEffectChange={onEffectChange} />
+          <Effects 
+            effects={effects} 
+            onEffectChange={onEffectChange} 
+            onEffectCommit={onEffectCommit}
+          />
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="filters">

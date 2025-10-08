@@ -9,11 +9,13 @@ interface EffectsProps {
     hueShift: number;
   };
   onEffectChange: (effect: string, value: number) => void;
+  onEffectCommit: (effect: string, value: number) => void;
 }
 
-const Effects = ({ effects, onEffectChange }: EffectsProps) => {
+const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
   const handleReset = (effect: string) => {
     onEffectChange(effect, 0);
+    onEffectCommit(effect, 0);
   };
 
   return (
@@ -36,6 +38,7 @@ const Effects = ({ effects, onEffectChange }: EffectsProps) => {
           step={1}
           value={[effects.blur]}
           onValueChange={([value]) => onEffectChange("blur", value)}
+          onValueCommit={([value]) => onEffectCommit("blur", value)}
         />
       </div>
       <div className="grid gap-2">
@@ -56,6 +59,7 @@ const Effects = ({ effects, onEffectChange }: EffectsProps) => {
           step={1}
           value={[effects.hueShift]}
           onValueChange={([value]) => onEffectChange("hueShift", value)}
+          onValueCommit={([value]) => onEffectCommit("hueShift", value)}
         />
       </div>
     </div>
