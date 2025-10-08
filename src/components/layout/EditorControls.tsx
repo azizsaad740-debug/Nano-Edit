@@ -124,6 +124,13 @@ const EditorControls = (props: EditorControlsProps) => {
     editTextLayerContent,
   } = props;
 
+  // Simple wrapper to satisfy LayersPanel’s onEditText signature
+  const handleEditText = (id: string) => {
+    // For now we just replace the text with a placeholder.
+    // In a full implementation you would open a dialog to edit the content.
+    editTextLayerContent(id, "Edited text");
+  };
+
   if (!hasImage) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground p-4">
@@ -138,7 +145,6 @@ const EditorControls = (props: EditorControlsProps) => {
     <Tabs defaultValue="adjust" className="w-full">
       <TooltipProvider>
         <TabsList className="grid w-full grid-cols-6 h-12">
-          {/* Adjust */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="adjust" className="h-10">
@@ -150,7 +156,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
-          {/* Transform */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="transform" className="h-10">
@@ -162,7 +167,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
-          {/* Effects */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="effects" className="h-10">
@@ -174,7 +178,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
-          {/* History */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="history" className="h-10">
@@ -186,7 +189,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
-          {/* Info */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="info" className="h-10">
@@ -198,7 +200,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
-          {/* Layers */}
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="layers" className="h-10">
@@ -307,7 +308,7 @@ const EditorControls = (props: EditorControlsProps) => {
           onRename={renameLayer}
           onDelete={deleteLayer}
           onAddTextLayer={addTextLayer}
-          onEditText={editTextLayerContent}
+          onEditText={handleEditText}
         />
       </TabsContent>
     </Tabs>

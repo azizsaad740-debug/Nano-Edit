@@ -14,6 +14,7 @@ import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
+import { useSettings } from "@/hooks/useSettings";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -78,6 +79,8 @@ const Index = () => {
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
+  const { apiKey } = useSettings();
+
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
   const [openGenerative, setOpenGenerative] = useState(false);
@@ -247,7 +250,7 @@ const Index = () => {
         open={openGenerative}
         onOpenChange={setOpenGenerative}
         onApply={applyGenerativeResult}
-        apiKey={""}
+        apiKey={apiKey}
       />
     </div>
   );
