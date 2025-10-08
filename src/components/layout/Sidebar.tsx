@@ -25,7 +25,7 @@ interface SidebarProps {
 
 const Sidebar = (props: SidebarProps) => {
   return (
-    <aside className="w-80 border-r bg-muted/40 p-4 hidden md:block overflow-y-auto">
+    <aside className="h-full border-r bg-muted/40 p-4 overflow-y-auto">
       <EditorControls {...props} />
     </aside>
   );

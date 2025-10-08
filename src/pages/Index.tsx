@@ -6,6 +6,11 @@ import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 const Index = () => {
   const {
@@ -78,24 +83,31 @@ const Index = () => {
           </Sheet>
         </div>
       </Header>
-      <main className="flex flex-1 overflow-hidden">
-        <Sidebar {...editorProps} />
-        <div className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-          <Workspace 
-            image={image}
-            onFileSelect={handleFileSelect}
-            adjustments={adjustments} 
-            effects={effects}
-            selectedFilter={selectedFilter} 
-            transforms={transforms}
-            crop={crop}
-            onCropChange={handleCropChange}
-            onCropComplete={handleCropComplete}
-            aspect={aspect}
-            imgRef={imgRef}
-            isPreviewingOriginal={isPreviewingOriginal}
-          />
-        </div>
+      <main className="flex-1">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="hidden md:block">
+            <Sidebar {...editorProps} />
+          </ResizablePanel>
+          <ResizableHandle withHandle className="hidden md:flex" />
+          <ResizablePanel defaultSize={75}>
+            <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
+              <Workspace 
+                image={image}
+                onFileSelect={handleFileSelect}
+                adjustments={adjustments} 
+                effects={effects}
+                selectedFilter={selectedFilter} 
+                transforms={transforms}
+                crop={crop}
+                onCropChange={handleCropChange}
+                onCropComplete={handleCropComplete}
+                aspect={aspect}
+                imgRef={imgRef}
+                isPreviewingOriginal={isPreviewingOriginal}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </main>
     </div>
   );
