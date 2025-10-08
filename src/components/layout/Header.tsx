@@ -1,6 +1,7 @@
 import { Image as ImageIcon, RotateCcw, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   onReset: () => void;
@@ -18,6 +19,7 @@ const Header = ({ onReset, onDownload, hasImage, children }: HeaderProps) => {
       </div>
       <div className="flex items-center gap-2">
         {children}
+        <ThemeToggle />
         <Button variant="outline" size="sm" onClick={onReset} disabled={!hasImage}>
           <RotateCcw className="h-4 w-4 mr-2" />
           Reset
