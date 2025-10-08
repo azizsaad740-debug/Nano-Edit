@@ -48,7 +48,7 @@ interface SidebarProps {
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  editTextLayerContent: (id: string, newContent: string) => void;
+  onEditTextLayer: (id: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

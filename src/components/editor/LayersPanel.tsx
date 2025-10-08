@@ -26,7 +26,7 @@ interface LayersPanelProps {
   onRename: (id: string, newName: string) => void;
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
-  onEditText: (id: string) => void;
+  onEditTextLayer: (id: string) => void;
 }
 
 export const LayersPanel = ({
@@ -35,7 +35,7 @@ export const LayersPanel = ({
   onRename,
   onDelete,
   onAddTextLayer,
-  onEditText,
+  onEditTextLayer,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -86,7 +86,7 @@ export const LayersPanel = ({
             </div>
             <div className="flex items-center gap-1">
               {layer.type === "text" && (
-                <Button variant="ghost" size="icon" onClick={() => onEditText(layer.id)}>
+                <Button variant="ghost" size="icon" onClick={() => onEditTextLayer(layer.id)}>
                   <Edit2 className="h-4 w-4" />
                 </Button>
               )}

@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
-import { useEditorState } from "@/hooks/useEditorState";
+import { useEditorState, type Layer } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
 import {
@@ -26,6 +26,7 @@ import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ToolsBar } from "@/components/editor/ToolsBar";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
+import { EditTextDialog } from "@/components/editor/EditTextDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 
 const Index = () => {
@@ -72,7 +73,6 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    editTextLayerContent,
     updateLayer,
     commitLayerChange,
     // tool state
@@ -89,6 +89,19 @@ const Index = () => {
   const [openSettings, setOpenSettings] = useState(false);
   const [openGenerative, setOpenGenerative] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+  const [editingLayer, setEditingLayer] = useState<Layer | null>(null);
+
+  const handleOpenEditDialog = (layerId: string) => {
+    const layerToEdit = layers.find((l) => l.id === layerId);
+    if (layerToEdit) {
+      setEditingLayer(layerToEdit);
+    }
+  };
+
+  const handleSaveEditText = (id: string, updates: Partial<Layer>) => {
+    updateLayer(id, updates);
+    commitLayerChange(id);
+  };
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
@@ -170,7 +183,7 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    editTextLayerContent,
+    onEditTextLayer: handleOpenEditDialog,
   };
 
   return (
@@ -273,6 +286,12 @@ const Index = () => {
         apiKey={apiKey}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
+      <EditTextDialog
+        open={!!editingLayer}
+        onOpenChange={(open) => !open && setEditingLayer(null)}
+        layer={editingLayer}
+        onSave={handleSaveEditText}
+      />
     </div>
   );
 };

@@ -84,7 +84,7 @@ interface EditorControlsProps {
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  editTextLayerContent: (id: string, newContent: string) => void;
+  onEditTextLayer: (id: string) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -121,15 +121,8 @@ const EditorControls = (props: EditorControlsProps) => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    editTextLayerContent,
+    onEditTextLayer,
   } = props;
-
-  // Simple wrapper to satisfy LayersPanel’s onEditText signature
-  const handleEditText = (id: string) => {
-    // For now we just replace the text with a placeholder.
-    // In a full implementation you would open a dialog to edit the content.
-    editTextLayerContent(id, "Edited text");
-  };
 
   if (!hasImage) {
     return (
@@ -308,7 +301,7 @@ const EditorControls = (props: EditorControlsProps) => {
           onRename={renameLayer}
           onDelete={deleteLayer}
           onAddTextLayer={addTextLayer}
-          onEditText={handleEditText}
+          onEditTextLayer={onEditTextLayer}
         />
       </TabsContent>
     </Tabs>
