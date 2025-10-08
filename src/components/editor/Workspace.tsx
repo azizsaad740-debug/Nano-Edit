@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
 
-const Workspace = () => {
+interface WorkspaceProps {
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+}
+
+const Workspace = ({ adjustments }: WorkspaceProps) => {
   const [image, setImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +32,10 @@ const Workspace = () => {
     fileInputRef.current?.click();
   };
 
+  const imageStyle = {
+    filter: `brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%)`,
+  };
+
   return (
     <div className="flex items-center justify-center h-full w-full bg-muted/20 rounded-lg">
       {image ? (
@@ -32,6 +44,7 @@ const Workspace = () => {
             src={image}
             alt="Uploaded preview"
             className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+            style={imageStyle}
           />
         </div>
       ) : (

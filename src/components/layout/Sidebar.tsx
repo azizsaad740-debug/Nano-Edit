@@ -1,16 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LightingAdjustments from "@/components/editor/LightingAdjustments";
 
-const Sidebar = () => {
+interface SidebarProps {
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+  onAdjustmentChange: (adjustment: string, value: number) => void;
+}
+
+const Sidebar = ({ adjustments, onAdjustmentChange }: SidebarProps) => {
   return (
     <aside className="w-80 border-r bg-muted/40 p-4 hidden md:flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>Editing Tools</CardTitle>
+          <CardTitle>Lighting & Color</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Tools for cropping, lighting, color grading, and more will appear here.
-          </p>
+          <LightingAdjustments 
+            adjustments={adjustments}
+            onAdjustmentChange={onAdjustmentChange}
+          />
         </CardContent>
       </Card>
     </aside>
