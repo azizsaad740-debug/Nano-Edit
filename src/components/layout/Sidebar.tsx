@@ -55,6 +55,9 @@ interface SidebarProps {
   // Layer editing
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  // Frame props
+  frame: { type: 'none' | 'solid'; width: number; color: string; };
+  onFrameChange: (type: string, name: string, options?: { width: number; color: string }) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

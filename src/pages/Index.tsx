@@ -52,6 +52,7 @@ const Index = () => {
     handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
+    handleFrameChange,
     pendingCrop,
     setPendingCrop,
     applyCrop,
@@ -140,7 +141,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad]);
 
-  const { adjustments, effects, grading, selectedFilter, transforms, crop } = currentState;
+  const { adjustments, effects, grading, selectedFilter, transforms, crop, frame } = currentState;
 
   const editorProps = {
     hasImage: !!image,
@@ -156,6 +157,8 @@ const Index = () => {
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
+    onFrameChange: handleFrameChange,
+    frame,
     onAspectChange: setAspect,
     aspect,
     history,
@@ -249,6 +252,7 @@ const Index = () => {
                 grading={grading}
                 selectedFilter={selectedFilter}
                 transforms={transforms}
+                frame={frame}
                 crop={currentState.crop}
                 pendingCrop={pendingCrop}
                 onCropChange={setPendingCrop}

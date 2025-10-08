@@ -42,6 +42,7 @@ import type { Preset } from "@/hooks/usePresets";
 import type { Layer } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
 import TextProperties from "@/components/editor/TextProperties";
+import Frames from "@/components/editor/Frames";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -95,6 +96,9 @@ interface EditorControlsProps {
   // Layer editing
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  // Frame props
+  frame: { type: 'none' | 'solid'; width: number; color: string; };
+  onFrameChange: (type: string, name: string, options?: { width: number; color: string }) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -138,6 +142,9 @@ const EditorControls = (props: EditorControlsProps) => {
     // layer editing
     onLayerUpdate,
     onLayerCommit,
+    // frames
+    frame,
+    onFrameChange,
   } = props;
 
   const selectedLayer = React.useMemo(() => {
@@ -313,6 +320,12 @@ const EditorControls = (props: EditorControlsProps) => {
                 onEffectChange={onEffectChange}
                 onEffectCommit={onEffectCommit}
               />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="frames">
+            <AccordionTrigger>Frames</AccordionTrigger>
+            <AccordionContent>
+              <Frames onFrameChange={onFrameChange} currentFrame={frame} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

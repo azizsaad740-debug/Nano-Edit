@@ -41,6 +41,11 @@ interface WorkspaceProps {
     scaleX: number;
     scaleY: number;
   };
+  frame: {
+    type: 'none' | 'solid';
+    width: number;
+    color: string;
+  };
   crop: Crop | undefined;
   pendingCrop: Crop | undefined;
   onCropChange: (crop: Crop | undefined) => void;
@@ -69,6 +74,7 @@ const Workspace = (props: WorkspaceProps) => {
     grading,
     selectedFilter,
     transforms,
+    frame,
     crop,
     pendingCrop,
     onCropChange,
@@ -239,44 +245,54 @@ const Workspace = (props: WorkspaceProps) => {
                   <Button size="sm" variant="destructive" onClick={onCancelCrop}><X className="h-4 w-4 mr-2" /> Cancel</Button>
                 </div>
               )}
-              <ReactCrop
-                crop={pendingCrop ?? crop}
-                onChange={(_, percentCrop) => onCropChange(percentCrop)}
-                aspect={aspect}
+              <div
+                className="relative transition-all duration-200"
+                style={{
+                  padding: frame.type === 'solid' ? `${frame.width}px` : '0px',
+                  backgroundColor: frame.type === 'solid' ? frame.color : 'transparent',
+                  boxShadow: frame.type === 'solid' ? 'inset 0 0 10px rgba(0,0,0,0.2)' : 'none',
+                  display: 'inline-block',
+                }}
               >
-                <div style={wrapperTransformStyle}>
-                  <div ref={imageContainerRef} className="relative" style={containerStyle}>
-                    <img
-                      ref={imgRef}
-                      src={image}
-                      alt="Uploaded preview"
-                      className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                      style={imageStyle}
-                      onLoad={onImageLoad}
-                    />
-                    {lassoOverlay}
-                    {brushOverlay}
-                    {!isPreviewingOriginal && effects.vignette > 0 && (
-                      <div
-                        className="absolute inset-0 pointer-events-none rounded-lg"
-                        style={{
-                          boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
-                        }}
+                <ReactCrop
+                  crop={pendingCrop ?? crop}
+                  onChange={(_, percentCrop) => onCropChange(percentCrop)}
+                  aspect={aspect}
+                >
+                  <div style={wrapperTransformStyle}>
+                    <div ref={imageContainerRef} className="relative" style={containerStyle}>
+                      <img
+                        ref={imgRef}
+                        src={image}
+                        alt="Uploaded preview"
+                        className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+                        style={imageStyle}
+                        onLoad={onImageLoad}
                       />
-                    )}
-                    {layers.map((layer) => (
-                      <TextLayer
-                        key={layer.id}
-                        layer={layer}
-                        containerRef={imageContainerRef}
-                        onUpdate={onLayerUpdate}
-                        onCommit={onLayerCommit}
-                        isSelected={layer.id === selectedLayerId}
-                      />
-                    ))}
+                      {lassoOverlay}
+                      {brushOverlay}
+                      {!isPreviewingOriginal && effects.vignette > 0 && (
+                        <div
+                          className="absolute inset-0 pointer-events-none rounded-lg"
+                          style={{
+                            boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
+                          }}
+                        />
+                      )}
+                      {layers.map((layer) => (
+                        <TextLayer
+                          key={layer.id}
+                          layer={layer}
+                          containerRef={imageContainerRef}
+                          onUpdate={onLayerUpdate}
+                          onCommit={onLayerCommit}
+                          isSelected={layer.id === selectedLayerId}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              </ReactCrop>
+                </ReactCrop>
+              </div>
             </div>
           </div>
           <WorkspaceControls 

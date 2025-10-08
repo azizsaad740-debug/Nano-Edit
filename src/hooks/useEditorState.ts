@@ -30,6 +30,11 @@ export interface EditState {
     scaleX: number;
     scaleY: number;
   };
+  frame: {
+    type: 'none' | 'solid';
+    width: number;
+    color: string;
+  };
   crop: Crop | undefined;
 }
 
@@ -65,6 +70,7 @@ const initialEditState: EditState = {
   grading: { grayscale: 0, sepia: 0, invert: 0 },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
+  frame: { type: 'none', width: 0, color: '#000000' },
   crop: undefined,
 };
 
@@ -282,6 +288,15 @@ export const useEditorState = () => {
     recordHistory(nameMap[type] ?? "Transform", { ...currentState, transforms: newTrans });
   }, [currentState, recordHistory]);
 
+  const handleFrameChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
+    const newFrame = {
+      type: type as 'none' | 'solid',
+      width: options?.width ?? 0,
+      color: options?.color ?? '#000000',
+    };
+    recordHistory(`Set Frame: ${name}`, { ...currentState, frame: newFrame });
+  }, [currentState, recordHistory]);
+
   /* ---------- Crop ---------- */
   const applyCrop = useCallback(() => {
     if (!pendingCrop) return;
@@ -461,6 +476,7 @@ export const useEditorState = () => {
     handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
+    handleFrameChange,
     pendingCrop,
     setPendingCrop,
     applyCrop,
