@@ -18,12 +18,14 @@ const Index = () => {
   const {
     image,
     imgRef,
+    dimensions,
     currentState,
     history,
     currentHistoryIndex,
     aspect,
     canUndo,
     canRedo,
+    handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
     handleAdjustmentChange,
@@ -92,6 +94,7 @@ const Index = () => {
     history,
     currentHistoryIndex,
     onHistoryJump: jumpToHistory,
+    dimensions,
   };
 
   return (
@@ -139,6 +142,7 @@ const Index = () => {
                 onFileSelect={handleFileSelect}
                 onSampleSelect={handleUrlImageLoad}
                 onUrlSelect={handleUrlImageLoad}
+                onImageLoad={handleImageLoad}
                 adjustments={adjustments} 
                 effects={effects}
                 grading={grading}

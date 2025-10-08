@@ -46,6 +46,7 @@ const initialHistoryItem: HistoryItem = { name: "Initial State", state: initialE
 
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState<{ width: number, height: number } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [aspect, setAspect] = useState<number | undefined>();
@@ -68,9 +69,16 @@ export const useEditorState = () => {
     setHistory(newHistory);
   }, [currentState, history, currentHistoryIndex]);
 
+  const handleImageLoad = useCallback(() => {
+    if (imgRef.current) {
+      setDimensions({ width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight });
+    }
+  }, []);
+
   const handleFileSelect = useCallback((file: File | undefined) => {
     if (file) {
       if (file.type.startsWith('image/')) {
+        setDimensions(null);
         const reader = new FileReader();
         reader.onloadend = () => {
           setImage(reader.result as string);
@@ -88,6 +96,7 @@ export const useEditorState = () => {
   const handleUrlImageLoad = useCallback(async (url: string) => {
     const toastId = showLoading("Loading image from URL...");
     try {
+      setDimensions(null);
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`Network response was not ok, status: ${response.status}`);
@@ -238,12 +247,14 @@ export const useEditorState = () => {
   return {
     image,
     imgRef,
+    dimensions,
     currentState,
     history,
     currentHistoryIndex,
     aspect,
     canUndo,
     canRedo,
+    handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
     handleAdjustmentChange,

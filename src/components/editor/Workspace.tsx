@@ -14,6 +14,7 @@ interface WorkspaceProps {
   onFileSelect: (file: File | undefined) => void;
   onSampleSelect: (url: string) => void;
   onUrlSelect: (url: string) => void;
+  onImageLoad: () => void;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -44,7 +45,7 @@ interface WorkspaceProps {
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
-    image, onFileSelect, onSampleSelect, onUrlSelect, adjustments, effects, grading, selectedFilter, transforms,
+    image, onFileSelect, onSampleSelect, onUrlSelect, onImageLoad, adjustments, effects, grading, selectedFilter, transforms,
     crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,6 +120,7 @@ const Workspace = (props: WorkspaceProps) => {
               alt="Uploaded preview"
               className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
               style={imageStyle}
+              onLoad={onImageLoad}
             />
           </ReactCrop>
         </div>

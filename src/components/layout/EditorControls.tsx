@@ -11,6 +11,7 @@ import Effects from "@/components/editor/Effects";
 import Crop from "@/components/editor/Crop";
 import History from "@/components/editor/History";
 import ColorGrading from "@/components/editor/ColorGrading";
+import Info from "@/components/editor/Info";
 
 interface EditorControlsProps {
   adjustments: {
@@ -41,6 +42,7 @@ interface EditorControlsProps {
   history: { name: string }[];
   currentHistoryIndex: number;
   onHistoryJump: (index: number) => void;
+  dimensions: { width: number, height: number } | null;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -51,11 +53,18 @@ const EditorControls = (props: EditorControlsProps) => {
     onFilterChange, selectedFilter, 
     onTransformChange,
     onAspectChange, aspect,
-    history, currentHistoryIndex, onHistoryJump
+    history, currentHistoryIndex, onHistoryJump,
+    dimensions
   } = props;
 
   return (
     <Accordion type="multiple" className="w-full" defaultValue={['lighting-color']}>
+      <AccordionItem value="info">
+        <AccordionTrigger>Information</AccordionTrigger>
+        <AccordionContent>
+          <Info dimensions={dimensions} />
+        </AccordionContent>
+      </AccordionItem>
       <AccordionItem value="crop">
         <AccordionTrigger>Crop</AccordionTrigger>
         <AccordionContent>
