@@ -55,6 +55,8 @@ export interface Layer {
   fontWeight?: "normal" | "bold";
   fontStyle?: "normal" | "italic";
   textAlign?: "left" | "center" | "right";
+  rotation?: number; // degrees
+  letterSpacing?: number; // pixels
 }
 
 export interface HistoryItem {
@@ -93,7 +95,7 @@ const initialHistoryItem: HistoryItem = {
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null(null);
   const [exifData, setExifData] = useState<any | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
@@ -358,6 +360,8 @@ export const useEditorState = () => {
       fontWeight: "normal",
       fontStyle: "normal",
       textAlign: "center",
+      rotation: 0,
+      letterSpacing: 0,
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);

@@ -4,6 +4,7 @@ import * as React from "react";
 import type { Layer } from "@/hooks/useEditorState";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
+import { RotateCw } from "lucide-react";
 
 interface TextLayerProps {
   layer: Layer;
@@ -17,6 +18,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
   const textRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
+  const [isRotating, setIsRotating] = React.useState(false);
   const dragStartPos = React.useRef({ x: 0, y: 0 });
   const resizeStartInfo = React.useRef({
     x: 0,
@@ -24,6 +26,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     fontSize: 48,
     handle: "",
   });
+  const rotateStartInfo = React.useRef({ angle: 0, rotation: 0 });
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
@@ -96,22 +99,13 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     
     let change = 0;
     switch (resizeStartInfo.current.handle) {
-      case "top-left":
-        change = -(dx + dy);
-        break;
-      case "top-right":
-        change = dx - dy;
-        break;
-      case "bottom-left":
-        change = -dx + dy;
-        break;
-      case "bottom-right":
-        change = dx + dy;
-        break;
+      case "top-left": change = -(dx + dy); break;
+      case "top-right": change = dx - dy; break;
+      case "bottom-left": change = -dx + dy; break;
+      case "bottom-right": change = dx + dy; break;
     }
 
     const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.fontSize + (change * 0.5)));
-
     onUpdate(layer.id, { fontSize: newFontSize });
   }, [isResizing, layer.id, onUpdate]);
 
@@ -133,11 +127,49 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     };
   }, [isResizing, handleResizeMouseMove, handleResizeMouseUp]);
 
+  // Rotation logic
+  const handleRotateMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (!textRef.current) return;
+    setIsRotating(true);
+    const rect = textRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+    rotateStartInfo.current = { angle: startAngle, rotation: layer.rotation || 0 };
+  };
+
+  const handleRotateMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isRotating || !textRef.current) return;
+    const rect = textRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+    const newRotation = rotateStartInfo.current.rotation + (currentAngle - rotateStartInfo.current.angle);
+    onUpdate(layer.id, { rotation: newRotation });
+  }, [isRotating, layer.id, onUpdate]);
+
+  const handleRotateMouseUp = React.useCallback(() => {
+    if (isRotating) {
+      setIsRotating(false);
+      onCommit(layer.id);
+    }
+  }, [isRotating, layer.id, onCommit]);
+
+  React.useEffect(() => {
+    if (isRotating) {
+      document.addEventListener("mousemove", handleRotateMouseMove);
+      document.addEventListener("mouseup", handleRotateMouseUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleRotateMouseMove);
+      document.removeEventListener("mouseup", handleRotateMouseUp);
+    };
+  }, [isRotating, handleRotateMouseMove, handleRotateMouseUp]);
+
   // Editing logic
   const handleDoubleClick = () => {
-    if (isSelected) {
-      setIsEditing(true);
-    }
+    if (isSelected) setIsEditing(true);
   };
 
   const handleBlur = () => {
@@ -159,19 +191,13 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     }
   }, [isEditing]);
 
-  if (!layer.visible || layer.type !== "text") {
-    return null;
-  }
+  if (!layer.visible || layer.type !== "text") return null;
 
-  const getTransform = () => {
+  const getPositionTransform = () => {
     switch (layer.textAlign) {
-      case 'left':
-        return 'translate(0, -50%)';
-      case 'right':
-        return 'translate(-100%, -50%)';
-      case 'center':
-      default:
-        return 'translate(-50%, -50%)';
+      case 'left': return 'translate(0, -50%)';
+      case 'right': return 'translate(-100%, -50%)';
+      case 'center': default: return 'translate(-50%, -50%)';
     }
   };
 
@@ -181,6 +207,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     fontFamily: layer.fontFamily || 'Roboto',
     fontWeight: layer.fontWeight || 'normal',
     fontStyle: layer.fontStyle || 'normal',
+    letterSpacing: `${layer.letterSpacing || 0}px`,
     textShadow: "0 0 5px rgba(0,0,0,0.7)",
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "nowrap",
@@ -196,7 +223,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
-        transform: getTransform(),
+        transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
         cursor: isSelected && !isEditing ? "move" : "default",
       }}
     >
@@ -225,6 +252,12 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
             <ResizeHandle position="top-right" onMouseDown={handleResizeMouseDown} />
             <ResizeHandle position="bottom-left" onMouseDown={handleResizeMouseDown} />
             <ResizeHandle position="bottom-right" onMouseDown={handleResizeMouseDown} />
+            <div
+              className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4 h-8 cursor-[grab] flex items-end justify-center"
+              onMouseDown={handleRotateMouseDown}
+            >
+              <RotateCw className="w-4 h-4 text-primary bg-background rounded-full p-0.5" />
+            </div>
           </>
         )}
       </div>

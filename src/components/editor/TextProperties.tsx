@@ -134,6 +134,36 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
         />
       </div>
       <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="letter-spacing">Letter Spacing</Label>
+          <span className="text-sm text-muted-foreground">{layer.letterSpacing}px</span>
+        </div>
+        <Slider
+          id="letter-spacing"
+          min={-5}
+          max={20}
+          step={0.5}
+          value={[layer.letterSpacing || 0]}
+          onValueChange={([v]) => handleUpdate({ letterSpacing: v })}
+          onValueCommit={handleCommit}
+        />
+      </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="rotation">Rotation</Label>
+          <span className="text-sm text-muted-foreground">{layer.rotation}°</span>
+        </div>
+        <Slider
+          id="rotation"
+          min={-180}
+          max={180}
+          step={1}
+          value={[layer.rotation || 0]}
+          onValueChange={([v]) => handleUpdate({ rotation: v })}
+          onValueCommit={handleCommit}
+        />
+      </div>
+      <div className="grid gap-2">
         <Label htmlFor="color">Color</Label>
         <Input
           id="color"
