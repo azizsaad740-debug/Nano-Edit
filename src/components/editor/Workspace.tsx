@@ -29,12 +29,13 @@ interface WorkspaceProps {
   onCropComplete: (crop: Crop) => void;
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
+  isPreviewingOriginal: boolean;
 }
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
     image, onImageUpload, adjustments, effects, selectedFilter, transforms,
-    crop, onCropChange, onCropComplete, aspect, imgRef
+    crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,7 +43,7 @@ const Workspace = (props: WorkspaceProps) => {
     fileInputRef.current?.click();
   };
 
-  const imageStyle = {
+  const imageStyle = isPreviewingOriginal ? {} : {
     filter: `${selectedFilter} brightness(${adjustments.brightness}%) contrast(${adjustments.contrast}%) saturate(${adjustments.saturation}%) blur(${effects.blur}px) hue-rotate(${effects.hueShift}deg)`,
     transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})`,
   };

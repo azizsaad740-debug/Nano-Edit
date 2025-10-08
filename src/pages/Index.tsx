@@ -27,6 +27,8 @@ const Index = () => {
     handleRedo,
     handleDownload,
     setAspect,
+    isPreviewingOriginal,
+    setIsPreviewingOriginal,
   } = useEditorState();
 
   const { adjustments, effects, selectedFilter, transforms, crop } = currentState;
@@ -53,6 +55,7 @@ const Index = () => {
         onReset={handleReset}
         onDownload={handleDownload}
         hasImage={!!image}
+        onTogglePreview={setIsPreviewingOriginal}
       >
         <div className="md:hidden">
           <Sheet>
@@ -88,6 +91,7 @@ const Index = () => {
             onCropComplete={handleCropComplete}
             aspect={aspect}
             imgRef={imgRef}
+            isPreviewingOriginal={isPreviewingOriginal}
           />
         </div>
       </main>

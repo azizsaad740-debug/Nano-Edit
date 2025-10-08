@@ -36,6 +36,7 @@ export const useEditorState = () => {
   const [history, setHistory] = useState<EditState[]>([initialEditState]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [aspect, setAspect] = useState<number | undefined>();
+  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex];
@@ -160,5 +161,7 @@ export const useEditorState = () => {
     handleRedo,
     handleDownload,
     setAspect,
+    isPreviewingOriginal,
+    setIsPreviewingOriginal,
   };
 };
