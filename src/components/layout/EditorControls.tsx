@@ -26,6 +26,7 @@ import Crop from "@/components/editor/Crop";
 import History from "@/components/editor/History";
 import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
+import React from "react";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -60,6 +61,7 @@ interface EditorControlsProps {
   onHistoryJump: (index: number) => void;
   dimensions: { width: number, height: number } | null;
   fileInfo: { name: string, size: number } | null;
+  imgRef: React.RefObject<HTMLImageElement>;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -73,7 +75,8 @@ const EditorControls = (props: EditorControlsProps) => {
     onAspectChange, aspect,
     history, currentHistoryIndex, onHistoryJump,
     dimensions,
-    fileInfo
+    fileInfo,
+    imgRef
   } = props;
 
   if (!hasImage) {
@@ -198,7 +201,7 @@ const EditorControls = (props: EditorControlsProps) => {
       </TabsContent>
 
       <TabsContent value="info" className="mt-4">
-        <Info dimensions={dimensions} fileInfo={fileInfo} />
+        <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} />
       </TabsContent>
     </Tabs>
   );

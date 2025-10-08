@@ -112,6 +112,7 @@ const Index = () => {
     onHistoryJump: jumpToHistory,
     dimensions,
     fileInfo,
+    imgRef,
   };
 
   return (

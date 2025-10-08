@@ -1,4 +1,5 @@
 import EditorControls from "@/components/layout/EditorControls";
+import React from "react";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -33,6 +34,7 @@ interface SidebarProps {
   onHistoryJump: (index: number) => void;
   dimensions: { width: number, height: number } | null;
   fileInfo: { name: string, size: number } | null;
+  imgRef: React.RefObject<HTMLImageElement>;
 }
 
 const Sidebar = (props: SidebarProps) => {
