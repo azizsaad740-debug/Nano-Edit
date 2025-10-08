@@ -92,17 +92,32 @@ const getEditedImageCanvas = ({
   return canvas;
 };
 
-export const downloadImage = (options: ImageOptions, exportOptions: { format: string; quality: number }) => {
-  const canvas = getEditedImageCanvas(options);
-  if (!canvas) return;
+export const downloadImage = (options: ImageOptions, exportOptions: { format: string; quality: number; width: number; height: number }) => {
+  const sourceCanvas = getEditedImageCanvas(options);
+  if (!sourceCanvas) return;
 
-  const { format, quality } = exportOptions;
+  const { format, quality, width, height } = exportOptions;
+  
+  let finalCanvas = sourceCanvas;
+
+  if (width > 0 && height > 0 && (width !== sourceCanvas.width || height !== sourceCanvas.height)) {
+    const resizedCanvas = document.createElement('canvas');
+    resizedCanvas.width = width;
+    resizedCanvas.height = height;
+    const ctx = resizedCanvas.getContext('2d');
+    if (ctx) {
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(sourceCanvas, 0, 0, width, height);
+      finalCanvas = resizedCanvas;
+    }
+  }
+
   const mimeType = `image/${format}`;
   const fileExtension = format;
 
   const link = document.createElement('a');
   link.download = `edited-image.${fileExtension}`;
-  link.href = canvas.toDataURL(mimeType, quality);
+  link.href = finalCanvas.toDataURL(mimeType, quality);
   link.click();
   showSuccess("Image downloaded successfully.");
 };

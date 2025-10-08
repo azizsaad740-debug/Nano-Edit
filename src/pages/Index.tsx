@@ -166,6 +166,7 @@ const Index = () => {
         open={isExporting}
         onOpenChange={setIsExporting}
         onExport={handleDownload}
+        dimensions={dimensions}
       />
     </div>
   );

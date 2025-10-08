@@ -236,7 +236,7 @@ export const useEditorState = () => {
     setCurrentHistoryIndex(index);
   }, []);
 
-  const handleDownload = useCallback((exportOptions: { format: string; quality: number }) => {
+  const handleDownload = useCallback((exportOptions: { format: string; quality: number; width: number; height: number }) => {
     if (!imgRef.current) return;
     downloadImage(
       {
