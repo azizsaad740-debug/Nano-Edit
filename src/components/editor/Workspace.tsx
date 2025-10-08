@@ -6,10 +6,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { UploadCloud } from "lucide-react";
 import ReactCrop, { type Crop } from 'react-image-crop';
 import { cn } from "@/lib/utils";
+import SampleImages from "./SampleImages";
 
 interface WorkspaceProps {
   image: string | null;
   onFileSelect: (file: File | undefined) => void;
+  onSampleSelect: (url: string) => void;
   adjustments: {
     brightness: number;
     contrast: number;
@@ -35,7 +37,7 @@ interface WorkspaceProps {
 
 const Workspace = (props: WorkspaceProps) => {
   const { 
-    image, onFileSelect, adjustments, effects, selectedFilter, transforms,
+    image, onFileSelect, onSampleSelect, adjustments, effects, selectedFilter, transforms,
     crop, onCropChange, onCropComplete, aspect, imgRef, isPreviewingOriginal
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -104,27 +106,30 @@ const Workspace = (props: WorkspaceProps) => {
           </ReactCrop>
         </div>
       ) : (
-        <Card className="w-full max-w-md border-2 border-dashed">
-          <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-4">
-            <div className="p-4 bg-muted rounded-full">
-              <UploadCloud className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h2 className="text-2xl font-semibold">Upload an Image</h2>
-            <p className="text-muted-foreground">
-              Drag & drop, paste from clipboard, or click the button to upload an image.
-            </p>
-            <Button onClick={triggerFileInput}>
-              Select Image
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              className="hidden"
-              accept="image/png, image/jpeg, image/webp"
-            />
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md">
+          <Card className="border-2 border-dashed">
+            <CardContent className="p-8 flex flex-col items-center justify-center text-center space-y-4">
+              <div className="p-4 bg-muted rounded-full">
+                <UploadCloud className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-semibold">Upload an Image</h2>
+              <p className="text-muted-foreground">
+                Drag & drop, paste from clipboard, or click the button to upload an image.
+              </p>
+              <Button onClick={triggerFileInput}>
+                Select Image
+              </Button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                className="hidden"
+                accept="image/png, image/jpeg, image/webp"
+              />
+            </CardContent>
+          </Card>
+          <SampleImages onSelect={onSampleSelect} />
+        </div>
       )}
     </div>
   );

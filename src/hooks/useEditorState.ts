@@ -71,6 +71,19 @@ export const useEditorState = () => {
     }
   }, []);
 
+  const handleSampleImageSelect = useCallback(async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const filename = url.substring(url.lastIndexOf('/') + 1) || 'sample.jpg';
+      const file = new File([blob], filename, { type: blob.type });
+      handleFileSelect(file);
+    } catch (error) {
+      console.error("Failed to fetch sample image:", error);
+      showError("Could not load the sample image.");
+    }
+  }, [handleFileSelect]);
+
   const handleAdjustmentChange = useCallback((adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
     updateCurrentState({ adjustments: newAdjustments });
@@ -177,6 +190,7 @@ export const useEditorState = () => {
     canUndo,
     canRedo,
     handleFileSelect,
+    handleSampleImageSelect,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
