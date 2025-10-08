@@ -163,6 +163,18 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     return null;
   }
 
+  const getTransform = () => {
+    switch (layer.textAlign) {
+      case 'left':
+        return 'translate(0, -50%)';
+      case 'right':
+        return 'translate(-100%, -50%)';
+      case 'center':
+      default:
+        return 'translate(-50%, -50%)';
+    }
+  };
+
   const style = {
     color: layer.color,
     fontSize: `${layer.fontSize}px`,
@@ -184,7 +196,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
-        transform: "translate(-50%, -50%)",
+        transform: getTransform(),
         cursor: isSelected && !isEditing ? "move" : "default",
       }}
     >

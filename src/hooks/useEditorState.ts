@@ -49,6 +49,7 @@ export interface Layer {
   fontFamily?: string;
   fontWeight?: "normal" | "bold";
   fontStyle?: "normal" | "italic";
+  textAlign?: "left" | "center" | "right";
 }
 
 export interface HistoryItem {
@@ -341,6 +342,7 @@ export const useEditorState = () => {
       opacity: 100,
       fontWeight: "normal",
       fontStyle: "normal",
+      textAlign: "center",
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);

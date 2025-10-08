@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Bold, Italic } from "lucide-react";
+import { Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 
 interface TextPropertiesProps {
@@ -46,6 +46,13 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
       fontStyle: isItalic ? "italic" : "normal",
     });
     handleCommit();
+  };
+
+  const handleAlignChange = (align: string) => {
+    if (align) {
+      handleUpdate({ textAlign: align as 'left' | 'center' | 'right' });
+      handleCommit();
+    }
   };
 
   const currentStyles = [];
@@ -96,6 +103,20 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
             </ToggleGroupItem>
           </ToggleGroup>
         </div>
+      </div>
+      <div className="grid gap-2">
+        <Label>Alignment</Label>
+        <ToggleGroup type="single" value={layer.textAlign || 'center'} onValueChange={handleAlignChange}>
+          <ToggleGroupItem value="left" aria-label="Align left">
+            <AlignLeft className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="center" aria-label="Align center">
+            <AlignCenter className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="right" aria-label="Align right">
+            <AlignRight className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
