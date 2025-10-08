@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
+import { usePresets } from "@/hooks/usePresets";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
 import { ExportOptions } from "@/components/editor/ExportOptions";
+import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 
 const Index = () => {
   const {
@@ -51,14 +53,17 @@ const Index = () => {
     setIsPreviewingOriginal,
     isExporting,
     setIsExporting,
+    applyPreset,
   } = useEditorState();
+
+  const { presets, savePreset, deletePreset } = usePresets();
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
 
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
       const items = event.clipboardData?.items;
       if (!items) return;
 
-      // Check for image data first
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
           const file = items[i].getAsFile();
@@ -70,16 +75,14 @@ const Index = () => {
         }
       }
 
-      // If no image, check for a URL in plain text
       const pastedText = event.clipboardData?.getData('text/plain');
       if (pastedText) {
         try {
-          // Check if the pasted text is a valid URL
           new URL(pastedText);
           handleUrlImageLoad(pastedText);
           event.preventDefault();
         } catch (_) {
-          // Not a valid URL, do nothing
+          // Not a valid URL
         }
       }
     };
@@ -115,6 +118,10 @@ const Index = () => {
     fileInfo,
     imgRef,
     exifData,
+    presets,
+    onApplyPreset: applyPreset,
+    onSavePreset: () => setIsSavingPreset(true),
+    onDeletePreset: deletePreset,
   };
 
   return (
@@ -184,6 +191,11 @@ const Index = () => {
         onOpenChange={setIsExporting}
         onExport={handleDownload}
         dimensions={dimensions}
+      />
+      <SavePresetDialog
+        open={isSavingPreset}
+        onOpenChange={setIsSavingPreset}
+        onSave={(name) => savePreset(name, currentState)}
       />
     </div>
   );

@@ -26,7 +26,9 @@ import Crop from "@/components/editor/Crop";
 import History from "@/components/editor/History";
 import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
+import Presets from "@/components/editor/Presets";
 import React from "react";
+import type { Preset } from "@/hooks/usePresets";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -63,6 +65,10 @@ interface EditorControlsProps {
   fileInfo: { name: string, size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
   exifData: any;
+  presets: Preset[];
+  onApplyPreset: (preset: Preset) => void;
+  onSavePreset: () => void;
+  onDeletePreset: (name: string) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -78,7 +84,8 @@ const EditorControls = (props: EditorControlsProps) => {
     dimensions,
     fileInfo,
     imgRef,
-    exifData
+    exifData,
+    presets, onApplyPreset, onSavePreset, onDeletePreset,
   } = props;
 
   if (!hasImage) {
@@ -171,7 +178,18 @@ const EditorControls = (props: EditorControlsProps) => {
       </TabsContent>
 
       <TabsContent value="effects" className="mt-4">
-        <Accordion type="multiple" className="w-full" defaultValue={['filters', 'effects']}>
+        <Accordion type="multiple" className="w-full" defaultValue={['presets', 'filters', 'effects']}>
+          <AccordionItem value="presets">
+            <AccordionTrigger>Presets</AccordionTrigger>
+            <AccordionContent>
+              <Presets
+                presets={presets}
+                onApplyPreset={onApplyPreset}
+                onSavePreset={onSavePreset}
+                onDeletePreset={onDeletePreset}
+              />
+            </AccordionContent>
+          </AccordionItem>
           <AccordionItem value="filters">
             <AccordionTrigger>Filters</AccordionTrigger>
             <AccordionContent>

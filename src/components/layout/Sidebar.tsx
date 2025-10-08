@@ -1,5 +1,6 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
+import type { Preset } from "@/hooks/usePresets";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -36,6 +37,10 @@ interface SidebarProps {
   fileInfo: { name: string, size: number } | null;
   imgRef: React.RefObject<HTMLImageElement>;
   exifData: any;
+  presets: Preset[];
+  onApplyPreset: (preset: Preset) => void;
+  onSavePreset: () => void;
+  onDeletePreset: (name: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

@@ -4,6 +4,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { downloadImage, copyImageToClipboard } from "@/utils/imageUtils";
 import ExifReader from 'exifreader';
+import type { Preset } from "./usePresets";
 
 export interface EditState {
   adjustments: {
@@ -130,9 +131,11 @@ export const useEditorState = () => {
       }
 
       const filename = url.split('/').pop()?.split('?')[0] || 'image.jpg';
-      setFileInfo({ name: filename, size: blob.size });
+      const file = new File([blob], filename, { type: blob.type });
+      
+      setFileInfo({ name: file.name, size: file.size });
       setExifData(null);
-      ExifReader.load(blob).then(tags => {
+      ExifReader.load(file).then(tags => {
         setExifData(tags);
       }).catch(() => setExifData(null));
 
@@ -266,6 +269,14 @@ export const useEditorState = () => {
     });
   }, [currentState]);
 
+  const applyPreset = useCallback((preset: Preset) => {
+    const newState = {
+      ...currentState,
+      ...preset.state,
+    };
+    recordHistory(`Apply Preset: ${preset.name}`, newState);
+  }, [currentState, recordHistory]);
+
   useHotkeys('ctrl+z, cmd+z', handleUndo, { preventDefault: true });
   useHotkeys('ctrl+y, cmd+shift+z', handleRedo, { preventDefault: true });
   useHotkeys('ctrl+s, cmd+s', (e) => { e.preventDefault(); if (image) setIsExporting(true); }, { enabled: !!image }, [image]);
@@ -314,5 +325,6 @@ export const useEditorState = () => {
     setIsPreviewingOriginal,
     isExporting,
     setIsExporting,
+    applyPreset,
   };
 };
