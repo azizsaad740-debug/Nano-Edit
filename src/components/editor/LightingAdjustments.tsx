@@ -22,10 +22,13 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="brightness">Brightness</Label>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("brightness")}>
-            <RotateCcw className="h-3 w-3" />
-            <span className="sr-only">Reset Brightness</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="w-8 text-right text-sm text-muted-foreground">{adjustments.brightness}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("brightness")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Brightness</span>
+            </Button>
+          </div>
         </div>
         <Slider
           id="brightness"
@@ -39,10 +42,13 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="contrast">Contrast</Label>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("contrast")}>
-            <RotateCcw className="h-3 w-3" />
-            <span className="sr-only">Reset Contrast</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="w-8 text-right text-sm text-muted-foreground">{adjustments.contrast}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("contrast")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Contrast</span>
+            </Button>
+          </div>
         </div>
         <Slider
           id="contrast"
@@ -56,10 +62,13 @@ const LightingAdjustments = ({ adjustments, onAdjustmentChange }: LightingAdjust
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="saturation">Saturation</Label>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("saturation")}>
-            <RotateCcw className="h-3 w-3" />
-            <span className="sr-only">Reset Saturation</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="w-8 text-right text-sm text-muted-foreground">{adjustments.saturation}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("saturation")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Saturation</span>
+            </Button>
+          </div>
         </div>
         <Slider
           id="saturation"

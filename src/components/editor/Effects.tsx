@@ -21,10 +21,13 @@ const Effects = ({ effects, onEffectChange }: EffectsProps) => {
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="blur">Blur</Label>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("blur")}>
-            <RotateCcw className="h-3 w-3" />
-            <span className="sr-only">Reset Blur</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-sm text-muted-foreground">{effects.blur}px</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("blur")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Blur</span>
+            </Button>
+          </div>
         </div>
         <Slider
           id="blur"
@@ -38,10 +41,13 @@ const Effects = ({ effects, onEffectChange }: EffectsProps) => {
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="hueShift">Hue Shift</Label>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("hueShift")}>
-            <RotateCcw className="h-3 w-3" />
-            <span className="sr-only">Reset Hue Shift</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-sm text-muted-foreground">{effects.hueShift}°</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("hueShift")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Hue Shift</span>
+            </Button>
+          </div>
         </div>
         <Slider
           id="hueShift"
