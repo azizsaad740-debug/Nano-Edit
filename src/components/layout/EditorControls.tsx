@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
+import History from "@/components/editor/History";
 
 interface EditorControlsProps {
   adjustments: {
@@ -13,6 +14,10 @@ interface EditorControlsProps {
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const EditorControls = ({ 
@@ -20,10 +25,22 @@ const EditorControls = ({
   onAdjustmentChange, 
   onFilterChange, 
   selectedFilter, 
-  onTransformChange 
+  onTransformChange,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo
 }: EditorControlsProps) => {
   return (
     <div className="flex flex-col gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <History onUndo={onUndo} onRedo={onRedo} canUndo={canUndo} canRedo={canRedo} />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle>Lighting & Color</CardTitle>

@@ -7,19 +7,39 @@ import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
 
+interface EditState {
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+  selectedFilter: string;
+  transforms: {
+    rotation: number;
+    scaleX: number;
+    scaleY: number;
+  };
+}
+
+const initialEditState: EditState = {
+  adjustments: { brightness: 100, contrast: 100, saturation: 100 },
+  selectedFilter: "",
+  transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
+};
+
 const Index = () => {
   const [image, setImage] = useState<string | null>(null);
-  const [adjustments, setAdjustments] = useState({
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-  });
-  const [selectedFilter, setSelectedFilter] = useState("");
-  const [transforms, setTransforms] = useState({
-    rotation: 0,
-    scaleX: 1,
-    scaleY: 1,
-  });
+  const [history, setHistory] = useState<EditState[]>([initialEditState]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+
+  const currentState = history[currentHistoryIndex];
+  const { adjustments, selectedFilter, transforms } = currentState;
+
+  const recordHistory = (newState: EditState) => {
+    const newHistory = history.slice(0, currentHistoryIndex + 1);
+    setHistory([...newHistory, newState]);
+    setCurrentHistoryIndex(newHistory.length);
+  };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -27,44 +47,57 @@ const Index = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImage(reader.result as string);
-        handleReset();
+        setHistory([initialEditState]);
+        setCurrentHistoryIndex(0);
       };
       reader.readAsDataURL(file);
     }
   };
 
   const handleAdjustmentChange = (adjustment: string, value: number) => {
-    setAdjustments(prev => ({
-      ...prev,
-      [adjustment]: value,
-    }));
+    const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
+    recordHistory({ ...currentState, adjustments: newAdjustments });
   };
 
   const handleFilterChange = (filterValue: string) => {
-    setSelectedFilter(filterValue);
+    recordHistory({ ...currentState, selectedFilter: filterValue });
   };
 
   const handleTransformChange = (transformType: string) => {
-    setTransforms(prev => {
-      switch (transformType) {
-        case "rotate-left":
-          return { ...prev, rotation: (prev.rotation - 90 + 360) % 360 };
-        case "rotate-right":
-          return { ...prev, rotation: (prev.rotation + 90) % 360 };
-        case "flip-horizontal":
-          return { ...prev, scaleX: prev.scaleX * -1 };
-        case "flip-vertical":
-          return { ...prev, scaleY: prev.scaleY * -1 };
-        default:
-          return prev;
-      }
-    });
+    const newTransforms = { ...currentState.transforms };
+    switch (transformType) {
+      case "rotate-left":
+        newTransforms.rotation = (newTransforms.rotation - 90 + 360) % 360;
+        break;
+      case "rotate-right":
+        newTransforms.rotation = (newTransforms.rotation + 90) % 360;
+        break;
+      case "flip-horizontal":
+        newTransforms.scaleX *= -1;
+        break;
+      case "flip-vertical":
+        newTransforms.scaleY *= -1;
+        break;
+      default:
+        return;
+    }
+    recordHistory({ ...currentState, transforms: newTransforms });
   };
 
   const handleReset = () => {
-    setAdjustments({ brightness: 100, contrast: 100, saturation: 100 });
-    setSelectedFilter("");
-    setTransforms({ rotation: 0, scaleX: 1, scaleY: 1 });
+    recordHistory(initialEditState);
+  };
+
+  const handleUndo = () => {
+    if (currentHistoryIndex > 0) {
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+    }
+  };
+
+  const handleRedo = () => {
+    if (currentHistoryIndex < history.length - 1) {
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+    }
   };
 
   const handleDownload = () => {
@@ -99,12 +132,19 @@ const Index = () => {
     };
   };
 
+  const canUndo = currentHistoryIndex > 0;
+  const canRedo = currentHistoryIndex < history.length - 1;
+
   const editorProps = {
     adjustments,
     onAdjustmentChange: handleAdjustmentChange,
-    onFilterChange: handleFilterChange,
     selectedFilter,
+    onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    canUndo,
+    canRedo,
   };
 
   return (

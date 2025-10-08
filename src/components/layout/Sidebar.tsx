@@ -10,6 +10,10 @@ interface SidebarProps {
   onFilterChange: (filterValue: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const Sidebar = (props: SidebarProps) => {
