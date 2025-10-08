@@ -2,23 +2,34 @@
 
 import * as React from "react";
 import type { Layer } from "@/hooks/useEditorState";
+import { ResizeHandle } from "./ResizeHandle";
+import { cn } from "@/lib/utils";
 
 interface TextLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
+  isSelected: boolean;
 }
 
-export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayerProps) => {
+export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected }: TextLayerProps) => {
   const textRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [isResizing, setIsResizing] = React.useState(false);
   const dragStartPos = React.useRef({ x: 0, y: 0 });
+  const resizeStartInfo = React.useRef({
+    x: 0,
+    y: 0,
+    fontSize: 48,
+    handle: "",
+  });
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
+  // Dragging logic
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isEditing) return;
+    if (isEditing || !isSelected) return;
     e.stopPropagation();
     setIsDragging(true);
     dragStartPos.current = { x: e.clientX, y: e.clientY };
@@ -62,8 +73,71 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
+  // Resizing logic
+  const handleResizeMouseDown = (
+    e: React.MouseEvent<HTMLDivElement>,
+    handle: string
+  ) => {
+    e.stopPropagation();
+    setIsResizing(true);
+    resizeStartInfo.current = {
+      x: e.clientX,
+      y: e.clientY,
+      fontSize: layer.fontSize || 48,
+      handle,
+    };
+  };
+
+  const handleResizeMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+
+    const dx = e.clientX - resizeStartInfo.current.x;
+    const dy = e.clientY - resizeStartInfo.current.y;
+    
+    let change = 0;
+    switch (resizeStartInfo.current.handle) {
+      case "top-left":
+        change = -(dx + dy);
+        break;
+      case "top-right":
+        change = dx - dy;
+        break;
+      case "bottom-left":
+        change = -dx + dy;
+        break;
+      case "bottom-right":
+        change = dx + dy;
+        break;
+    }
+
+    const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.fontSize + (change * 0.5)));
+
+    onUpdate(layer.id, { fontSize: newFontSize });
+  }, [isResizing, layer.id, onUpdate]);
+
+  const handleResizeMouseUp = React.useCallback(() => {
+    if (isResizing) {
+      setIsResizing(false);
+      onCommit(layer.id);
+    }
+  }, [isResizing, layer.id, onCommit]);
+
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener("mousemove", handleResizeMouseMove);
+      document.addEventListener("mouseup", handleResizeMouseUp);
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleResizeMouseMove);
+      document.removeEventListener("mouseup", handleResizeMouseUp);
+    };
+  }, [isResizing, handleResizeMouseMove, handleResizeMouseUp]);
+
+  // Editing logic
   const handleDoubleClick = () => {
-    setIsEditing(true);
+    if (isSelected) {
+      setIsEditing(true);
+    }
   };
 
   const handleBlur = () => {
@@ -77,7 +151,6 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
   React.useEffect(() => {
     if (isEditing && editableRef.current) {
       editableRef.current.focus();
-      // Select all text
       const range = document.createRange();
       range.selectNodeContents(editableRef.current);
       const sel = window.getSelection();
@@ -104,26 +177,42 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit }: TextLayer
       ref={textRef}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
-      className="absolute p-2"
+      className="absolute"
       style={{
         left: `${layer.x}%`,
         top: `${layer.y}%`,
         transform: "translate(-50%, -50%)",
-        cursor: isEditing ? "text" : "move",
+        cursor: isSelected && !isEditing ? "move" : "default",
       }}
     >
-      {isEditing ? (
-        <div
-          ref={editableRef}
-          contentEditable
-          suppressContentEditableWarning
-          onBlur={handleBlur}
-          style={style}
-          dangerouslySetInnerHTML={{ __html: layer.content || "" }}
-        />
-      ) : (
-        <div style={style}>{layer.content}</div>
-      )}
+      <div
+        className={cn(
+          "relative p-2",
+          isSelected && !isEditing && "outline outline-2 outline-primary outline-dashed"
+        )}
+      >
+        {isEditing ? (
+          <div
+            ref={editableRef}
+            contentEditable
+            suppressContentEditableWarning
+            onBlur={handleBlur}
+            style={style}
+            dangerouslySetInnerHTML={{ __html: layer.content || "" }}
+          />
+        ) : (
+          <div style={style}>{layer.content}</div>
+        )}
+
+        {isSelected && !isEditing && (
+          <>
+            <ResizeHandle position="top-left" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="top-right" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="bottom-left" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="bottom-right" onMouseDown={handleResizeMouseDown} />
+          </>
+        )}
+      </div>
     </div>
   );
 };

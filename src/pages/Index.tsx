@@ -257,6 +257,7 @@ const Index = () => {
                 layers={layers}
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
+                selectedLayerId={selectedLayerId}
               />
             </div>
           </ResizablePanel>

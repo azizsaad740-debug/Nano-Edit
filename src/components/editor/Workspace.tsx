@@ -49,6 +49,7 @@ interface WorkspaceProps {
   layers: Layer[];
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  selectedLayerId: string | null;
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -73,6 +74,7 @@ const Workspace = (props: WorkspaceProps) => {
     layers,
     onLayerUpdate,
     onLayerCommit,
+    selectedLayerId,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -181,6 +183,7 @@ const Workspace = (props: WorkspaceProps) => {
                     containerRef={imageContainerRef}
                     onUpdate={onLayerUpdate}
                     onCommit={onLayerCommit}
+                    isSelected={layer.id === selectedLayerId}
                   />
                 ))}
               </div>
