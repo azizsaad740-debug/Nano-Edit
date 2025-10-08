@@ -19,6 +19,8 @@ const Index = () => {
     image,
     imgRef,
     currentState,
+    history,
+    currentHistoryIndex,
     aspect,
     canUndo,
     canRedo,
@@ -35,6 +37,7 @@ const Index = () => {
     handleReset,
     handleUndo,
     handleRedo,
+    jumpToHistory,
     handleDownload,
     handleCopy,
     setAspect,
@@ -81,6 +84,9 @@ const Index = () => {
     onTransformChange: handleTransformChange,
     onAspectChange: setAspect,
     aspect,
+    history,
+    currentHistoryIndex,
+    onHistoryJump: jumpToHistory,
   };
 
   return (

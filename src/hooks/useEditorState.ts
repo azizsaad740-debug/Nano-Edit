@@ -23,6 +23,11 @@ export interface EditState {
   crop: Crop | undefined;
 }
 
+export interface HistoryItem {
+  name: string;
+  state: EditState;
+}
+
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0 },
@@ -31,27 +36,29 @@ const initialEditState: EditState = {
   crop: undefined,
 };
 
+const initialHistoryItem: HistoryItem = { name: "Initial State", state: initialEditState };
+
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
-  const [history, setHistory] = useState<EditState[]>([initialEditState]);
+  const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [aspect, setAspect] = useState<number | undefined>();
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
-  const currentState = history[currentHistoryIndex];
+  const currentState = history[currentHistoryIndex].state;
 
-  const recordHistory = useCallback((newState: EditState) => {
+  const recordHistory = useCallback((name: string, state: EditState) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
-    setHistory([...newHistory, newState]);
+    setHistory([...newHistory, { name, state }]);
     setCurrentHistoryIndex(newHistory.length);
   }, [history, currentHistoryIndex]);
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     const newState = { ...currentState, ...updates };
     const newHistory = [...history];
-    newHistory[currentHistoryIndex] = newState;
+    newHistory[currentHistoryIndex] = { ...newHistory[currentHistoryIndex], state: newState };
     setHistory(newHistory);
   }, [currentState, history, currentHistoryIndex]);
 
@@ -61,7 +68,7 @@ export const useEditorState = () => {
         const reader = new FileReader();
         reader.onloadend = () => {
           setImage(reader.result as string);
-          setHistory([initialEditState]);
+          setHistory([initialHistoryItem]);
           setCurrentHistoryIndex(0);
           showSuccess("Image uploaded successfully.");
         };
@@ -105,7 +112,8 @@ export const useEditorState = () => {
 
   const handleAdjustmentCommit = useCallback((adjustment: string, value: number) => {
     const newAdjustments = { ...currentState.adjustments, [adjustment]: value };
-    recordHistory({ ...currentState, adjustments: newAdjustments });
+    const name = `Adjust ${adjustment.charAt(0).toUpperCase() + adjustment.slice(1)}`;
+    recordHistory(name, { ...currentState, adjustments: newAdjustments });
   }, [currentState, recordHistory]);
 
   const handleEffectChange = useCallback((effect: string, value: number) => {
@@ -115,15 +123,23 @@ export const useEditorState = () => {
 
   const handleEffectCommit = useCallback((effect: string, value: number) => {
     const newEffects = { ...currentState.effects, [effect]: value };
-    recordHistory({ ...currentState, effects: newEffects });
+    const name = `Adjust ${effect.charAt(0).toUpperCase() + effect.slice(1)}`;
+    recordHistory(name, { ...currentState, effects: newEffects });
   }, [currentState, recordHistory]);
 
-  const handleFilterChange = useCallback((filterValue: string) => {
-    recordHistory({ ...currentState, selectedFilter: filterValue });
+  const handleFilterChange = useCallback((filterValue: string, filterName: string) => {
+    const name = filterName === "None" ? "Remove Filter" : `Apply ${filterName} Filter`;
+    recordHistory(name, { ...currentState, selectedFilter: filterValue });
   }, [currentState, recordHistory]);
 
   const handleTransformChange = useCallback((transformType: string) => {
     const newTransforms = { ...currentState.transforms };
+    const nameMap: { [key: string]: string } = {
+      'rotate-left': 'Rotate Left',
+      'rotate-right': 'Rotate Right',
+      'flip-horizontal': 'Flip Horizontal',
+      'flip-vertical': 'Flip Vertical',
+    };
     switch (transformType) {
       case "rotate-left":
         newTransforms.rotation = (newTransforms.rotation - 90 + 360) % 360;
@@ -140,7 +156,7 @@ export const useEditorState = () => {
       default:
         return;
     }
-    recordHistory({ ...currentState, transforms: newTransforms });
+    recordHistory(nameMap[transformType], { ...currentState, transforms: newTransforms });
   }, [currentState, recordHistory]);
 
   const handleCropChange = useCallback((newCrop: Crop) => {
@@ -148,12 +164,11 @@ export const useEditorState = () => {
   }, [updateCurrentState]);
 
   const handleCropComplete = useCallback((newCrop: Crop) => {
-    recordHistory({ ...currentState, crop: newCrop });
+    recordHistory('Crop Image', { ...currentState, crop: newCrop });
   }, [currentState, recordHistory]);
 
   const handleReset = useCallback(() => {
-    recordHistory(initialEditState);
-    showSuccess("All edits have been reset.");
+    recordHistory('Reset All', initialEditState);
   }, [recordHistory]);
 
   const handleUndo = useCallback(() => {
@@ -167,6 +182,10 @@ export const useEditorState = () => {
       setCurrentHistoryIndex(currentHistoryIndex + 1);
     }
   }, [currentHistoryIndex, history.length]);
+
+  const jumpToHistory = useCallback((index: number) => {
+    setCurrentHistoryIndex(index);
+  }, []);
 
   const handleDownload = useCallback((exportOptions: { format: string; quality: number }) => {
     if (!imgRef.current) return;
@@ -203,6 +222,8 @@ export const useEditorState = () => {
     image,
     imgRef,
     currentState,
+    history,
+    currentHistoryIndex,
     aspect,
     canUndo,
     canRedo,
@@ -219,6 +240,7 @@ export const useEditorState = () => {
     handleReset,
     handleUndo,
     handleRedo,
+    jumpToHistory,
     handleDownload,
     handleCopy,
     setAspect,

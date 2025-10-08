@@ -9,6 +9,7 @@ import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
 import Effects from "@/components/editor/Effects";
 import Crop from "@/components/editor/Crop";
+import History from "@/components/editor/History";
 
 interface EditorControlsProps {
   adjustments: {
@@ -24,11 +25,14 @@ interface EditorControlsProps {
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
-  onFilterChange: (filterValue: string) => void;
+  onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
+  history: { name: string }[];
+  currentHistoryIndex: number;
+  onHistoryJump: (index: number) => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -37,7 +41,8 @@ const EditorControls = (props: EditorControlsProps) => {
     effects, onEffectChange, onEffectCommit,
     onFilterChange, selectedFilter, 
     onTransformChange,
-    onAspectChange, aspect
+    onAspectChange, aspect,
+    history, currentHistoryIndex, onHistoryJump
   } = props;
 
   return (
@@ -81,6 +86,16 @@ const EditorControls = (props: EditorControlsProps) => {
         <AccordionTrigger>Transform</AccordionTrigger>
         <AccordionContent>
           <Transform onTransformChange={onTransformChange} />
+        </AccordionContent>
+      </AccordionItem>
+      <AccordionItem value="history">
+        <AccordionTrigger>History</AccordionTrigger>
+        <AccordionContent>
+          <History 
+            history={history}
+            currentIndex={currentHistoryIndex}
+            onJump={onHistoryJump}
+          />
         </AccordionContent>
       </AccordionItem>
     </Accordion>

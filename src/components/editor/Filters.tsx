@@ -11,7 +11,7 @@ const filters = [
 ];
 
 interface FiltersProps {
-  onFilterChange: (filterValue: string) => void;
+  onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
 }
 
@@ -27,7 +27,7 @@ const Filters = ({ onFilterChange, selectedFilter }: FiltersProps) => {
             "justify-start",
             selectedFilter === filter.value && "bg-accent text-accent-foreground"
           )}
-          onClick={() => onFilterChange(filter.value)}
+          onClick={() => onFilterChange(filter.value, filter.name)}
         >
           {filter.name}
         </Button>

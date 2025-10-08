@@ -14,11 +14,14 @@ interface SidebarProps {
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
-  onFilterChange: (filterValue: string) => void;
+  onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
+  history: { name: string }[];
+  currentHistoryIndex: number;
+  onHistoryJump: (index: number) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
