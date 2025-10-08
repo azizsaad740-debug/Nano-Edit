@@ -170,6 +170,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     textShadow: "0 0 5px rgba(0,0,0,0.7)",
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "nowrap",
+    opacity: (layer.opacity ?? 100) / 100,
   } as React.CSSProperties;
 
   return (

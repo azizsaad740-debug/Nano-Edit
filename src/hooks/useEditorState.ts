@@ -39,6 +39,7 @@ export interface Layer {
   type: "image" | "text";
   name: string;
   visible: boolean;
+  opacity?: number;
   // Text layer specific properties
   content?: string;
   x?: number; // percentage from left
@@ -335,6 +336,7 @@ export const useEditorState = () => {
       fontSize: 48,
       color: "#FFFFFF",
       fontFamily: "Roboto",
+      opacity: 100,
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);

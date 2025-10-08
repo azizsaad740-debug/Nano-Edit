@@ -92,6 +92,21 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
           onChange={(e) => handleUpdate({ color: e.target.value })}
         />
       </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="opacity">Opacity</Label>
+          <span className="text-sm text-muted-foreground">{layer.opacity ?? 100}%</span>
+        </div>
+        <Slider
+          id="opacity"
+          min={0}
+          max={100}
+          step={1}
+          value={[layer.opacity ?? 100]}
+          onValueChange={([v]) => handleUpdate({ opacity: v })}
+          onValueCommit={handleCommit}
+        />
+      </div>
     </div>
   );
 };
