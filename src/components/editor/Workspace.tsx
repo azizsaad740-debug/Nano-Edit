@@ -58,7 +58,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | null;
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | null;
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -151,7 +151,7 @@ const Workspace = (props: WorkspaceProps) => {
       e.preventDefault();
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
-    } else if (activeTool === 'brush' && image) {
+    } else if ((activeTool === 'brush' || activeTool === 'eraser') && image) {
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
       if (selectedLayer && selectedLayer.type === 'drawing') {
         activeDrawingLayerIdRef.current = selectedLayer.id;
@@ -342,11 +342,12 @@ const Workspace = (props: WorkspaceProps) => {
                         }
                         return null;
                       })}
-                      {isDrawing && activeTool === 'brush' && (
+                      {isDrawing && (activeTool === 'brush' || activeTool === 'eraser') && (
                         <LiveBrushCanvas
                           brushState={brushState}
                           imageRef={imgRef}
                           onDrawEnd={handleDrawEnd}
+                          activeTool={activeTool}
                         />
                       )}
                     </div>
