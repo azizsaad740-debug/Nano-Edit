@@ -81,6 +81,9 @@ const Index = () => {
     // tool state
     activeTool,
     setActiveTool,
+    // brush state
+    brushState,
+    setBrushState,
     // generative
     applyGenerativeResult,
     // selection
@@ -230,6 +233,8 @@ const Index = () => {
           activeTool={activeTool}
           setActiveTool={setActiveTool}
           openGenerativeDialog={() => setOpenGenerative(true)}
+          brushState={brushState}
+          setBrushState={setBrushState}
         />
       </div>
 

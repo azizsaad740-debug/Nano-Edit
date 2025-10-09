@@ -9,17 +9,23 @@ import {
   Wand2,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BrushOptions } from "./BrushOptions";
+import type { BrushState } from "@/hooks/useEditorState";
 
 interface ToolsBarProps {
   activeTool: string;
   setActiveTool: (tool: "lasso" | "brush" | "text" | null) => void;
   openGenerativeDialog: () => void;
+  brushState: BrushState;
+  setBrushState: (updates: Partial<BrushState>) => void;
 }
 
 export const ToolsBar = ({
   activeTool,
   setActiveTool,
   openGenerativeDialog,
+  brushState,
+  setBrushState,
 }: ToolsBarProps) => {
   return (
     <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
@@ -70,6 +76,17 @@ export const ToolsBar = ({
           <p>Text tool (Ctrl+T)</p>
         </TooltipContent>
       </Tooltip>
+
+      {activeTool === 'brush' && (
+        <BrushOptions
+          brushSize={brushState.size}
+          setBrushSize={(size) => setBrushState({ size })}
+          brushOpacity={brushState.opacity}
+          setBrushOpacity={(opacity) => setBrushState({ opacity })}
+          brushColor={brushState.color}
+          setBrushColor={(color) => setBrushState({ color })}
+        />
+      )}
 
       {activeTool === "lasso" && (
         <Tooltip>

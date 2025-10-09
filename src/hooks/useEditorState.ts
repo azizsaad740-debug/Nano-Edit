@@ -66,6 +66,12 @@ export interface HistoryItem {
   layers: Layer[];
 }
 
+export interface BrushState {
+  size: number;
+  opacity: number;
+  color: string;
+}
+
 /* ---------- Initial state ---------- */
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
@@ -93,6 +99,12 @@ const initialHistoryItem: HistoryItem = {
   layers: initialLayers,
 };
 
+const initialBrushState: BrushState = {
+  size: 50,
+  opacity: 100,
+  color: "#ff0000",
+};
+
 /* ---------- Hook implementation ---------- */
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
@@ -106,6 +118,7 @@ export const useEditorState = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -425,6 +438,10 @@ export const useEditorState = () => {
     showSuccess("Generative fill applied.");
   }, []);
 
+  const handleSetBrushState = useCallback((updates: Partial<BrushState>) => {
+    setBrushState(prev => ({ ...prev, ...updates }));
+  }, []);
+
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -511,6 +528,9 @@ export const useEditorState = () => {
     // Tool state
     activeTool,
     setActiveTool,
+    // Brush state
+    brushState,
+    setBrushState: handleSetBrushState,
     // Generative
     applyGenerativeResult,
     // Selection
