@@ -7,11 +7,12 @@ import {
   Brush,
   Type,
   Crop as CropIcon,
+  Eraser,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-type Tool = "lasso" | "brush" | "text" | "crop";
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser";
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -21,6 +22,7 @@ interface ToolsPanelProps {
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
   { name: "Lasso", icon: PenTool, tool: "lasso", shortcut: "L" },
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
+  { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },
   { name: "Crop", icon: CropIcon, tool: "crop", shortcut: "C" },
 ];

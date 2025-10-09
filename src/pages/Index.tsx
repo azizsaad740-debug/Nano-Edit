@@ -25,6 +25,7 @@ import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
+import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
@@ -45,6 +46,7 @@ const Index = () => {
     handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
+    handleGeneratedImageLoad,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
@@ -101,6 +103,7 @@ const Index = () => {
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
   const [openGenerative, setOpenGenerative] = useState(false);
+  const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
@@ -212,10 +215,12 @@ const Index = () => {
         setOpenSettings={setOpenSettings}
         openImport={openImport}
         setOpenImport={setOpenImport}
+        onGenerateClick={() => setOpenGenerateImage(true)}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {activeTool === 'brush' && (
+          {(activeTool === 'brush' || activeTool === 'eraser') && (
             <BrushOptions
+              activeTool={activeTool}
               brushSize={brushState.size}
               setBrushSize={(size) => setBrushState({ size })}
               brushOpacity={brushState.opacity}
@@ -316,6 +321,12 @@ const Index = () => {
         open={openGenerative}
         onOpenChange={setOpenGenerative}
         onApply={applyGenerativeResult}
+        apiKey={apiKey}
+      />
+      <GenerateImageDialog
+        open={openGenerateImage}
+        onOpenChange={setOpenGenerateImage}
+        onGenerate={handleGeneratedImageLoad}
         apiKey={apiKey}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />

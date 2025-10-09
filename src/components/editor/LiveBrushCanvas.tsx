@@ -7,12 +7,14 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string) => void;
+  activeTool: "brush" | "eraser";
 }
 
 export const LiveBrushCanvas = ({
   brushState,
   imageRef,
   onDrawEnd,
+  activeTool,
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
@@ -67,6 +69,7 @@ export const LiveBrushCanvas = ({
     ctx.globalAlpha = brushState.opacity / 100;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
+    ctx.globalCompositeOperation = activeTool === 'eraser' ? 'destination-out' : 'source-over';
     contextRef.current = ctx;
 
     document.addEventListener("mousemove", draw);
@@ -76,7 +79,7 @@ export const LiveBrushCanvas = ({
       document.removeEventListener("mousemove", draw);
       document.removeEventListener("mouseup", endDrawing);
     };
-  }, [brushState, draw, endDrawing, imageRef]);
+  }, [brushState, draw, endDrawing, imageRef, activeTool]);
 
   return (
     <canvas

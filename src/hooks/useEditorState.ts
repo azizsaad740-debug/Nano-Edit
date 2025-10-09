@@ -79,7 +79,7 @@ export interface BrushState {
   color: string;
 }
 
-type ActiveTool = "lasso" | "brush" | "text" | "crop";
+type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser";
 
 /* ---------- Initial state ---------- */
 const initialEditState: EditState = {
@@ -204,6 +204,12 @@ export const useEditorState = () => {
     setSelectionPath(null);
     showSuccess(successMsg);
   }, []);
+
+  const handleGeneratedImageLoad = useCallback((dataUrl: string) => {
+    loadImageData(dataUrl, "New image generated successfully.");
+    setFileInfo({ name: "generated-image.png", size: 0 });
+    setExifData(null);
+  }, [loadImageData]);
 
   const handleFileSelect = useCallback((file: File | undefined) => {
     if (!file) return;
@@ -508,6 +514,7 @@ export const useEditorState = () => {
   useHotkeys("h", () => handleTransformChange("flip-horizontal"), { enabled: !!image, preventDefault: true });
   useHotkeys("v", () => handleTransformChange("flip-vertical"), { enabled: !!image, preventDefault: true });
   useHotkeys("b", () => setActiveTool("brush"), { enabled: !!image });
+  useHotkeys("e", () => setActiveTool("eraser"), { enabled: !!image });
   useHotkeys("t", () => setActiveTool("text"), { enabled: !!image });
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
   useHotkeys("c", () => setActiveTool("crop"), { enabled: !!image });
@@ -535,6 +542,7 @@ export const useEditorState = () => {
     handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
+    handleGeneratedImageLoad,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,

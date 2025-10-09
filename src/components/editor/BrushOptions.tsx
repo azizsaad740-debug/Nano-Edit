@@ -12,6 +12,7 @@ interface BrushOptionsProps {
   setBrushOpacity: (opacity: number) => void;
   brushColor: string;
   setBrushColor: (color: string) => void;
+  activeTool: "brush" | "eraser";
 }
 
 export const BrushOptions = ({
@@ -21,6 +22,7 @@ export const BrushOptions = ({
   setBrushOpacity,
   brushColor,
   setBrushColor,
+  activeTool,
 }: BrushOptionsProps) => {
   return (
     <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-md">
@@ -48,16 +50,18 @@ export const BrushOptions = ({
           className="w-24"
         />
       </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="brush-color" className="text-xs">Color</Label>
-        <Input
-          id="brush-color"
-          type="color"
-          className="p-1 h-8 w-10"
-          value={brushColor}
-          onChange={(e) => setBrushColor(e.target.value)}
-        />
-      </div>
+      {activeTool === 'brush' && (
+        <div className="grid gap-1.5">
+          <Label htmlFor="brush-color" className="text-xs">Color</Label>
+          <Input
+            id="brush-color"
+            type="color"
+            className="p-1 h-8 w-10"
+            value={brushColor}
+            onChange={(e) => setBrushColor(e.target.value)}
+          />
+        </div>
+      )}
     </div>
   );
 };

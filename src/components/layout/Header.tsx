@@ -8,6 +8,7 @@ import {
   Redo2,
   Settings,
   FilePlus2,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -35,6 +36,7 @@ interface HeaderProps {
   // Import presets dialog control
   openImport: boolean;
   setOpenImport: (open: boolean) => void;
+  onGenerateClick: () => void;
 }
 
 const Header = ({
@@ -52,6 +54,7 @@ const Header = ({
   setOpenSettings,
   openImport,
   setOpenImport,
+  onGenerateClick,
 }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
@@ -62,7 +65,16 @@ const Header = ({
       <div className="flex items-center gap-2">
         {children}
         <ThemeToggle />
-        {/* Import Presets button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onGenerateClick}>
+              <Sparkles className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Generate Image</p>
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={() => setOpenImport(true)}>
@@ -73,7 +85,6 @@ const Header = ({
             <p>Import Preset / LUT</p>
           </TooltipContent>
         </Tooltip>
-        {/* Settings button */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={() => setOpenSettings(true)}>
