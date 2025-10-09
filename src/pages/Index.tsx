@@ -88,6 +88,7 @@ const Index = () => {
     deleteLayer,
     updateLayer,
     commitLayerChange,
+    handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,
@@ -224,6 +225,7 @@ const Index = () => {
     // layer editing
     onLayerUpdate: updateLayer,
     onLayerCommit: commitLayerChange,
+    onLayerPropertyCommit: handleLayerPropertyCommit,
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
   };

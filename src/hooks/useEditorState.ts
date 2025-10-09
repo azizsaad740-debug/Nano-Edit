@@ -58,6 +58,7 @@ export interface Layer {
   name: string;
   visible: boolean;
   opacity?: number;
+  blendMode?: string;
   // Text layer specific properties
   content?: string;
   x?: number; // percentage from left
@@ -111,6 +112,7 @@ const initialLayers: Layer[] = [
     name: "Background",
     visible: true,
     opacity: 100,
+    blendMode: 'normal',
   },
 ];
 
@@ -497,6 +499,7 @@ export const useEditorState = () => {
       color: "#FFFFFF",
       fontFamily: "Roboto",
       opacity: 100,
+      blendMode: 'normal',
       fontWeight: "normal",
       fontStyle: "normal",
       textAlign: "center",
@@ -517,6 +520,7 @@ export const useEditorState = () => {
       name: `Drawing ${currentLayers.filter((l) => l.type === "drawing").length + 1}`,
       visible: true,
       opacity: 100,
+      blendMode: 'normal',
       dataUrl: "",
     };
     const updated = [...currentLayers, newLayer];
@@ -536,6 +540,11 @@ export const useEditorState = () => {
     const action = layer.type === 'drawing' ? 'Brush Stroke' : `Edit Layer "${layer.name}"`;
     recordHistory(action, currentState, currentLayers);
   }, [currentState, currentLayers, recordHistory]);
+
+  const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
+    const updatedLayers = currentLayers.map((l) => (l.id === id ? { ...l, ...updates } : l));
+    recordHistory(historyName, currentState, updatedLayers);
+  }, [currentLayers, currentState, recordHistory]);
 
   const handleLayerOpacityChange = useCallback((opacity: number) => {
     if (selectedLayerId) {
@@ -689,6 +698,7 @@ export const useEditorState = () => {
     deleteLayer,
     updateLayer,
     commitLayerChange,
+    handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,

@@ -53,6 +53,7 @@ interface SidebarProps {
   onLayerCommit: (id: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   // Frame props
   frame: EditState['frame'];
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
@@ -86,6 +87,7 @@ const Sidebar = (props: SidebarProps) => {
                 onChannelChange={props.onChannelChange}
                 onLayerOpacityChange={props.onLayerOpacityChange}
                 onLayerOpacityCommit={props.onLayerOpacityCommit}
+                onLayerPropertyCommit={props.onLayerPropertyCommit}
               />
             )}
           </div>

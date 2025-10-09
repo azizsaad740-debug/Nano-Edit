@@ -17,7 +17,10 @@ export const DrawingLayer = ({ layer }: DrawingLayerProps) => {
       src={layer.dataUrl}
       alt={layer.name}
       className="absolute top-0 left-0 w-full h-full pointer-events-none"
-      style={{ opacity: (layer.opacity ?? 100) / 100 }}
+      style={{ 
+        opacity: (layer.opacity ?? 100) / 100,
+        mixBlendMode: layer.blendMode as any || 'normal',
+      }}
     />
   );
 };

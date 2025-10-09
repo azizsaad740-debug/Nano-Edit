@@ -244,6 +244,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
         top: `${layer.y}%`,
         transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
         cursor: isSelected && !isEditing ? "move" : "default",
+        mixBlendMode: layer.blendMode as any || 'normal',
       }}
     >
       <div
