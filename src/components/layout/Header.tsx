@@ -10,6 +10,8 @@ import {
   FilePlus2,
   Sparkles,
   FilePlus,
+  Save,
+  FolderOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -36,6 +38,8 @@ interface HeaderProps {
   setOpenImport: (open: boolean) => void;
   onGenerateClick: () => void;
   onNewProjectClick: () => void;
+  onSaveProject: () => void;
+  onOpenProject: () => void;
 }
 
 const Header = ({
@@ -53,6 +57,8 @@ const Header = ({
   setOpenImport,
   onGenerateClick,
   onNewProjectClick,
+  onSaveProject,
+  onOpenProject,
 }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
@@ -63,6 +69,26 @@ const Header = ({
       <div className="flex items-center gap-2">
         {children}
         <ThemeToggle />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onOpenProject}>
+              <FolderOpen className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Open Project</p>
+          </TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onSaveProject} disabled={!hasImage}>
+              <Save className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Save Project</p>
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={onNewProjectClick}>

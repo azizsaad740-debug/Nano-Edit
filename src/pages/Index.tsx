@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -49,6 +49,8 @@ const Index = () => {
     handleUrlImageLoad,
     handleGeneratedImageLoad,
     handleNewProject,
+    handleSaveProject,
+    handleLoadProject,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
@@ -110,6 +112,21 @@ const Index = () => {
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openNewProject, setOpenNewProject] = useState(false);
+  const openProjectInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenProjectClick = () => {
+    openProjectInputRef.current?.click();
+  };
+
+  const handleProjectFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleLoadProject(file);
+    }
+    if (event.target) {
+      event.target.value = "";
+    }
+  };
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
@@ -222,6 +239,8 @@ const Index = () => {
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}
         onNewProjectClick={() => setOpenNewProject(true)}
+        onSaveProject={handleSaveProject}
+        onOpenProject={handleOpenProjectClick}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {(activeTool === 'brush' || activeTool === 'eraser') && (
@@ -340,6 +359,13 @@ const Index = () => {
         open={openNewProject}
         onOpenChange={setOpenNewProject}
         onNewProject={handleNewProject}
+      />
+      <input
+        type="file"
+        ref={openProjectInputRef}
+        onChange={handleProjectFileChange}
+        className="hidden"
+        accept=".nanoedit"
       />
     </div>
   );

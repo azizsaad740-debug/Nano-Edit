@@ -8,6 +8,7 @@ import type { Preset } from "./usePresets";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
+import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 
 export interface EditState {
   adjustments: {
@@ -294,6 +295,44 @@ export const useEditorState = () => {
       showError("Could not load image. Check the URL and CORS policy.");
     }
   }, [loadImageData]);
+
+  /* ---------- Project Save/Load ---------- */
+  const handleSaveProject = useCallback(() => {
+    if (!image) {
+      showError("There is no project to save.");
+      return;
+    }
+    saveProjectToFile({
+      sourceImage: image,
+      history,
+      currentHistoryIndex,
+      fileInfo,
+    });
+  }, [image, history, currentHistoryIndex, fileInfo]);
+
+  const handleLoadProject = useCallback(async (file: File) => {
+    const toastId = showLoading("Opening project...");
+    try {
+      const projectData = await loadProjectFromFile(file);
+      
+      setImage(projectData.sourceImage);
+      setHistory(projectData.history);
+      setCurrentHistoryIndex(projectData.currentHistoryIndex);
+      setFileInfo(projectData.fileInfo);
+      
+      setExifData(null);
+      setSelectedLayerId(null);
+      setPendingCrop(undefined);
+      setSelectionPath(null);
+      
+      dismissToast(toastId);
+      showSuccess("Project opened successfully.");
+    } catch (error: any) {
+      dismissToast(toastId);
+      console.error("Failed to load project:", error);
+      showError(error.message || "Could not open the project file.");
+    }
+  }, []);
 
   /* ---------- Adjustment handlers ---------- */
   const handleAdjustmentChange = useCallback((key: string, value: number) => {
@@ -582,6 +621,8 @@ export const useEditorState = () => {
     handleUrlImageLoad,
     handleGeneratedImageLoad,
     handleNewProject,
+    handleSaveProject,
+    handleLoadProject,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
