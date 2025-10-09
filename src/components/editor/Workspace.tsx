@@ -58,7 +58,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | null;
+  activeTool?: "lasso" | "brush" | "text" | "crop" | null;
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -278,7 +278,7 @@ const Workspace = (props: WorkspaceProps) => {
             style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})` }}
           >
             <div className="relative max-w-full max-h-full p-4">
-              {pendingCrop && (
+              {activeTool === 'crop' && (
                 <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2">
                   <Button size="sm" onClick={onApplyCrop}><Check className="h-4 w-4 mr-2" /> Apply Crop</Button>
                   <Button size="sm" variant="destructive" onClick={onCancelCrop}><X className="h-4 w-4 mr-2" /> Cancel</Button>
@@ -294,9 +294,10 @@ const Workspace = (props: WorkspaceProps) => {
                 }}
               >
                 <ReactCrop
-                  crop={pendingCrop ?? crop}
+                  crop={activeTool === 'crop' ? pendingCrop : crop}
                   onChange={(_, percentCrop) => onCropChange(percentCrop)}
                   aspect={aspect}
+                  disabled={activeTool !== 'crop'}
                 >
                   <div style={wrapperTransformStyle}>
                     <div ref={imageContainerRef} className="relative" style={containerStyle}>

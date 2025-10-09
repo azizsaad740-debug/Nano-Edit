@@ -23,10 +23,11 @@ import {
 import { ExportOptions } from "@/components/editor/ExportOptions";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
-import { ToolsBar } from "@/components/editor/ToolsBar";
+import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { useHotkeys } from "react-hotkeys-hook";
+import { BrushOptions } from "@/components/editor/BrushOptions";
 
 const Index = () => {
   const {
@@ -193,6 +194,8 @@ const Index = () => {
     onLayerCommit: commitLayerChange,
   };
 
+  const hasSelection = selectionPath && selectionPath.length > 0;
+
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
       <Header
@@ -210,6 +213,28 @@ const Index = () => {
         openImport={openImport}
         setOpenImport={setOpenImport}
       >
+        <div className="flex-1 flex items-center justify-center px-4">
+          {activeTool === 'brush' && (
+            <BrushOptions
+              brushSize={brushState.size}
+              setBrushSize={(size) => setBrushState({ size })}
+              brushOpacity={brushState.opacity}
+              setBrushOpacity={(opacity) => setBrushState({ opacity })}
+              brushColor={brushState.color}
+              setBrushColor={(color) => setBrushState({ color })}
+            />
+          )}
+          {activeTool === "lasso" && hasSelection && (
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)}>
+                Generative Fill
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setSelectionPath(null)}>
+                Deselect
+              </Button>
+            </div>
+          )}
+        </div>
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -230,25 +255,9 @@ const Index = () => {
         </div>
       </Header>
 
-      {/* Tools bar (visible on desktop, hidden on mobile) */}
-      <div className="hidden md:block p-2 bg-muted/20">
-        <ToolsBar
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          openGenerativeDialog={() => setOpenGenerative(true)}
-          brushState={brushState}
-          setBrushState={setBrushState}
-          selectionPath={selectionPath}
-          onClearSelection={() => setSelectionPath(null)}
-        />
-      </div>
-
-      <main className="flex-1">
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          <ResizablePanel defaultSize={25} minSize={20} maxSize={35} className="hidden md:block">
-            <Sidebar {...editorProps} />
-          </ResizablePanel>
-          <ResizableHandle withHandle className="hidden md:flex" />
+      <main className="flex-1 flex overflow-hidden">
+        <ToolsPanel activeTool={activeTool} setActiveTool={setActiveTool} />
+        <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75}>
             <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
               <Workspace
@@ -283,6 +292,10 @@ const Index = () => {
                 onSelectionChange={setSelectionPath}
               />
             </div>
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
+            <Sidebar {...editorProps} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>

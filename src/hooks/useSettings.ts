@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 export const useSettings = () => {
-  const [apiKey, setApiKey] = useState<string>("");
+  const [apiKey, setApiKey] = useState<string>("AIzaSyC0LHnoaK3YYF3J93J5CflDgEIGU5ymGGk");
 
   // Load stored key on mount
   useEffect(() => {

@@ -79,6 +79,8 @@ export interface BrushState {
   color: string;
 }
 
+type ActiveTool = "lasso" | "brush" | "text" | "crop";
+
 /* ---------- Initial state ---------- */
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
@@ -123,7 +125,7 @@ export const useEditorState = () => {
   const [aspect, setAspect] = useState<number | undefined>();
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [activeTool, _setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
+  const [activeTool, _setActiveTool] = useState<ActiveTool | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
@@ -133,9 +135,14 @@ export const useEditorState = () => {
   const currentState = history[currentHistoryIndex].state;
   const currentLayers = history[currentHistoryIndex].layers;
 
-  const setActiveTool = (tool: "lasso" | "brush" | "text" | null) => {
+  const setActiveTool = (tool: ActiveTool | null) => {
     if (tool !== 'lasso') {
       setSelectionPath(null);
+    }
+    if (tool === 'crop') {
+      setPendingCrop(currentState.crop || { unit: '%', width: 50, height: 50, x: 25, y: 25 });
+    } else if (activeTool === 'crop' && tool !== 'crop') {
+      setPendingCrop(undefined); // Cancel crop if switching tool
     }
     _setActiveTool(tool);
   };
@@ -335,10 +342,12 @@ export const useEditorState = () => {
     if (!pendingCrop) return;
     recordHistory("Crop Image", { ...currentState, crop: pendingCrop });
     setPendingCrop(undefined);
+    setActiveTool(null);
   }, [currentState, recordHistory, pendingCrop]);
 
   const cancelCrop = useCallback(() => {
     setPendingCrop(undefined);
+    setActiveTool(null);
   }, []);
 
   /* ---------- Undo / Redo / Reset ---------- */
@@ -501,9 +510,10 @@ export const useEditorState = () => {
   useHotkeys("b", () => setActiveTool("brush"), { enabled: !!image });
   useHotkeys("t", () => setActiveTool("text"), { enabled: !!image });
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
+  useHotkeys("c", () => setActiveTool("crop"), { enabled: !!image });
   useHotkeys("escape", () => {
-    if (pendingCrop) cancelCrop();
-    if (activeTool) setActiveTool(null);
+    if (activeTool === 'crop') cancelCrop();
+    else setActiveTool(null);
     if (selectionPath) setSelectionPath(null);
   }, { enabled: !!image });
 
