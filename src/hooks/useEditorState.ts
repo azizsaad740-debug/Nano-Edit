@@ -39,6 +39,11 @@ export interface EditState {
   crop: Crop | undefined;
 }
 
+export interface Point {
+  x: number;
+  y: number;
+}
+
 /** Layer definition */
 export interface Layer {
   id: string;
@@ -118,14 +123,22 @@ export const useEditorState = () => {
   const [aspect, setAspect] = useState<number | undefined>();
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [activeTool, setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
+  const [activeTool, _setActiveTool] = useState<"lasso" | "brush" | "text" | null>(null);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
+  const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
   const currentLayers = history[currentHistoryIndex].layers;
+
+  const setActiveTool = (tool: "lasso" | "brush" | "text" | null) => {
+    if (tool !== 'lasso') {
+      setSelectionPath(null);
+    }
+    _setActiveTool(tool);
+  };
 
   /* ---------- History helpers ---------- */
   const recordHistory = useCallback(
@@ -181,6 +194,7 @@ export const useEditorState = () => {
     setCurrentHistoryIndex(0);
     setSelectedLayerId(null);
     setPendingCrop(undefined);
+    setSelectionPath(null);
     showSuccess(successMsg);
   }, []);
 
@@ -340,6 +354,7 @@ export const useEditorState = () => {
     recordHistory("Reset All", initialEditState, initialLayers);
     setSelectedLayerId(null);
     setPendingCrop(undefined);
+    setSelectionPath(null);
   }, [recordHistory]);
 
   const jumpToHistory = useCallback((index: number) => {
@@ -489,6 +504,7 @@ export const useEditorState = () => {
   useHotkeys("escape", () => {
     if (pendingCrop) cancelCrop();
     if (activeTool) setActiveTool(null);
+    if (selectionPath) setSelectionPath(null);
   }, { enabled: !!image });
 
   const canUndo = currentHistoryIndex > 0;
@@ -555,5 +571,7 @@ export const useEditorState = () => {
     // Selection
     selectedLayerId,
     setSelectedLayer: setSelectedLayerId,
+    selectionPath,
+    setSelectionPath,
   };
 };

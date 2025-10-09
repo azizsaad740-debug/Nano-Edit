@@ -12,9 +12,10 @@ import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import type { Layer, BrushState } from "@/hooks/useEditorState";
+import type { Layer, BrushState, Point } from "@/hooks/useEditorState";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
+import { SelectionCanvas } from "./SelectionCanvas";
 
 interface WorkspaceProps {
   image: string | null;
@@ -65,6 +66,8 @@ interface WorkspaceProps {
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
   brushState: BrushState;
+  selectionPath: Point[] | null;
+  onSelectionChange: (path: Point[]) => void;
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -96,6 +99,8 @@ const Workspace = (props: WorkspaceProps) => {
     onLayerCommit,
     selectedLayerId,
     brushState,
+    selectionPath,
+    onSelectionChange,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -241,8 +246,6 @@ const Workspace = (props: WorkspaceProps) => {
     containerStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
   }
 
-  const lassoOverlay = activeTool === "lasso" && <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />;
-
   return (
     <div
       ref={workspaceContainerRef}
@@ -305,7 +308,13 @@ const Workspace = (props: WorkspaceProps) => {
                         style={imageStyle}
                         onLoad={onImageLoad}
                       />
-                      {lassoOverlay}
+                      {activeTool === 'lasso' && (
+                        <SelectionCanvas 
+                          imageRef={imgRef}
+                          selectionPath={selectionPath}
+                          onSelectionComplete={onSelectionChange}
+                        />
+                      )}
                       {!isPreviewingOriginal && effects.vignette > 0 && (
                         <div
                           className="absolute inset-0 pointer-events-none rounded-lg"

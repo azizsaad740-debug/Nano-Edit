@@ -90,6 +90,8 @@ const Index = () => {
     // selection
     selectedLayerId,
     setSelectedLayer,
+    selectionPath,
+    setSelectionPath,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -236,6 +238,8 @@ const Index = () => {
           openGenerativeDialog={() => setOpenGenerative(true)}
           brushState={brushState}
           setBrushState={setBrushState}
+          selectionPath={selectionPath}
+          onClearSelection={() => setSelectionPath(null)}
         />
       </div>
 
@@ -275,6 +279,8 @@ const Index = () => {
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}
                 brushState={brushState}
+                selectionPath={selectionPath}
+                onSelectionChange={setSelectionPath}
               />
             </div>
           </ResizablePanel>
