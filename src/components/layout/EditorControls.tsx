@@ -99,7 +99,9 @@ interface EditorControlsProps {
   onLayerCommit: (id: string) => void;
   // Frame props
   frame: { type: 'none' | 'solid'; width: number; color: string; };
-  onFrameChange: (type: string, name: string, options?: { width: number; color: string }) => void;
+  onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
+  onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
+  onFramePropertyCommit: () => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -145,7 +147,9 @@ const EditorControls = (props: EditorControlsProps) => {
     onLayerCommit,
     // frames
     frame,
-    onFrameChange,
+    onFramePresetChange,
+    onFramePropertyChange,
+    onFramePropertyCommit,
   } = props;
 
   const selectedLayer = React.useMemo(() => {
@@ -326,7 +330,12 @@ const EditorControls = (props: EditorControlsProps) => {
           <AccordionItem value="frames">
             <AccordionTrigger>Frames</AccordionTrigger>
             <AccordionContent>
-              <Frames onFrameChange={onFrameChange} currentFrame={frame} />
+              <Frames 
+                onFramePresetChange={onFramePresetChange} 
+                onFramePropertyChange={onFramePropertyChange}
+                onFramePropertyCommit={onFramePropertyCommit}
+                currentFrame={frame} 
+              />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

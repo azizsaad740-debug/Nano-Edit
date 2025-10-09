@@ -339,13 +339,27 @@ export const useEditorState = () => {
     recordHistory(nameMap[type] ?? "Transform", { ...currentState, transforms: newTrans });
   }, [currentState, recordHistory]);
 
-  const handleFrameChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
+  const handleFramePresetChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
     const newFrame = {
       type: type as 'none' | 'solid',
       width: options?.width ?? 0,
       color: options?.color ?? '#000000',
     };
     recordHistory(`Set Frame: ${name}`, { ...currentState, frame: newFrame });
+  }, [currentState, recordHistory]);
+
+  const handleFramePropertyChange = useCallback((key: 'width' | 'color', value: number | string) => {
+    const newFrame = { ...currentState.frame, [key]: value };
+    if (key === 'width' && value === 0) {
+      newFrame.type = 'none';
+    } else {
+      newFrame.type = 'solid';
+    }
+    updateCurrentState({ frame: newFrame });
+  }, [currentState.frame, updateCurrentState]);
+
+  const handleFramePropertyCommit = useCallback(() => {
+    recordHistory("Adjust Frame", currentState);
   }, [currentState, recordHistory]);
 
   /* ---------- Crop ---------- */
@@ -556,7 +570,9 @@ export const useEditorState = () => {
     handleGradingCommit,
     handleFilterChange,
     handleTransformChange,
-    handleFrameChange,
+    handleFramePresetChange,
+    handleFramePropertyChange,
+    handleFramePropertyCommit,
     pendingCrop,
     setPendingCrop,
     applyCrop,

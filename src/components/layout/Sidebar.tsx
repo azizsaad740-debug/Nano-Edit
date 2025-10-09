@@ -58,7 +58,9 @@ interface SidebarProps {
   onLayerCommit: (id: string) => void;
   // Frame props
   frame: { type: 'none' | 'solid'; width: number; color: string; };
-  onFrameChange: (type: string, name: string, options?: { width: number; color: string }) => void;
+  onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
+  onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
+  onFramePropertyCommit: () => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
