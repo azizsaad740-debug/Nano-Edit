@@ -215,6 +215,7 @@ const Index = () => {
     // layers
     layers,
     addTextLayer,
+    addDrawingLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

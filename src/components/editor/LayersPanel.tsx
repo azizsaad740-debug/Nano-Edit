@@ -34,6 +34,7 @@ interface LayersPanelProps {
   onRename: (id: string, newName: string) => void;
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
+  onAddDrawingLayer: () => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -50,6 +51,7 @@ export const LayersPanel = ({
   onRename,
   onDelete,
   onAddTextLayer,
+  onAddDrawingLayer,
   onReorder,
   selectedLayerId,
   onSelectLayer,
@@ -156,6 +158,7 @@ export const LayersPanel = ({
         <LayerActions
           selectedLayer={selectedLayer}
           onAddTextLayer={onAddTextLayer}
+          onAddDrawingLayer={onAddDrawingLayer}
           onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
           onOpacityChange={onLayerOpacityChange}
           onOpacityCommit={onLayerOpacityCommit}

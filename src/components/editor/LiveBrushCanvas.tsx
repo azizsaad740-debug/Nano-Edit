@@ -73,7 +73,7 @@ export const LiveBrushCanvas = ({
     contextRef.current = ctx;
 
     document.addEventListener("mousemove", draw);
-    document.addEventListener("mouseup", endDrawing, { once: true });
+    document.addEventListener("mouseup", endDrawing);
 
     return () => {
       document.removeEventListener("mousemove", draw);

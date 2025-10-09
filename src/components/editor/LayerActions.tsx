@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, Type } from "lucide-react";
+import { Trash2, Type, Layers } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import {
   Select,
@@ -17,6 +17,7 @@ import {
 interface LayerActionsProps {
   selectedLayer: Layer | undefined;
   onAddTextLayer: () => void;
+  onAddDrawingLayer: () => void;
   onDeleteLayer: () => void;
   onOpacityChange: (opacity: number) => void;
   onOpacityCommit: () => void;
@@ -32,6 +33,7 @@ const blendModes = [
 export const LayerActions = ({
   selectedLayer,
   onAddTextLayer,
+  onAddDrawingLayer,
   onDeleteLayer,
   onOpacityChange,
   onOpacityCommit,
@@ -83,20 +85,23 @@ export const LayerActions = ({
           </Select>
         </div>
       </div>
-      <div className="flex items-center justify-between gap-2">
-        <Button size="sm" variant="outline" className="flex-1" onClick={onAddTextLayer}>
+      <div className="grid grid-cols-3 gap-2">
+        <Button size="sm" variant="outline" onClick={onAddTextLayer}>
           <Type className="h-4 w-4 mr-2" />
-          Add Text
+          Text
+        </Button>
+        <Button size="sm" variant="outline" onClick={onAddDrawingLayer}>
+          <Layers className="h-4 w-4 mr-2" />
+          Layer
         </Button>
         <Button
           size="sm"
           variant="outline"
-          className="flex-1"
           onClick={onDeleteLayer}
           disabled={!isActionable}
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete Layer
+          Delete
         </Button>
       </div>
     </div>

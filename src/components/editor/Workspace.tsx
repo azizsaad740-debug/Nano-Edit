@@ -221,22 +221,25 @@ const Workspace = (props: WorkspaceProps) => {
     tempCanvas.width = imgRef.current.naturalWidth;
     tempCanvas.height = imgRef.current.naturalHeight;
 
-    const drawOps = [];
-    if (baseDataUrl) {
-      const baseImg = new Image();
-      drawOps.push(new Promise(res => { baseImg.onload = res; baseImg.src = baseDataUrl; }));
-    }
+    const baseImg = new Image();
     const strokeImg = new Image();
-    drawOps.push(new Promise(res => { strokeImg.onload = res; strokeImg.src = strokeDataUrl; }));
 
-    Promise.all(drawOps).then(() => {
-      if (baseDataUrl) tempCtx.drawImage(drawOps.length > 1 ? (drawOps[0] as any).__internal_img : baseDataUrl, 0, 0);
+    const basePromise = baseDataUrl ? new Promise(res => { baseImg.onload = res; baseImg.src = baseDataUrl; }) : Promise.resolve();
+    const strokePromise = new Promise(res => { strokeImg.onload = res; strokeImg.src = strokeDataUrl; });
+
+    Promise.all([basePromise, strokePromise]).then(() => {
+      if (baseDataUrl) tempCtx.drawImage(baseImg, 0, 0);
+      
+      if (activeTool === 'eraser') {
+        tempCtx.globalCompositeOperation = 'destination-out';
+      }
+      
       tempCtx.drawImage(strokeImg, 0, 0);
       const combinedDataUrl = tempCanvas.toDataURL();
       onLayerUpdate(layerId, { dataUrl: combinedDataUrl });
       onLayerCommit(layerId);
     });
-  }, [layers, onLayerUpdate, onLayerCommit, imgRef]);
+  }, [layers, onLayerUpdate, onLayerCommit, imgRef, activeTool]);
 
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
