@@ -57,6 +57,7 @@ interface EditorControlsProps {
     blur: number;
     hueShift: number;
     vignette: number;
+    noise: number;
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;

@@ -8,6 +8,7 @@ interface EffectsProps {
     blur: number;
     hueShift: number;
     vignette: number;
+    noise: number;
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
@@ -82,6 +83,27 @@ const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
           value={[effects.vignette]}
           onValueChange={([value]) => onEffectChange("vignette", value)}
           onValueCommit={([value]) => onEffectCommit("vignette", value)}
+        />
+      </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="noise">Noise</Label>
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-sm text-muted-foreground">{effects.noise}%</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("noise")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Noise</span>
+            </Button>
+          </div>
+        </div>
+        <Slider
+          id="noise"
+          min={0}
+          max={100}
+          step={1}
+          value={[effects.noise]}
+          onValueChange={([value]) => onEffectChange("noise", value)}
+          onValueCommit={([value]) => onEffectCommit("noise", value)}
         />
       </div>
       {/* Brush placeholder */}

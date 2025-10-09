@@ -18,6 +18,7 @@ export interface EditState {
     blur: number;
     hueShift: number;
     vignette: number;
+    noise: number;
   };
   grading: {
     grayscale: number;
@@ -68,7 +69,7 @@ export interface HistoryItem {
 /* ---------- Initial state ---------- */
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
-  effects: { blur: 0, hueShift: 0, vignette: 0 },
+  effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
