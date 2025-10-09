@@ -3,8 +3,6 @@
 import * as React from "react";
 import {
   Card,
-  CardHeader,
-  CardTitle,
   CardContent,
 } from "@/components/ui/card";
 import {
@@ -113,10 +111,7 @@ export const LayersPanel = ({
 
   return (
     <Card className="mt-4 flex flex-col h-full">
-      <CardHeader>
-        <CardTitle>Layers & Channels</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col min-h-0">
+      <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
         <Tabs defaultValue="layers" className="flex-1 flex flex-col min-h-0">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="layers">Layers</TabsTrigger>
