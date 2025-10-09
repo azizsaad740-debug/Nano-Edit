@@ -9,6 +9,7 @@ import {
   Settings,
   FilePlus2,
   Sparkles,
+  FilePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -30,13 +31,11 @@ interface HeaderProps {
   canUndo: boolean;
   canRedo: boolean;
   children?: React.ReactNode;
-  // Settings dialog control
-  openSettings: boolean;
+  // Dialog controls
   setOpenSettings: (open: boolean) => void;
-  // Import presets dialog control
-  openImport: boolean;
   setOpenImport: (open: boolean) => void;
   onGenerateClick: () => void;
+  onNewProjectClick: () => void;
 }
 
 const Header = ({
@@ -50,11 +49,10 @@ const Header = ({
   canUndo,
   canRedo,
   children,
-  openSettings,
   setOpenSettings,
-  openImport,
   setOpenImport,
   onGenerateClick,
+  onNewProjectClick,
 }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
@@ -65,6 +63,16 @@ const Header = ({
       <div className="flex items-center gap-2">
         {children}
         <ThemeToggle />
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={onNewProjectClick}>
+              <FilePlus className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>New Project</p>
+          </TooltipContent>
+        </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="outline" size="sm" onClick={onGenerateClick}>

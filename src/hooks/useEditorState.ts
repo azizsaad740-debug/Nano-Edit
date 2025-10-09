@@ -7,6 +7,7 @@ import ExifReader from "exifreader";
 import type { Preset } from "./usePresets";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
+import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 
 export interface EditState {
   adjustments: {
@@ -209,6 +210,24 @@ export const useEditorState = () => {
     setSelectionPath(null);
     showSuccess(successMsg);
   }, []);
+
+  const handleNewProject = useCallback((settings: NewProjectSettings) => {
+    const { width, height, backgroundColor } = settings;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = backgroundColor;
+      ctx.fillRect(0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/png');
+      loadImageData(dataUrl, "New project created.");
+      setFileInfo({ name: "Untitled-1.png", size: 0 });
+      setExifData(null);
+    } else {
+      showError("Failed to create canvas for new project.");
+    }
+  }, [loadImageData]);
 
   const handleGeneratedImageLoad = useCallback((dataUrl: string) => {
     loadImageData(dataUrl, "New image generated successfully.");
@@ -562,6 +581,7 @@ export const useEditorState = () => {
     handleFileSelect,
     handleUrlImageLoad,
     handleGeneratedImageLoad,
+    handleNewProject,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,

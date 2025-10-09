@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
-import { useEditorState, type Layer, type BrushState } from "@/hooks/useEditorState";
+import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
 import {
@@ -27,6 +27,7 @@ import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
+import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 
@@ -47,6 +48,7 @@ const Index = () => {
     handleFileSelect,
     handleUrlImageLoad,
     handleGeneratedImageLoad,
+    handleNewProject,
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
@@ -107,6 +109,7 @@ const Index = () => {
   const [openGenerative, setOpenGenerative] = useState(false);
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
+  const [openNewProject, setOpenNewProject] = useState(false);
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
@@ -215,11 +218,10 @@ const Index = () => {
         onRedo={handleRedo}
         canUndo={canUndo}
         canRedo={canRedo}
-        openSettings={openSettings}
         setOpenSettings={setOpenSettings}
-        openImport={openImport}
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}
+        onNewProjectClick={() => setOpenNewProject(true)}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {(activeTool === 'brush' || activeTool === 'eraser') && (
@@ -334,6 +336,11 @@ const Index = () => {
         apiKey={apiKey}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
+      <NewProjectDialog
+        open={openNewProject}
+        onOpenChange={setOpenNewProject}
+        onNewProject={handleNewProject}
+      />
     </div>
   );
 };
