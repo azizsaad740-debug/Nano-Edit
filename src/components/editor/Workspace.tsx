@@ -172,7 +172,11 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
-  const handleMouseUp = () => setIsPanning(false);
+  const handleMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
+    }
+  };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     if (!image) return;
@@ -195,7 +199,7 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   useHotkeys('space', () => { isSpaceDownRef.current = true; }, { keydown: true });
-  useHotkeys('space', () => { isSpaceDownRef.current = false; }, { keyup: true });
+  useHotkeys('space', () => { isSpaceDownRef.current = false; setIsPanning(false); }, { keyup: true });
   useHotkeys("+, =", handleZoomIn, { preventDefault: true });
   useHotkeys("-", handleZoomOut, { preventDefault: true });
   useHotkeys("f", handleFitScreen, { preventDefault: true });
@@ -266,6 +270,15 @@ const Workspace = (props: WorkspaceProps) => {
     containerStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
   }
 
+  const cropClipPathStyle: React.CSSProperties = {};
+  if (crop && crop.width > 0 && crop.height > 0 && activeTool !== 'crop') {
+    const top = crop.y;
+    const right = 100 - (crop.x + crop.width);
+    const bottom = 100 - (crop.y + crop.height);
+    const left = crop.x;
+    cropClipPathStyle.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
+  }
+
   return (
     <div
       ref={workspaceContainerRef}
@@ -314,66 +327,68 @@ const Workspace = (props: WorkspaceProps) => {
                   display: 'inline-block',
                 }}
               >
-                <ReactCrop
-                  crop={activeTool === 'crop' ? pendingCrop : crop}
-                  onChange={(_, percentCrop) => onCropChange(percentCrop)}
-                  aspect={aspect}
-                  disabled={activeTool !== 'crop'}
-                >
-                  <div style={wrapperTransformStyle}>
-                    <div ref={imageContainerRef} className="relative" style={containerStyle}>
-                      <img
-                        ref={imgRef}
-                        src={image}
-                        alt="Uploaded preview"
-                        className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                        style={imageStyle}
-                        onLoad={onImageLoad}
-                      />
-                      {activeTool === 'lasso' && (
-                        <SelectionCanvas 
-                          imageRef={imgRef}
-                          selectionPath={selectionPath}
-                          onSelectionComplete={onSelectionChange}
+                <div style={cropClipPathStyle}>
+                  <ReactCrop
+                    crop={activeTool === 'crop' ? pendingCrop : crop}
+                    onChange={(_, percentCrop) => onCropChange(percentCrop)}
+                    aspect={aspect}
+                    disabled={activeTool !== 'crop'}
+                  >
+                    <div style={wrapperTransformStyle}>
+                      <div ref={imageContainerRef} className="relative" style={containerStyle}>
+                        <img
+                          ref={imgRef}
+                          src={image}
+                          alt="Uploaded preview"
+                          className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
+                          style={imageStyle}
+                          onLoad={onImageLoad}
                         />
-                      )}
-                      {!isPreviewingOriginal && effects.vignette > 0 && (
-                        <div
-                          className="absolute inset-0 pointer-events-none rounded-lg"
-                          style={{
-                            boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
-                          }}
-                        />
-                      )}
-                      {!isPreviewingOriginal && effects.noise > 0 && (
-                        <div
-                          className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
-                          style={{
-                            opacity: effects.noise / 100,
-                            backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
-                          }}
-                        />
-                      )}
-                      {layers.map((layer) => {
-                        if (layer.type === 'text') {
-                          return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} />;
-                        }
-                        if (layer.type === 'drawing') {
-                          return <DrawingLayer key={layer.id} layer={layer} />;
-                        }
-                        return null;
-                      })}
-                      {isDrawing && (activeTool === 'brush' || activeTool === 'eraser') && (
-                        <LiveBrushCanvas
-                          brushState={brushState}
-                          imageRef={imgRef}
-                          onDrawEnd={handleDrawEnd}
-                          activeTool={activeTool}
-                        />
-                      )}
+                        {activeTool === 'lasso' && (
+                          <SelectionCanvas 
+                            imageRef={imgRef}
+                            selectionPath={selectionPath}
+                            onSelectionComplete={onSelectionChange}
+                          />
+                        )}
+                        {!isPreviewingOriginal && effects.vignette > 0 && (
+                          <div
+                            className="absolute inset-0 pointer-events-none rounded-lg"
+                            style={{
+                              boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
+                            }}
+                          />
+                        )}
+                        {!isPreviewingOriginal && effects.noise > 0 && (
+                          <div
+                            className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
+                            style={{
+                              opacity: effects.noise / 100,
+                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
+                            }}
+                          />
+                        )}
+                        {layers.map((layer) => {
+                          if (layer.type === 'text') {
+                            return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} />;
+                          }
+                          if (layer.type === 'drawing') {
+                            return <DrawingLayer key={layer.id} layer={layer} />;
+                          }
+                          return null;
+                        })}
+                        {isDrawing && (activeTool === 'brush' || activeTool === 'eraser') && (
+                          <LiveBrushCanvas
+                            brushState={brushState}
+                            imageRef={imgRef}
+                            onDrawEnd={handleDrawEnd}
+                            activeTool={activeTool}
+                          />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </ReactCrop>
+                  </ReactCrop>
+                </div>
               </div>
             </div>
           </div>
