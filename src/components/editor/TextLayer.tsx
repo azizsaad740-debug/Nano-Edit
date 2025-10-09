@@ -19,7 +19,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isRotating, setIsRotating] = React.useState(false);
-  const dragStartPos = React.useRef({ x: 0, y: 0 });
+  const dragStartPos = React.useRef({ x: 0, y: 0, initialX: 0, initialY: 0 });
   const resizeStartInfo = React.useRef({
     x: 0,
     y: 0,
@@ -35,28 +35,29 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     if (isEditing || !isSelected) return;
     e.stopPropagation();
     setIsDragging(true);
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
+    dragStartPos.current = { 
+      x: e.clientX, 
+      y: e.clientY,
+      initialX: layer.x ?? 0,
+      initialY: layer.y ?? 0,
+    };
   };
 
   const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isDragging || !containerRef.current || !textRef.current) return;
+    if (!isDragging || !containerRef.current) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const dx = e.clientX - dragStartPos.current.x;
     const dy = e.clientY - dragStartPos.current.y;
 
-    const currentLeft = ((layer.x ?? 0) / 100) * containerRect.width;
-    const currentTop = ((layer.y ?? 0) / 100) * containerRect.height;
+    const dxPercent = (dx / containerRect.width) * 100;
+    const dyPercent = (dy / containerRect.height) * 100;
 
-    const newLeft = currentLeft + dx;
-    const newTop = currentTop + dy;
-
-    const newX = (newLeft / containerRect.width) * 100;
-    const newY = (newTop / containerRect.height) * 100;
-
-    onUpdate(layer.id, { x: newX, y: newY });
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-  }, [isDragging, containerRef, layer.id, layer.x, layer.y, onUpdate]);
+    onUpdate(layer.id, { 
+      x: dragStartPos.current.initialX + dxPercent, 
+      y: dragStartPos.current.initialY + dyPercent 
+    });
+  }, [isDragging, containerRef, layer.id, onUpdate]);
 
   const handleMouseUp = React.useCallback(() => {
     if (isDragging) {

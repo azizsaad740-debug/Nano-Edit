@@ -115,8 +115,8 @@ const Workspace = (props: WorkspaceProps) => {
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
 
-  const handleZoomIn = () => setZoom(z => Math.min(z + 0.1, 5));
-  const handleZoomOut = () => setZoom(z => Math.max(z - 0.1, 0.1));
+  const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
+  const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
 
   const handleFitScreen = useCallback(() => {
     if (!imgRef.current || !workspaceContainerRef.current) return;

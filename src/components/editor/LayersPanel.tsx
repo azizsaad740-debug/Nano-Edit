@@ -74,15 +74,21 @@ export const LayersPanel = ({
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldReversedIndex = reversedLayers.findIndex((l) => l.id === active.id);
-      const newReversedIndex = reversedLayers.findIndex((l) => l.id === over.id);
-      
-      const oldIndex = layers.length - 1 - oldReversedIndex;
-      const newIndex = layers.length - 1 - newReversedIndex;
-
-      onReorder(oldIndex, newIndex);
+    if (!over || active.id === over.id) {
+      return;
     }
+
+    const oldReversedIndex = reversedLayers.findIndex((l) => l.id === active.id);
+    const newReversedIndex = reversedLayers.findIndex((l) => l.id === over.id);
+
+    if (oldReversedIndex === -1 || newReversedIndex === -1) {
+      return; // Should not happen
+    }
+    
+    const oldIndex = layers.length - 1 - oldReversedIndex;
+    const newIndex = layers.length - 1 - newReversedIndex;
+
+    onReorder(oldIndex, newIndex);
   };
 
   return (
