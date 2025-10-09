@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
 import EditorControls from "@/components/layout/EditorControls";
-import { useEditorState, type Layer } from "@/hooks/useEditorState";
+import { useEditorState, type Layer, type BrushState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
 import {
@@ -72,6 +72,7 @@ const Index = () => {
     // layer utilities
     layers,
     addTextLayer,
+    addDrawingLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -269,9 +270,11 @@ const Index = () => {
                 activeTool={activeTool}
                 layers={layers}
                 onAddTextLayer={addTextLayer}
+                onAddDrawingLayer={addDrawingLayer}
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}
+                brushState={brushState}
               />
             </div>
           </ResizablePanel>

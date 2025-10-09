@@ -10,7 +10,9 @@ import SampleImages from "./SampleImages";
 import UrlUploader from "./UrlUploader";
 import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
-import type { Layer } from "@/hooks/useEditorState";
+import { DrawingLayer } from "./DrawingLayer";
+import { LiveBrushCanvas } from "./LiveBrushCanvas";
+import type { Layer, BrushState } from "@/hooks/useEditorState";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -58,9 +60,11 @@ interface WorkspaceProps {
   activeTool?: "lasso" | "brush" | "text" | null;
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
+  onAddDrawingLayer: () => string;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
+  brushState: BrushState;
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -87,16 +91,19 @@ const Workspace = (props: WorkspaceProps) => {
     activeTool,
     layers,
     onAddTextLayer,
+    onAddDrawingLayer,
     onLayerUpdate,
     onLayerCommit,
     selectedLayerId,
+    brushState,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const activeDrawingLayerIdRef = useRef<string | null>(null);
   
-  // Zoom and Pan state
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -108,19 +115,15 @@ const Workspace = (props: WorkspaceProps) => {
 
   const handleFitScreen = useCallback(() => {
     if (!imgRef.current || !workspaceContainerRef.current) return;
-
     const { naturalWidth, naturalHeight } = imgRef.current;
     const { clientWidth: containerWidth, clientHeight: containerHeight } = workspaceContainerRef.current;
-    
     if (naturalWidth === 0 || naturalHeight === 0) return;
-
     const padding = 64;
     const widthRatio = (containerWidth - padding) / naturalWidth;
     const heightRatio = (containerHeight - padding) / naturalHeight;
-    
     const newZoom = Math.min(widthRatio, heightRatio, 1);
     setZoom(newZoom);
-    setPanOffset({ x: 0, y: 0 }); // Reset pan on fit
+    setPanOffset({ x: 0, y: 0 });
   }, [imgRef]);
 
   useEffect(() => {
@@ -138,12 +141,19 @@ const Workspace = (props: WorkspaceProps) => {
     }
   }, [image, handleFitScreen, imgRef]);
 
-  // Panning logic
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isSpaceDownRef.current && image) {
       e.preventDefault();
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    } else if (activeTool === 'brush' && image) {
+      const selectedLayer = layers.find(l => l.id === selectedLayerId);
+      if (selectedLayer && selectedLayer.type === 'drawing') {
+        activeDrawingLayerIdRef.current = selectedLayer.id;
+      } else {
+        activeDrawingLayerIdRef.current = onAddDrawingLayer();
+      }
+      setIsDrawing(true);
     }
   };
 
@@ -157,9 +167,7 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
+  const handleMouseUp = () => setIsPanning(false);
 
   useHotkeys('space', () => { isSpaceDownRef.current = true; }, { keydown: true });
   useHotkeys('space', () => { isSpaceDownRef.current = false; }, { keyup: true });
@@ -187,6 +195,38 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
+  const handleDrawEnd = useCallback((strokeDataUrl: string) => {
+    setIsDrawing(false);
+    const layerId = activeDrawingLayerIdRef.current;
+    if (!layerId) return;
+
+    const layer = layers.find(l => l.id === layerId);
+    const baseDataUrl = layer?.dataUrl;
+
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx || !imgRef.current) return;
+
+    tempCanvas.width = imgRef.current.naturalWidth;
+    tempCanvas.height = imgRef.current.naturalHeight;
+
+    const drawOps = [];
+    if (baseDataUrl) {
+      const baseImg = new Image();
+      drawOps.push(new Promise(res => { baseImg.onload = res; baseImg.src = baseDataUrl; }));
+    }
+    const strokeImg = new Image();
+    drawOps.push(new Promise(res => { strokeImg.onload = res; strokeImg.src = strokeDataUrl; }));
+
+    Promise.all(drawOps).then(() => {
+      if (baseDataUrl) tempCtx.drawImage(drawOps.length > 1 ? (drawOps[0] as any).__internal_img : baseDataUrl, 0, 0);
+      tempCtx.drawImage(strokeImg, 0, 0);
+      const combinedDataUrl = tempCanvas.toDataURL();
+      onLayerUpdate(layerId, { dataUrl: combinedDataUrl });
+      onLayerCommit(layerId);
+    });
+  }, [layers, onLayerUpdate, onLayerCommit, imgRef]);
+
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
 
@@ -202,7 +242,6 @@ const Workspace = (props: WorkspaceProps) => {
   }
 
   const lassoOverlay = activeTool === "lasso" && <div className="absolute inset-0 border-2 border-dashed border-primary/60 pointer-events-none" />;
-  const brushOverlay = activeTool === "brush" && <div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="w-24 h-24 border-2 border-dashed border-green-500 rounded-full opacity-50" /></div>;
 
   return (
     <div
@@ -267,7 +306,6 @@ const Workspace = (props: WorkspaceProps) => {
                         onLoad={onImageLoad}
                       />
                       {lassoOverlay}
-                      {brushOverlay}
                       {!isPreviewingOriginal && effects.vignette > 0 && (
                         <div
                           className="absolute inset-0 pointer-events-none rounded-lg"
@@ -285,16 +323,22 @@ const Workspace = (props: WorkspaceProps) => {
                           }}
                         />
                       )}
-                      {layers.map((layer) => (
-                        <TextLayer
-                          key={layer.id}
-                          layer={layer}
-                          containerRef={imageContainerRef}
-                          onUpdate={onLayerUpdate}
-                          onCommit={onLayerCommit}
-                          isSelected={layer.id === selectedLayerId}
+                      {layers.map((layer) => {
+                        if (layer.type === 'text') {
+                          return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} />;
+                        }
+                        if (layer.type === 'drawing') {
+                          return <DrawingLayer key={layer.id} layer={layer} />;
+                        }
+                        return null;
+                      })}
+                      {isDrawing && activeTool === 'brush' && (
+                        <LiveBrushCanvas
+                          brushState={brushState}
+                          imageRef={imgRef}
+                          onDrawEnd={handleDrawEnd}
                         />
-                      ))}
+                      )}
                     </div>
                   </div>
                 </ReactCrop>

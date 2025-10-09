@@ -1,15 +1,17 @@
 import { type Crop } from 'react-image-crop';
 import { showSuccess, showError } from "@/utils/toast";
-import { EditState } from '@/hooks/useEditorState';
+import { EditState, Layer } from '@/hooks/useEditorState';
 import { getFilterString } from './filterUtils';
 
 interface ImageOptions extends EditState {
   image: HTMLImageElement;
+  layers: Layer[];
 }
 
-const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null => {
+const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasElement | null> => {
   const {
     image,
+    layers,
     crop,
     transforms,
     frame,
@@ -40,52 +42,67 @@ const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null =
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  ctx.filter = getFilterString(options);
-  
-  ctx.save();
+  // Draw background image layer
+  const bgLayer = layers.find(l => l.type === 'image');
+  if (bgLayer && bgLayer.visible) {
+    ctx.filter = getFilterString(options);
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(transforms.rotation * Math.PI / 180);
+    ctx.scale(transforms.scaleX, transforms.scaleY);
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      -pixelCrop.width / 2,
+      -pixelCrop.height / 2,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+    ctx.restore();
+  }
 
-  ctx.translate(canvas.width / 2, canvas.height / 2);
-  ctx.rotate(transforms.rotation * Math.PI / 180);
-  ctx.scale(transforms.scaleX, transforms.scaleY);
-  
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    -pixelCrop.width / 2,
-    -pixelCrop.height / 2,
-    pixelCrop.width,
-    pixelCrop.height
-  );
-
-  ctx.restore();
+  // Draw other layers on top
+  ctx.filter = 'none';
+  for (const layer of layers) {
+    if (layer.type === 'drawing' && layer.visible && layer.dataUrl) {
+      try {
+        const layerImg = new Image();
+        await new Promise((resolve, reject) => {
+          layerImg.onload = resolve;
+          layerImg.onerror = reject;
+          layerImg.src = layer.dataUrl!;
+        });
+        ctx.globalAlpha = (layer.opacity ?? 100) / 100;
+        ctx.drawImage(layerImg, 0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1.0;
+      } catch (e) {
+        console.error("Failed to load drawing layer for export", e);
+      }
+    }
+  }
 
   if (options.effects.vignette > 0) {
     const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
     const innerRadius = outerRadius * (1 - (options.effects.vignette / 100) * 1.2);
-
     const gradient = ctx.createRadialGradient(
         canvas.width / 2, canvas.height / 2, innerRadius,
         canvas.width / 2, canvas.height / 2, outerRadius
     );
-    
     gradient.addColorStop(0, 'rgba(0,0,0,0)');
     gradient.addColorStop(1, `rgba(0,0,0,${options.effects.vignette / 100 * 0.7})`);
-    
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
-  // Apply frame if specified
   if (frame && frame.type === 'solid' && frame.width > 0) {
     const frameWidth = frame.width;
     const framedCanvas = document.createElement('canvas');
     framedCanvas.width = canvas.width + frameWidth * 2;
     framedCanvas.height = canvas.height + frameWidth * 2;
     const frameCtx = framedCanvas.getContext('2d');
-
     if (frameCtx) {
       frameCtx.fillStyle = frame.color;
       frameCtx.fillRect(0, 0, framedCanvas.width, framedCanvas.height);
@@ -97,12 +114,11 @@ const getEditedImageCanvas = (options: ImageOptions): HTMLCanvasElement | null =
   return canvas;
 };
 
-export const downloadImage = (options: ImageOptions, exportOptions: { format: string; quality: number; width: number; height: number }) => {
-  const sourceCanvas = getEditedImageCanvas(options);
+export const downloadImage = async (options: ImageOptions, exportOptions: { format: string; quality: number; width: number; height: number }) => {
+  const sourceCanvas = await getEditedImageCanvas(options);
   if (!sourceCanvas) return;
 
   const { format, quality, width, height } = exportOptions;
-  
   let finalCanvas = sourceCanvas;
 
   if (width > 0 && height > 0 && (width !== sourceCanvas.width || height !== sourceCanvas.height)) {
@@ -119,7 +135,6 @@ export const downloadImage = (options: ImageOptions, exportOptions: { format: st
 
   const mimeType = `image/${format}`;
   const fileExtension = format;
-
   const link = document.createElement('a');
   link.download = `edited-image.${fileExtension}`;
   link.href = finalCanvas.toDataURL(mimeType, quality);
@@ -127,8 +142,8 @@ export const downloadImage = (options: ImageOptions, exportOptions: { format: st
   showSuccess("Image downloaded successfully.");
 };
 
-export const copyImageToClipboard = (options: ImageOptions) => {
-  const canvas = getEditedImageCanvas(options);
+export const copyImageToClipboard = async (options: ImageOptions) => {
+  const canvas = await getEditedImageCanvas(options);
   if (!canvas) return;
 
   canvas.toBlob(async (blob) => {

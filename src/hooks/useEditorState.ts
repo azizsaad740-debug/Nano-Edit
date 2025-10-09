@@ -42,7 +42,7 @@ export interface EditState {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text";
+  type: "image" | "text" | "drawing";
   name: string;
   visible: boolean;
   opacity?: number;
@@ -58,6 +58,8 @@ export interface Layer {
   textAlign?: "left" | "center" | "right";
   rotation?: number; // degrees
   letterSpacing?: number; // pixels
+  // Drawing layer specific properties
+  dataUrl?: string;
 }
 
 export interface HistoryItem {
@@ -348,15 +350,15 @@ export const useEditorState = () => {
   const handleDownload = useCallback((options: { format: string; quality: number; width: number; height: number }) => {
     if (!imgRef.current) return;
     downloadImage(
-      { image: imgRef.current, ...currentState },
+      { image: imgRef.current, layers: currentLayers, ...currentState },
       options
     );
-  }, [currentState]);
+  }, [currentState, currentLayers]);
 
   const handleCopy = useCallback(() => {
     if (!imgRef.current) return;
-    copyImageToClipboard({ image: imgRef.current, ...currentState });
-  }, [currentState]);
+    copyImageToClipboard({ image: imgRef.current, layers: currentLayers, ...currentState });
+  }, [currentState, currentLayers]);
 
   /* ---------- Layer management ---------- */
   const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
@@ -384,6 +386,21 @@ export const useEditorState = () => {
     setActiveTool(null);
   }, [currentLayers, currentState, recordHistory]);
 
+  const addDrawingLayer = useCallback(() => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "drawing",
+      name: `Drawing ${currentLayers.filter((l) => l.type === "drawing").length + 1}`,
+      visible: true,
+      opacity: 100,
+      dataUrl: "",
+    };
+    const updated = [...currentLayers, newLayer];
+    recordHistory("Add Drawing Layer", currentState, updated);
+    setSelectedLayerId(newLayer.id);
+    return newLayer.id;
+  }, [currentLayers, currentState, recordHistory]);
+
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     const updatedLayers = currentLayers.map((l) => (l.id === id ? { ...l, ...updates } : l));
     updateCurrentLayers(updatedLayers);
@@ -392,7 +409,8 @@ export const useEditorState = () => {
   const commitLayerChange = useCallback((id: string) => {
     const layer = currentLayers.find((l) => l.id === id);
     if (!layer) return;
-    recordHistory(`Edit Layer "${layer.name}"`, currentState, currentLayers);
+    const action = layer.type === 'drawing' ? 'Brush Stroke' : `Edit Layer "${layer.name}"`;
+    recordHistory(action, currentState, currentLayers);
   }, [currentState, currentLayers, recordHistory]);
 
   const toggleLayerVisibility = useCallback((id: string) => {
@@ -519,6 +537,7 @@ export const useEditorState = () => {
     // Layer utilities
     layers: currentLayers,
     addTextLayer,
+    addDrawingLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
