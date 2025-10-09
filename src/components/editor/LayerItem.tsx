@@ -1,10 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, GripVertical, Type, Image as ImageIcon } from "lucide-react";
+import { Trash2, Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -53,6 +52,10 @@ const LayerItem = ({
   };
 
   const handleButtonMouseDown = (e: React.MouseEvent) => e.preventDefault();
+  const handleIconClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+  };
 
   return (
     <div
@@ -77,10 +80,14 @@ const LayerItem = ({
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
-        <Switch
-          checked={layer.visible}
-          onCheckedChange={() => onToggleVisibility(layer.id)}
-        />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          onClick={(e) => handleIconClick(e, () => onToggleVisibility(layer.id))}
+        >
+          {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
+        </Button>
         {layer.type === 'image' ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <Type className="h-4 w-4 text-muted-foreground" />}
         {isEditing ? (
           <Input
@@ -110,7 +117,7 @@ const LayerItem = ({
           variant="ghost"
           size="icon"
           onMouseDown={handleButtonMouseDown}
-          onClick={() => startRename(layer)}
+          onClick={(e) => handleIconClick(e, () => startRename(layer))}
           disabled={isBackground}
         >
           <Edit2 className="h-4 w-4" />
@@ -119,7 +126,7 @@ const LayerItem = ({
           variant="ghost"
           size="icon"
           onMouseDown={handleButtonMouseDown}
-          onClick={() => onDelete(layer.id)}
+          onClick={(e) => handleIconClick(e, () => onDelete(layer.id))}
           disabled={isBackground}
         >
           <Trash2 className="h-4 w-4 text-destructive" />

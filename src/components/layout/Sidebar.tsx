@@ -3,6 +3,11 @@ import React from "react";
 import type { Preset } from "@/hooks/usePresets";
 import type { Layer } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -66,20 +71,31 @@ interface SidebarProps {
 
 const Sidebar = (props: SidebarProps) => {
   return (
-    <aside className="h-full border-r bg-muted/40 p-4 overflow-y-auto flex flex-col gap-4">
-      <EditorControls {...props} />
-      {props.hasImage && (
-        <LayersPanel
-          layers={props.layers}
-          onToggleVisibility={props.toggleLayerVisibility}
-          onRename={props.renameLayer}
-          onDelete={props.deleteLayer}
-          onAddTextLayer={props.addTextLayer}
-          onReorder={props.reorderLayers}
-          selectedLayerId={props.selectedLayerId}
-          onSelectLayer={props.onSelectLayer}
-        />
-      )}
+    <aside className="h-full border-r bg-muted/40">
+      <ResizablePanelGroup direction="vertical">
+        <ResizablePanel defaultSize={60} minSize={30}>
+          <div className="p-4 h-full overflow-y-auto">
+            <EditorControls {...props} />
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={40} minSize={20}>
+          <div className="p-4 h-full overflow-y-auto">
+            {props.hasImage && (
+              <LayersPanel
+                layers={props.layers}
+                onToggleVisibility={props.toggleLayerVisibility}
+                onRename={props.renameLayer}
+                onDelete={props.deleteLayer}
+                onAddTextLayer={props.addTextLayer}
+                onReorder={props.reorderLayers}
+                selectedLayerId={props.selectedLayerId}
+                onSelectLayer={props.onSelectLayer}
+              />
+            )}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
     </aside>
   );
 };
