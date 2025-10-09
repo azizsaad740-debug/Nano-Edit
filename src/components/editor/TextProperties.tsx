@@ -14,6 +14,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
+import { cn } from "@/lib/utils";
 
 interface TextPropertiesProps {
   layer: Layer;
@@ -24,6 +25,8 @@ interface TextPropertiesProps {
 const fonts = [
   "Roboto", "Open Sans", "Lato", "Montserrat", "Playfair Display", "Lobster", "Pacifico"
 ];
+
+const colorPalette = ["#FFFFFF", "#000000", "#EF4444", "#3B82F6", "#22C55E", "#F97316", "#EAB308"];
 
 const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
   if (!layer || layer.type !== 'text') {
@@ -165,12 +168,33 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
       </div>
       <div className="grid gap-2">
         <Label htmlFor="color">Color</Label>
-        <Input
-          id="color"
-          type="color"
-          value={layer.color || "#FFFFFF"}
-          onChange={(e) => handleUpdate({ color: e.target.value })}
-        />
+        <div className="flex items-center gap-2">
+          <Input
+            id="color"
+            type="color"
+            className="p-1 h-10 w-12"
+            value={layer.color || "#FFFFFF"}
+            onChange={(e) => handleUpdate({ color: e.target.value })}
+            onBlur={handleCommit}
+          />
+          <div className="flex flex-wrap gap-1.5">
+            {colorPalette.map(color => (
+              <button
+                key={color}
+                type="button"
+                className={cn(
+                  "w-6 h-6 rounded-full border-2 transition-transform hover:scale-110",
+                  layer.color?.toLowerCase() === color.toLowerCase() ? 'border-primary' : 'border-muted'
+                )}
+                style={{ backgroundColor: color }}
+                onClick={() => {
+                  handleUpdate({ color });
+                  handleCommit();
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
