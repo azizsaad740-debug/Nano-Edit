@@ -12,6 +12,7 @@ import {
   FilePlus,
   Save,
   FolderOpen,
+  ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -21,6 +22,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   onReset: () => void;
@@ -69,93 +77,64 @@ const Header = ({
       <div className="flex items-center gap-2">
         {children}
         <ThemeToggle />
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onOpenProject}>
-              <FolderOpen className="h-4 w-4" />
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              File
+              <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Open Project</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onSaveProject} disabled={!hasImage}>
-              <Save className="h-4 w-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onNewProjectClick}>
+              <FilePlus className="h-4 w-4 mr-2" />
+              New Project
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onOpenProject}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Open Project
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onSaveProject} disabled={!hasImage}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Project
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setOpenImport(true)}>
+              <FilePlus2 className="h-4 w-4 mr-2" />
+              Import Preset/LUT
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm">
+              Edit
+              <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Save Project</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onNewProjectClick}>
-              <FilePlus className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>New Project</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onGenerateClick}>
-              <Sparkles className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Generate Image</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setOpenImport(true)}>
-              <FilePlus2 className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Import Preset / LUT</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => setOpenSettings(true)}>
-              <Settings className="h-4 w-4" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Settings</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onUndo} disabled={!canUndo}>
-              <Undo2 className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Undo</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Undo (Cmd+Z)</p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onRedo} disabled={!canRedo}>
-              <Redo2 className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Redo</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Redo (Cmd+Shift+Z)</p>
-          </TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onUndo} disabled={!canUndo}>
+              <Undo2 className="h-4 w-4 mr-2" />
+              Undo
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onRedo} disabled={!canRedo}>
+              <Redo2 className="h-4 w-4 mr-2" />
+              Redo
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onReset} disabled={!hasImage}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset All
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="outline"
-              size="sm"
+              size="icon"
               disabled={!hasImage}
               onMouseDown={() => onTogglePreview(true)}
               onMouseUp={() => onTogglePreview(false)}
@@ -163,47 +142,54 @@ const Header = ({
               onTouchStart={() => onTogglePreview(true)}
               onTouchEnd={() => onTogglePreview(false)}
             >
-              <Eye className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Preview</span>
+              <Eye className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Hold to see original image</p>
           </TooltipContent>
         </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onReset} disabled={!hasImage}>
-              <RotateCcw className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Reset</span>
+            <Button variant="outline" size="icon" onClick={onGenerateClick}>
+              <Sparkles className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Reset all edits</p>
+            <p>Generate Image</p>
           </TooltipContent>
         </Tooltip>
+
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" onClick={onCopy} disabled={!hasImage}>
-              <Copy className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Copy</span>
+            <Button variant="outline" size="icon" onClick={() => setOpenSettings(true)}>
+              <Settings className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Copy to clipboard (Cmd+Shift+C)</p>
+            <p>Settings</p>
           </TooltipContent>
         </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button size="sm" onClick={onDownloadClick} disabled={!hasImage}>
-              <Download className="h-4 w-4 md:mr-2" />
-              <span className="hidden md:inline">Download</span>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="sm" disabled={!hasImage}>
+              Export
+              <ChevronDown className="h-4 w-4 ml-2" />
             </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Download image (Cmd+S)</p>
-          </TooltipContent>
-        </Tooltip>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onDownloadClick}>
+              <Download className="h-4 w-4 mr-2" />
+              Download
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onCopy}>
+              <Copy className="h-4 w-4 mr-2" />
+              Copy to Clipboard
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );
