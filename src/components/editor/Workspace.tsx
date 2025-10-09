@@ -12,10 +12,11 @@ import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import type { Layer, BrushState, Point } from "@/hooks/useEditorState";
+import type { Layer, BrushState, Point, EditState } from "@/hooks/useEditorState";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
 import { SelectionCanvas } from "./SelectionCanvas";
+import { ChannelFilter } from "./ChannelFilter";
 
 interface WorkspaceProps {
   image: string | null;
@@ -23,33 +24,13 @@ interface WorkspaceProps {
   onSampleSelect: (url: string) => void;
   onUrlSelect: (url: string) => void;
   onImageLoad: () => void;
-  adjustments: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-  };
-  effects: {
-    blur: number;
-    hueShift: number;
-    vignette: number;
-    noise: number;
-  };
-  grading: {
-    grayscale: number;
-    sepia: number;
-    invert: number;
-  };
+  adjustments: EditState['adjustments'];
+  effects: EditState['effects'];
+  grading: EditState['grading'];
+  channels: EditState['channels'];
   selectedFilter: string;
-  transforms: {
-    rotation: number;
-    scaleX: number;
-    scaleY: number;
-  };
-  frame: {
-    type: 'none' | 'solid';
-    width: number;
-    color: string;
-  };
+  transforms: EditState['transforms'];
+  frame: EditState['frame'];
   crop: Crop | undefined;
   pendingCrop: Crop | undefined;
   onCropChange: (crop: Crop | undefined) => void;
@@ -80,6 +61,7 @@ const Workspace = (props: WorkspaceProps) => {
     adjustments,
     effects,
     grading,
+    channels,
     selectedFilter,
     transforms,
     frame,
@@ -259,7 +241,11 @@ const Workspace = (props: WorkspaceProps) => {
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
 
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: getFilterString({ adjustments, effects, grading, selectedFilter }) };
+  const areAllChannelsVisible = channels.r && channels.g && channels.b;
+  const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter });
+  const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${channelFilter}` };
+
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
   
@@ -299,6 +285,7 @@ const Workspace = (props: WorkspaceProps) => {
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
     >
+      <ChannelFilter channels={channels} />
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
           <UploadCloud className="h-16 w-16 text-primary" />

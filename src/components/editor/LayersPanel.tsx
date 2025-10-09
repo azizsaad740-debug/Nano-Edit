@@ -7,7 +7,13 @@ import {
   CardTitle,
   CardContent,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DndContext,
   closestCenter,
@@ -19,8 +25,10 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, EditState } from "@/hooks/useEditorState";
 import LayerItem from "./LayerItem";
+import { ChannelsPanel } from "./ChannelsPanel";
+import { LayerActions } from "./LayerActions";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -31,6 +39,10 @@ interface LayersPanelProps {
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
+  channels: EditState['channels'];
+  onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
+  onLayerOpacityChange: (opacity: number) => void;
+  onLayerOpacityCommit: () => void;
 }
 
 export const LayersPanel = ({
@@ -42,6 +54,10 @@ export const LayersPanel = ({
   onReorder,
   selectedLayerId,
   onSelectLayer,
+  channels,
+  onChannelChange,
+  onLayerOpacityChange,
+  onLayerOpacityCommit,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -82,7 +98,7 @@ export const LayersPanel = ({
     const newReversedIndex = reversedLayers.findIndex((l) => l.id === over.id);
 
     if (oldReversedIndex === -1 || newReversedIndex === -1) {
-      return; // Should not happen
+      return;
     }
     
     const oldIndex = layers.length - 1 - oldReversedIndex;
@@ -91,42 +107,62 @@ export const LayersPanel = ({
     onReorder(oldIndex, newIndex);
   };
 
+  const selectedLayer = layers.find(l => l.id === selectedLayerId);
+
   return (
-    <Card className="mt-4">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Layers</CardTitle>
-        <Button size="sm" onClick={onAddTextLayer}>
-          Add Text
-        </Button>
+    <Card className="mt-4 flex flex-col h-full">
+      <CardHeader>
+        <CardTitle>Layers & Channels</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={reversedLayers.map((l) => l.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {reversedLayers.map((layer) => (
-              <LayerItem
-                key={layer.id}
-                layer={layer}
-                isEditing={editingId === layer.id}
-                tempName={tempName}
-                setTempName={setTempName}
-                startRename={startRename}
-                confirmRename={confirmRename}
-                cancelRename={cancelRename}
-                onToggleVisibility={onToggleVisibility}
-                onDelete={onDelete}
-                isSelected={editingId ? false : selectedLayerId === layer.id}
-                onSelect={onSelectLayer}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+      <CardContent className="flex-1 flex flex-col min-h-0">
+        <Tabs defaultValue="layers" className="flex-1 flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="layers">Layers</TabsTrigger>
+            <TabsTrigger value="channels">Channels</TabsTrigger>
+          </TabsList>
+          <TabsContent value="layers" className="flex-1 mt-2 overflow-hidden">
+            <ScrollArea className="h-full pr-3">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={reversedLayers.map((l) => l.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-2">
+                    {reversedLayers.map((layer) => (
+                      <LayerItem
+                        key={layer.id}
+                        layer={layer}
+                        isEditing={editingId === layer.id}
+                        tempName={tempName}
+                        setTempName={setTempName}
+                        startRename={startRename}
+                        confirmRename={confirmRename}
+                        cancelRename={cancelRename}
+                        onToggleVisibility={onToggleVisibility}
+                        isSelected={editingId ? false : selectedLayerId === layer.id}
+                        onSelect={onSelectLayer}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </ScrollArea>
+          </TabsContent>
+          <TabsContent value="channels" className="mt-2">
+            <ChannelsPanel channels={channels} onChannelChange={onChannelChange} />
+          </TabsContent>
+        </Tabs>
+        <LayerActions
+          selectedLayer={selectedLayer}
+          onAddTextLayer={onAddTextLayer}
+          onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+          onOpacityChange={onLayerOpacityChange}
+          onOpacityCommit={onLayerOpacityCommit}
+        />
       </CardContent>
     </Card>
   );

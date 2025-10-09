@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Trash2, Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -18,7 +18,6 @@ interface LayerItemProps {
   confirmRename: (id: string) => void;
   cancelRename: () => void;
   onToggleVisibility: (id: string) => void;
-  onDelete: (id: string) => void;
   isSelected: boolean;
   onSelect: (id: string) => void;
 }
@@ -32,7 +31,6 @@ const LayerItem = ({
   confirmRename,
   cancelRename,
   onToggleVisibility,
-  onDelete,
   isSelected,
   onSelect,
 }: LayerItemProps) => {
@@ -51,7 +49,6 @@ const LayerItem = ({
     transition,
   };
 
-  const handleButtonMouseDown = (e: React.MouseEvent) => e.preventDefault();
   const handleIconClick = (e: React.MouseEvent, action: () => void) => {
     e.stopPropagation();
     action();
@@ -69,7 +66,7 @@ const LayerItem = ({
         isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring"
       )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         <div
           {...attributes}
           {...listeners}
@@ -83,15 +80,15 @@ const LayerItem = ({
         <Button
           variant="ghost"
           size="icon"
-          className="h-8 w-8"
+          className="h-8 w-8 shrink-0"
           onClick={(e) => handleIconClick(e, () => onToggleVisibility(layer.id))}
         >
           {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
-        {layer.type === 'image' ? <ImageIcon className="h-4 w-4 text-muted-foreground" /> : <Type className="h-4 w-4 text-muted-foreground" />}
+        {layer.type === 'image' ? <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" /> : <Type className="h-4 w-4 text-muted-foreground shrink-0" />}
         {isEditing ? (
           <Input
-            className="w-32 h-8"
+            className="h-8"
             value={tempName}
             onChange={(e) => setTempName(e.target.value)}
             onBlur={() => confirmRename(layer.id)}
@@ -103,7 +100,7 @@ const LayerItem = ({
           />
         ) : (
           <span
-            className="font-medium"
+            className="font-medium truncate"
             onDoubleClick={() => {
               if (!isBackground) startRename(layer);
             }}
@@ -112,26 +109,15 @@ const LayerItem = ({
           </span>
         )}
       </div>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          onMouseDown={handleButtonMouseDown}
-          onClick={(e) => handleIconClick(e, () => startRename(layer))}
-          disabled={isBackground}
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onMouseDown={handleButtonMouseDown}
-          onClick={(e) => handleIconClick(e, () => onDelete(layer.id))}
-          disabled={isBackground}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
-      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 shrink-0"
+        onClick={(e) => handleIconClick(e, () => startRename(layer))}
+        disabled={isBackground}
+      >
+        <Edit2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 };

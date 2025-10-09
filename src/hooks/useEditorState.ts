@@ -27,6 +27,11 @@ export interface EditState {
     sepia: number;
     invert: number;
   };
+  channels: {
+    r: boolean;
+    g: boolean;
+    b: boolean;
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -88,6 +93,7 @@ const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
+  channels: { r: true, g: true, b: true },
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
   frame: { type: 'none', width: 0, color: '#000000' },
@@ -365,6 +371,12 @@ export const useEditorState = () => {
     recordHistory(name, { ...currentState, grading: newGrad });
   }, [currentState, recordHistory]);
 
+  const handleChannelChange = useCallback((channel: 'r' | 'g' | 'b', value: boolean) => {
+    const newChannels = { ...currentState.channels, [channel]: value };
+    const name = `Toggle ${channel.toUpperCase()} Channel`;
+    recordHistory(name, { ...currentState, channels: newChannels });
+  }, [currentState, recordHistory]);
+
   const handleFilterChange = useCallback((value: string, name: string) => {
     const entryName = name === "None" ? "Remove Filter" : `Apply ${name} Filter`;
     recordHistory(entryName, { ...currentState, selectedFilter: value });
@@ -520,6 +532,18 @@ export const useEditorState = () => {
     recordHistory(action, currentState, currentLayers);
   }, [currentState, currentLayers, recordHistory]);
 
+  const handleLayerOpacityChange = useCallback((opacity: number) => {
+    if (selectedLayerId) {
+      updateLayer(selectedLayerId, { opacity });
+    }
+  }, [selectedLayerId, updateLayer]);
+
+  const handleLayerOpacityCommit = useCallback(() => {
+    if (selectedLayerId) {
+      commitLayerChange(selectedLayerId);
+    }
+  }, [selectedLayerId, commitLayerChange]);
+
   const toggleLayerVisibility = useCallback((id: string) => {
     const updated = currentLayers.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
     updateCurrentLayers(updated);
@@ -629,6 +653,7 @@ export const useEditorState = () => {
     handleEffectCommit,
     handleGradingChange,
     handleGradingCommit,
+    handleChannelChange,
     handleFilterChange,
     handleTransformChange,
     handleFramePresetChange,
@@ -659,6 +684,8 @@ export const useEditorState = () => {
     deleteLayer,
     updateLayer,
     commitLayerChange,
+    handleLayerOpacityChange,
+    handleLayerOpacityCommit,
     reorderLayers,
     // Tool state
     activeTool,

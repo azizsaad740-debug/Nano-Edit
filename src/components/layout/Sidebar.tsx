@@ -1,7 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, EditState } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import {
   ResizablePanelGroup,
@@ -11,28 +11,17 @@ import {
 
 interface SidebarProps {
   hasImage: boolean;
-  adjustments: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-  };
+  adjustments: EditState['adjustments'];
   onAdjustmentChange: (adjustment: string, value: number) => void;
   onAdjustmentCommit: (adjustment: string, value: number) => void;
-  effects: {
-    blur: number;
-    hueShift: number;
-    vignette: number;
-    noise: number;
-  };
+  effects: EditState['effects'];
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
-  grading: {
-    grayscale: number;
-    sepia: number;
-    invert: number;
-  };
+  grading: EditState['grading'];
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
+  channels: EditState['channels'];
+  onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -62,8 +51,10 @@ interface SidebarProps {
   // Layer editing
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  onLayerOpacityChange: (opacity: number) => void;
+  onLayerOpacityCommit: () => void;
   // Frame props
-  frame: { type: 'none' | 'solid'; width: number; color: string; };
+  frame: EditState['frame'];
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
@@ -80,7 +71,7 @@ const Sidebar = (props: SidebarProps) => {
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel defaultSize={40} minSize={20}>
-          <div className="p-4 h-full overflow-y-auto">
+          <div className="p-4 h-full overflow-y-auto flex flex-col">
             {props.hasImage && (
               <LayersPanel
                 layers={props.layers}
@@ -91,6 +82,10 @@ const Sidebar = (props: SidebarProps) => {
                 onReorder={props.reorderLayers}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}
+                channels={props.channels}
+                onChannelChange={props.onChannelChange}
+                onLayerOpacityChange={props.onLayerOpacityChange}
+                onLayerOpacityCommit={props.onLayerOpacityCommit}
               />
             )}
           </div>

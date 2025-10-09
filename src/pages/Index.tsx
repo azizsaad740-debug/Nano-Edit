@@ -57,6 +57,7 @@ const Index = () => {
     handleEffectCommit,
     handleGradingChange,
     handleGradingCommit,
+    handleChannelChange,
     handleFilterChange,
     handleTransformChange,
     handleFramePresetChange,
@@ -87,6 +88,8 @@ const Index = () => {
     deleteLayer,
     updateLayer,
     commitLayerChange,
+    handleLayerOpacityChange,
+    handleLayerOpacityCommit,
     reorderLayers,
     // tool state
     activeTool,
@@ -173,7 +176,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad]);
 
-  const { adjustments, effects, grading, selectedFilter, transforms, crop, frame } = currentState;
+  const { adjustments, effects, grading, channels, selectedFilter, transforms, crop, frame } = currentState;
 
   const editorProps = {
     hasImage: !!image,
@@ -186,6 +189,8 @@ const Index = () => {
     grading,
     onGradingChange: handleGradingChange,
     onGradingCommit: handleGradingCommit,
+    channels,
+    onChannelChange: handleChannelChange,
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
@@ -219,6 +224,8 @@ const Index = () => {
     // layer editing
     onLayerUpdate: updateLayer,
     onLayerCommit: commitLayerChange,
+    onLayerOpacityChange: handleLayerOpacityChange,
+    onLayerOpacityCommit: handleLayerOpacityCommit,
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
@@ -299,6 +306,7 @@ const Index = () => {
                 adjustments={adjustments}
                 effects={effects}
                 grading={grading}
+                channels={channels}
                 selectedFilter={selectedFilter}
                 transforms={transforms}
                 frame={frame}
