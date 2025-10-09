@@ -2,6 +2,7 @@ import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
 import type { Layer } from "@/hooks/useEditorState";
+import { LayersPanel } from "@/components/editor/LayersPanel";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -65,8 +66,20 @@ interface SidebarProps {
 
 const Sidebar = (props: SidebarProps) => {
   return (
-    <aside className="h-full border-r bg-muted/40 p-4 overflow-y-auto">
+    <aside className="h-full border-r bg-muted/40 p-4 overflow-y-auto flex flex-col gap-4">
       <EditorControls {...props} />
+      {props.hasImage && (
+        <LayersPanel
+          layers={props.layers}
+          onToggleVisibility={props.toggleLayerVisibility}
+          onRename={props.renameLayer}
+          onDelete={props.deleteLayer}
+          onAddTextLayer={props.addTextLayer}
+          onReorder={props.reorderLayers}
+          selectedLayerId={props.selectedLayerId}
+          onSelectLayer={props.onSelectLayer}
+        />
+      )}
     </aside>
   );
 };

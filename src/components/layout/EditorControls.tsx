@@ -23,7 +23,6 @@ import {
   History as HistoryIcon,
   Info as InfoIcon,
   Image as ImageIcon,
-  Layers as LayersIcon,
   Type,
 } from "lucide-react";
 
@@ -35,7 +34,6 @@ import History from "@/components/editor/History";
 import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
 import Presets from "@/components/editor/Presets";
-import { LayersPanel } from "@/components/editor/LayersPanel";
 import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
@@ -86,14 +84,8 @@ interface EditorControlsProps {
   onDeletePreset: (name: string) => void;
   // Layer props
   layers: Layer[];
-  addTextLayer: () => void;
-  toggleLayerVisibility: (id: string) => void;
-  renameLayer: (id: string, newName: string) => void;
-  deleteLayer: (id: string) => void;
-  reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
-  onSelectLayer: (id: string) => void;
   // Layer editing
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
@@ -134,14 +126,8 @@ const EditorControls = (props: EditorControlsProps) => {
     onDeletePreset,
     // layers
     layers,
-    addTextLayer,
-    toggleLayerVisibility,
-    renameLayer,
-    deleteLayer,
-    reorderLayers,
     // selection
     selectedLayerId,
-    onSelectLayer,
     // layer editing
     onLayerUpdate,
     onLayerCommit,
@@ -171,7 +157,7 @@ const EditorControls = (props: EditorControlsProps) => {
   return (
     <Tabs defaultValue="adjust" className="w-full">
       <TooltipProvider>
-        <TabsList className={cn("grid w-full h-12", isTextLayerSelected ? "grid-cols-7" : "grid-cols-6")}>
+        <TabsList className={cn("grid w-full h-12", isTextLayerSelected ? "grid-cols-6" : "grid-cols-5")}>
           <Tooltip>
             <TooltipTrigger asChild>
               <TabsTrigger value="adjust" className="h-10">
@@ -224,17 +210,6 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipTrigger>
             <TooltipContent>
               <p>Info</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <TabsTrigger value="layers" className="h-10">
-                <LayersIcon className="h-5 w-5" />
-              </TabsTrigger>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Layers</p>
             </TooltipContent>
           </Tooltip>
 
@@ -349,20 +324,6 @@ const EditorControls = (props: EditorControlsProps) => {
       {/* Info tab */}
       <TabsContent value="info" className="mt-4">
         <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
-      </TabsContent>
-
-      {/* Layers tab */}
-      <TabsContent value="layers" className="mt-4">
-        <LayersPanel
-          layers={layers}
-          onToggleVisibility={toggleLayerVisibility}
-          onRename={renameLayer}
-          onDelete={deleteLayer}
-          onAddTextLayer={addTextLayer}
-          onReorder={reorderLayers}
-          selectedLayerId={selectedLayerId}
-          onSelectLayer={onSelectLayer}
-        />
       </TabsContent>
 
       {/* Text tab */}
