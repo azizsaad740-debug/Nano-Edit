@@ -139,11 +139,16 @@ export const useEditorState = () => {
     if (tool !== 'lasso') {
       setSelectionPath(null);
     }
+
+    // Handle entering/leaving crop mode
     if (tool === 'crop') {
+      // Entering crop mode
       setPendingCrop(currentState.crop || { unit: '%', width: 50, height: 50, x: 25, y: 25 });
-    } else if (activeTool === 'crop' && tool !== 'crop') {
-      setPendingCrop(undefined); // Cancel crop if switching tool
+    } else if (activeTool === 'crop') {
+      // Leaving crop mode (since tool is not 'crop' here)
+      setPendingCrop(undefined);
     }
+
     _setActiveTool(tool);
   };
 

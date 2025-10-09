@@ -174,6 +174,26 @@ const Workspace = (props: WorkspaceProps) => {
 
   const handleMouseUp = () => setIsPanning(false);
 
+  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    if (!image) return;
+    e.preventDefault();
+
+    if (e.ctrlKey) {
+      // Vertical Pan
+      setPanOffset(prev => ({ ...prev, y: prev.y - e.deltaY }));
+    } else if (e.altKey || e.shiftKey) {
+      // Horizontal Pan
+      setPanOffset(prev => ({ ...prev, x: prev.x - e.deltaY }));
+    } else {
+      // Zoom
+      const zoomAmount = e.deltaY * -0.001;
+      setZoom(prev => {
+        const newZoom = prev * (1 + zoomAmount);
+        return Math.max(0.1, Math.min(newZoom, 5));
+      });
+    }
+  };
+
   useHotkeys('space', () => { isSpaceDownRef.current = true; }, { keydown: true });
   useHotkeys('space', () => { isSpaceDownRef.current = false; }, { keyup: true });
   useHotkeys("+, =", handleZoomIn, { preventDefault: true });
@@ -264,6 +284,7 @@ const Workspace = (props: WorkspaceProps) => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onWheel={handleWheel}
     >
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
