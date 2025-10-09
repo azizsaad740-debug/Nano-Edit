@@ -17,6 +17,7 @@ import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
 import { SelectionCanvas } from "./SelectionCanvas";
 import { ChannelFilter } from "./ChannelFilter";
+import { CurvesFilter } from "./CurvesFilter";
 
 interface WorkspaceProps {
   image: string | null;
@@ -28,6 +29,7 @@ interface WorkspaceProps {
   effects: EditState['effects'];
   grading: EditState['grading'];
   channels: EditState['channels'];
+  curves: EditState['curves'];
   selectedFilter: string;
   transforms: EditState['transforms'];
   frame: EditState['frame'];
@@ -62,6 +64,7 @@ const Workspace = (props: WorkspaceProps) => {
     effects,
     grading,
     channels,
+    curves,
     selectedFilter,
     transforms,
     frame,
@@ -245,9 +248,12 @@ const Workspace = (props: WorkspaceProps) => {
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
 
   const areAllChannelsVisible = channels.r && channels.g && channels.b;
+  const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
+  
   const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter });
+  const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${channelFilter}` };
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${curvesFilter}${channelFilter}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
@@ -289,6 +295,7 @@ const Workspace = (props: WorkspaceProps) => {
       onWheel={handleWheel}
     >
       <ChannelFilter channels={channels} />
+      <CurvesFilter points={curves.all} />
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
           <UploadCloud className="h-16 w-16 text-primary" />

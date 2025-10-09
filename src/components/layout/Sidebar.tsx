@@ -1,7 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, EditState } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import {
   ResizablePanelGroup,
@@ -22,6 +22,9 @@ interface SidebarProps {
   onGradingCommit: (gradingType: string, value: number) => void;
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
+  curves: EditState['curves'];
+  onCurvesChange: (points: Point[]) => void;
+  onCurvesCommit: (points: Point[]) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;

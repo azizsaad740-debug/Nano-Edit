@@ -58,6 +58,8 @@ const Index = () => {
     handleGradingChange,
     handleGradingCommit,
     handleChannelChange,
+    handleCurvesChange,
+    handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
     handleFramePresetChange,
@@ -177,7 +179,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad]);
 
-  const { adjustments, effects, grading, channels, selectedFilter, transforms, crop, frame } = currentState;
+  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame } = currentState;
 
   const editorProps = {
     hasImage: !!image,
@@ -192,6 +194,9 @@ const Index = () => {
     onGradingCommit: handleGradingCommit,
     channels,
     onChannelChange: handleChannelChange,
+    curves,
+    onCurvesChange: handleCurvesChange,
+    onCurvesCommit: handleCurvesCommit,
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
@@ -310,6 +315,7 @@ const Index = () => {
                 effects={effects}
                 grading={grading}
                 channels={channels}
+                curves={curves}
                 selectedFilter={selectedFilter}
                 transforms={transforms}
                 frame={frame}

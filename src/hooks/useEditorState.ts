@@ -32,6 +32,9 @@ export interface EditState {
     g: boolean;
     b: boolean;
   };
+  curves: {
+    all: Point[];
+  };
   selectedFilter: string;
   transforms: {
     rotation: number;
@@ -94,11 +97,14 @@ export interface BrushState {
 type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser";
 
 /* ---------- Initial state ---------- */
+const initialCurvesState = { all: [{ x: 0, y: 0 }, { x: 255, y: 255 }] };
+
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
   channels: { r: true, g: true, b: true },
+  curves: initialCurvesState,
   selectedFilter: "",
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
   frame: { type: 'none', width: 0, color: '#000000' },
@@ -381,6 +387,15 @@ export const useEditorState = () => {
     const newChannels = { ...currentState.channels, [channel]: value };
     const name = `Toggle ${channel.toUpperCase()} Channel`;
     recordHistory(name, { ...currentState, channels: newChannels });
+  }, [currentState, recordHistory]);
+
+  const handleCurvesChange = useCallback((points: Point[]) => {
+    updateCurrentState({ curves: { ...currentState.curves, all: points } });
+  }, [currentState.curves, updateCurrentState]);
+
+  const handleCurvesCommit = useCallback((points: Point[]) => {
+    const newCurves = { ...currentState.curves, all: points };
+    recordHistory("Adjust Curves", { ...currentState, curves: newCurves });
   }, [currentState, recordHistory]);
 
   const handleFilterChange = useCallback((value: string, name: string) => {
@@ -668,6 +683,8 @@ export const useEditorState = () => {
     handleGradingChange,
     handleGradingCommit,
     handleChannelChange,
+    handleCurvesChange,
+    handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
     handleFramePresetChange,

@@ -37,10 +37,11 @@ import Presets from "@/components/editor/Presets";
 import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, Point } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
 import TextProperties from "@/components/editor/TextProperties";
 import Frames from "@/components/editor/Frames";
+import Curves from "@/components/editor/Curves";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -66,6 +67,11 @@ interface EditorControlsProps {
   };
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
+  curves: {
+    all: Point[];
+  };
+  onCurvesChange: (points: Point[]) => void;
+  onCurvesCommit: (points: Point[]) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -108,6 +114,9 @@ const EditorControls = (props: EditorControlsProps) => {
     grading,
     onGradingChange,
     onGradingCommit,
+    curves,
+    onCurvesChange,
+    onCurvesCommit,
     onFilterChange,
     selectedFilter,
     onTransformChange,
@@ -238,6 +247,17 @@ const EditorControls = (props: EditorControlsProps) => {
                 adjustments={adjustments}
                 onAdjustmentChange={onAdjustmentChange}
                 onAdjustmentCommit={onAdjustmentCommit}
+              />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="curves">
+            <AccordionTrigger>Curves</AccordionTrigger>
+            <AccordionContent>
+              <Curves
+                points={curves.all}
+                onChange={onCurvesChange}
+                onCommit={onCurvesCommit}
+                imgRef={imgRef}
               />
             </AccordionContent>
           </AccordionItem>
