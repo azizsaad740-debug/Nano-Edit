@@ -15,6 +15,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Bold, Italic, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Switch } from "@/components/ui/switch";
 
 interface TextPropertiesProps {
   layer: Layer;
@@ -56,6 +58,25 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
       handleUpdate({ textAlign: align as 'left' | 'center' | 'right' });
       handleCommit();
     }
+  };
+
+  const handleEffectEnabledChange = (
+    effect: 'backgroundColor' | 'stroke' | 'textShadow',
+    enabled: boolean
+  ) => {
+    if (enabled) {
+      const defaultValues = {
+        backgroundColor: layer.backgroundColor || '#000000',
+        stroke: layer.stroke || { color: '#000000', width: 2 },
+        textShadow: layer.textShadow || { color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 2, offsetY: 2 },
+      };
+      handleUpdate({ [effect]: defaultValues[effect] });
+    } else {
+      const updates: Partial<Layer> = { [effect]: undefined };
+      if (effect === 'backgroundColor') updates.padding = layer.padding;
+      handleUpdate(updates);
+    }
+    handleCommit();
   };
 
   const currentStyles = [];
@@ -211,6 +232,97 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
           onValueCommit={handleCommit}
         />
       </div>
+
+      <Accordion type="multiple" className="w-full pt-2 border-t">
+        <AccordionItem value="background">
+          <AccordionTrigger>Background</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="bg-enabled">Enable Background</Label>
+              <Switch id="bg-enabled" checked={!!layer.backgroundColor} onCheckedChange={(c) => handleEffectEnabledChange('backgroundColor', c)} />
+            </div>
+            {layer.backgroundColor && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="bg-color">Color</Label>
+                  <Input id="bg-color" type="color" className="p-1 h-10 w-24" value={layer.backgroundColor} onChange={(e) => handleUpdate({ backgroundColor: e.target.value })} onBlur={handleCommit} />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="bg-padding">Padding</Label>
+                    <span className="text-sm text-muted-foreground">{layer.padding}px</span>
+                  </div>
+                  <Slider id="bg-padding" min={0} max={100} step={1} value={[layer.padding || 0]} onValueChange={([v]) => handleUpdate({ padding: v })} onValueCommit={handleCommit} />
+                </div>
+              </>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="stroke">
+          <AccordionTrigger>Stroke</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="stroke-enabled">Enable Stroke</Label>
+              <Switch id="stroke-enabled" checked={!!layer.stroke} onCheckedChange={(c) => handleEffectEnabledChange('stroke', c)} />
+            </div>
+            {layer.stroke && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="stroke-color">Color</Label>
+                  <Input id="stroke-color" type="color" className="p-1 h-10 w-24" value={layer.stroke.color} onChange={(e) => handleUpdate({ stroke: { ...layer.stroke!, color: e.target.value } })} onBlur={handleCommit} />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="stroke-width">Width</Label>
+                    <span className="text-sm text-muted-foreground">{layer.stroke.width}px</span>
+                  </div>
+                  <Slider id="stroke-width" min={0} max={20} step={0.5} value={[layer.stroke.width]} onValueChange={([v]) => handleUpdate({ stroke: { ...layer.stroke!, width: v } })} onValueCommit={handleCommit} />
+                </div>
+              </>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="shadow">
+          <AccordionTrigger>Shadow</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="shadow-enabled">Enable Shadow</Label>
+              <Switch id="shadow-enabled" checked={!!layer.textShadow} onCheckedChange={(c) => handleEffectEnabledChange('textShadow', c)} />
+            </div>
+            {layer.textShadow && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="shadow-color">Color</Label>
+                  <Input id="shadow-color" type="color" className="p-1 h-10 w-24" value={layer.textShadow.color} onChange={(e) => handleUpdate({ textShadow: { ...layer.textShadow!, color: e.target.value } })} onBlur={handleCommit} />
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="shadow-blur">Blur</Label>
+                    <span className="text-sm text-muted-foreground">{layer.textShadow.blur}px</span>
+                  </div>
+                  <Slider id="shadow-blur" min={0} max={50} step={1} value={[layer.textShadow.blur]} onValueChange={([v]) => handleUpdate({ textShadow: { ...layer.textShadow!, blur: v } })} onValueCommit={handleCommit} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="shadow-offset-x">Offset X</Label>
+                      <span className="text-sm text-muted-foreground">{layer.textShadow.offsetX}px</span>
+                    </div>
+                    <Slider id="shadow-offset-x" min={-50} max={50} step={1} value={[layer.textShadow.offsetX]} onValueChange={([v]) => handleUpdate({ textShadow: { ...layer.textShadow!, offsetX: v } })} onValueCommit={handleCommit} />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="shadow-offset-y">Offset Y</Label>
+                      <span className="text-sm text-muted-foreground">{layer.textShadow.offsetY}px</span>
+                    </div>
+                    <Slider id="shadow-offset-y" min={-50} max={50} step={1} value={[layer.textShadow.offsetY]} onValueChange={([v]) => handleUpdate({ textShadow: { ...layer.textShadow!, offsetY: v } })} onValueCommit={handleCommit} />
+                  </div>
+                </div>
+              </>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };

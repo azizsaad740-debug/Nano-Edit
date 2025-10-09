@@ -215,6 +215,24 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     opacity: (layer.opacity ?? 100) / 100,
   } as React.CSSProperties;
 
+  if (layer.textShadow) {
+    const { offsetX, offsetY, blur, color } = layer.textShadow;
+    style.textShadow = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
+  }
+
+  if (layer.stroke) {
+    const { width, color } = layer.stroke;
+    style.WebkitTextStroke = `${width}px ${color}`;
+    style.WebkitTextFillColor = layer.color;
+  }
+
+  const wrapperStyle: React.CSSProperties = {};
+  if (layer.backgroundColor) {
+    wrapperStyle.backgroundColor = layer.backgroundColor;
+    wrapperStyle.padding = `${layer.padding || 0}px`;
+    wrapperStyle.borderRadius = 'var(--radius)';
+  }
+
   return (
     <div
       ref={textRef}
@@ -230,9 +248,10 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     >
       <div
         className={cn(
-          "relative p-2",
+          "relative",
           isSelected && !isEditing && "outline outline-2 outline-primary outline-dashed"
         )}
+        style={wrapperStyle}
       >
         {isEditing ? (
           <div

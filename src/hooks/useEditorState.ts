@@ -70,6 +70,10 @@ export interface Layer {
   textAlign?: "left" | "center" | "right";
   rotation?: number; // degrees
   letterSpacing?: number; // pixels
+  textShadow?: { color: string; blur: number; offsetX: number; offsetY: number };
+  stroke?: { color: string; width: number };
+  backgroundColor?: string;
+  padding?: number;
   // Drawing layer specific properties
   dataUrl?: string;
 }
@@ -498,6 +502,7 @@ export const useEditorState = () => {
       textAlign: "center",
       rotation: 0,
       letterSpacing: 0,
+      padding: 10,
     };
     const updated = [...currentLayers, newLayer];
     recordHistory("Add Text Layer", currentState, updated);
