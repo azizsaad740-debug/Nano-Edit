@@ -42,9 +42,6 @@ interface LayersPanelProps {
   onSelectLayer: (id: string) => void;
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
-  onLayerOpacityChange: (opacity: number) => void;
-  onLayerOpacityCommit: () => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
 }
 
 export const LayersPanel = ({
@@ -61,9 +58,6 @@ export const LayersPanel = ({
   onSelectLayer,
   channels,
   onChannelChange,
-  onLayerOpacityChange,
-  onLayerOpacityCommit,
-  onLayerPropertyCommit,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -167,9 +161,6 @@ export const LayersPanel = ({
           onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
           onDuplicateLayer={onDuplicateLayer}
           onMergeLayerDown={onMergeLayerDown}
-          onOpacityChange={onLayerOpacityChange}
-          onOpacityCommit={onLayerOpacityCommit}
-          onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
         />
       </CardContent>
     </Card>

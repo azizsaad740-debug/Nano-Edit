@@ -94,9 +94,6 @@ const Sidebar = (props: SidebarProps) => {
                 onSelectLayer={props.onSelectLayer}
                 channels={props.channels}
                 onChannelChange={props.onChannelChange}
-                onLayerOpacityChange={props.onLayerOpacityChange}
-                onLayerOpacityCommit={props.onLayerOpacityCommit}
-                onLayerPropertyCommit={props.onLayerPropertyCommit}
               />
             )}
           </div>

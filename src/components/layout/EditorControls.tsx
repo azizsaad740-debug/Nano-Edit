@@ -24,6 +24,7 @@ import {
   Info as InfoIcon,
   Image as ImageIcon,
   Type,
+  Layers as LayersIcon,
 } from "lucide-react";
 
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
@@ -42,6 +43,7 @@ import { cn } from "@/lib/utils";
 import TextProperties from "@/components/editor/TextProperties";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
+import { LayerProperties } from "@/components/editor/LayerProperties";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -95,6 +97,9 @@ interface EditorControlsProps {
   // Layer editing
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  onLayerOpacityChange: (opacity: number) => void;
+  onLayerOpacityCommit: () => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   // Frame props
   frame: { type: 'none' | 'solid'; width: number; color: string; };
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
@@ -141,6 +146,9 @@ const EditorControls = (props: EditorControlsProps) => {
     // layer editing
     onLayerUpdate,
     onLayerCommit,
+    onLayerOpacityChange,
+    onLayerOpacityCommit,
+    onLayerPropertyCommit,
     // frames
     frame,
     onFramePresetChange,
@@ -153,6 +161,7 @@ const EditorControls = (props: EditorControlsProps) => {
   }, [layers, selectedLayerId]);
 
   const isTextLayerSelected = selectedLayer?.type === 'text';
+  const isActionableLayerSelected = selectedLayer && selectedLayer.type !== 'image';
 
   if (!hasImage) {
     return (
@@ -167,10 +176,10 @@ const EditorControls = (props: EditorControlsProps) => {
   return (
     <Tabs defaultValue="adjust" className="w-full">
       <TooltipProvider>
-        <TabsList className={cn("grid w-full h-12", isTextLayerSelected ? "grid-cols-6" : "grid-cols-5")}>
+        <TabsList className="w-full h-12">
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="adjust" className="h-10">
+              <TabsTrigger value="adjust" className="h-10 flex-1">
                 <SlidersHorizontal className="h-5 w-5" />
               </TabsTrigger>
             </TooltipTrigger>
@@ -181,7 +190,7 @@ const EditorControls = (props: EditorControlsProps) => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="transform" className="h-10">
+              <TabsTrigger value="transform" className="h-10 flex-1">
                 <CropIcon className="h-5 w-5" />
               </TabsTrigger>
             </TooltipTrigger>
@@ -192,7 +201,7 @@ const EditorControls = (props: EditorControlsProps) => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="effects" className="h-10">
+              <TabsTrigger value="effects" className="h-10 flex-1">
                 <Wand2 className="h-5 w-5" />
               </TabsTrigger>
             </TooltipTrigger>
@@ -203,7 +212,7 @@ const EditorControls = (props: EditorControlsProps) => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="history" className="h-10">
+              <TabsTrigger value="history" className="h-10 flex-1">
                 <HistoryIcon className="h-5 w-5" />
               </TabsTrigger>
             </TooltipTrigger>
@@ -214,7 +223,7 @@ const EditorControls = (props: EditorControlsProps) => {
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <TabsTrigger value="info" className="h-10">
+              <TabsTrigger value="info" className="h-10 flex-1">
                 <InfoIcon className="h-5 w-5" />
               </TabsTrigger>
             </TooltipTrigger>
@@ -223,10 +232,23 @@ const EditorControls = (props: EditorControlsProps) => {
             </TooltipContent>
           </Tooltip>
 
+          {isActionableLayerSelected && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="layer" className="h-10 flex-1">
+                  <LayersIcon className="h-5 w-5" />
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Layer Properties</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+
           {isTextLayerSelected && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <TabsTrigger value="text" className="h-10">
+                <TabsTrigger value="text" className="h-10 flex-1">
                   <Type className="h-5 w-5" />
                 </TabsTrigger>
               </TooltipTrigger>
@@ -346,6 +368,18 @@ const EditorControls = (props: EditorControlsProps) => {
       <TabsContent value="info" className="mt-4">
         <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
       </TabsContent>
+
+      {/* Layer tab */}
+      {isActionableLayerSelected && selectedLayer && (
+        <TabsContent value="layer" className="mt-4">
+          <LayerProperties
+            selectedLayer={selectedLayer}
+            onOpacityChange={onLayerOpacityChange}
+            onOpacityCommit={onLayerOpacityCommit}
+            onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
+          />
+        </TabsContent>
+      )}
 
       {/* Text tab */}
       {isTextLayerSelected && selectedLayer && (
