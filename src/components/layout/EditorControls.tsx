@@ -36,7 +36,7 @@ import Presets from "@/components/editor/Presets";
 import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Point } from "@/hooks/useEditorState";
+import type { Point, EditState } from "@/hooks/useEditorState";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
 
@@ -64,11 +64,9 @@ interface EditorControlsProps {
   };
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
-  curves: {
-    all: Point[];
-  };
-  onCurvesChange: (points: Point[]) => void;
-  onCurvesCommit: (points: Point[]) => void;
+  curves: EditState['curves'];
+  onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
+  onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
@@ -216,7 +214,7 @@ const EditorControls = (props: EditorControlsProps) => {
             <AccordionTrigger>Curves</AccordionTrigger>
             <AccordionContent>
               <Curves
-                points={curves.all}
+                curves={curves}
                 onChange={onCurvesChange}
                 onCommit={onCurvesCommit}
                 imgRef={imgRef}

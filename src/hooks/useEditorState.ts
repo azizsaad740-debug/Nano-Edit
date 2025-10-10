@@ -34,6 +34,9 @@ export interface EditState {
   };
   curves: {
     all: Point[];
+    r: Point[];
+    g: Point[];
+    b: Point[];
   };
   selectedFilter: string;
   transforms: {
@@ -97,7 +100,13 @@ export interface BrushState {
 type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser";
 
 /* ---------- Initial state ---------- */
-const initialCurvesState = { all: [{ x: 0, y: 0 }, { x: 255, y: 255 }] };
+const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
+const initialCurvesState = {
+  all: [...defaultCurve],
+  r: [...defaultCurve],
+  g: [...defaultCurve],
+  b: [...defaultCurve],
+};
 
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
@@ -204,7 +213,11 @@ export const useEditorState = () => {
   /* ---------- Preset application ---------- */
   const applyPreset = useCallback(
     (preset: Preset) => {
-      const newState = { ...currentState, ...preset.state };
+      const presetState = {
+        ...preset.state,
+        curves: { ...initialCurvesState, ...preset.state.curves },
+      };
+      const newState = { ...currentState, ...presetState };
       recordHistory(`Apply Preset "${preset.name}"`, newState, currentLayers);
     },
     [currentState, currentLayers, recordHistory]
@@ -422,13 +435,14 @@ export const useEditorState = () => {
     recordHistory(name, { ...currentState, channels: newChannels });
   }, [currentState, recordHistory]);
 
-  const handleCurvesChange = useCallback((points: Point[]) => {
-    updateCurrentState({ curves: { ...currentState.curves, all: points } });
+  const handleCurvesChange = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
+    updateCurrentState({ curves: { ...currentState.curves, [channel]: points } });
   }, [currentState.curves, updateCurrentState]);
 
-  const handleCurvesCommit = useCallback((points: Point[]) => {
-    const newCurves = { ...currentState.curves, all: points };
-    recordHistory("Adjust Curves", { ...currentState, curves: newCurves });
+  const handleCurvesCommit = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
+    const newCurves = { ...currentState.curves, [channel]: points };
+    const channelName = channel === 'all' ? 'RGB' : channel.toUpperCase();
+    recordHistory(`Adjust ${channelName} Curve`, { ...currentState, curves: newCurves });
   }, [currentState, recordHistory]);
 
   const handleFilterChange = useCallback((value: string, name: string) => {

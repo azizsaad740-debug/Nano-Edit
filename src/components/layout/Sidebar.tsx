@@ -23,8 +23,8 @@ interface SidebarProps {
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   curves: EditState['curves'];
-  onCurvesChange: (points: Point[]) => void;
-  onCurvesCommit: (points: Point[]) => void;
+  onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
+  onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
