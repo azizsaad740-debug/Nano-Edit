@@ -49,6 +49,7 @@ interface SidebarProps {
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
   duplicateLayer: () => void;
+  mergeLayerDown: () => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
@@ -87,6 +88,7 @@ const Sidebar = (props: SidebarProps) => {
                 onAddTextLayer={props.addTextLayer}
                 onAddDrawingLayer={props.addDrawingLayer}
                 onDuplicateLayer={props.duplicateLayer}
+                onMergeLayerDown={props.mergeLayerDown}
                 onReorder={props.reorderLayers}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}

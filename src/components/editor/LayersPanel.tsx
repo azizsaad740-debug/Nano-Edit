@@ -36,6 +36,7 @@ interface LayersPanelProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onDuplicateLayer: () => void;
+  onMergeLayerDown: () => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -54,6 +55,7 @@ export const LayersPanel = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onDuplicateLayer,
+  onMergeLayerDown,
   onReorder,
   selectedLayerId,
   onSelectLayer,
@@ -158,11 +160,13 @@ export const LayersPanel = ({
           </TabsContent>
         </Tabs>
         <LayerActions
+          layers={layers}
           selectedLayer={selectedLayer}
           onAddTextLayer={onAddTextLayer}
           onAddDrawingLayer={onAddDrawingLayer}
           onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
           onDuplicateLayer={onDuplicateLayer}
+          onMergeLayerDown={onMergeLayerDown}
           onOpacityChange={onLayerOpacityChange}
           onOpacityCommit={onLayerOpacityCommit}
           onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}

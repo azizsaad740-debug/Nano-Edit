@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, Type, Layers, Copy } from "lucide-react";
+import { Trash2, Type, Layers, Copy, Merge } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import {
   Select,
@@ -15,11 +15,13 @@ import {
 } from "@/components/ui/select";
 
 interface LayerActionsProps {
+  layers: Layer[];
   selectedLayer: Layer | undefined;
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
+  onMergeLayerDown: () => void;
   onOpacityChange: (opacity: number) => void;
   onOpacityCommit: () => void;
   onLayerPropertyCommit: (updates: Partial<Layer>, historyName: string) => void;
@@ -32,17 +34,30 @@ const blendModes = [
 ];
 
 export const LayerActions = ({
+  layers,
   selectedLayer,
   onAddTextLayer,
   onAddDrawingLayer,
   onDeleteLayer,
   onDuplicateLayer,
+  onMergeLayerDown,
   onOpacityChange,
   onOpacityCommit,
   onLayerPropertyCommit,
 }: LayerActionsProps) => {
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
   const isOpacityEditable = !!selectedLayer;
+
+  const isMergeable = React.useMemo(() => {
+    if (!selectedLayer) return false;
+    const layerIndex = layers.findIndex(l => l.id === selectedLayer.id);
+    if (layerIndex < 1) return false;
+
+    const topLayer = layers[layerIndex];
+    const bottomLayer = layers[layerIndex - 1];
+
+    return topLayer.type === 'drawing' && bottomLayer.type === 'drawing';
+  }, [layers, selectedLayer]);
 
   const handleBlendModeChange = (blendMode: string) => {
     if (selectedLayer) {
@@ -108,11 +123,21 @@ export const LayerActions = ({
         <Button
           size="sm"
           variant="outline"
+          onClick={onMergeLayerDown}
+          disabled={!isMergeable}
+        >
+          <Merge className="h-4 w-4 mr-2" />
+          Merge Down
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
           onClick={onDeleteLayer}
           disabled={!isActionable}
+          className="col-span-2"
         >
           <Trash2 className="h-4 w-4 mr-2" />
-          Delete
+          Delete Selected Layer
         </Button>
       </div>
     </div>

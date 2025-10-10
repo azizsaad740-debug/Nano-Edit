@@ -89,6 +89,7 @@ const Index = () => {
     renameLayer,
     deleteLayer,
     duplicateLayer,
+    mergeLayerDown,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -226,6 +227,7 @@ const Index = () => {
     renameLayer,
     deleteLayer,
     duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
+    mergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     reorderLayers,
     // selection
     selectedLayerId,

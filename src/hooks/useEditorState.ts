@@ -626,6 +626,93 @@ export const useEditorState = () => {
     setSelectedLayerId(newLayer.id);
   }, [currentLayers, currentState, recordHistory]);
 
+  const mergeLayerDown = useCallback((id: string) => {
+    const layerIndex = currentLayers.findIndex(l => l.id === id);
+    
+    if (layerIndex < 1) {
+      showError("This layer cannot be merged down.");
+      return;
+    }
+
+    const topLayer = currentLayers[layerIndex];
+    const bottomLayer = currentLayers[layerIndex - 1];
+
+    if (topLayer.type !== 'drawing' || bottomLayer.type !== 'drawing') {
+      showError("Merging is currently only supported between two drawing layers.");
+      return;
+    }
+
+    const toastId = showLoading("Merging layers...");
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx || !imgRef.current) {
+      dismissToast(toastId);
+      showError("Failed to create canvas for merging.");
+      return;
+    }
+
+    canvas.width = imgRef.current.naturalWidth;
+    canvas.height = imgRef.current.naturalHeight;
+
+    const bottomImage = new Image();
+    const topImage = new Image();
+
+    const bottomPromise = new Promise((res, rej) => {
+      if (!bottomLayer.dataUrl) return res(null);
+      bottomImage.onload = res;
+      bottomImage.onerror = rej;
+      bottomImage.src = bottomLayer.dataUrl;
+    });
+
+    const topPromise = new Promise((res, rej) => {
+      if (!topLayer.dataUrl) return res(null);
+      topImage.onload = res;
+      topImage.onerror = rej;
+      topImage.src = topLayer.dataUrl;
+    });
+
+    Promise.all([bottomPromise, topPromise]).then(() => {
+      if (bottomLayer.dataUrl) {
+        ctx.globalAlpha = (bottomLayer.opacity ?? 100) / 100;
+        const blendMode = bottomLayer.blendMode === 'normal' ? 'source-over' : bottomLayer.blendMode;
+        ctx.globalCompositeOperation = (blendMode || 'source-over') as GlobalCompositeOperation;
+        ctx.drawImage(bottomImage, 0, 0);
+      }
+
+      if (topLayer.dataUrl) {
+        ctx.globalAlpha = (topLayer.opacity ?? 100) / 100;
+        const blendMode = topLayer.blendMode === 'normal' ? 'source-over' : topLayer.blendMode;
+        ctx.globalCompositeOperation = (blendMode || 'source-over') as GlobalCompositeOperation;
+        ctx.drawImage(topImage, 0, 0);
+      }
+
+      const mergedDataUrl = canvas.toDataURL();
+
+      const newBottomLayer: Layer = {
+        ...bottomLayer,
+        name: bottomLayer.name,
+        dataUrl: mergedDataUrl,
+        opacity: 100,
+        blendMode: 'normal',
+      };
+
+      const updatedLayers = currentLayers
+        .filter(l => l.id !== topLayer.id)
+        .map(l => l.id === bottomLayer.id ? newBottomLayer : l);
+
+      recordHistory(`Merge Layer "${topLayer.name}" Down`, currentState, updatedLayers);
+      setSelectedLayerId(bottomLayer.id);
+      dismissToast(toastId);
+      showSuccess("Layers merged.");
+    }).catch(err => {
+      console.error("Failed to load layer images for merging:", err);
+      dismissToast(toastId);
+      showError("Failed to merge layers.");
+    });
+
+  }, [currentLayers, currentState, recordHistory, imgRef]);
+
   const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
     if (currentLayers[oldIndex].type === 'image' || currentLayers[newIndex].type === 'image') {
       showError("The background layer cannot be moved.");
@@ -739,6 +826,7 @@ export const useEditorState = () => {
     renameLayer,
     deleteLayer,
     duplicateLayer,
+    mergeLayerDown,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
