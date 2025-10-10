@@ -675,6 +675,97 @@ export const useEditorState = () => {
     setSelectedLayerId(newLayer.id);
   }, [currentLayers, currentState, recordHistory]);
 
+  const rasterizeLayer = useCallback((id: string) => {
+    const layerToRasterize = currentLayers.find(l => l.id === id);
+
+    if (!layerToRasterize || layerToRasterize.type !== 'text' || !imgRef.current) {
+      showError("Only text layers can be rasterized.");
+      return;
+    }
+
+    const toastId = showLoading("Rasterizing layer...");
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      dismissToast(toastId);
+      showError("Failed to create canvas for rasterization.");
+      return;
+    }
+
+    const { naturalWidth, naturalHeight } = imgRef.current;
+    canvas.width = naturalWidth;
+    canvas.height = naturalHeight;
+
+    const {
+      content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
+      fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
+      textAlign = 'center', rotation = 0, textShadow, stroke,
+      backgroundColor, padding = 0,
+    } = layerToRasterize;
+
+    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+    ctx.fillStyle = color;
+    ctx.textAlign = textAlign;
+
+    const posX = (x / 100) * naturalWidth;
+    const posY = (y / 100) * naturalHeight;
+
+    ctx.save();
+    ctx.translate(posX, posY);
+    ctx.rotate(rotation * Math.PI / 180);
+
+    const metrics = ctx.measureText(content);
+    const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+    if (backgroundColor) {
+      ctx.fillStyle = backgroundColor;
+      let bgX = -padding;
+      if (textAlign === 'center') bgX = -metrics.width / 2 - padding;
+      else if (textAlign === 'right') bgX = -metrics.width - padding;
+      
+      const bgY = -metrics.actualBoundingBoxAscent - padding;
+      const bgWidth = metrics.width + padding * 2;
+      const bgHeight = textHeight + padding * 2;
+      ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+      ctx.fillStyle = color;
+    }
+
+    if (textShadow) {
+      ctx.shadowColor = textShadow.color;
+      ctx.shadowBlur = textShadow.blur;
+      ctx.shadowOffsetX = textShadow.offsetX;
+      ctx.shadowOffsetY = textShadow.offsetY;
+    }
+
+    if (stroke && stroke.width > 0) {
+      ctx.strokeStyle = stroke.color;
+      ctx.lineWidth = stroke.width;
+      ctx.strokeText(content, 0, 0);
+    }
+    ctx.fillText(content, 0, 0);
+    ctx.restore();
+
+    const dataUrl = canvas.toDataURL();
+
+    const newLayer: Layer = {
+      ...layerToRasterize,
+      type: 'drawing',
+      dataUrl: dataUrl,
+      content: undefined, x: undefined, y: undefined, fontSize: undefined,
+      fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
+      textAlign: undefined, rotation: undefined, letterSpacing: undefined,
+      textShadow: undefined, stroke: undefined, backgroundColor: undefined,
+      padding: undefined,
+    };
+
+    const updatedLayers = currentLayers.map(l => l.id === id ? newLayer : l);
+    recordHistory(`Rasterize Layer "${layerToRasterize.name}"`, currentState, updatedLayers);
+    
+    dismissToast(toastId);
+    showSuccess("Layer rasterized.");
+  }, [currentLayers, currentState, recordHistory, imgRef]);
+
   const mergeLayerDown = useCallback((id: string) => {
     const layerIndex = currentLayers.findIndex(l => l.id === id);
     
@@ -938,6 +1029,7 @@ export const useEditorState = () => {
     deleteLayer,
     duplicateLayer,
     mergeLayerDown,
+    rasterizeLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,

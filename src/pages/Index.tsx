@@ -91,6 +91,7 @@ const Index = () => {
     deleteLayer,
     duplicateLayer,
     mergeLayerDown,
+    rasterizeLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -230,6 +231,7 @@ const Index = () => {
     deleteLayer,
     duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     mergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
+    rasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
     reorderLayers,
     // selection
     selectedLayerId,

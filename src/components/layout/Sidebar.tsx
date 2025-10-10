@@ -50,6 +50,7 @@ interface SidebarProps {
   deleteLayer: (id: string) => void;
   duplicateLayer: () => void;
   mergeLayerDown: () => void;
+  rasterizeLayer: () => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
@@ -89,6 +90,7 @@ const Sidebar = (props: SidebarProps) => {
                 onAddDrawingLayer={props.addDrawingLayer}
                 onDuplicateLayer={props.duplicateLayer}
                 onMergeLayerDown={props.mergeLayerDown}
+                onRasterizeLayer={props.rasterizeLayer}
                 onReorder={props.reorderLayers}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}

@@ -13,6 +13,7 @@ interface LayerActionsProps {
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
+  onRasterizeLayer: () => void;
 }
 
 export const LayerActions = ({
@@ -23,19 +24,19 @@ export const LayerActions = ({
   onDeleteLayer,
   onDuplicateLayer,
   onMergeLayerDown,
+  onRasterizeLayer,
 }: LayerActionsProps) => {
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
 
   const isMergeable = React.useMemo(() => {
-    if (!selectedLayer) return false;
+    if (!selectedLayer || selectedLayer.type !== 'drawing') return false;
     const layerIndex = layers.findIndex(l => l.id === selectedLayer.id);
     if (layerIndex < 1) return false;
-
-    const topLayer = layers[layerIndex];
     const bottomLayer = layers[layerIndex - 1];
-
-    return topLayer.type === 'drawing' && bottomLayer.type === 'drawing';
+    return bottomLayer.type === 'drawing';
   }, [layers, selectedLayer]);
+
+  const isRasterizable = selectedLayer?.type === 'text';
 
   return (
     <div className="mt-4 space-y-2 border-t pt-4">
@@ -65,6 +66,16 @@ export const LayerActions = ({
         >
           <Merge className="h-4 w-4 mr-2" />
           Merge Down
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onRasterizeLayer}
+          disabled={!isRasterizable}
+          className="col-span-2"
+        >
+          <Layers className="h-4 w-4 mr-2" />
+          Rasterize Layer
         </Button>
         <Button
           size="sm"
