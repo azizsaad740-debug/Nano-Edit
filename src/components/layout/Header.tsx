@@ -13,6 +13,7 @@ import {
   Save,
   FolderOpen,
   ChevronDown,
+  ClipboardPaste,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -46,6 +47,7 @@ interface HeaderProps {
   setOpenImport: (open: boolean) => void;
   onGenerateClick: () => void;
   onNewProjectClick: () => void;
+  onNewFromClipboard: () => void;
   onSaveProject: () => void;
   onOpenProject: () => void;
 }
@@ -65,6 +67,7 @@ const Header = ({
   setOpenImport,
   onGenerateClick,
   onNewProjectClick,
+  onNewFromClipboard,
   onSaveProject,
   onOpenProject,
 }: HeaderProps) => {
@@ -89,6 +92,10 @@ const Header = ({
             <DropdownMenuItem onClick={onNewProjectClick}>
               <FilePlus className="h-4 w-4 mr-2" />
               New Project
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onNewFromClipboard}>
+              <ClipboardPaste className="h-4 w-4 mr-2" />
+              New from Clipboard
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onOpenProject}>
               <FolderOpen className="h-4 w-4 mr-2" />

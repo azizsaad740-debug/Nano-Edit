@@ -49,6 +49,7 @@ const Index = () => {
     handleUrlImageLoad,
     handleGeneratedImageLoad,
     handleNewProject,
+    handleNewFromClipboard,
     handleSaveProject,
     handleLoadProject,
     handleAdjustmentChange,
@@ -258,6 +259,7 @@ const Index = () => {
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}
         onNewProjectClick={() => setOpenNewProject(true)}
+        onNewFromClipboard={handleNewFromClipboard}
         onSaveProject={handleSaveProject}
         onOpenProject={handleOpenProjectClick}
       >

@@ -314,6 +314,39 @@ export const useEditorState = () => {
     }
   }, [loadImageData]);
 
+  const handleNewFromClipboard = useCallback(async () => {
+    const toastId = showLoading("Checking clipboard...");
+    try {
+      const clipboardItems = await navigator.clipboard.read();
+      let imageBlob: Blob | null = null;
+
+      for (const item of clipboardItems) {
+        const imageType = item.types.find(type => type.startsWith('image/'));
+        if (imageType) {
+          imageBlob = await item.getType(imageType);
+          break;
+        }
+      }
+
+      if (imageBlob) {
+        dismissToast(toastId);
+        const file = new File([imageBlob], "pasted-image.png", { type: imageBlob.type });
+        handleFileSelect(file);
+      } else {
+        dismissToast(toastId);
+        showError("No image found on the clipboard.");
+      }
+    } catch (err) {
+      dismissToast(toastId);
+      console.error("Clipboard API error:", err);
+      if (err instanceof Error && err.name === 'NotAllowedError') {
+        showError("Clipboard access denied. Please allow access in your browser settings.");
+      } else {
+        showError("Could not read from clipboard. Your browser might not support this feature.");
+      }
+    }
+  }, [handleFileSelect]);
+
   /* ---------- Project Save/Load ---------- */
   const handleSaveProject = useCallback(() => {
     if (!image) {
@@ -786,6 +819,7 @@ export const useEditorState = () => {
     handleUrlImageLoad,
     handleGeneratedImageLoad,
     handleNewProject,
+    handleNewFromClipboard,
     handleSaveProject,
     handleLoadProject,
     handleAdjustmentChange,
