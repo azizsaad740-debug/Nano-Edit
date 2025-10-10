@@ -550,6 +550,75 @@ export const useEditorState = () => {
   }, [currentState, currentLayers]);
 
   /* ---------- Layer management ---------- */
+  const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { width: number; height: number }): Promise<HTMLCanvasElement | null> => {
+    const canvas = document.createElement('canvas');
+    canvas.width = imageDimensions.width;
+    canvas.height = imageDimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+
+    if (layer.type === 'drawing' && layer.dataUrl) {
+        const img = new Image();
+        await new Promise((res, rej) => {
+            img.onload = res;
+            img.onerror = rej;
+            img.src = layer.dataUrl!;
+        });
+        ctx.drawImage(img, 0, 0);
+    } else if (layer.type === 'text') {
+        const {
+            content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
+            fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
+            textAlign = 'center', rotation = 0, textShadow, stroke,
+            backgroundColor, padding = 0,
+        } = layer;
+
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
+        ctx.fillStyle = color;
+        ctx.textAlign = textAlign;
+
+        const posX = (x / 100) * imageDimensions.width;
+        const posY = (y / 100) * imageDimensions.height;
+
+        ctx.save();
+        ctx.translate(posX, posY);
+        ctx.rotate(rotation * Math.PI / 180);
+
+        const metrics = ctx.measureText(content);
+        const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+
+        if (backgroundColor) {
+            ctx.fillStyle = backgroundColor;
+            let bgX = -padding;
+            if (textAlign === 'center') bgX = -metrics.width / 2 - padding;
+            else if (textAlign === 'right') bgX = -metrics.width - padding;
+            
+            const bgY = -metrics.actualBoundingBoxAscent - padding;
+            const bgWidth = metrics.width + padding * 2;
+            const bgHeight = textHeight + padding * 2;
+            ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
+            ctx.fillStyle = color;
+        }
+
+        if (textShadow) {
+            ctx.shadowColor = textShadow.color;
+            ctx.shadowBlur = textShadow.blur;
+            ctx.shadowOffsetX = textShadow.offsetX;
+            ctx.shadowOffsetY = textShadow.offsetY;
+        }
+
+        if (stroke && stroke.width > 0) {
+            ctx.strokeStyle = stroke.color;
+            ctx.lineWidth = stroke.width;
+            ctx.strokeText(content, 0, 0);
+        }
+        ctx.fillText(content, 0, 0);
+        ctx.restore();
+    }
+    
+    return canvas;
+  };
+
   const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
     const newLayer: Layer = {
       id: uuidv4(),
@@ -675,7 +744,7 @@ export const useEditorState = () => {
     setSelectedLayerId(newLayer.id);
   }, [currentLayers, currentState, recordHistory]);
 
-  const rasterizeLayer = useCallback((id: string) => {
+  const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = currentLayers.find(l => l.id === id);
 
     if (!layerToRasterize || layerToRasterize.type !== 'text' || !imgRef.current) {
@@ -684,92 +753,40 @@ export const useEditorState = () => {
     }
 
     const toastId = showLoading("Rasterizing layer...");
+    try {
+      const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
+      const canvas = await rasterizeLayerToCanvas(layerToRasterize, imageDimensions);
+      if (!canvas) throw new Error("Failed to create canvas for rasterization.");
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      dismissToast(toastId);
-      showError("Failed to create canvas for rasterization.");
-      return;
-    }
+      const dataUrl = canvas.toDataURL();
 
-    const { naturalWidth, naturalHeight } = imgRef.current;
-    canvas.width = naturalWidth;
-    canvas.height = naturalHeight;
+      const newLayer: Layer = {
+        ...layerToRasterize,
+        type: 'drawing',
+        dataUrl: dataUrl,
+        content: undefined, x: undefined, y: undefined, fontSize: undefined,
+        fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
+        textAlign: undefined, rotation: undefined, letterSpacing: undefined,
+        textShadow: undefined, stroke: undefined, backgroundColor: undefined,
+        padding: undefined,
+      };
 
-    const {
-      content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
-      fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
-      textAlign = 'center', rotation = 0, textShadow, stroke,
-      backgroundColor, padding = 0,
-    } = layerToRasterize;
-
-    ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-    ctx.fillStyle = color;
-    ctx.textAlign = textAlign;
-
-    const posX = (x / 100) * naturalWidth;
-    const posY = (y / 100) * naturalHeight;
-
-    ctx.save();
-    ctx.translate(posX, posY);
-    ctx.rotate(rotation * Math.PI / 180);
-
-    const metrics = ctx.measureText(content);
-    const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-
-    if (backgroundColor) {
-      ctx.fillStyle = backgroundColor;
-      let bgX = -padding;
-      if (textAlign === 'center') bgX = -metrics.width / 2 - padding;
-      else if (textAlign === 'right') bgX = -metrics.width - padding;
+      const updatedLayers = currentLayers.map(l => l.id === id ? newLayer : l);
+      recordHistory(`Rasterize Layer "${layerToRasterize.name}"`, currentState, updatedLayers);
       
-      const bgY = -metrics.actualBoundingBoxAscent - padding;
-      const bgWidth = metrics.width + padding * 2;
-      const bgHeight = textHeight + padding * 2;
-      ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
-      ctx.fillStyle = color;
+      dismissToast(toastId);
+      showSuccess("Layer rasterized.");
+    } catch (err: any) {
+      console.error("Failed to rasterize layer:", err);
+      dismissToast(toastId);
+      showError(err.message || "Failed to rasterize layer.");
     }
-
-    if (textShadow) {
-      ctx.shadowColor = textShadow.color;
-      ctx.shadowBlur = textShadow.blur;
-      ctx.shadowOffsetX = textShadow.offsetX;
-      ctx.shadowOffsetY = textShadow.offsetY;
-    }
-
-    if (stroke && stroke.width > 0) {
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width;
-      ctx.strokeText(content, 0, 0);
-    }
-    ctx.fillText(content, 0, 0);
-    ctx.restore();
-
-    const dataUrl = canvas.toDataURL();
-
-    const newLayer: Layer = {
-      ...layerToRasterize,
-      type: 'drawing',
-      dataUrl: dataUrl,
-      content: undefined, x: undefined, y: undefined, fontSize: undefined,
-      fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
-      textAlign: undefined, rotation: undefined, letterSpacing: undefined,
-      textShadow: undefined, stroke: undefined, backgroundColor: undefined,
-      padding: undefined,
-    };
-
-    const updatedLayers = currentLayers.map(l => l.id === id ? newLayer : l);
-    recordHistory(`Rasterize Layer "${layerToRasterize.name}"`, currentState, updatedLayers);
-    
-    dismissToast(toastId);
-    showSuccess("Layer rasterized.");
   }, [currentLayers, currentState, recordHistory, imgRef]);
 
-  const mergeLayerDown = useCallback((id: string) => {
+  const mergeLayerDown = useCallback(async (id: string) => {
     const layerIndex = currentLayers.findIndex(l => l.id === id);
     
-    if (layerIndex < 1) {
+    if (layerIndex < 1 || currentLayers[layerIndex - 1].type === 'image') {
       showError("This layer cannot be merged down.");
       return;
     }
@@ -777,64 +794,43 @@ export const useEditorState = () => {
     const topLayer = currentLayers[layerIndex];
     const bottomLayer = currentLayers[layerIndex - 1];
 
-    if (topLayer.type !== 'drawing' || bottomLayer.type !== 'drawing') {
-      showError("Merging is currently only supported between two drawing layers.");
-      return;
-    }
-
     const toastId = showLoading("Merging layers...");
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx || !imgRef.current) {
-      dismissToast(toastId);
-      showError("Failed to create canvas for merging.");
-      return;
-    }
+    try {
+      if (!imgRef.current) throw new Error("Image reference is not available.");
+      const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
 
-    canvas.width = imgRef.current.naturalWidth;
-    canvas.height = imgRef.current.naturalHeight;
+      const bottomCanvas = await rasterizeLayerToCanvas(bottomLayer, imageDimensions);
+      const topCanvas = await rasterizeLayerToCanvas(topLayer, imageDimensions);
 
-    const bottomImage = new Image();
-    const topImage = new Image();
+      if (!bottomCanvas || !topCanvas) throw new Error("Failed to rasterize layers for merging.");
 
-    const bottomPromise = new Promise((res, rej) => {
-      if (!bottomLayer.dataUrl) return res(null);
-      bottomImage.onload = res;
-      bottomImage.onerror = rej;
-      bottomImage.src = bottomLayer.dataUrl;
-    });
+      const mergedCanvas = document.createElement('canvas');
+      mergedCanvas.width = imageDimensions.width;
+      mergedCanvas.height = imageDimensions.height;
+      const ctx = mergedCanvas.getContext('2d');
+      if (!ctx) throw new Error("Failed to create canvas for merging.");
 
-    const topPromise = new Promise((res, rej) => {
-      if (!topLayer.dataUrl) return res(null);
-      topImage.onload = res;
-      topImage.onerror = rej;
-      topImage.src = topLayer.dataUrl;
-    });
+      // Draw bottom layer
+      ctx.globalAlpha = (bottomLayer.opacity ?? 100) / 100;
+      ctx.globalCompositeOperation = (bottomLayer.blendMode || 'normal') as GlobalCompositeOperation;
+      ctx.drawImage(bottomCanvas, 0, 0);
 
-    Promise.all([bottomPromise, topPromise]).then(() => {
-      if (bottomLayer.dataUrl) {
-        ctx.globalAlpha = (bottomLayer.opacity ?? 100) / 100;
-        const blendMode = bottomLayer.blendMode === 'normal' ? 'source-over' : bottomLayer.blendMode;
-        ctx.globalCompositeOperation = (blendMode || 'source-over') as GlobalCompositeOperation;
-        ctx.drawImage(bottomImage, 0, 0);
-      }
+      // Draw top layer
+      ctx.globalAlpha = (topLayer.opacity ?? 100) / 100;
+      ctx.globalCompositeOperation = (topLayer.blendMode || 'normal') as GlobalCompositeOperation;
+      ctx.drawImage(topCanvas, 0, 0);
 
-      if (topLayer.dataUrl) {
-        ctx.globalAlpha = (topLayer.opacity ?? 100) / 100;
-        const blendMode = topLayer.blendMode === 'normal' ? 'source-over' : topLayer.blendMode;
-        ctx.globalCompositeOperation = (blendMode || 'source-over') as GlobalCompositeOperation;
-        ctx.drawImage(topImage, 0, 0);
-      }
-
-      const mergedDataUrl = canvas.toDataURL();
+      const mergedDataUrl = mergedCanvas.toDataURL();
 
       const newBottomLayer: Layer = {
-        ...bottomLayer,
+        id: bottomLayer.id,
+        type: 'drawing',
         name: bottomLayer.name,
+        visible: bottomLayer.visible,
         dataUrl: mergedDataUrl,
-        opacity: 100,
-        blendMode: 'normal',
+        opacity: 100, // Opacity is baked in, so reset to 100
+        blendMode: 'normal', // Blend mode is baked in
       };
 
       const updatedLayers = currentLayers
@@ -845,12 +841,12 @@ export const useEditorState = () => {
       setSelectedLayerId(bottomLayer.id);
       dismissToast(toastId);
       showSuccess("Layers merged.");
-    }).catch(err => {
-      console.error("Failed to load layer images for merging:", err);
-      dismissToast(toastId);
-      showError("Failed to merge layers.");
-    });
 
+    } catch (err: any) {
+      console.error("Failed to merge layers:", err);
+      dismissToast(toastId);
+      showError(err.message || "Failed to merge layers.");
+    }
   }, [currentLayers, currentState, recordHistory, imgRef]);
 
   const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {

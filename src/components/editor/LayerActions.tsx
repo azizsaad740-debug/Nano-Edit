@@ -29,11 +29,13 @@ export const LayerActions = ({
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
 
   const isMergeable = React.useMemo(() => {
-    if (!selectedLayer || selectedLayer.type !== 'drawing') return false;
+    if (!selectedLayer) return false;
     const layerIndex = layers.findIndex(l => l.id === selectedLayer.id);
-    if (layerIndex < 1) return false;
-    const bottomLayer = layers[layerIndex - 1];
-    return bottomLayer.type === 'drawing';
+    // Cannot merge if it's the first layer or the layer directly above the background
+    if (layerIndex < 1 || layers[layerIndex - 1].type === 'image') {
+      return false;
+    }
+    return true;
   }, [layers, selectedLayer]);
 
   const isRasterizable = selectedLayer?.type === 'text';
