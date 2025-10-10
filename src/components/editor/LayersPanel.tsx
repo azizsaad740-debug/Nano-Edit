@@ -40,6 +40,7 @@ interface LayersPanelProps {
   onAddDrawingLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
+  onRasterizeLayer: () => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -62,6 +63,7 @@ export const LayersPanel = ({
   onAddDrawingLayer,
   onDuplicateLayer,
   onMergeLayerDown,
+  onRasterizeLayer,
   onReorder,
   selectedLayerId,
   onSelectLayer,
@@ -199,6 +201,7 @@ export const LayersPanel = ({
               onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}
+              onRasterizeLayer={onRasterizeLayer}
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">
