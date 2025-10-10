@@ -9,7 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
-import { fromPsd } from "ag-psd";
+import { readPsd } from "ag-psd";
 
 export interface EditState {
   adjustments: {
@@ -63,7 +63,7 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing";
+  type: "image" | "text" | "drawing" | "smart-object";
   name: string;
   visible: boolean;
   opacity?: number;
@@ -86,6 +86,12 @@ export interface Layer {
   padding?: number;
   // Drawing layer specific properties
   dataUrl?: string;
+  // Smart object properties
+  smartObjectData?: {
+    layers: Layer[];
+    width: number;
+    height: number;
+  };
 }
 
 export interface HistoryItem {
@@ -162,6 +168,8 @@ export const useEditorState = () => {
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
+  const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
+  const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
@@ -279,36 +287,78 @@ export const useEditorState = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         try {
-          const psd = fromPsd(reader.result as ArrayBuffer);
+          const psd = readPsd(reader.result as ArrayBuffer);
           const compositeImageUrl = psd.canvas.toDataURL();
           
           const importedLayers: Layer[] = [
             { ...initialLayers[0], id: uuidv4() } // New background
           ];
 
-          // Iterate backwards to maintain layer order (top layer in PS is last in array)
-          psd.children?.reverse().forEach(psdLayer => {
-            if (psdLayer.canvas) {
-              const fullCanvas = document.createElement('canvas');
-              fullCanvas.width = psd.width;
-              fullCanvas.height = psd.height;
-              const ctx = fullCanvas.getContext('2d');
-              if (ctx) {
-                ctx.drawImage(psdLayer.canvas, psdLayer.left ?? 0, psdLayer.top ?? 0);
-                
-                const newLayer: Layer = {
-                  id: uuidv4(),
-                  type: 'drawing',
-                  name: psdLayer.name || 'Untitled Layer',
-                  visible: !psdLayer.hidden,
-                  opacity: (psdLayer.opacity ?? 1) * 100,
-                  blendMode: psdLayer.blendMode || 'normal',
-                  dataUrl: fullCanvas.toDataURL(),
-                };
-                importedLayers.push(newLayer);
+          // Process PSD layers and convert unsupported ones to flattened layers
+          const processPsdLayers = (psdLayers: any[], parentGroup: any = null) => {
+            psdLayers.forEach((psdLayer, index) => {
+              // Skip hidden layers
+              if (psdLayer.hidden) return;
+              
+              // Handle group layers
+              if (psdLayer.children) {
+                processPsdLayers(psdLayer.children, psdLayer);
+                return;
               }
-            }
-          });
+              
+              // Skip adjustment layers and other unsupported types
+              if (psdLayer.adjustment || psdLayer.type === 'smartObject') {
+                // Convert to flattened layer
+                if (psdLayer.canvas) {
+                  const fullCanvas = document.createElement('canvas');
+                  fullCanvas.width = psd.width;
+                  fullCanvas.height = psd.height;
+                  const ctx = fullCanvas.getContext('2d');
+                  if (ctx) {
+                    ctx.drawImage(psdLayer.canvas, psdLayer.left ?? 0, psdLayer.top ?? 0);
+                    
+                    const newLayer: Layer = {
+                      id: uuidv4(),
+                      type: 'drawing',
+                      name: psdLayer.name || 'Flattened Layer',
+                      visible: !psdLayer.hidden,
+                      opacity: (psdLayer.opacity ?? 1) * 100,
+                      blendMode: psdLayer.blendMode || 'normal',
+                      dataUrl: fullCanvas.toDataURL(),
+                    };
+                    importedLayers.push(newLayer);
+                  }
+                }
+                return;
+              }
+              
+              // Handle regular layers
+              if (psdLayer.canvas) {
+                const fullCanvas = document.createElement('canvas');
+                fullCanvas.width = psd.width;
+                fullCanvas.height = psd.height;
+                const ctx = fullCanvas.getContext('2d');
+                if (ctx) {
+                  ctx.drawImage(psdLayer.canvas, psdLayer.left ?? 0, psdLayer.top ?? 0);
+                  
+                  const newLayer: Layer = {
+                    id: uuidv4(),
+                    type: 'drawing',
+                    name: psdLayer.name || 'Layer',
+                    visible: !psdLayer.hidden,
+                    opacity: (psdLayer.opacity ?? 1) * 100,
+                    blendMode: psdLayer.blendMode || 'normal',
+                    dataUrl: fullCanvas.toDataURL(),
+                  };
+                  importedLayers.push(newLayer);
+                }
+              }
+            });
+          };
+
+          if (psd.children) {
+            processPsdLayers(psd.children);
+          }
 
           dismissToast(toastId);
           loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers);
@@ -670,6 +720,40 @@ export const useEditorState = () => {
         }
         ctx.fillText(content, 0, 0);
         ctx.restore();
+    } else if (layer.type === 'smart-object' && layer.smartObjectData) {
+      // For smart objects, we need to render all nested layers
+      const smartCanvas = document.createElement('canvas');
+      smartCanvas.width = layer.smartObjectData.width;
+      smartCanvas.height = layer.smartObjectData.height;
+      const smartCtx = smartCanvas.getContext('2d');
+      
+      if (smartCtx) {
+        // Render all layers in the smart object
+        for (const smartLayer of layer.smartObjectData.layers) {
+          if (!smartLayer.visible) continue;
+          
+          smartCtx.globalAlpha = (smartLayer.opacity ?? 100) / 100;
+          smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'normal') as GlobalCompositeOperation;
+          
+          if (smartLayer.type === 'drawing' && smartLayer.dataUrl) {
+            const img = new Image();
+            await new Promise((res, rej) => {
+              img.onload = res;
+              img.onerror = rej;
+              img.src = smartLayer.dataUrl!;
+            });
+            smartCtx.drawImage(img, 0, 0);
+          } else if (smartLayer.type === 'text') {
+            // Render text layer (simplified version)
+            smartCtx.font = `${smartLayer.fontStyle || 'normal'} ${smartLayer.fontWeight || 'normal'} ${smartLayer.fontSize || 16}px ${smartLayer.fontFamily || 'Arial'}`;
+            smartCtx.fillStyle = smartLayer.color || '#000000';
+            smartCtx.fillText(smartLayer.content || '', smartLayer.x || 0, smartLayer.y || 0);
+          }
+        }
+        
+        // Draw the smart object onto the main canvas
+        ctx.drawImage(smartCanvas, 0, 0, imageDimensions.width, imageDimensions.height);
+      }
     }
     
     return canvas;
@@ -914,6 +998,108 @@ export const useEditorState = () => {
     recordHistory("Reorder Layers", currentState, updated);
   }, [currentLayers, currentState, recordHistory]);
 
+  /* ---------- Smart Object Functions ---------- */
+  const createSmartObject = useCallback((layerIds: string[]) => {
+    if (layerIds.length < 1) {
+      showError("Please select at least one layer to create a smart object.");
+      return;
+    }
+
+    // Get the selected layers
+    const selectedLayers = currentLayers.filter(layer => layerIds.includes(layer.id));
+    
+    // Find the bounds of all selected layers
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    selectedLayers.forEach(layer => {
+      if (layer.type === 'text' && layer.x !== undefined && layer.y !== undefined) {
+        // For text layers, we need to calculate approximate bounds
+        const fontSize = layer.fontSize || 16;
+        const textWidth = (layer.content?.length || 1) * fontSize * 0.6; // Approximate width
+        const textHeight = fontSize * 1.2; // Approximate height
+        
+        const x = (layer.x / 100) * (dimensions?.width || 1000);
+        const y = (layer.y / 100) * (dimensions?.height || 1000);
+        
+        minX = Math.min(minX, x - textWidth / 2);
+        minY = Math.min(minY, y - textHeight / 2);
+        maxX = Math.max(maxX, x + textWidth / 2);
+        maxY = Math.max(maxY, y + textHeight / 2);
+      }
+    });
+    
+    // If we couldn't determine bounds, use default size
+    if (minX === Infinity) {
+      minX = 0;
+      minY = 0;
+      maxX = dimensions?.width || 1000;
+      maxY = dimensions?.height || 1000;
+    }
+    
+    const width = maxX - minX;
+    const height = maxY - minY;
+    
+    // Create the smart object layer
+    const smartObjectLayer: Layer = {
+      id: uuidv4(),
+      type: "smart-object",
+      name: "Smart Object",
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      smartObjectData: {
+        layers: selectedLayers,
+        width,
+        height
+      }
+    };
+
+    // Remove the original layers and add the smart object
+    const updatedLayers = currentLayers
+      .filter(layer => !layerIds.includes(layer.id))
+      .concat(smartObjectLayer);
+
+    recordHistory("Create Smart Object", currentState, updatedLayers);
+    setSelectedLayerId(smartObjectLayer.id);
+  }, [currentLayers, currentState, recordHistory, dimensions]);
+
+  const openSmartObjectEditor = useCallback((id: string) => {
+    const layer = currentLayers.find(l => l.id === id);
+    if (!layer || layer.type !== 'smart-object') {
+      showError("Invalid smart object layer.");
+      return;
+    }
+    
+    setSmartObjectEditingId(id);
+    setIsSmartObjectEditorOpen(true);
+  }, [currentLayers]);
+
+  const closeSmartObjectEditor = useCallback(() => {
+    setIsSmartObjectEditorOpen(false);
+    setSmartObjectEditingId(null);
+  }, []);
+
+  const saveSmartObjectChanges = useCallback((updatedLayers: Layer[]) => {
+    if (!smartObjectEditingId) return;
+    
+    const updatedAllLayers = currentLayers.map(layer => {
+      if (layer.id === smartObjectEditingId && layer.type === 'smart-object' && layer.smartObjectData) {
+        return {
+          ...layer,
+          smartObjectData: {
+            ...layer.smartObjectData,
+            layers: updatedLayers
+          }
+        };
+      }
+      return layer;
+    });
+    
+    recordHistory("Edit Smart Object", currentState, updatedAllLayers);
+    closeSmartObjectEditor();
+    showSuccess("Smart object changes saved.");
+  }, [currentLayers, currentState, recordHistory, smartObjectEditingId, closeSmartObjectEditor]);
+
   /* ---------- Generative fill ---------- */
   const applyGenerativeResult = useCallback((url: string) => {
     if (!selectionPath || selectionPath.length < 2) {
@@ -1088,6 +1274,13 @@ export const useEditorState = () => {
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,
+    // Smart object utilities
+    createSmartObject,
+    openSmartObjectEditor,
+    closeSmartObjectEditor,
+    saveSmartObjectChanges,
+    isSmartObjectEditorOpen,
+    smartObjectEditingId,
     // Tool state
     activeTool,
     setActiveTool,

@@ -52,6 +52,9 @@ interface LayersPanelProps {
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
+  // Smart object functions
+  onCreateSmartObject: (layerIds: string[]) => void;
+  onOpenSmartObject: (id: string) => void;
 }
 
 export const LayersPanel = ({
@@ -74,9 +77,12 @@ export const LayersPanel = ({
   onLayerOpacityChange,
   onLayerOpacityCommit,
   onLayerPropertyCommit,
+  onCreateSmartObject,
+  onOpenSmartObject,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
+  const [selectedLayerIds, setSelectedLayerIds] = React.useState<string[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -124,6 +130,34 @@ export const LayersPanel = ({
   };
 
   const selectedLayer = layers.find(l => l.id === selectedLayerId);
+
+  const handleSelectLayer = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    if (ctrlKey) {
+      // Toggle selection
+      setSelectedLayerIds(prev => 
+        prev.includes(id) 
+          ? prev.filter(layerId => layerId !== id) 
+          : [...prev, id]
+      );
+    } else if (shiftKey && selectedLayerId) {
+      // Range selection
+      const currentIndex = layers.findIndex(l => l.id === id);
+      const lastIndex = layers.findIndex(l => l.id === selectedLayerId);
+      
+      const startIndex = Math.min(currentIndex, lastIndex);
+      const endIndex = Math.max(currentIndex, lastIndex);
+      
+      const newSelection = layers
+        .slice(startIndex, endIndex + 1)
+        .map(l => l.id);
+        
+      setSelectedLayerIds(newSelection);
+    } else {
+      // Single selection
+      setSelectedLayerIds([id]);
+      onSelectLayer(id);
+    }
+  };
 
   return (
     <Card className="mt-4 flex flex-col h-full">
@@ -185,8 +219,8 @@ export const LayersPanel = ({
                         confirmRename={confirmRename}
                         cancelRename={cancelRename}
                         onToggleVisibility={onToggleVisibility}
-                        isSelected={editingId ? false : selectedLayerId === layer.id}
-                        onSelect={onSelectLayer}
+                        isSelected={selectedLayerIds.includes(layer.id)}
+                        onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey, e.shiftKey)}
                       />
                     ))}
                   </div>
@@ -196,12 +230,15 @@ export const LayersPanel = ({
             <LayerActions
               layers={layers}
               selectedLayer={selectedLayer}
+              selectedLayerIds={selectedLayerIds}
               onAddTextLayer={onAddTextLayer}
               onAddDrawingLayer={onAddDrawingLayer}
               onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
+              onCreateSmartObject={onCreateSmartObject}
+              onOpenSmartObject={onOpenSmartObject}
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

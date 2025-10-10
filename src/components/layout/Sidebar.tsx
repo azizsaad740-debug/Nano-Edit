@@ -66,6 +66,9 @@ interface SidebarProps {
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
+  // Smart object functions
+  onCreateSmartObject: (layerIds: string[]) => void;
+  onOpenSmartObject: (id: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -101,6 +104,8 @@ const Sidebar = (props: SidebarProps) => {
                 onLayerOpacityChange={props.onLayerOpacityChange}
                 onLayerOpacityCommit={props.onLayerOpacityCommit}
                 onLayerPropertyCommit={props.onLayerPropertyCommit}
+                onCreateSmartObject={props.onCreateSmartObject}
+                onOpenSmartObject={props.onOpenSmartObject}
               />
             )}
           </div>

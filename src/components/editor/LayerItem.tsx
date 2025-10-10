@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff } from "lucide-react";
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,7 @@ interface LayerItemProps {
   cancelRename: () => void;
   onToggleVisibility: (id: string) => void;
   isSelected: boolean;
-  onSelect: (id: string) => void;
+  onSelect: (e: React.MouseEvent) => void;
 }
 
 const LayerItem = ({
@@ -54,11 +54,24 @@ const LayerItem = ({
     action();
   };
 
+  const getLayerIcon = () => {
+    switch (layer.type) {
+      case 'image':
+        return <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />;
+      case 'text':
+        return <Type className="h-4 w-4 text-muted-foreground shrink-0" />;
+      case 'smart-object':
+        return <FileArchive className="h-4 w-4 text-muted-foreground shrink-0" />;
+      default:
+        return <Layers className="h-4 w-4 text-muted-foreground shrink-0" />;
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
-      onClick={() => onSelect(layer.id)}
+      onClick={onSelect}
       className={cn(
         "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer",
         isBackground ? "bg-muted/50" : "bg-background",
@@ -85,7 +98,7 @@ const LayerItem = ({
         >
           {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
-        {layer.type === 'image' ? <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" /> : <Type className="h-4 w-4 text-muted-foreground shrink-0" />}
+        {getLayerIcon()}
         {isEditing ? (
           <Input
             className="h-8"

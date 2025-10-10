@@ -30,6 +30,7 @@ import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
+import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 
 const Index = () => {
   const {
@@ -98,6 +99,13 @@ const Index = () => {
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,
+    // smart object utilities
+    createSmartObject,
+    openSmartObjectEditor,
+    closeSmartObjectEditor,
+    saveSmartObjectChanges,
+    isSmartObjectEditorOpen,
+    smartObjectEditingId,
     // tool state
     activeTool,
     setActiveTool,
@@ -242,9 +250,14 @@ const Index = () => {
     onLayerPropertyCommit: handleLayerPropertyCommit,
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
+    // smart objects
+    onCreateSmartObject: createSmartObject,
+    onOpenSmartObject: openSmartObjectEditor,
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
+  
+  const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
@@ -387,6 +400,13 @@ const Index = () => {
         onOpenChange={setOpenNewProject}
         onNewProject={handleNewProject}
       />
+      {isSmartObjectEditorOpen && smartObjectToEdit && (
+        <SmartObjectEditor
+          smartObject={smartObjectToEdit}
+          onClose={closeSmartObjectEditor}
+          onSave={saveSmartObjectChanges}
+        />
+      )}
       <input
         type="file"
         ref={openProjectInputRef}

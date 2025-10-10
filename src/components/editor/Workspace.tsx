@@ -397,7 +397,7 @@ const Workspace = (props: WorkspaceProps) => {
                             className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
                             style={{
                               opacity: effects.noise / 100,
-                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuYcnk9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZhtPSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
+                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
                             }}
                           />
                         )}
@@ -407,6 +407,20 @@ const Workspace = (props: WorkspaceProps) => {
                           }
                           if (layer.type === 'drawing') {
                             return <DrawingLayer key={layer.id} layer={layer} />;
+                          }
+                          if (layer.type === 'smart-object') {
+                            // For smart objects, we render a placeholder
+                            return (
+                              <div 
+                                key={layer.id}
+                                className="absolute inset-0 border-2 border-dashed border-blue-500 rounded flex items-center justify-center"
+                                style={{ opacity: (layer.opacity ?? 100) / 100 }}
+                              >
+                                <div className="bg-blue-500/20 px-2 py-1 rounded text-xs font-medium">
+                                  {layer.name}
+                                </div>
+                              </div>
+                            );
                           }
                           return null;
                         })}
