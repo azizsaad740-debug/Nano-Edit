@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
+import { fromPsd } from "ag-psd";
 
 export interface EditState {
   adjustments: {
@@ -271,10 +272,35 @@ export const useEditorState = () => {
 
   const handleFileSelect = useCallback((file: File | undefined) => {
     if (!file) return;
-    const toastId = showLoading("Uploading image...");
+    const toastId = showLoading("Uploading file...");
+
+    if (file.name.toLowerCase().endsWith('.psd')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          const psd = fromPsd(reader.result as ArrayBuffer);
+          const dataUrl = psd.canvas.toDataURL();
+          dismissToast(toastId);
+          loadImageData(dataUrl, "PSD file loaded successfully (flattened).");
+          setFileInfo({ name: file.name, size: file.size });
+          setExifData(null);
+        } catch (e) {
+          console.error("Failed to parse PSD:", e);
+          dismissToast(toastId);
+          showError("Could not read the PSD file. It may be corrupt or an unsupported version.");
+        }
+      };
+      reader.onerror = () => {
+        dismissToast(toastId);
+        showError("Failed to read the file.");
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
     if (!file.type.startsWith("image/")) {
       dismissToast(toastId);
-      showError("Invalid file type. Please upload an image.");
+      showError("Invalid file type. Please upload an image or a .psd file.");
       return;
     }
     setDimensions(null);

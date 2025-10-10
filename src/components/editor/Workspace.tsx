@@ -449,7 +449,7 @@ const Workspace = (props: WorkspaceProps) => {
                 ref={fileInputRef}
                 onChange={handleFileInputChange}
                 className="hidden"
-                accept="image/png, image/jpeg, image/webp"
+                accept="image/png, image/jpeg, image/webp, .psd"
               />
             </CardContent>
           </Card>
