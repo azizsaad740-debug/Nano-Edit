@@ -27,6 +27,9 @@ import type { Layer, EditState } from "@/hooks/useEditorState";
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
+import { LayerProperties } from "./LayerProperties";
+import TextProperties from "./TextProperties";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -42,6 +45,12 @@ interface LayersPanelProps {
   onSelectLayer: (id: string) => void;
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
+  // Layer editing props for properties panels
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string) => void;
+  onLayerOpacityChange: (opacity: number) => void;
+  onLayerOpacityCommit: () => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
 }
 
 export const LayersPanel = ({
@@ -58,6 +67,11 @@ export const LayersPanel = ({
   onSelectLayer,
   channels,
   onChannelChange,
+  onLayerUpdate,
+  onLayerCommit,
+  onLayerOpacityChange,
+  onLayerOpacityCommit,
+  onLayerPropertyCommit,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -117,8 +131,37 @@ export const LayersPanel = ({
             <TabsTrigger value="layers">Layers</TabsTrigger>
             <TabsTrigger value="channels">Channels</TabsTrigger>
           </TabsList>
-          <TabsContent value="layers" className="flex-1 mt-2 overflow-hidden">
-            <ScrollArea className="h-full pr-3">
+          <TabsContent value="layers" className="flex-1 flex flex-col mt-2 overflow-hidden">
+            {selectedLayer && selectedLayer.type !== 'image' && (
+              <ScrollArea className="pr-3 pb-2 mb-2 border-b">
+                <Accordion type="multiple" className="w-full" defaultValue={['properties']}>
+                  <AccordionItem value="properties">
+                    <AccordionTrigger>Properties</AccordionTrigger>
+                    <AccordionContent>
+                      <LayerProperties
+                        selectedLayer={selectedLayer}
+                        onOpacityChange={onLayerOpacityChange}
+                        onOpacityCommit={onLayerOpacityCommit}
+                        onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                  {selectedLayer.type === 'text' && (
+                    <AccordionItem value="text">
+                      <AccordionTrigger>Text</AccordionTrigger>
+                      <AccordionContent>
+                        <TextProperties
+                          layer={selectedLayer}
+                          onUpdate={onLayerUpdate}
+                          onCommit={onLayerCommit}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
+              </ScrollArea>
+            )}
+            <ScrollArea className="flex-1 pr-3">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -148,20 +191,20 @@ export const LayersPanel = ({
                 </SortableContext>
               </DndContext>
             </ScrollArea>
+            <LayerActions
+              layers={layers}
+              selectedLayer={selectedLayer}
+              onAddTextLayer={onAddTextLayer}
+              onAddDrawingLayer={onAddDrawingLayer}
+              onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+              onDuplicateLayer={onDuplicateLayer}
+              onMergeLayerDown={onMergeLayerDown}
+            />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">
             <ChannelsPanel channels={channels} onChannelChange={onChannelChange} />
           </TabsContent>
         </Tabs>
-        <LayerActions
-          layers={layers}
-          selectedLayer={selectedLayer}
-          onAddTextLayer={onAddTextLayer}
-          onAddDrawingLayer={onAddDrawingLayer}
-          onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
-          onDuplicateLayer={onDuplicateLayer}
-          onMergeLayerDown={onMergeLayerDown}
-        />
       </CardContent>
     </Card>
   );

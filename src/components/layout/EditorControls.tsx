@@ -23,8 +23,6 @@ import {
   History as HistoryIcon,
   Info as InfoIcon,
   Image as ImageIcon,
-  Type,
-  Layers as LayersIcon,
 } from "lucide-react";
 
 import LightingAdjustments from "@/components/editor/LightingAdjustments";
@@ -38,12 +36,9 @@ import Presets from "@/components/editor/Presets";
 import Effects from "@/components/editor/Effects";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, Point } from "@/hooks/useEditorState";
-import { cn } from "@/lib/utils";
-import TextProperties from "@/components/editor/TextProperties";
+import type { Point } from "@/hooks/useEditorState";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
-import { LayerProperties } from "@/components/editor/LayerProperties";
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -90,22 +85,10 @@ interface EditorControlsProps {
   onApplyPreset: (preset: Preset) => void;
   onSavePreset: () => void;
   onDeletePreset: (name: string) => void;
-  // Layer props
-  layers: Layer[];
-  // Selection props
-  selectedLayerId: string | null;
-  // Layer editing
-  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
-  onLayerCommit: (id: string) => void;
-  onLayerOpacityChange: (opacity: number) => void;
-  onLayerOpacityCommit: () => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
-  // Frame props
   frame: { type: 'none' | 'solid'; width: number; color: string; };
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
-  duplicateLayer?: () => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {
@@ -139,29 +122,11 @@ const EditorControls = (props: EditorControlsProps) => {
     onApplyPreset,
     onSavePreset,
     onDeletePreset,
-    // layers
-    layers,
-    // selection
-    selectedLayerId,
-    // layer editing
-    onLayerUpdate,
-    onLayerCommit,
-    onLayerOpacityChange,
-    onLayerOpacityCommit,
-    onLayerPropertyCommit,
-    // frames
     frame,
     onFramePresetChange,
     onFramePropertyChange,
     onFramePropertyCommit,
   } = props;
-
-  const selectedLayer = React.useMemo(() => {
-    return layers.find(l => l.id === selectedLayerId);
-  }, [layers, selectedLayerId]);
-
-  const isTextLayerSelected = selectedLayer?.type === 'text';
-  const isActionableLayerSelected = selectedLayer && selectedLayer.type !== 'image';
 
   if (!hasImage) {
     return (
@@ -231,32 +196,6 @@ const EditorControls = (props: EditorControlsProps) => {
               <p>Info</p>
             </TooltipContent>
           </Tooltip>
-
-          {isActionableLayerSelected && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger value="layer" className="h-10 flex-1">
-                  <LayersIcon className="h-5 w-5" />
-                </TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Layer Properties</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-
-          {isTextLayerSelected && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <TabsTrigger value="text" className="h-10 flex-1">
-                  <Type className="h-5 w-5" />
-                </TabsTrigger>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Text</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
         </TabsList>
       </TooltipProvider>
 
@@ -368,29 +307,6 @@ const EditorControls = (props: EditorControlsProps) => {
       <TabsContent value="info" className="mt-4">
         <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
       </TabsContent>
-
-      {/* Layer tab */}
-      {isActionableLayerSelected && selectedLayer && (
-        <TabsContent value="layer" className="mt-4">
-          <LayerProperties
-            selectedLayer={selectedLayer}
-            onOpacityChange={onLayerOpacityChange}
-            onOpacityCommit={onLayerOpacityCommit}
-            onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
-          />
-        </TabsContent>
-      )}
-
-      {/* Text tab */}
-      {isTextLayerSelected && selectedLayer && (
-        <TabsContent value="text" className="mt-4">
-          <TextProperties 
-            layer={selectedLayer}
-            onUpdate={onLayerUpdate}
-            onCommit={onLayerCommit}
-          />
-        </TabsContent>
-      )}
     </Tabs>
   );
 };

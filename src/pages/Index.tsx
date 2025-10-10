@@ -184,7 +184,7 @@ const Index = () => {
 
   const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame } = currentState;
 
-  const editorProps = {
+  const sidebarProps = {
     hasImage: !!image,
     adjustments,
     onAdjustmentChange: handleAdjustmentChange,
@@ -299,7 +299,7 @@ const Index = () => {
                 <SheetTitle>Edit Image</SheetTitle>
               </SheetHeader>
               <div className="py-4">
-                <EditorControls {...editorProps} />
+                <EditorControls {...sidebarProps} />
               </div>
             </SheetContent>
           </Sheet>
@@ -348,7 +348,7 @@ const Index = () => {
           </ResizablePanel>
           <ResizableHandle withHandle />
           <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
-            <Sidebar {...editorProps} />
+            <Sidebar {...sidebarProps} />
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>
