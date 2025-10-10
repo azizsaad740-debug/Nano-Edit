@@ -103,6 +103,7 @@ const Index = () => {
     // brush state
     brushState,
     setBrushState,
+    handleColorPick,
     // generative
     applyGenerativeResult,
     // selection
@@ -343,6 +344,7 @@ const Index = () => {
                 brushState={brushState}
                 selectionPath={selectionPath}
                 onSelectionChange={setSelectionPath}
+                handleColorPick={handleColorPick}
               />
             </div>
           </ResizablePanel>

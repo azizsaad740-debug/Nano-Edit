@@ -99,7 +99,7 @@ export interface BrushState {
   color: string;
 }
 
-type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser";
+type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper";
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -835,6 +835,12 @@ export const useEditorState = () => {
     setBrushState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  const handleColorPick = useCallback((color: string) => {
+    setBrushState(prev => ({ ...prev, color }));
+    _setActiveTool('brush');
+    showSuccess(`Color picked: ${color}`);
+  }, []);
+
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -863,6 +869,7 @@ export const useEditorState = () => {
   useHotkeys("t", () => setActiveTool("text"), { enabled: !!image });
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
   useHotkeys("c", () => setActiveTool("crop"), { enabled: !!image });
+  useHotkeys("i", () => setActiveTool("eyedropper"), { enabled: !!image });
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
@@ -943,6 +950,7 @@ export const useEditorState = () => {
     // Brush state
     brushState,
     setBrushState: handleSetBrushState,
+    handleColorPick,
     // Generative
     applyGenerativeResult,
     // Selection

@@ -42,7 +42,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | null;
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | null;
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -52,6 +52,7 @@ interface WorkspaceProps {
   brushState: BrushState;
   selectionPath: Point[] | null;
   onSelectionChange: (path: Point[]) => void;
+  handleColorPick: (color: string) => void;
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -87,6 +88,7 @@ const Workspace = (props: WorkspaceProps) => {
     brushState,
     selectionPath,
     onSelectionChange,
+    handleColorPick,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -209,11 +211,30 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (activeTool === 'text' && imageContainerRef.current) {
-      const rect = imageContainerRef.current.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      onAddTextLayer({ x, y });
+    if (!imageContainerRef.current || !imgRef.current) return;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+    if (activeTool === 'text') {
+      onAddTextLayer({ x: xPercent, y: yPercent });
+    } else if (activeTool === 'eyedropper') {
+      const canvas = document.createElement('canvas');
+      const img = imgRef.current;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return;
+
+      ctx.drawImage(img, 0, 0);
+      const nativeX = (xPercent / 100) * img.naturalWidth;
+      const nativeY = (yPercent / 100) * img.naturalHeight;
+      const pixel = ctx.getImageData(nativeX, nativeY, 1, 1).data;
+      
+      const toHex = (c: number) => ('0' + c.toString(16)).slice(-2);
+      const hexColor = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
+      
+      handleColorPick(hexColor);
     }
   };
 
@@ -285,6 +306,8 @@ const Workspace = (props: WorkspaceProps) => {
     cropClipPathStyle.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
   }
 
+  const eyedropperCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5c1.9 1.9 1.9 5.1 0 7L10 17l-4 4-1-1 4-4 6.5-6.5c1.9-1.9 5.1-1.9 7 0L16.5 3.5z"/><path d="m14 7 3 3"/><path d="M9 13.5 2.5 20"/></svg>\') 0 24, auto';
+
   return (
     <div
       ref={workspaceContainerRef}
@@ -294,6 +317,7 @@ const Workspace = (props: WorkspaceProps) => {
         activeTool === 'text' && 'cursor-crosshair',
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
+      style={{ cursor: activeTool === 'eyedropper' ? eyedropperCursor : undefined }}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
