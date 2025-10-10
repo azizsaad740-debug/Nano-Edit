@@ -236,11 +236,12 @@ export const useEditorState = () => {
     }
   }, []);
 
-  const loadImageData = useCallback((dataUrl: string, successMsg: string) => {
+  const loadImageData = useCallback((dataUrl: string, successMsg: string, layers: Layer[] = initialLayers) => {
     setImage(dataUrl);
-    setHistory([initialHistoryItem]);
+    const newHistoryItem = { ...initialHistoryItem, layers };
+    setHistory([newHistoryItem]);
     setCurrentHistoryIndex(0);
-    setSelectedLayerId(null);
+    setSelectedLayerId(layers.length > 1 ? layers[layers.length - 1].id : null);
     setPendingCrop(undefined);
     setSelectionPath(null);
     showSuccess(successMsg);
@@ -279,9 +280,38 @@ export const useEditorState = () => {
       reader.onloadend = () => {
         try {
           const psd = fromPsd(reader.result as ArrayBuffer);
-          const dataUrl = psd.canvas.toDataURL();
+          const compositeImageUrl = psd.canvas.toDataURL();
+          
+          const importedLayers: Layer[] = [
+            { ...initialLayers[0], id: uuidv4() } // New background
+          ];
+
+          // Iterate backwards to maintain layer order (top layer in PS is last in array)
+          psd.children?.reverse().forEach(psdLayer => {
+            if (psdLayer.canvas) {
+              const fullCanvas = document.createElement('canvas');
+              fullCanvas.width = psd.width;
+              fullCanvas.height = psd.height;
+              const ctx = fullCanvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(psdLayer.canvas, psdLayer.left ?? 0, psdLayer.top ?? 0);
+                
+                const newLayer: Layer = {
+                  id: uuidv4(),
+                  type: 'drawing',
+                  name: psdLayer.name || 'Untitled Layer',
+                  visible: !psdLayer.hidden,
+                  opacity: (psdLayer.opacity ?? 1) * 100,
+                  blendMode: psdLayer.blendMode || 'normal',
+                  dataUrl: fullCanvas.toDataURL(),
+                };
+                importedLayers.push(newLayer);
+              }
+            }
+          });
+
           dismissToast(toastId);
-          loadImageData(dataUrl, "PSD file loaded successfully (flattened).");
+          loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers);
           setFileInfo({ name: file.name, size: file.size });
           setExifData(null);
         } catch (e) {
