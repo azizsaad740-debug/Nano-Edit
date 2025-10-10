@@ -100,6 +100,7 @@ interface EditorControlsProps {
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
+  duplicateLayer?: () => void;
 }
 
 const EditorControls = (props: EditorControlsProps) => {

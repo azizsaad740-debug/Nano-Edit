@@ -601,6 +601,31 @@ export const useEditorState = () => {
     recordHistory("Delete Layer", currentState, updated);
   }, [currentLayers, currentState, recordHistory, selectedLayerId]);
 
+  const duplicateLayer = useCallback((id: string) => {
+    const layerIndex = currentLayers.findIndex(l => l.id === id);
+    const layerToDuplicate = currentLayers[layerIndex];
+
+    if (!layerToDuplicate || layerToDuplicate.type === 'image') {
+      showError("The background layer cannot be duplicated.");
+      return;
+    }
+
+    const newLayer: Layer = {
+      ...layerToDuplicate,
+      id: uuidv4(),
+      name: `${layerToDuplicate.name} Copy`,
+    };
+
+    const updated = [
+      ...currentLayers.slice(0, layerIndex + 1),
+      newLayer,
+      ...currentLayers.slice(layerIndex + 1),
+    ];
+
+    recordHistory("Duplicate Layer", currentState, updated);
+    setSelectedLayerId(newLayer.id);
+  }, [currentLayers, currentState, recordHistory]);
+
   const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
     if (currentLayers[oldIndex].type === 'image' || currentLayers[newIndex].type === 'image') {
       showError("The background layer cannot be moved.");
@@ -713,6 +738,7 @@ export const useEditorState = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
+    duplicateLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,

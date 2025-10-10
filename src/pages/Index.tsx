@@ -88,6 +88,7 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
+    duplicateLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -224,6 +225,7 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
+    duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     reorderLayers,
     // selection
     selectedLayerId,

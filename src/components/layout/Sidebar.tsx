@@ -48,6 +48,7 @@ interface SidebarProps {
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
+  duplicateLayer: () => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
@@ -85,6 +86,7 @@ const Sidebar = (props: SidebarProps) => {
                 onDelete={props.deleteLayer}
                 onAddTextLayer={props.addTextLayer}
                 onAddDrawingLayer={props.addDrawingLayer}
+                onDuplicateLayer={props.duplicateLayer}
                 onReorder={props.reorderLayers}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}

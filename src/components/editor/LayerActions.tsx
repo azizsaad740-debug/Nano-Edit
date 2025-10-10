@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Trash2, Type, Layers } from "lucide-react";
+import { Trash2, Type, Layers, Copy } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import {
   Select,
@@ -19,6 +19,7 @@ interface LayerActionsProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onDeleteLayer: () => void;
+  onDuplicateLayer: () => void;
   onOpacityChange: (opacity: number) => void;
   onOpacityCommit: () => void;
   onLayerPropertyCommit: (updates: Partial<Layer>, historyName: string) => void;
@@ -35,6 +36,7 @@ export const LayerActions = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onDeleteLayer,
+  onDuplicateLayer,
   onOpacityChange,
   onOpacityCommit,
   onLayerPropertyCommit,
@@ -85,14 +87,23 @@ export const LayerActions = ({
           </Select>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button size="sm" variant="outline" onClick={onAddTextLayer}>
           <Type className="h-4 w-4 mr-2" />
-          Text
+          Add Text
         </Button>
         <Button size="sm" variant="outline" onClick={onAddDrawingLayer}>
           <Layers className="h-4 w-4 mr-2" />
-          Layer
+          Add Layer
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onDuplicateLayer}
+          disabled={!isActionable}
+        >
+          <Copy className="h-4 w-4 mr-2" />
+          Duplicate
         </Button>
         <Button
           size="sm"
