@@ -209,7 +209,6 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     fontWeight: layer.fontWeight || 'normal',
     fontStyle: layer.fontStyle || 'normal',
     letterSpacing: `${layer.letterSpacing || 0}px`,
-    textShadow: "0 0 5px rgba(0,0,0,0.7)",
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "nowrap",
     opacity: (layer.opacity ?? 100) / 100,
