@@ -18,6 +18,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { SelectionCanvas } from "./SelectionCanvas";
 import { ChannelFilter } from "./ChannelFilter";
 import { CurvesFilter } from "./CurvesFilter";
+import { EffectsFilters } from "./EffectsFilters";
 
 interface WorkspaceProps {
   image: string | null;
@@ -256,11 +257,14 @@ const Workspace = (props: WorkspaceProps) => {
 
   const areAllChannelsVisible = channels.r && channels.g && channels.b;
   const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
+  const hasAdvancedEffects = effects.blur > 0 || effects.hueShift !== 0 || effects.sharpen > 0 || effects.clarity > 0;
   
   const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter });
   const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${curvesFilter}${channelFilter}` };
+  const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
+  
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
@@ -303,6 +307,7 @@ const Workspace = (props: WorkspaceProps) => {
     >
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />
+      <EffectsFilters effects={effects} />
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
           <UploadCloud className="h-16 w-16 text-primary" />

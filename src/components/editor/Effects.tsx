@@ -9,6 +9,8 @@ interface EffectsProps {
     hueShift: number;
     vignette: number;
     noise: number;
+    sharpen: number;
+    clarity: number;
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
@@ -104,6 +106,48 @@ const Effects = ({ effects, onEffectChange, onEffectCommit }: EffectsProps) => {
           value={[effects.noise]}
           onValueChange={([value]) => onEffectChange("noise", value)}
           onValueCommit={([value]) => onEffectCommit("noise", value)}
+        />
+      </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="sharpen">Sharpen</Label>
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-sm text-muted-foreground">{effects.sharpen}%</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("sharpen")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Sharpen</span>
+            </Button>
+          </div>
+        </div>
+        <Slider
+          id="sharpen"
+          min={0}
+          max={100}
+          step={1}
+          value={[effects.sharpen]}
+          onValueChange={([value]) => onEffectChange("sharpen", value)}
+          onValueCommit={([value]) => onEffectCommit("sharpen", value)}
+        />
+      </div>
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="clarity">Clarity</Label>
+          <div className="flex items-center gap-2">
+            <span className="w-10 text-right text-sm text-muted-foreground">{effects.clarity}%</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("clarity")}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Clarity</span>
+            </Button>
+          </div>
+        </div>
+        <Slider
+          id="clarity"
+          min={0}
+          max={100}
+          step={1}
+          value={[effects.clarity]}
+          onValueChange={([value]) => onEffectChange("clarity", value)}
+          onValueCommit={([value]) => onEffectCommit("clarity", value)}
         />
       </div>
     </div>

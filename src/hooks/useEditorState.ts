@@ -21,6 +21,8 @@ export interface EditState {
     hueShift: number;
     vignette: number;
     noise: number;
+    sharpen: number;
+    clarity: number;
   };
   grading: {
     grayscale: number;
@@ -110,7 +112,7 @@ const initialCurvesState = {
 
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
-  effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0 },
+  effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0, sharpen: 0, clarity: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
   channels: { r: true, g: true, b: true },
   curves: initialCurvesState,
