@@ -132,7 +132,7 @@ const Workspace = (props: WorkspaceProps) => {
   }, [image, handleFitScreen, imgRef]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isSpaceDownRef.current && image) {
+    if ((isSpaceDownRef.current || e.button === 1) && image) {
       e.preventDefault();
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
@@ -164,22 +164,29 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    if (!image) return;
+    if (!image || !workspaceContainerRef.current) return;
     e.preventDefault();
 
-    if (e.ctrlKey) {
+    if (e.ctrlKey || e.metaKey) {
       // Vertical Pan
       setPanOffset(prev => ({ ...prev, y: prev.y - e.deltaY }));
     } else if (e.altKey || e.shiftKey) {
       // Horizontal Pan
       setPanOffset(prev => ({ ...prev, x: prev.x - e.deltaY }));
     } else {
-      // Zoom
+      // Zoom to cursor
+      const rect = workspaceContainerRef.current.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
       const zoomAmount = e.deltaY * -0.001;
-      setZoom(prev => {
-        const newZoom = prev * (1 + zoomAmount);
-        return Math.max(0.1, Math.min(newZoom, 5));
-      });
+      const newZoom = Math.max(0.1, Math.min(zoom * (1 + zoomAmount), 5));
+      
+      const newPanX = mouseX - (mouseX - panOffset.x) * (newZoom / zoom);
+      const newPanY = mouseY - (mouseY - panOffset.y) * (newZoom / zoom);
+
+      setZoom(newZoom);
+      setPanOffset({ x: newPanX, y: newPanY });
     }
   };
 
