@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
-  PenTool,
+  Pencil,
   Brush,
   Type,
   Crop as CropIcon,
@@ -20,7 +20,7 @@ interface ToolsPanelProps {
 }
 
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
-  { name: "Lasso", icon: PenTool, tool: "lasso", shortcut: "L" },
+  { name: "Lasso", icon: Pencil, tool: "lasso", shortcut: "L" },
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },

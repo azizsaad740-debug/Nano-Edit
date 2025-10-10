@@ -769,11 +769,65 @@ export const useEditorState = () => {
     recordHistory("Reorder Layers", currentState, updated);
   }, [currentLayers, currentState, recordHistory]);
 
-  /* ---------- Generative fill (stub) ---------- */
+  /* ---------- Generative fill ---------- */
   const applyGenerativeResult = useCallback((url: string) => {
-    setImage(url);
-    showSuccess("Generative fill applied.");
-  }, []);
+    if (!selectionPath || selectionPath.length < 2) {
+      showError("A selection is required for generative fill.");
+      return;
+    }
+
+    const toastId = showLoading("Applying generative fill...");
+
+    const generatedImage = new Image();
+    generatedImage.crossOrigin = "Anonymous";
+    generatedImage.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx || !imgRef.current) {
+        dismissToast(toastId);
+        showError("Failed to create canvas for fill.");
+        return;
+      }
+
+      canvas.width = imgRef.current.naturalWidth;
+      canvas.height = imgRef.current.naturalHeight;
+
+      // Create clipping path from selection
+      ctx.beginPath();
+      ctx.moveTo(selectionPath[0].x, selectionPath[0].y);
+      for (let i = 1; i < selectionPath.length; i++) {
+        ctx.lineTo(selectionPath[i].x, selectionPath[i].y);
+      }
+      ctx.closePath();
+      ctx.clip();
+
+      // Draw the generated image into the clipped area
+      ctx.drawImage(generatedImage, 0, 0, canvas.width, canvas.height);
+
+      const dataUrl = canvas.toDataURL();
+      
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: `Fill ${currentLayers.filter((l) => l.type === "drawing").length + 1}`,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+      };
+      const updatedLayers = [...currentLayers, newLayer];
+      recordHistory("Generative Fill", currentState, updatedLayers);
+      setSelectedLayerId(newLayer.id);
+      setSelectionPath(null);
+      dismissToast(toastId);
+      showSuccess("Generative fill applied.");
+    };
+    generatedImage.onerror = () => {
+      dismissToast(toastId);
+      showError("Failed to load generated image for fill.");
+    };
+    generatedImage.src = url;
+  }, [selectionPath, imgRef, currentLayers, recordHistory, currentState]);
 
   const handleSetBrushState = useCallback((updates: Partial<BrushState>) => {
     setBrushState(prev => ({ ...prev, ...updates }));

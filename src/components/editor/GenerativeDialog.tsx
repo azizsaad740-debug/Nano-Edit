@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { showLoading, showSuccess, showError } from "@/utils/toast";
+import { showLoading, showSuccess, showError, dismissToast } from "@/utils/toast";
 
 interface GenerativeDialogProps {
   open: boolean;
@@ -43,20 +43,30 @@ export const GenerativeDialog = ({
     try {
       // Stubbed call – replace with real Nano Banana endpoint
       await new Promise((res) => setTimeout(res, 1500));
-      const placeholderResult = "https://via.placeholder.com/800x600.png?text=Generated";
-      setPreviewUrl(placeholderResult);
-      // Simulate a short delay before applying
-      setTimeout(() => {
-        onApply(placeholderResult);
-        showSuccess("Generated image ready.");
-        setPreviewUrl(null);
-        onOpenChange(false);
-      }, 500);
+      const placeholderResult = `https://placehold.co/512x512/EEE/31343C?text=Generated+Fill`;
+      
+      const img = new Image();
+      img.onload = () => {
+        setPreviewUrl(placeholderResult);
+        // Simulate a short delay before applying
+        setTimeout(() => {
+          onApply(placeholderResult);
+          dismissToast(toastId);
+          showSuccess("Generated image ready.");
+          setPreviewUrl(null);
+          onOpenChange(false);
+        }, 500);
+      };
+      img.onerror = () => {
+        dismissToast(toastId);
+        showError("Failed to load generated image preview.");
+      };
+      img.src = placeholderResult;
+
     } catch (e) {
       console.error(e);
+      dismissToast(toastId);
       showError("Generation failed.");
-    } finally {
-      // sonner auto‑dismisses on success/error
     }
   };
 

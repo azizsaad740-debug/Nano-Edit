@@ -40,8 +40,8 @@ export const GenerateImageDialog = ({
 
     const toastId = showLoading("Generating image…");
     try {
-      // Using Unsplash as a placeholder for image generation
-      const placeholderResult = `https://source.unsplash.com/800x600/?${encodeURIComponent(prompt.trim())}`;
+      // Using a reliable placeholder for image generation
+      const placeholderResult = `https://placehold.co/800x600/EEE/31343C?text=${encodeURIComponent(prompt.trim().replace(/\n/g, '\\n'))}`;
       
       // Preload the image to avoid showing a broken link
       const img = new Image();

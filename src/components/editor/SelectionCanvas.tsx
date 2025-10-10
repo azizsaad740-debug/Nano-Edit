@@ -13,6 +13,8 @@ interface SelectionCanvasProps {
   selectionPath: Point[] | null;
 }
 
+const pencilCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>\') 0 24, auto';
+
 export const SelectionCanvas = ({
   imageRef,
   onSelectionComplete,
@@ -98,13 +100,22 @@ export const SelectionCanvas = ({
     if (!ctx) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    if (pathRef.current.length < 2) return;
+
     ctx.beginPath();
     ctx.moveTo(pathRef.current[0].x, pathRef.current[0].y);
     for (let i = 1; i < pathRef.current.length; i++) {
       ctx.lineTo(pathRef.current[i].x, pathRef.current[i].y);
     }
+    
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
     ctx.strokeStyle = "rgba(0, 0, 0, 0.7)";
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.strokeStyle = "rgba(255, 255, 255, 1)";
+    ctx.lineWidth = 1;
     ctx.stroke();
   }, [getCoords]);
 
@@ -134,7 +145,8 @@ export const SelectionCanvas = ({
   return (
     <canvas
       ref={canvasRef}
-      className="absolute top-0 left-0 w-full h-full cursor-crosshair pointer-events-auto"
+      className="absolute top-0 left-0 w-full h-full pointer-events-auto"
+      style={{ cursor: pencilCursor }}
       onMouseDown={(e) => startDrawing(e.nativeEvent)}
     />
   );
