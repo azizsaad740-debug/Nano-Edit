@@ -54,6 +54,8 @@ interface EditorControlsProps {
     hueShift: number;
     vignette: number;
     noise: number;
+    sharpen: number;
+    clarity: number;
   };
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
