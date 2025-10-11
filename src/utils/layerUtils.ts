@@ -167,6 +167,48 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       
       ctx.restore();
     }
+  } else if (layer.type === 'group' && layer.children) { // New: Handle group layers
+    const groupCanvas = document.createElement('canvas');
+    groupCanvas.width = imageDimensions.width;
+    groupCanvas.height = imageDimensions.height;
+    const groupCtx = groupCanvas.getContext('2d');
+
+    if (groupCtx) {
+      // Render children layers onto the group canvas
+      for (const childLayer of layer.children) {
+        if (!childLayer.visible) continue;
+
+        const nestedLayerCanvas = await rasterizeLayerToCanvas(childLayer, imageDimensions);
+        if (nestedLayerCanvas) {
+          groupCtx.globalAlpha = (childLayer.opacity ?? 100) / 100;
+          groupCtx.globalCompositeOperation = (childLayer.blendMode || 'normal') as GlobalCompositeOperation;
+          
+          // Apply child's position relative to the group's bounding box
+          // This assumes child.x, child.y, child.width, child.height are relative to the group's dimensions
+          // For now, we'll draw them directly onto the main canvas, assuming their (x,y) are already global
+          // A more robust solution would involve drawing to a temporary canvas at group's size, then drawing that canvas
+          // onto the main canvas with group's transforms.
+          groupCtx.drawImage(nestedLayerCanvas, 0, 0);
+        }
+      }
+
+      // Apply group layer's own transforms (x, y, width, height, rotation)
+      ctx.save();
+      
+      const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
+      const layerY = (layer.y ?? 0) / 100 * imageDimensions.height;
+      const layerWidth = (layer.width ?? 100) / 100 * imageDimensions.width;
+      const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
+      const layerRotation = layer.rotation ?? 0;
+
+      // Translate to the center of the group for rotation
+      ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
+      ctx.rotate(layerRotation * Math.PI / 180);
+      // Translate back to draw the image
+      ctx.drawImage(groupCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
+      
+      ctx.restore();
+    }
   }
 
   return canvas;

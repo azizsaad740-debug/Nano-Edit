@@ -21,6 +21,7 @@ import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
+import GroupLayer from "./GroupLayer"; // Import GroupLayer
 
 interface WorkspaceProps {
   image: string | null;
@@ -374,47 +375,57 @@ const Workspace = (props: WorkspaceProps) => {
     const nativeClickY = clickY * scaleY;
 
     let layerClicked = false;
-    // Check for layer clicks (from top to bottom)
-    // Iterate in reverse order to check top-most layers first
-    for (let i = layers.length - 1; i >= 0; i--) {
-      const layer = layers[i];
-      if (!layer.visible || layer.type === 'image' || layer.type === 'drawing') continue; // Skip background and drawing layers for direct click selection
+    // Recursive function to check for layer clicks within groups
+    const checkLayerClick = (layersToCheck: Layer[]): boolean => {
+      // Iterate in reverse order to check top-most layers first
+      for (let i = layersToCheck.length - 1; i >= 0; i--) {
+        const layer = layersToCheck[i];
+        if (!layer.visible || layer.type === 'image' || layer.type === 'drawing') continue; // Skip background and drawing layers for direct click selection
 
-      // For text and vector shapes, we need to check if the click is within their transformed bounds
-      // This is a simplified check and might not be pixel-perfect for rotated/scaled elements
-      const layerX_px = (layer.x / 100) * imageNaturalDimensions.width;
-      const layerY_px = (layer.y / 100) * imageNaturalDimensions.height;
-      const layerWidth_px = (layer.width / 100) * imageNaturalDimensions.width;
-      const layerHeight_px = (layer.height / 100) * imageNaturalDimensions.height;
-
-      // For text layers, approximate bounding box based on font size and content length
-      let effectiveWidth_px = layerWidth_px;
-      let effectiveHeight_px = layerHeight_px;
-
-      if (layer.type === 'text') {
-        const approxCharWidth = (layer.fontSize || 48) * 0.6; // Rough estimate
-        effectiveWidth_px = (layer.content?.length || 1) * approxCharWidth;
-        effectiveHeight_px = (layer.fontSize || 48) * 1.2;
-      }
-
-      // Adjust for center origin (x,y are center for text/vector shapes)
-      const minX = layerX_px - effectiveWidth_px / 2;
-      const minY = layerY_px - effectiveHeight_px / 2;
-      const maxX = layerX_px + effectiveWidth_px / 2;
-      const maxY = layerY_px + effectiveHeight_px / 2;
-
-      if (nativeClickX >= minX && nativeClickX <= maxX && nativeClickY >= minY && nativeClickY <= maxY) {
-        setSelectedLayer(layer.id);
-        layerClicked = true;
-        e.stopPropagation(); // Prevent deselecting if a layer was clicked
-        
-        // If a layer is clicked, deactivate text/shape tools
-        if (activeTool === 'text' || activeTool === 'shape') {
-          setActiveTool(null);
+        if (layer.type === 'group' && layer.children && layer.expanded) {
+          // If it's an expanded group, check its children first
+          if (checkLayerClick(layer.children)) {
+            return true; // Child layer was clicked
+          }
         }
-        return;
+
+        // For text, vector shapes, and smart objects, check if the click is within their transformed bounds
+        const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
+        const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
+        let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
+        let layerHeight_px = (layer.height ?? 10) / 100 * imageNaturalDimensions.height;
+
+        if (layer.type === 'text') {
+          const approxCharWidth = (layer.fontSize || 48) * 0.6; // Rough estimate
+          layerWidth_px = (layer.content?.length || 1) * approxCharWidth;
+          layerHeight_px = (layer.fontSize || 48) * 1.2;
+        } else if (layer.type === 'smart-object' && layer.smartObjectData) {
+          layerWidth_px = (layer.width ?? (layer.smartObjectData.width / imageNaturalDimensions.width) * 100) / 100 * imageNaturalDimensions.width;
+          layerHeight_px = (layer.height ?? (layer.smartObjectData.height / imageNaturalDimensions.height) * 100) / 100 * imageNaturalDimensions.height;
+        }
+
+        // Adjust for center origin (x,y are center for text/vector shapes/smart objects/groups)
+        const minX = layerX_px - layerWidth_px / 2;
+        const minY = layerY_px - layerHeight_px / 2;
+        const maxX = layerX_px + layerWidth_px / 2;
+        const maxY = layerY_px + layerHeight_px / 2;
+
+        if (nativeClickX >= minX && nativeClickX <= maxX && nativeClickY >= minY && nativeClickY <= maxY) {
+          setSelectedLayer(layer.id);
+          layerClicked = true;
+          e.stopPropagation(); // Prevent deselecting if a layer was clicked
+          
+          // If a layer is clicked, deactivate text/shape tools
+          if (activeTool === 'text' || activeTool === 'shape') {
+            setActiveTool(null);
+          }
+          return true;
+        }
       }
-    }
+      return false;
+    };
+
+    layerClicked = checkLayerClick(layers);
 
     // If no layer was clicked, deselect any active layer
     if (!layerClicked) {
@@ -515,6 +526,62 @@ const Workspace = (props: WorkspaceProps) => {
   const eyedropperCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5c1.9 1.9 1.9 5.1 0 7L10 17l-4 4-1-1 4-4 6.5-6.5c1.9-1.9 5.1-1.9 7 0L16.5 3.5z"/><path d="m14 7 3 3"/><path d="M9 13.5 2.5 20"/></svg>\') 0 24, auto';
   const moveToolCursor = 'grab';
 
+  const renderWorkspaceLayers = (layersToRender: Layer[]) => {
+    return layersToRender.map((layer) => {
+      if (!layer.visible) return null;
+
+      if (layer.type === 'text') {
+        return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} activeTool={activeTool} />;
+      }
+      if (layer.type === 'drawing') {
+        return <DrawingLayer key={layer.id} layer={layer} />;
+      }
+      if (layer.type === 'smart-object') {
+        return (
+          <SmartObjectLayer
+            key={layer.id}
+            layer={layer}
+            containerRef={imageContainerRef}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+            isSelected={layer.id === selectedLayerId}
+            parentDimensions={imageNaturalDimensions}
+            activeTool={activeTool}
+          />
+        );
+      }
+      if (layer.type === 'vector-shape') {
+        return (
+          <VectorShapeLayer
+            key={layer.id}
+            layer={layer}
+            containerRef={imageContainerRef}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+            isSelected={layer.id === selectedLayerId}
+            activeTool={activeTool}
+          />
+        );
+      }
+      if (layer.type === 'group') {
+        return (
+          <GroupLayer
+            key={layer.id}
+            layer={layer}
+            containerRef={imageContainerRef}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+            isSelected={layer.id === selectedLayerId}
+            parentDimensions={imageNaturalDimensions}
+            activeTool={activeTool}
+            renderChildren={renderWorkspaceLayers} // Pass recursive renderer
+          />
+        );
+      }
+      return null;
+    });
+  };
+
   return (
     <div
       ref={workspaceContainerRef}
@@ -522,7 +589,7 @@ const Workspace = (props: WorkspaceProps) => {
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
         activeTool === 'text' && 'cursor-crosshair',
-        activeTool === 'shape' && 'cursor-crosshair', // Cursor for shape tool
+        activeTool === 'shape' && 'cursor-crosshair',
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       style={{ 
@@ -612,42 +679,7 @@ const Workspace = (props: WorkspaceProps) => {
                             }}
                           />
                         )}
-                        {layers.map((layer) => {
-                          if (layer.type === 'text') {
-                            return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} activeTool={activeTool} />;
-                          }
-                          if (layer.type === 'drawing') {
-                            return <DrawingLayer key={layer.id} layer={layer} />;
-                          }
-                          if (layer.type === 'smart-object') {
-                            return (
-                              <SmartObjectLayer
-                                key={layer.id}
-                                layer={layer}
-                                containerRef={imageContainerRef}
-                                onUpdate={onLayerUpdate}
-                                onCommit={onLayerCommit}
-                                isSelected={layer.id === selectedLayerId}
-                                parentDimensions={imageNaturalDimensions} // Pass imageNaturalDimensions here
-                                activeTool={activeTool}
-                              />
-                            );
-                          }
-                          if (layer.type === 'vector-shape') { // Render vector shapes
-                            return (
-                              <VectorShapeLayer
-                                key={layer.id}
-                                layer={layer}
-                                containerRef={imageContainerRef}
-                                onUpdate={onLayerUpdate}
-                                onCommit={onLayerCommit}
-                                isSelected={layer.id === selectedLayerId}
-                                activeTool={activeTool}
-                              />
-                            );
-                          }
-                          return null;
-                        })}
+                        {renderWorkspaceLayers(layers)}
                         {isDrawing && (activeTool === 'brush' || activeTool === 'eraser') && (
                           <LiveBrushCanvas
                             brushState={brushState}
@@ -663,9 +695,9 @@ const Workspace = (props: WorkspaceProps) => {
                             shapeType={selectedShapeType || 'rect'}
                             containerRect={imageContainerRef.current.getBoundingClientRect()}
                             imageNaturalDimensions={imageNaturalDimensions}
-                            fillColor="#3B82F6" // Default fill for preview
-                            strokeColor="#FFFFFF" // Default stroke for preview
-                            strokeWidth={2} // Default stroke width for preview
+                            fillColor="#3B82F6"
+                            strokeColor="#FFFFFF"
+                            strokeWidth={2}
                           />
                         )}
                       </div>

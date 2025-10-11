@@ -78,6 +78,10 @@ interface SidebarProps {
   // Brush state
   brushState: BrushState;
   setBrushState: (updates: Partial<BrushState>) => void;
+  // Grouping
+  groupLayers: (layerIds: string[]) => void;
+  toggleGroupExpanded: (id: string) => void;
+  updateLayersState: (newLayers: Layer[], historyName?: string) => void; // Add updateLayersState
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -138,6 +142,9 @@ const Sidebar = (props: SidebarProps) => {
                 activeTool={props.activeTool}
                 brushState={props.brushState}
                 setBrushState={props.setBrushState}
+                groupLayers={props.groupLayers} // Pass groupLayers
+                toggleGroupExpanded={props.toggleGroupExpanded} // Pass toggleGroupExpanded
+                updateLayersState={props.updateLayersState} // Pass updateLayersState
               />
             )}
           </div>

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square } from "lucide-react"; // Added Square icon
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown } from "lucide-react"; // Added Folder, FolderOpen, ChevronRight, ChevronDown icons
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,8 @@ interface LayerItemProps {
   onToggleVisibility: (id: string) => void;
   isSelected: boolean;
   onSelect: (e: React.MouseEvent) => void;
+  onToggleGroupExpanded?: (id: string) => void; // New prop for toggling group expansion
+  depth?: number; // New prop for indentation
 }
 
 const LayerItem = ({
@@ -33,8 +35,12 @@ const LayerItem = ({
   onToggleVisibility,
   isSelected,
   onSelect,
+  onToggleGroupExpanded,
+  depth = 0,
 }: LayerItemProps) => {
   const isBackground = layer.type === "image";
+  const isGroup = layer.type === "group";
+
   const {
     attributes,
     listeners,
@@ -47,6 +53,7 @@ const LayerItem = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    paddingLeft: `${depth * 20 + 8}px`, // Indentation for nested layers
   };
 
   const handleIconClick = (e: React.MouseEvent, action: () => void) => {
@@ -55,6 +62,9 @@ const LayerItem = ({
   };
 
   const getLayerIcon = () => {
+    if (isGroup) {
+      return layer.expanded ? <FolderOpen className="h-4 w-4 text-muted-foreground shrink-0" /> : <Folder className="h-4 w-4 text-muted-foreground shrink-0" />;
+    }
     switch (layer.type) {
       case 'image':
         return <ImageIcon className="h-4 w-4 text-muted-foreground shrink-0" />;
@@ -62,7 +72,7 @@ const LayerItem = ({
         return <Type className="h-4 w-4 text-muted-foreground shrink-0" />;
       case 'smart-object':
         return <FileArchive className="h-4 w-4 text-muted-foreground shrink-0" />;
-      case 'vector-shape': // New icon for vector shapes
+      case 'vector-shape':
         return <Square className="h-4 w-4 text-muted-foreground shrink-0" />;
       default:
         return <Layers className="h-4 w-4 text-muted-foreground shrink-0" />;
@@ -92,6 +102,16 @@ const LayerItem = ({
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
         </div>
+        {isGroup && onToggleGroupExpanded && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0"
+            onClick={(e) => handleIconClick(e, () => onToggleGroupExpanded(layer.id))}
+          >
+            {layer.expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+          </Button>
+        )}
         <Button
           variant="ghost"
           size="icon"

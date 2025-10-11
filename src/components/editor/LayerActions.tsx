@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus } from "lucide-react";
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group } from "lucide-react"; // Added Group icon
 import type { Layer } from "@/hooks/useEditorState";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -20,6 +20,7 @@ interface LayerActionsProps {
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
   selectedShapeType: Layer['shapeType'] | null;
+  groupLayers: () => void; // New prop for grouping layers
 }
 
 export const LayerActions = ({
@@ -36,6 +37,7 @@ export const LayerActions = ({
   onCreateSmartObject,
   onOpenSmartObject,
   selectedShapeType,
+  groupLayers, // Destructure groupLayers
 }: LayerActionsProps) => {
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
   const hasMultipleSelection = selectedLayerIds.length > 1;
@@ -79,20 +81,36 @@ export const LayerActions = ({
           </Tooltip>
 
           {hasMultipleSelection ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="outline"
-                  onClick={() => onCreateSmartObject(selectedLayerIds)}
-                >
-                  <FileArchive className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Create Smart Object</p>
-              </TooltipContent>
-            </Tooltip>
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={() => onCreateSmartObject(selectedLayerIds)}
+                  >
+                    <FileArchive className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create Smart Object</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={groupLayers} // Call groupLayers here
+                  >
+                    <Group className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Group Layers</p>
+                </TooltipContent>
+              </Tooltip>
+            </>
           ) : (
             <>
               <Tooltip>
@@ -168,7 +186,7 @@ export const LayerActions = ({
                 size="icon"
                 variant="outline"
                 onClick={onDeleteLayer}
-                disabled={!isActionable}
+                disabled={!isActionable && !hasMultipleSelection} // Allow deleting multiple selected layers
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
