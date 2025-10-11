@@ -13,7 +13,7 @@ interface SmartObjectLayerProps {
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   isSelected: boolean;
-  parentDimensions: { width: number; height: number } | null; // Changed from imageNaturalDimensions
+  parentDimensions: { width: number; height: number } | null;
 }
 
 export const SmartObjectLayer = ({
@@ -22,7 +22,7 @@ export const SmartObjectLayer = ({
   onUpdate,
   onCommit,
   isSelected,
-  parentDimensions, // Use parentDimensions
+  parentDimensions,
 }: SmartObjectLayerProps) => {
   const smartObjectRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -43,12 +43,12 @@ export const SmartObjectLayer = ({
   // Render the smart object's content to a canvas
   React.useEffect(() => {
     const renderSmartObject = async () => {
-      if (!layer.smartObjectData || !parentDimensions) { // Use parentDimensions here
+      if (!layer.smartObjectData || !parentDimensions) {
         setRenderedDataUrl(null);
         return;
       }
 
-      const canvas = await rasterizeLayerToCanvas(layer, parentDimensions); // Use parentDimensions here
+      const canvas = await rasterizeLayerToCanvas(layer, parentDimensions);
       if (canvas) {
         setRenderedDataUrl(canvas.toDataURL());
       } else {
@@ -57,7 +57,7 @@ export const SmartObjectLayer = ({
     };
 
     renderSmartObject();
-  }, [layer.smartObjectData, parentDimensions, layer.opacity, layer.blendMode]); // Re-render if smart object data or parent dimensions change
+  }, [layer.smartObjectData, parentDimensions, layer.opacity, layer.blendMode]);
 
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -67,8 +67,8 @@ export const SmartObjectLayer = ({
     dragStartPos.current = {
       x: e.clientX,
       y: e.clientY,
-      initialX: layer.x ?? 0,
-      initialY: layer.y ?? 0,
+      initialX: layer.x ?? 50, // Use default 50 if undefined
+      initialY: layer.y ?? 50, // Use default 50 if undefined
     };
   };
 
@@ -86,7 +86,7 @@ export const SmartObjectLayer = ({
       x: dragStartPos.current.initialX + dxPercent,
       y: dragStartPos.current.initialY + dyPercent,
     });
-  }, [isDragging, containerRef, layer.id, onUpdate]);
+  }, [isDragging, containerRef, layer.id, onUpdate, layer.x, layer.y]); // Added layer.x, layer.y to dependencies
 
   const handleMouseUp = React.useCallback(() => {
     if (isDragging) {
@@ -113,17 +113,24 @@ export const SmartObjectLayer = ({
   ) => {
     e.stopPropagation();
     setIsResizing(true);
+    
+    // Calculate current percentage width/height for initial state
+    const defaultWidthPx = layer.smartObjectData?.width || 1000;
+    const defaultHeightPx = layer.smartObjectData?.height || 1000;
+    const currentWidthPercent = layer.width ?? (parentDimensions ? (defaultWidthPx / parentDimensions.width) * 100 : 0);
+    const currentHeightPercent = layer.height ?? (parentDimensions ? (defaultHeightPx / parentDimensions.height) * 100 : 0);
+
     resizeStartInfo.current = {
       x: e.clientX,
       y: e.clientY,
-      initialWidth: layer.width ?? 0,
-      initialHeight: layer.height ?? 0,
+      initialWidth: currentWidthPercent,
+      initialHeight: currentHeightPercent,
       handle,
     };
   };
 
   const handleResizeMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isResizing || !containerRef.current || !smartObjectRef.current || !parentDimensions) return; // Check parentDimensions
+    if (!isResizing || !containerRef.current || !parentDimensions) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const dx = e.clientX - resizeStartInfo.current.x;
@@ -134,8 +141,8 @@ export const SmartObjectLayer = ({
 
     let newWidth = resizeStartInfo.current.initialWidth;
     let newHeight = resizeStartInfo.current.initialHeight;
-    let newX = layer.x ?? 0;
-    let newY = layer.y ?? 0;
+    let newX = layer.x ?? 50;
+    let newY = layer.y ?? 50;
 
     const currentAspect = (layer.smartObjectData?.width || 1) / (layer.smartObjectData?.height || 1);
 
@@ -143,18 +150,18 @@ export const SmartObjectLayer = ({
       case "top-left":
         newWidth = resizeStartInfo.current.initialWidth - dxPercent;
         newHeight = newWidth / currentAspect;
-        newX = (layer.x ?? 0) + dxPercent;
-        newY = (layer.y ?? 0) + (resizeStartInfo.current.initialHeight - newHeight);
+        newX = (layer.x ?? 50) + dxPercent;
+        newY = (layer.y ?? 50) + (resizeStartInfo.current.initialHeight - newHeight);
         break;
       case "top-right":
         newWidth = resizeStartInfo.current.initialWidth + dxPercent;
         newHeight = newWidth / currentAspect;
-        newY = (layer.y ?? 0) + (resizeStartInfo.current.initialHeight - newHeight);
+        newY = (layer.y ?? 50) + (resizeStartInfo.current.initialHeight - newHeight);
         break;
       case "bottom-left":
         newWidth = resizeStartInfo.current.initialWidth - dxPercent;
         newHeight = newWidth / currentAspect;
-        newX = (layer.x ?? 0) + dxPercent;
+        newX = (layer.x ?? 50) + dxPercent;
         break;
       case "bottom-right":
         newWidth = resizeStartInfo.current.initialWidth + dxPercent;
@@ -162,8 +169,8 @@ export const SmartObjectLayer = ({
         break;
     }
 
-    newWidth = Math.max(1, newWidth);
-    newHeight = Math.max(1, newHeight);
+    newWidth = Math.max(0.1, newWidth); // Minimum width 0.1%
+    newHeight = Math.max(0.1, newHeight); // Minimum height 0.1%
 
     onUpdate(layer.id, {
       width: newWidth,
@@ -226,22 +233,25 @@ export const SmartObjectLayer = ({
       document.addEventListener("mouseup", handleRotateMouseUp);
     }
     return () => {
-      document.removeEventListener("mousemove", handleRotateMouseMove);
-      document.removeEventListener("mouseup", handleRotateMouseUp);
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isRotating, handleRotateMouseMove, handleRotateMouseUp]);
 
   if (!layer.visible || layer.type !== "smart-object" || !renderedDataUrl || !parentDimensions) return null;
 
-  // Calculate default width/height relative to parentDimensions
-  const defaultWidth = (layer.smartObjectData?.width || 1000) / parentDimensions.width * 100;
-  const defaultHeight = (layer.smartObjectData?.height || 1000) / parentDimensions.height * 100;
+  // Calculate current width/height in percentages relative to parentDimensions
+  const defaultWidthPx = layer.smartObjectData?.width || 1000;
+  const defaultHeightPx = layer.smartObjectData?.height || 1000;
+
+  const currentWidthPercent = layer.width ?? (parentDimensions ? (defaultWidthPx / parentDimensions.width) * 100 : 0);
+  const currentHeightPercent = layer.height ?? (parentDimensions ? (defaultHeightPx / parentDimensions.height) * 100 : 0);
 
   const style: React.CSSProperties = {
-    left: `${layer.x ?? 0}%`,
-    top: `${layer.y ?? 0}%`,
-    width: `${layer.width ?? defaultWidth}%`,
-    height: `${layer.height ?? defaultHeight}%`,
+    left: `${layer.x ?? 50}%`,
+    top: `${layer.y ?? 50}%`,
+    width: `${currentWidthPercent}%`,
+    height: `${currentHeightPercent}%`,
     transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg)`,
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
