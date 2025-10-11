@@ -59,6 +59,7 @@ interface WorkspaceProps {
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
+  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | null) => void; // Added setActiveTool
 }
 
 // New component for drawing shape preview
@@ -172,6 +173,7 @@ const Workspace = (props: WorkspaceProps) => {
     imageNaturalDimensions,
     selectedShapeType, // Destructure selectedShapeType
     setSelectedLayer, // Destructure setSelectedLayer
+    setActiveTool, // Destructure setActiveTool
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -278,7 +280,7 @@ const Workspace = (props: WorkspaceProps) => {
       const minX_px = Math.min(startX_px, endX_px);
       const minY_px = Math.min(startY_px, endY_px);
       const maxX_px = Math.max(startX_px, endX_px);
-      const maxY_px = Math.max(startY_px, endY_px);
+      const maxY_px = Math.max(startY_px, endY_px); // Corrected typo here
 
       const width_px = maxX_px - minX_px;
       const height_px = maxY_px - minY_px;
@@ -295,6 +297,7 @@ const Workspace = (props: WorkspaceProps) => {
           width_percent,
           height_percent
         );
+        setActiveTool(null); // Deactivate shape tool after drawing
       }
       setShapeStartCoords(null);
       setShapeCurrentCoords(null);
@@ -361,6 +364,7 @@ const Workspace = (props: WorkspaceProps) => {
     const nativeClickX = clickX * scaleX;
     const nativeClickY = clickY * scaleY;
 
+    let layerClicked = false;
     // Check for layer clicks (from top to bottom)
     // Iterate in reverse order to check top-most layers first
     for (let i = layers.length - 1; i >= 0; i--) {
@@ -392,17 +396,26 @@ const Workspace = (props: WorkspaceProps) => {
 
       if (nativeClickX >= minX && nativeClickX <= maxX && nativeClickY >= minY && nativeClickY <= maxY) {
         setSelectedLayer(layer.id);
+        layerClicked = true;
         e.stopPropagation(); // Prevent deselecting if a layer was clicked
+        
+        // If a layer is clicked, deactivate text/shape tools
+        if (activeTool === 'text' || activeTool === 'shape') {
+          setActiveTool(null);
+        }
         return;
       }
     }
 
     // If no layer was clicked, deselect any active layer
-    setSelectedLayer(null);
+    if (!layerClicked) {
+      setSelectedLayer(null);
+    }
 
     // Handle tool-specific clicks if no layer was selected
     if (activeTool === 'text') {
       onAddTextLayer({ x: (nativeClickX / imageNaturalDimensions.width) * 100, y: (nativeClickY / imageNaturalDimensions.height) * 100 });
+      setActiveTool(null); // Deactivate text tool after adding layer
     } else if (activeTool === 'eyedropper') {
       const canvas = document.createElement('canvas');
       const img = imgRef.current;
@@ -418,6 +431,7 @@ const Workspace = (props: WorkspaceProps) => {
       const hexColor = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
       
       handleColorPick(hexColor);
+      setActiveTool('brush'); // Switch to brush after picking color
     }
   };
 

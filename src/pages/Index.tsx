@@ -376,6 +376,7 @@ const Index = () => {
                 imageNaturalDimensions={dimensions} // Pass dimensions here
                 selectedShapeType={selectedShapeType} // Pass selectedShapeType
                 setSelectedLayer={setSelectedLayer} // Pass setSelectedLayer
+                setActiveTool={setActiveTool} // Pass setActiveTool
               />
             </div>
           </ResizablePanel>
