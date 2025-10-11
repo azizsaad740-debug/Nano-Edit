@@ -47,6 +47,7 @@ interface SidebarProps {
   addTextLayer: (coords?: { x: number; y: number }) => void;
   addDrawingLayer: () => string;
   addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  addGradientLayer: () => void; // Added addGradientLayer
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
@@ -122,6 +123,7 @@ const Sidebar = (props: SidebarProps) => {
                 onAddTextLayer={props.addTextLayer}
                 onAddDrawingLayer={props.addDrawingLayer}
                 onAddShapeLayer={props.addShapeLayer}
+                onAddGradientLayer={props.addGradientLayer} // Passed addGradientLayer
                 onDuplicateLayer={props.duplicateLayer}
                 onMergeLayerDown={props.mergeLayerDown}
                 onRasterizeLayer={props.rasterizeLayer}

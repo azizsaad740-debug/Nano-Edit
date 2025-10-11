@@ -126,6 +126,28 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState]);
 
+  const addGradientLayer = useCallback(() => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "gradient",
+      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      x: 50, // Center of the canvas
+      y: 50, // Center of the canvas
+      width: 100, // Full width
+      height: 100, // Full height
+      gradientType: "linear",
+      gradientColors: ["#FFFFFF", "#000000"],
+      gradientStops: [0, 1],
+      gradientAngle: 90, // Default to 90 degrees (top to bottom)
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Gradient Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState]);
+
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
   }, []);
@@ -136,6 +158,7 @@ export const useLayers = ({
     let action = `Edit Layer "${layer.name}"`;
     if (layer.type === 'drawing') action = 'Brush Stroke';
     if (layer.type === 'vector-shape') action = `Edit Shape "${layer.name}"`;
+    if (layer.type === 'gradient') action = `Edit Gradient "${layer.name}"`; // Added for gradient
     recordHistory(action, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
@@ -212,8 +235,8 @@ export const useLayers = ({
   const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = layers.find(l => l.id === id);
 
-    if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape') || !imgRef.current) {
-      showError("Only text and vector shape layers can be rasterized.");
+    if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape' && layerToRasterize.type !== 'gradient') || !imgRef.current) { // Added gradient
+      showError("Only text, vector shape, and gradient layers can be rasterized.");
       return;
     }
 
@@ -449,6 +472,16 @@ export const useLayers = ({
         minY = Math.min(minY, shapeY - shapeHeight / 2);
         maxX = Math.max(maxX, shapeX + shapeWidth / 2);
         maxY = Math.max(maxY, shapeY + shapeHeight / 2);
+      } else if (layer.type === 'gradient' && layer.x !== undefined && layer.y !== undefined && layer.width !== undefined && layer.height !== undefined) {
+        const gradientX = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
+        const gradientY = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
+        const gradientWidth = (layer.width / 100) * (imageNaturalDimensions?.width || 1000);
+        const gradientHeight = (layer.height / 100) * (imageNaturalDimensions?.height || 1000);
+
+        minX = Math.min(minX, gradientX - gradientWidth / 2);
+        minY = Math.min(minY, gradientY - gradientHeight / 2);
+        maxX = Math.max(maxX, gradientX + gradientWidth / 2);
+        maxY = Math.max(maxY, gradientY + gradientHeight / 2);
       }
     });
     
@@ -586,6 +619,9 @@ export const useLayers = ({
       } else if (layer.type === 'smart-object' && layer.smartObjectData) {
         layerWidth_px = (layer.width ?? (layer.smartObjectData.width / imageNaturalDimensions.width) * 100) / 100 * imageNaturalDimensions.width;
         layerHeight_px = (layer.height ?? (layer.smartObjectData.height / imageNaturalDimensions.height) * 100) / 100 * imageNaturalDimensions.height;
+      } else if (layer.type === 'gradient') {
+        layerWidth_px = (layer.width ?? 100) / 100 * imageNaturalDimensions.width;
+        layerHeight_px = (layer.height ?? 100) / 100 * imageNaturalDimensions.height;
       }
 
       minX = Math.min(minX, layerX_px - layerWidth_px / 2);
@@ -662,6 +698,7 @@ export const useLayers = ({
     addTextLayer,
     addDrawingLayer,
     addShapeLayer, // Exposed addShapeLayer
+    addGradientLayer, // Exposed addGradientLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

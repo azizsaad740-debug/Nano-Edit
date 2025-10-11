@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown } from "lucide-react"; // Added Folder, FolderOpen, ChevronRight, ChevronDown icons
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette } from "lucide-react"; // Added Folder, FolderOpen, ChevronRight, ChevronDown icons and Palette
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -74,6 +74,8 @@ const LayerItem = ({
         return <FileArchive className="h-4 w-4 text-muted-foreground shrink-0" />;
       case 'vector-shape':
         return <Square className="h-4 w-4 text-muted-foreground shrink-0" />;
+      case 'gradient': // Added for gradient layers
+        return <Palette className="h-4 w-4 text-muted-foreground shrink-0" />;
       default:
         return <Layers className="h-4 w-4 text-muted-foreground shrink-0" />;
     }

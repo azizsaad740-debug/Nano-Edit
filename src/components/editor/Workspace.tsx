@@ -22,6 +22,7 @@ import { EffectsFilters } from "./EffectsFilters";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
 import GroupLayer from "./GroupLayer"; // Import GroupLayer
+import GradientLayer from "./GradientLayer"; // Import GradientLayer
 
 interface WorkspaceProps {
   image: string | null;
@@ -45,7 +46,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | null; // Added 'move'
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | null; // Added 'gradient'
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -60,7 +61,7 @@ interface WorkspaceProps {
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | null) => void; // Added setActiveTool
+  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | null) => void; // Added setActiveTool
 }
 
 // New component for drawing shape preview
@@ -389,7 +390,7 @@ const Workspace = (props: WorkspaceProps) => {
           }
         }
 
-        // For text, vector shapes, and smart objects, check if the click is within their transformed bounds
+        // For text, vector shapes, smart objects, and gradients, check if the click is within their transformed bounds
         const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
         const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
         let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
@@ -402,9 +403,12 @@ const Workspace = (props: WorkspaceProps) => {
         } else if (layer.type === 'smart-object' && layer.smartObjectData) {
           layerWidth_px = (layer.width ?? (layer.smartObjectData.width / imageNaturalDimensions.width) * 100) / 100 * imageNaturalDimensions.width;
           layerHeight_px = (layer.height ?? (layer.smartObjectData.height / imageNaturalDimensions.height) * 100) / 100 * imageNaturalDimensions.height;
+        } else if (layer.type === 'gradient') {
+          layerWidth_px = (layer.width ?? 100) / 100 * imageNaturalDimensions.width;
+          layerHeight_px = (layer.height ?? 100) / 100 * imageNaturalDimensions.height;
         }
 
-        // Adjust for center origin (x,y are center for text/vector shapes/smart objects/groups)
+        // Adjust for center origin (x,y are center for text/vector shapes/smart objects/groups/gradients)
         const minX = layerX_px - layerWidth_px / 2;
         const minY = layerY_px - layerHeight_px / 2;
         const maxX = layerX_px + layerWidth_px / 2;
@@ -415,8 +419,8 @@ const Workspace = (props: WorkspaceProps) => {
           layerClicked = true;
           e.stopPropagation(); // Prevent deselecting if a layer was clicked
           
-          // If a layer is clicked, deactivate text/shape tools
-          if (activeTool === 'text' || activeTool === 'shape') {
+          // If a layer is clicked, deactivate text/shape/gradient tools
+          if (activeTool === 'text' || activeTool === 'shape' || activeTool === 'gradient') {
             setActiveTool(null);
           }
           return true;
@@ -563,6 +567,20 @@ const Workspace = (props: WorkspaceProps) => {
           />
         );
       }
+      if (layer.type === 'gradient') {
+        return (
+          <GradientLayer
+            key={layer.id}
+            layer={layer}
+            containerRef={imageContainerRef}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+            isSelected={layer.id === selectedLayerId}
+            imageNaturalDimensions={imageNaturalDimensions}
+            activeTool={activeTool}
+          />
+        );
+      }
       if (layer.type === 'group') {
         return (
           <GroupLayer
@@ -590,6 +608,7 @@ const Workspace = (props: WorkspaceProps) => {
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
         activeTool === 'text' && 'cursor-crosshair',
         activeTool === 'shape' && 'cursor-crosshair',
+        activeTool === 'gradient' && 'cursor-crosshair', // Added cursor for gradient tool
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       style={{ 

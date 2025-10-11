@@ -90,6 +90,7 @@ const Index = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
+    addGradientLayer, // Added addGradientLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -242,6 +243,7 @@ const Index = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
+    addGradientLayer, // Passed addGradientLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

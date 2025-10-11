@@ -65,7 +65,7 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group"; // Added 'group' type
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group" | "gradient"; // Added 'group' and 'gradient' type
   name: string;
   visible: boolean;
   opacity?: number;
@@ -108,6 +108,16 @@ export interface Layer {
   strokeWidth?: number;
   borderRadius?: number; // For rect
   points?: { x: number; y: number }[]; // For polygon/triangle
+  // Gradient layer specific properties
+  gradientType?: "linear" | "radial";
+  gradientColors?: string[]; // e.g., ["#FF0000", "#0000FF"]
+  gradientStops?: number[]; // e.g., [0, 1]
+  gradientAngle?: number; // 0-360 for linear
+  gradientCenterX?: number; // 0-100 for radial
+  gradientCenterY?: number; // 0-100 for radial
+  gradientRadius?: number; // 0-100 for radial
+  gradientFeather?: number; // 0-100
+  gradientInverted?: boolean;
 }
 
 export interface HistoryItem {
@@ -122,7 +132,7 @@ export interface BrushState {
   color: string;
 }
 
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move";
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -215,6 +225,7 @@ export const useEditorState = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
+    addGradientLayer, // Added addGradientLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -869,6 +880,7 @@ export const useEditorState = () => {
   useHotkeys("i", () => setActiveTool("eyedropper"), { enabled: !!image });
   useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image });
   useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
+  useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image }); // Added shortcut for gradient tool
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
@@ -948,6 +960,7 @@ export const useEditorState = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
+    addGradientLayer, // Added addGradientLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

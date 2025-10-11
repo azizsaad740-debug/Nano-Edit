@@ -1,7 +1,7 @@
 import type { Layer } from "@/hooks/useEditorState";
 
 /**
- * Rasterizes a single layer (text, drawing, smart-object, or vector-shape) to a canvas.
+ * Rasterizes a single layer (text, drawing, smart-object, vector-shape, or gradient) to a canvas.
  * For smart-objects, it recursively renders its nested layers.
  * @param layer The layer to rasterize.
  * @param imageDimensions The target dimensions for the canvas (e.g., natural width/height of the main image).
@@ -130,6 +130,52 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
 
     if (fillColor !== 'none') ctx.fill();
     if (strokeWidth > 0 && strokeColor !== 'none') ctx.stroke();
+    ctx.restore();
+
+  } else if (layer.type === 'gradient') { // New: Handle gradient layers
+    const {
+      x = 50, y = 50, width = 100, height = 100, rotation = 0,
+      gradientType = 'linear', gradientColors = ["#FFFFFF", "#000000"], gradientAngle = 90,
+      gradientStops = [0, 1],
+    } = layer;
+
+    const layerX = (x / 100) * imageDimensions.width;
+    const layerY = (y / 100) * imageDimensions.height;
+    const layerWidth = (width / 100) * imageDimensions.width;
+    const layerHeight = (height / 100) * imageDimensions.height;
+
+    ctx.save();
+    ctx.translate(layerX, layerY);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.translate(-layerWidth / 2, -layerHeight / 2); // Adjust for center origin
+
+    if (gradientType === 'linear') {
+      const angleRad = gradientAngle * Math.PI / 180;
+      const startX = layerWidth / 2 - Math.cos(angleRad) * layerWidth / 2;
+      const startY = layerHeight / 2 - Math.sin(angleRad) * layerHeight / 2;
+      const endX = layerWidth / 2 + Math.cos(angleRad) * layerWidth / 2;
+      const endY = layerHeight / 2 + Math.sin(angleRad) * layerHeight / 2;
+
+      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
+      gradientColors.forEach((color, i) => {
+        gradient.addColorStop(gradientStops[i] ?? (i / (gradientColors.length - 1)), color);
+      });
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, layerWidth, layerHeight);
+    } else if (gradientType === 'radial') {
+      // Radial gradient implementation (coming soon)
+      // For now, draw a placeholder
+      ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+      ctx.fillRect(0, 0, layerWidth, layerHeight);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(0, 0, layerWidth, layerHeight);
+      ctx.fillStyle = 'white';
+      ctx.font = '20px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Radial (Coming Soon)', layerWidth / 2, layerHeight / 2);
+    }
     ctx.restore();
 
   } else if (layer.type === 'smart-object' && layer.smartObjectData) {

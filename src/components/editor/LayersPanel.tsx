@@ -46,6 +46,7 @@ interface LayersPanelProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  onAddGradientLayer: () => void; // Added this line
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
@@ -83,6 +84,7 @@ export const LayersPanel = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onAddShapeLayer,
+  onAddGradientLayer,
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
@@ -318,6 +320,7 @@ export const LayersPanel = ({
               onAddTextLayer={onAddTextLayer}
               onAddDrawingLayer={onAddDrawingLayer}
               onAddShapeLayer={onAddShapeLayer}
+              onAddGradientLayer={onAddGradientLayer}
               onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))} // Delete all selected layers
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}

@@ -8,6 +8,7 @@ import { BrushOptions } from "@/components/editor/BrushOptions";
 import { LayerProperties } from "@/components/editor/LayerProperties";
 import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
+import GradientProperties from "@/components/editor/GradientProperties"; // Import GradientProperties
 import type { Layer, ActiveTool, BrushState } from "@/hooks/useEditorState";
 
 interface PropertiesPanelProps {
@@ -70,6 +71,18 @@ export const PropertiesPanel = ({
                   <AccordionTrigger>Shape Properties</AccordionTrigger>
                   <AccordionContent>
                     <ShapeProperties
+                      layer={selectedLayer}
+                      onUpdate={onLayerUpdate}
+                      onCommit={onLayerCommit}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+              {selectedLayer.type === 'gradient' && (
+                <AccordionItem value="gradient">
+                  <AccordionTrigger>Gradient Properties</AccordionTrigger>
+                  <AccordionContent>
+                    <GradientProperties
                       layer={selectedLayer}
                       onUpdate={onLayerUpdate}
                       onCommit={onLayerCommit}

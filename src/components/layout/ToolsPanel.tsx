@@ -15,6 +15,7 @@ import {
   Triangle,
   ChevronDown,
   Hand, // Import Hand icon
+  Palette, // Import Palette icon for Gradient
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -26,7 +27,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Layer } from "@/hooks/useEditorState";
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move"; // Added 'move' tool
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -42,6 +43,7 @@ const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: stri
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },
   { name: "Shape", icon: Square, tool: "shape", shortcut: "P" },
+  { name: "Gradient", icon: Palette, tool: "gradient", shortcut: "G" }, // New Gradient tool
   { name: "Crop", icon: CropIcon, tool: "crop", shortcut: "C" },
   { name: "Eyedropper", icon: Pipette, tool: "eyedropper", shortcut: "I" },
 ];

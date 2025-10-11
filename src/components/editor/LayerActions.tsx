@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group } from "lucide-react"; // Added Group icon
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette } from "lucide-react"; // Added Group and Palette icon
 import type { Layer } from "@/hooks/useEditorState";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -13,6 +13,7 @@ interface LayerActionsProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  onAddGradientLayer: () => void; // Added onAddGradientLayer
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
@@ -30,6 +31,7 @@ export const LayerActions = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onAddShapeLayer,
+  onAddGradientLayer, // Destructure onAddGradientLayer
   onDeleteLayer,
   onDuplicateLayer,
   onMergeLayerDown,
@@ -51,7 +53,7 @@ export const LayerActions = ({
     return true;
   }, [layers, selectedLayer]);
 
-  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape';
+  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient'; // Added gradient
   const isSmartObject = selectedLayer?.type === 'smart-object';
 
   return (
@@ -77,6 +79,17 @@ export const LayerActions = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>Add Drawing Layer</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="outline" onClick={onAddGradientLayer}>
+                <Palette className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Add Gradient Layer</p>
             </TooltipContent>
           </Tooltip>
 
