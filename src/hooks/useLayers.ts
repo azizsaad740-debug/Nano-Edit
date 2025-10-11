@@ -461,15 +461,113 @@ export const useLayers = ({
     // The commit will happen on mouse up or when the key is released.
   }, []);
 
-  // --- Stub for Group Layers (will be fully implemented later) ---
   const groupLayers = useCallback((layerIds: string[]) => {
-    showError("Layer grouping is not yet implemented.");
-    console.warn("Attempted to group layers:", layerIds);
-  }, []);
+    if (layerIds.length < 2) {
+      showError("Please select at least two layers to group.");
+      return;
+    }
+    if (!imageNaturalDimensions) {
+      showError("Cannot group layers without image dimensions.");
+      return;
+    }
 
-  // --- Stub for Toggle Group Expanded (will be fully implemented later) ---
+    const selectedLayers = layers.filter(layer => layerIds.includes(layer.id));
+    const nonBackgroundSelected = selectedLayers.filter(l => l.type !== 'image');
+
+    if (nonBackgroundSelected.length !== selectedLayers.length) {
+      showError("Cannot group the background layer.");
+      return;
+    }
+
+    // Calculate bounding box of selected layers
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    nonBackgroundSelected.forEach(layer => {
+      // For simplicity, we'll assume x, y, width, height are defined for movable layers
+      // and represent their center and dimensions in percentage.
+      // We need to convert to pixel values to calculate a proper bounding box.
+      const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
+      const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
+      let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
+      let layerHeight_px = (layer.height ?? 10) / 100 * imageNaturalDimensions.height;
+
+      if (layer.type === 'text') {
+        const fontSize = layer.fontSize || 48;
+        layerWidth_px = (layer.content?.length || 1) * fontSize * 0.6; // Approximate text width
+        layerHeight_px = fontSize * 1.2; // Approximate text height
+      } else if (layer.type === 'drawing' && imgRef.current) {
+        // For drawing layers, assume they cover the whole canvas for now
+        layerWidth_px = imgRef.current.naturalWidth;
+        layerHeight_px = imgRef.current.naturalHeight;
+      } else if (layer.type === 'smart-object' && layer.smartObjectData) {
+        layerWidth_px = (layer.width ?? (layer.smartObjectData.width / imageNaturalDimensions.width) * 100) / 100 * imageNaturalDimensions.width;
+        layerHeight_px = (layer.height ?? (layer.smartObjectData.height / imageNaturalDimensions.height) * 100) / 100 * imageNaturalDimensions.height;
+      }
+
+      minX = Math.min(minX, layerX_px - layerWidth_px / 2);
+      minY = Math.min(minY, layerY_px - layerHeight_px / 2);
+      maxX = Math.max(maxX, layerX_px + layerWidth_px / 2);
+      maxY = Math.max(maxY, layerY_px + layerHeight_px / 2);
+    });
+
+    const groupWidth_px = maxX - minX;
+    const groupHeight_px = maxY - minY;
+    const groupX_px = minX + groupWidth_px / 2;
+    const groupY_px = minY + groupHeight_px / 2;
+
+    const groupX_percent = (groupX_px / imageNaturalDimensions.width) * 100;
+    const groupY_percent = (groupY_px / imageNaturalDimensions.height) * 100;
+    const groupWidth_percent = (groupWidth_px / imageNaturalDimensions.width) * 100;
+    const groupHeight_percent = (groupHeight_px / imageNaturalDimensions.height) * 100;
+
+    const newGroup: Layer = {
+      id: uuidv4(),
+      type: "group",
+      name: `Group ${layers.filter(l => l.type === 'group').length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      expanded: true,
+      x: groupX_percent,
+      y: groupY_percent,
+      width: groupWidth_percent,
+      height: groupHeight_percent,
+      rotation: 0,
+      children: nonBackgroundSelected.map(layer => {
+        // Adjust children's positions to be relative to the new group's top-left corner
+        // The group's (x,y) is its center, so we need to calculate relative to minX, minY
+        const childX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
+        const childY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
+
+        const relativeX_px = childX_px - minX;
+        const relativeY_px = childY_px - minY;
+
+        return {
+          ...layer,
+          x: (relativeX_px / groupWidth_px) * 100, // Child's center X relative to group's width
+          y: (relativeY_px / groupHeight_px) * 100, // Child's center Y relative to group's height
+        };
+      }),
+    };
+
+    // Remove original layers and insert the new group
+    const updatedLayers = layers.filter(layer => !layerIds.includes(layer.id));
+    const firstSelectedLayerIndex = layers.findIndex(l => l.id === layerIds[0]);
+    updatedLayers.splice(firstSelectedLayerIndex, 0, newGroup);
+
+    updateLayersState(updatedLayers, "Group Layers");
+    setSelectedLayerId(newGroup.id);
+    showSuccess("Layers grouped successfully.");
+  }, [layers, updateLayersState, imageNaturalDimensions, imgRef]);
+
   const toggleGroupExpanded = useCallback((id: string) => {
-    console.warn("Attempted to toggle group expanded state for:", id);
+    setLayers(prevLayers => prevLayers.map(layer => {
+      if (layer.id === id && layer.type === 'group') {
+        return { ...layer, expanded: !layer.expanded };
+      }
+      return layer;
+    }));
+    // No history record here, as it's a UI state change
   }, []);
 
   return {
