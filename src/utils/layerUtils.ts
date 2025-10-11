@@ -30,13 +30,13 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
       fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
       textAlign = 'center', rotation = 0, textShadow, stroke,
-      backgroundColor, padding = 0, letterSpacing = 0,
+      backgroundColor, padding = 0,
     } = layer;
 
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
     ctx.fillStyle = color;
     ctx.textAlign = textAlign;
-    // ctx.letterSpacing = `${letterSpacing}px`; // Removed: Not directly supported by Canvas API for rendering
+    // ctx.letterSpacing is not supported by Canvas API for rendering
 
     const posX = (x / 100) * imageDimensions.width;
     const posY = (y / 100) * imageDimensions.height;
@@ -92,8 +92,23 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
           smartCtx.drawImage(nestedLayerCanvas, 0, 0);
         }
       }
-      // Draw the smart object's content onto the main canvas, scaled to fit
-      ctx.drawImage(smartCanvas, 0, 0, imageDimensions.width, imageDimensions.height);
+      
+      // Apply smart object layer's own transforms (x, y, width, height, rotation)
+      ctx.save();
+      
+      const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
+      const layerY = (layer.y ?? 0) / 100 * imageDimensions.height;
+      const layerWidth = (layer.width ?? 100) / 100 * imageDimensions.width;
+      const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
+      const layerRotation = layer.rotation ?? 0;
+
+      // Translate to the center of the smart object for rotation
+      ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
+      ctx.rotate(layerRotation * Math.PI / 180);
+      // Translate back to draw the image
+      ctx.drawImage(smartCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
+      
+      ctx.restore();
     }
   }
 
