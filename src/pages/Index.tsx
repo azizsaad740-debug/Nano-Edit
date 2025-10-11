@@ -15,6 +15,7 @@ import EditorControls from "@/components/layout/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
+import { useGradientPresets } from "@/hooks/useGradientPresets"; // Import useGradientPresets
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -31,6 +32,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 import { ToolsPanel } from "@/components/layout/ToolsPanel"; // Added import for ToolsPanel
+import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog"; // Import SaveGradientPresetDialog
 
 const Index = () => {
   const {
@@ -134,6 +136,7 @@ const Index = () => {
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
+  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // Use gradient presets
   const { apiKey } = useSettings();
 
   const [isSavingPreset, setIsSavingPreset] = useState(false);
@@ -274,6 +277,10 @@ const Index = () => {
     // gradient tool state
     gradientToolState,
     setGradientToolState,
+    // gradient presets
+    gradientPresets,
+    onSaveGradientPreset: saveGradientPreset,
+    onDeleteGradientPreset: deleteGradientPreset,
     // shape tool
     selectedShapeType,
     // grouping

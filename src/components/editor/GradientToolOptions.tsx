@@ -15,13 +15,30 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import type { GradientToolState } from "@/hooks/useEditorState";
+import type { GradientPreset } from "@/hooks/useGradientPresets";
+import GradientPresets from "./GradientPresets";
+import { SaveGradientPresetDialog } from "./SaveGradientPresetDialog";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface GradientToolOptionsProps {
   gradientToolState: GradientToolState;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
+  gradientPresets: GradientPreset[];
+  onApplyGradientPreset: (preset: GradientPreset) => void;
+  onSaveGradientPreset: (name: string, state: GradientToolState) => void;
+  onDeleteGradientPreset: (name: string) => void;
 }
 
-export const GradientToolOptions = ({ gradientToolState, setGradientToolState }: GradientToolOptionsProps) => {
+export const GradientToolOptions = ({ 
+  gradientToolState, 
+  setGradientToolState,
+  gradientPresets,
+  onApplyGradientPreset,
+  onSaveGradientPreset,
+  onDeleteGradientPreset,
+}: GradientToolOptionsProps) => {
+  const [isSavingGradientPreset, setIsSavingGradientPreset] = React.useState(false);
+
   const handleUpdate = (updates: Partial<GradientToolState>) => {
     setGradientToolState(prev => ({ ...prev, ...updates }));
   };
@@ -63,150 +80,176 @@ export const GradientToolOptions = ({ gradientToolState, setGradientToolState }:
   return (
     <div className="space-y-4">
       <h3 className="text-md font-semibold">New Gradient Defaults</h3>
-      <div className="grid gap-2">
-        <Label htmlFor="gradient-type">Gradient Type</Label>
-        <Select
-          value={gradientToolState.type}
-          onValueChange={(v) => handleUpdate({ type: v as "linear" | "radial" })}
-        >
-          <SelectTrigger id="gradient-type">
-            <SelectValue placeholder="Select gradient type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="linear">Linear</SelectItem>
-            <SelectItem value="radial">Radial</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
 
-      <div className="grid gap-2">
-        <Label>Colors & Stops</Label>
-        <div className="flex flex-col gap-2">
-          {(gradientToolState.colors || ["#FFFFFF", "#000000"]).map((color, index) => (
-            <div key={index} className="flex items-center gap-2">
-              <Input
-                type="color"
-                className="p-1 h-10 w-12"
-                value={color}
-                onChange={(e) => handleColorChange(index, e.target.value)}
-              />
-              <Slider
-                min={0}
-                max={100}
-                step={1}
-                value={[((gradientToolState.stops?.[index] ?? index / ((gradientToolState.colors?.length || 1) - 1)) * 100)]}
-                onValueChange={([v]) => handleStopChange(index, v)}
-                className="flex-1"
-              />
-              <span className="w-10 text-right text-sm text-muted-foreground">{Math.round((gradientToolState.stops?.[index] ?? index / ((gradientToolState.colors?.length || 1) - 1)) * 100)}%</span>
-              {index > 0 && index < (gradientToolState.colors?.length || 0) - 1 && (
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveColor(index)}>
-                  <Minus className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          ))}
-          <Button variant="outline" size="sm" onClick={handleAddColor} className="mt-2">
-            <Plus className="h-4 w-4 mr-2" /> Add Color Stop
-          </Button>
-        </div>
-      </div>
-
-      {gradientToolState.type === 'linear' && (
-        <div className="grid gap-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="gradient-angle">Angle</Label>
-            <span className="w-10 text-right text-sm text-muted-foreground">{gradientToolState.angle}°</span>
-          </div>
-          <Slider
-            id="gradient-angle"
-            min={0}
-            max={360}
-            step={1}
-            value={[gradientToolState.angle || 90]}
-            onValueChange={([v]) => handleUpdate({ angle: v })}
-          />
-        </div>
-      )}
-
-      {gradientToolState.type === 'radial' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="gradient-center-x">Center X</Label>
-                <span className="text-sm text-muted-foreground">{gradientToolState.centerX}%</span>
-              </div>
-              <Slider
-                id="gradient-center-x"
-                min={0}
-                max={100}
-                step={1}
-                value={[gradientToolState.centerX || 50]}
-                onValueChange={([v]) => handleUpdate({ centerX: v })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="gradient-center-y">Center Y</Label>
-                <span className="text-sm text-muted-foreground">{gradientToolState.centerY}%</span>
-              </div>
-              <Slider
-                id="gradient-center-y"
-                min={0}
-                max={100}
-                step={1}
-                value={[gradientToolState.centerY || 50]}
-                onValueChange={([v]) => handleUpdate({ centerY: v })}
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="gradient-radius">Radius</Label>
-              <span className="text-sm text-muted-foreground">{gradientToolState.radius}%</span>
-            </div>
-            <Slider
-              id="gradient-radius"
-              min={0}
-              max={100}
-              step={1}
-              value={[gradientToolState.radius || 50]}
-              onValueChange={([v]) => handleUpdate({ radius: v })}
+      <Accordion type="multiple" className="w-full" defaultValue={['presets', 'gradient-settings']}>
+        <AccordionItem value="presets">
+          <AccordionTrigger>Presets</AccordionTrigger>
+          <AccordionContent>
+            <GradientPresets
+              gradientPresets={gradientPresets}
+              onApplyGradientPreset={(preset) => setGradientToolState(preset.state)}
+              onSaveGradientPreset={() => setIsSavingGradientPreset(true)}
+              onDeleteGradientPreset={onDeleteGradientPreset}
             />
-          </div>
-        </div>
-      )}
+          </AccordionContent>
+        </AccordionItem>
 
-      <div className="flex items-center justify-between">
-        <Label htmlFor="gradient-inverted">Invert</Label>
-        <Switch
-          id="gradient-inverted"
-          checked={gradientToolState.inverted}
-          onCheckedChange={(c) => handleUpdate({ inverted: c })}
-        />
-      </div>
+        <AccordionItem value="gradient-settings">
+          <AccordionTrigger>Settings</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="gradient-type">Gradient Type</Label>
+              <Select
+                value={gradientToolState.type}
+                onValueChange={(v) => handleUpdate({ type: v as "linear" | "radial" })}
+              >
+                <SelectTrigger id="gradient-type">
+                  <SelectValue placeholder="Select gradient type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="linear">Linear</SelectItem>
+                  <SelectItem value="radial">Radial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="gradient-feather">Feather</Label>
-          <div className="flex items-center gap-2">
-            <span className="w-10 text-right text-sm text-muted-foreground">{gradientToolState.feather}%</span>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleResetFeather}>
-              <RotateCcw className="h-3 w-3" />
-              <span className="sr-only">Reset Feather</span>
-            </Button>
-          </div>
-        </div>
-        <Slider
-          id="gradient-feather"
-          min={0}
-          max={100}
-          step={1}
-          value={[gradientToolState.feather || 0]}
-          onValueChange={([v]) => handleUpdate({ feather: v })}
-        />
-      </div>
+            <div className="grid gap-2">
+              <Label>Colors & Stops</Label>
+              <div className="flex flex-col gap-2">
+                {(gradientToolState.colors || ["#FFFFFF", "#000000"]).map((color, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      type="color"
+                      className="p-1 h-10 w-12"
+                      value={color}
+                      onChange={(e) => handleColorChange(index, e.target.value)}
+                    />
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[((gradientToolState.stops?.[index] ?? index / ((gradientToolState.colors?.length || 1) - 1)) * 100)]}
+                      onValueChange={([v]) => handleStopChange(index, v)}
+                      className="flex-1"
+                    />
+                    <span className="w-10 text-right text-sm text-muted-foreground">{Math.round((gradientToolState.stops?.[index] ?? index / ((gradientToolState.colors?.length || 1) - 1)) * 100)}%</span>
+                    {index > 0 && index < (gradientToolState.colors?.length || 0) - 1 && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveColor(index)}>
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={handleAddColor} className="mt-2">
+                  <Plus className="h-4 w-4 mr-2" /> Add Color Stop
+                </Button>
+              </div>
+            </div>
+
+            {gradientToolState.type === 'linear' && (
+              <div className="grid gap-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="gradient-angle">Angle</Label>
+                  <span className="w-10 text-right text-sm text-muted-foreground">{gradientToolState.angle}°</span>
+                </div>
+                <Slider
+                  id="gradient-angle"
+                  min={0}
+                  max={360}
+                  step={1}
+                  value={[gradientToolState.angle || 90]}
+                  onValueChange={([v]) => handleUpdate({ angle: v })}
+                />
+              </div>
+            )}
+
+            {gradientToolState.type === 'radial' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="gradient-center-x">Center X</Label>
+                      <span className="text-sm text-muted-foreground">{gradientToolState.centerX}%</span>
+                    </div>
+                    <Slider
+                      id="gradient-center-x"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[gradientToolState.centerX || 50]}
+                      onValueChange={([v]) => handleUpdate({ centerX: v })}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="gradient-center-y">Center Y</Label>
+                      <span className="text-sm text-muted-foreground">{gradientToolState.centerY}%</span>
+                    </div>
+                    <Slider
+                      id="gradient-center-y"
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[gradientToolState.centerY || 50]}
+                      onValueChange={([v]) => handleUpdate({ centerY: v })}
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="gradient-radius">Radius</Label>
+                    <span className="text-sm text-muted-foreground">{gradientToolState.radius}%</span>
+                  </div>
+                  <Slider
+                    id="gradient-radius"
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[gradientToolState.radius || 50]}
+                    onValueChange={([v]) => handleUpdate({ radius: v })}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="gradient-inverted">Invert</Label>
+              <Switch
+                id="gradient-inverted"
+                checked={gradientToolState.inverted}
+                onCheckedChange={(c) => handleUpdate({ inverted: c })}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="gradient-feather">Feather</Label>
+                <div className="flex items-center gap-2">
+                  <span className="w-10 text-right text-sm text-muted-foreground">{gradientToolState.feather}%</span>
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleResetFeather}>
+                    <RotateCcw className="h-3 w-3" />
+                    <span className="sr-only">Reset Feather</span>
+                  </Button>
+                </div>
+              </div>
+              <Slider
+                id="gradient-feather"
+                min={0}
+                max={100}
+                step={1}
+                value={[gradientToolState.feather || 0]}
+                onValueChange={([v]) => handleUpdate({ feather: v })}
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+
+      <SaveGradientPresetDialog
+        open={isSavingGradientPreset}
+        onOpenChange={setIsSavingGradientPreset}
+        onSave={(name) => onSaveGradientPreset(name, gradientToolState)}
+      />
     </div>
   );
 };

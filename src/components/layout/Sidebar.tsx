@@ -9,6 +9,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import type { GradientPreset } from "@/hooks/useGradientPresets";
 
 interface SidebarProps {
   hasImage: boolean;
@@ -81,7 +82,11 @@ interface SidebarProps {
   setBrushState: (updates: Partial<BrushState>) => void;
   // Gradient tool state
   gradientToolState: GradientToolState;
-  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>; // Updated type
+  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
+  // Gradient Presets
+  gradientPresets: GradientPreset[];
+  onSaveGradientPreset: (name: string, state: GradientToolState) => void;
+  onDeleteGradientPreset: (name: string) => void;
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
@@ -112,6 +117,9 @@ const Sidebar = (props: SidebarProps) => {
                 onLayerOpacityChange={props.onLayerOpacityChange}
                 onLayerOpacityCommit={props.onLayerOpacityCommit}
                 onLayerPropertyCommit={props.onLayerPropertyCommit}
+                gradientPresets={props.gradientPresets}
+                onSaveGradientPreset={props.onSaveGradientPreset}
+                onDeleteGradientPreset={props.onDeleteGradientPreset}
               />
             )}
           </div>

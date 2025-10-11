@@ -11,6 +11,7 @@ import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions"; // Import GradientToolOptions
 import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
+import type { GradientPreset } from "@/hooks/useGradientPresets";
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | undefined;
@@ -18,12 +19,15 @@ interface PropertiesPanelProps {
   brushState: BrushState;
   setBrushState: (updates: Partial<BrushState>) => void;
   gradientToolState: GradientToolState;
-  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>; // Updated type
+  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
+  gradientPresets: GradientPreset[];
+  onSaveGradientPreset: (name: string, state: GradientToolState) => void;
+  onDeleteGradientPreset: (name: string) => void;
 }
 
 export const PropertiesPanel = ({
@@ -38,6 +42,9 @@ export const PropertiesPanel = ({
   onLayerOpacityChange,
   onLayerOpacityCommit,
   onLayerPropertyCommit,
+  gradientPresets,
+  onSaveGradientPreset,
+  onDeleteGradientPreset,
 }: PropertiesPanelProps) => {
   return (
     <Card className="flex flex-col h-full">
@@ -110,6 +117,10 @@ export const PropertiesPanel = ({
             <GradientToolOptions
               gradientToolState={gradientToolState}
               setGradientToolState={setGradientToolState}
+              gradientPresets={gradientPresets}
+              onApplyGradientPreset={(preset) => setGradientToolState(preset.state)}
+              onSaveGradientPreset={onSaveGradientPreset}
+              onDeleteGradientPreset={onDeleteGradientPreset}
             />
           ) : (
             <p className="text-sm text-muted-foreground text-center pt-4">
