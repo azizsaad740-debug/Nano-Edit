@@ -42,7 +42,7 @@ export const useLayers = ({
   gradientToolState, // Destructure gradientToolState
 }: UseLayersProps) => {
   const [layers, setLayers] = useState<Layer[]>(initialLayers);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null); // Initialized to null
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
 
