@@ -735,19 +735,10 @@ export const useEditorState = () => {
           smartCtx.globalAlpha = (smartLayer.opacity ?? 100) / 100;
           smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'normal') as GlobalCompositeOperation;
           
-          if (smartLayer.type === 'drawing' && smartLayer.dataUrl) {
-            const img = new Image();
-            await new Promise((res, rej) => {
-              img.onload = res;
-              img.onerror = rej;
-              img.src = smartLayer.dataUrl!;
-            });
-            smartCtx.drawImage(img, 0, 0);
-          } else if (smartLayer.type === 'text') {
-            // Render text layer (simplified version)
-            smartCtx.font = `${smartLayer.fontStyle || 'normal'} ${smartLayer.fontWeight || 'normal'} ${smartLayer.fontSize || 16}px ${smartLayer.fontFamily || 'Arial'}`;
-            smartCtx.fillStyle = smartLayer.color || '#000000';
-            smartCtx.fillText(smartLayer.content || '', smartLayer.x || 0, smartLayer.y || 0);
+          // Recursively rasterize nested layers
+          const nestedLayerCanvas = await rasterizeLayerToCanvas(smartLayer, { width: smartCanvas.width, height: smartCanvas.height });
+          if (nestedLayerCanvas) {
+            smartCtx.drawImage(nestedLayerCanvas, 0, 0);
           }
         }
         
