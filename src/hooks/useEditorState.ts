@@ -132,6 +132,18 @@ export interface BrushState {
   color: string;
 }
 
+export interface GradientToolState {
+  type: "linear" | "radial";
+  colors: string[];
+  stops: number[];
+  angle: number;
+  centerX: number;
+  centerY: number;
+  radius: number;
+  feather: number;
+  inverted: boolean;
+}
+
 export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
 
 /* ---------- Initial state ---------- */
@@ -167,6 +179,18 @@ const initialBrushState: BrushState = {
   color: "#ff0000",
 };
 
+const initialGradientToolState: GradientToolState = {
+  type: "linear",
+  colors: ["#FFFFFF", "#000000"],
+  stops: [0, 1],
+  angle: 90,
+  centerX: 50,
+  centerY: 50,
+  radius: 50,
+  feather: 0,
+  inverted: false,
+};
+
 /* ---------- Hook implementation ---------- */
 export const useEditorState = () => {
   const [image, setImage] = useState<string | null>(null);
@@ -180,6 +204,7 @@ export const useEditorState = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, _setActiveTool] = useState<ActiveTool | null>(null);
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
+  const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
   const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
@@ -253,6 +278,7 @@ export const useEditorState = () => {
     updateCurrentState,
     imgRef,
     imageNaturalDimensions: dimensions,
+    gradientToolState, // Pass gradientToolState to useLayers
   });
 
   // Sync layers from useLayers back to history when they change
@@ -986,6 +1012,9 @@ export const useEditorState = () => {
     brushState,
     setBrushState: handleSetBrushState,
     handleColorPick,
+    // Gradient tool state
+    gradientToolState,
+    setGradientToolState,
     // Generative
     applyGenerativeResult,
     // Selection

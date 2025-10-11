@@ -1,7 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { PropertiesPanel } from "@/components/layout/PropertiesPanel"; // Import the new PropertiesPanel
 import {
@@ -79,6 +79,9 @@ interface SidebarProps {
   // Brush state
   brushState: BrushState;
   setBrushState: (updates: Partial<BrushState>) => void;
+  // Gradient tool state
+  gradientToolState: GradientToolState;
+  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>; // Updated type
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
@@ -102,6 +105,8 @@ const Sidebar = (props: SidebarProps) => {
                 activeTool={props.activeTool}
                 brushState={props.brushState}
                 setBrushState={props.setBrushState}
+                gradientToolState={props.gradientToolState}
+                setGradientToolState={props.setGradientToolState}
                 onLayerUpdate={props.onLayerUpdate}
                 onLayerCommit={props.onLayerCommit}
                 onLayerOpacityChange={props.onLayerOpacityChange}

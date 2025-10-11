@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import type { Layer, EditState, Point } from "./useEditorState";
+import type { Layer, EditState, Point, GradientToolState } from "./useEditorState";
 
 export interface HistoryItem {
   name: string;
@@ -19,6 +19,7 @@ export interface UseLayersProps {
   updateCurrentState: (updates: Partial<EditState>) => void;
   imgRef: React.RefObject<HTMLImageElement>;
   imageNaturalDimensions: { width: number; height: number } | null;
+  gradientToolState: GradientToolState; // Added gradientToolState
 }
 
 const initialLayers: Layer[] = [
@@ -38,6 +39,7 @@ export const useLayers = ({
   updateCurrentState,
   imgRef,
   imageNaturalDimensions,
+  gradientToolState, // Destructure gradientToolState
 }: UseLayersProps) => {
   const [layers, setLayers] = useState<Layer[]>(initialLayers);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
@@ -138,20 +140,20 @@ export const useLayers = ({
       y: 50, // Center of the canvas
       width: 100, // Full width
       height: 100, // Full height
-      gradientType: "linear",
-      gradientColors: ["#FFFFFF", "#000000"],
-      gradientStops: [0, 1],
-      gradientAngle: 90, // Default to 90 degrees (top to bottom)
-      gradientFeather: 0, // Default feathering
-      gradientInverted: false, // Default not inverted
-      gradientCenterX: 50, // Default center for radial
-      gradientCenterY: 50, // Default center for radial
-      gradientRadius: 50, // Default radius for radial
+      gradientType: gradientToolState.type,
+      gradientColors: gradientToolState.colors,
+      gradientStops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
     };
     const updated = [...layers, newLayer];
     updateLayersState(updated, "Add Gradient Layer");
     setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState]);
+  }, [layers, updateLayersState, gradientToolState]);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));

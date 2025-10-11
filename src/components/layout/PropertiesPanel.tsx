@@ -8,14 +8,17 @@ import { BrushOptions } from "@/components/editor/BrushOptions";
 import { LayerProperties } from "@/components/editor/LayerProperties";
 import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
-import GradientProperties from "@/components/editor/GradientProperties"; // Import GradientProperties
-import type { Layer, ActiveTool, BrushState } from "@/hooks/useEditorState";
+import GradientProperties from "@/components/editor/GradientProperties";
+import { GradientToolOptions } from "@/components/editor/GradientToolOptions"; // Import GradientToolOptions
+import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | undefined;
   activeTool: ActiveTool | null;
   brushState: BrushState;
   setBrushState: (updates: Partial<BrushState>) => void;
+  gradientToolState: GradientToolState;
+  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>; // Updated type
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
@@ -28,6 +31,8 @@ export const PropertiesPanel = ({
   activeTool,
   brushState,
   setBrushState,
+  gradientToolState,
+  setGradientToolState,
   onLayerUpdate,
   onLayerCommit,
   onLayerOpacityChange,
@@ -100,6 +105,11 @@ export const PropertiesPanel = ({
               setBrushOpacity={(opacity) => setBrushState({ opacity })}
               brushColor={brushState.color}
               setBrushColor={(color) => setBrushState({ color })}
+            />
+          ) : activeTool === 'gradient' ? ( // New conditional rendering for GradientToolOptions
+            <GradientToolOptions
+              gradientToolState={gradientToolState}
+              setGradientToolState={setGradientToolState}
             />
           ) : (
             <p className="text-sm text-muted-foreground text-center pt-4">

@@ -46,8 +46,8 @@ export const useLayerTransform = ({
   // --- Dragging Logic ---
   const handleDragMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation(); // Always stop propagation for clicks on layers
-    // Only allow dragging if 'move' tool is active OR the layer is already selected
-    if (activeTool === 'move' || isSelected) {
+    // Only allow dragging if 'move' tool is active OR 'gradient' tool is active OR the layer is already selected
+    if (activeTool === 'move' || activeTool === 'gradient' || isSelected) {
       setIsDragging(true);
       dragStartPos.current = {
         x: e.clientX,

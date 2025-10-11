@@ -117,6 +117,9 @@ const Index = () => {
     brushState,
     setBrushState,
     handleColorPick,
+    // gradient tool state
+    gradientToolState,
+    setGradientToolState,
     // generative
     applyGenerativeResult,
     // selection
@@ -268,6 +271,9 @@ const Index = () => {
     // brush state
     brushState,
     setBrushState,
+    // gradient tool state
+    gradientToolState,
+    setGradientToolState,
     // shape tool
     selectedShapeType,
     // grouping
