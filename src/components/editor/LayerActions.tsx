@@ -63,10 +63,7 @@ export const LayerActions = ({
           <Layers className="h-4 w-4 mr-2" />
           Add Layer
         </Button>
-        <Button size="sm" variant="outline" onClick={() => onAddShapeLayer({x: 50, y: 50}, selectedShapeType || 'rect')}> {/* Use selectedShapeType */}
-          <Square className="h-4 w-4 mr-2" />
-          Add Shape
-        </Button>
+        {/* Removed "Add Shape" button from here */}
         {hasMultipleSelection ? (
           <Button
             size="sm"

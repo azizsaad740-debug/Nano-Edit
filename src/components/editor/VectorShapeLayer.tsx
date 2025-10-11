@@ -61,7 +61,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
   const renderShape = () => {
     switch (shapeType) {
       case "rect":
-        return <rect x="0" y="0" width="100%" height="100%" rx={borderRadius} ry={borderRadius} />;
+        return <rect x="0" y="0" width="100%" height="100%" rx={`${borderRadius || 0}%`} ry={`${borderRadius || 0}%`} />;
       case "circle":
         return <circle cx="50%" cy="50%" r="50%" />;
       case "triangle":
