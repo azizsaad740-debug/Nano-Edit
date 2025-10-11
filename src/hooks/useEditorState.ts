@@ -758,30 +758,52 @@ export const useEditorState = () => {
     const generatedImage = new Image();
     generatedImage.crossOrigin = "Anonymous";
     generatedImage.onload = () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx || !imgRef.current) {
+      const mainCanvas = document.createElement('canvas');
+      const mainCtx = mainCanvas.getContext('2d');
+      if (!mainCtx || !imgRef.current) {
         dismissToast(toastId);
         showError("Failed to create canvas for fill.");
         return;
       }
 
-      canvas.width = imgRef.current.naturalWidth;
-      canvas.height = imgRef.current.naturalHeight;
+      mainCanvas.width = imgRef.current.naturalWidth;
+      mainCanvas.height = imgRef.current.naturalHeight;
 
-      // Create clipping path from selection
-      ctx.beginPath();
-      ctx.moveTo(selectionPath[0].x, selectionPath[0].y);
-      for (let i = 1; i < selectionPath.length; i++) {
-        ctx.lineTo(selectionPath[i].x, selectionPath[i].y);
+      // 1. Create a mask canvas
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = mainCanvas.width;
+      maskCanvas.height = mainCanvas.height;
+      const maskCtx = maskCanvas.getContext('2d');
+      if (!maskCtx) {
+        dismissToast(toastId);
+        showError("Failed to create mask canvas for feathering.");
+        return;
       }
-      ctx.closePath();
-      ctx.clip();
 
-      // Draw the generated image into the clipped area
-      ctx.drawImage(generatedImage, 0, 0, canvas.width, canvas.height);
+      // Draw the selection path onto the mask canvas
+      maskCtx.fillStyle = 'white';
+      maskCtx.beginPath();
+      maskCtx.moveTo(selectionPath[0].x, selectionPath[0].y);
+      for (let i = 1; i < selectionPath.length; i++) {
+        maskCtx.lineTo(selectionPath[i].x, selectionPath[i].y);
+      }
+      maskCtx.closePath();
+      maskCtx.fill();
 
-      const dataUrl = canvas.toDataURL();
+      // Apply blur to the mask for feathering
+      const featherRadius = 20; // Adjust this value for desired feathering
+      maskCtx.filter = `blur(${featherRadius}px)`;
+      maskCtx.drawImage(maskCanvas, 0, 0); // Redraw to apply filter
+
+      // 2. Draw the generated image onto the main canvas
+      mainCtx.drawImage(generatedImage, 0, 0, mainCanvas.width, mainCanvas.height);
+
+      // 3. Apply the blurred mask to the generated image
+      mainCtx.globalCompositeOperation = 'destination-in';
+      mainCtx.drawImage(maskCanvas, 0, 0);
+      mainCtx.globalCompositeOperation = 'source-over'; // Reset composite operation
+
+      const dataUrl = mainCanvas.toDataURL();
       
       const newLayer: Layer = {
         id: uuidv4(),

@@ -12,12 +12,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showLoading, showSuccess, showError, dismissToast } from "@/utils/toast";
+import { generateImageApi } from "@/utils/aiImageGenerator"; // Import the simulated API
 
 interface GenerateImageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGenerate: (resultUrl: string) => void;
   apiKey: string;
+  imageNaturalDimensions: { width: number; height: number } | null; // Added imageNaturalDimensions prop
 }
 
 export const GenerateImageDialog = ({
@@ -25,6 +27,7 @@ export const GenerateImageDialog = ({
   onOpenChange,
   onGenerate,
   apiKey,
+  imageNaturalDimensions, // Destructure imageNaturalDimensions
 }: GenerateImageDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
 
@@ -37,16 +40,24 @@ export const GenerateImageDialog = ({
       showError("Prompt cannot be empty.");
       return;
     }
+    if (!imageNaturalDimensions) {
+      showError("Cannot generate image without knowing the current canvas dimensions.");
+      return;
+    }
 
     const toastId = showLoading("Generating image…");
     try {
-      // Using a reliable placeholder for image generation
-      const placeholderResult = `https://placehold.co/800x600/EEE/31343C?text=${encodeURIComponent(prompt.trim().replace(/\n/g, '\\n'))}`;
+      // Call the simulated image generation API
+      const generatedResultUrl = await generateImageApi(
+        prompt.trim(),
+        imageNaturalDimensions.width,
+        imageNaturalDimensions.height
+      );
       
       // Preload the image to avoid showing a broken link
       const img = new Image();
       img.onload = () => {
-        onGenerate(placeholderResult);
+        onGenerate(generatedResultUrl);
         dismissToast(toastId);
         showSuccess("Image generated.");
         onOpenChange(false);
@@ -56,7 +67,7 @@ export const GenerateImageDialog = ({
         dismissToast(toastId);
         showError("Failed to load generated image.");
       };
-      img.src = placeholderResult;
+      img.src = generatedResultUrl;
 
     } catch (e) {
       dismissToast(toastId);

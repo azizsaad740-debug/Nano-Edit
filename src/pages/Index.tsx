@@ -23,7 +23,6 @@ import {
 import { ExportOptions } from "@/components/editor/ExportOptions";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
-import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
@@ -31,6 +30,7 @@ import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
+import { ToolsPanel } from "@/components/layout/ToolsPanel"; // Added import for ToolsPanel
 
 const Index = () => {
   const {
@@ -404,12 +404,15 @@ const Index = () => {
         onOpenChange={setOpenGenerative}
         onApply={applyGenerativeResult}
         apiKey={apiKey}
+        originalImage={image} // Pass originalImage
+        selectionPath={selectionPath} // Pass selectionPath
       />
       <GenerateImageDialog
         open={openGenerateImage}
         onOpenChange={setOpenGenerateImage}
         onGenerate={handleGeneratedImageLoad}
         apiKey={apiKey}
+        imageNaturalDimensions={dimensions} // Pass imageNaturalDimensions
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
       <NewProjectDialog

@@ -12,12 +12,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showLoading, showSuccess, showError, dismissToast } from "@/utils/toast";
+import { generativeFillApi } from "@/utils/aiImageGenerator"; // Import the simulated API
 
 interface GenerativeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onApply: (resultUrl: string) => void;
   apiKey: string;
+  originalImage: string | null; // Added originalImage prop
+  selectionPath: Point[] | null; // Added selectionPath prop
+}
+
+interface Point { // Define Point interface here or import from a common type file
+  x: number;
+  y: number;
 }
 
 export const GenerativeDialog = ({
@@ -25,6 +33,8 @@ export const GenerativeDialog = ({
   onOpenChange,
   onApply,
   apiKey,
+  originalImage, // Destructure originalImage
+  selectionPath, // Destructure selectionPath
 }: GenerativeDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -38,19 +48,22 @@ export const GenerativeDialog = ({
       showError("Prompt cannot be empty.");
       return;
     }
+    if (!originalImage || !selectionPath || selectionPath.length < 2) {
+      showError("A selection is required for generative fill.");
+      return;
+    }
 
     const toastId = showLoading("Generating…");
     try {
-      // Stubbed call – replace with real Nano Banana endpoint
-      await new Promise((res) => setTimeout(res, 1500));
-      const placeholderResult = `https://placehold.co/512x512/EEE/31343C?text=Generated+Fill`;
+      // Call the simulated generative fill API
+      const generatedResultUrl = await generativeFillApi(prompt.trim());
       
       const img = new Image();
       img.onload = () => {
-        setPreviewUrl(placeholderResult);
+        setPreviewUrl(generatedResultUrl);
         // Simulate a short delay before applying
         setTimeout(() => {
-          onApply(placeholderResult);
+          onApply(generatedResultUrl);
           dismissToast(toastId);
           showSuccess("Generated image ready.");
           setPreviewUrl(null);
@@ -61,7 +74,7 @@ export const GenerativeDialog = ({
         dismissToast(toastId);
         showError("Failed to load generated image preview.");
       };
-      img.src = placeholderResult;
+      img.src = generatedResultUrl;
 
     } catch (e) {
       console.error(e);
