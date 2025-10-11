@@ -136,7 +136,8 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     const {
       x = 50, y = 50, width = 100, height = 100, rotation = 0,
       gradientType = 'linear', gradientColors = ["#FFFFFF", "#000000"], gradientAngle = 90,
-      gradientStops = [0, 1],
+      gradientStops = [0, 1], gradientInverted = false, gradientFeather = 0,
+      gradientCenterX = 50, gradientCenterY = 50, gradientRadius = 50,
     } = layer;
 
     const layerX = (x / 100) * imageDimensions.width;
@@ -149,32 +150,54 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.rotate(rotation * Math.PI / 180);
     ctx.translate(-layerWidth / 2, -layerHeight / 2); // Adjust for center origin
 
-    if (gradientType === 'linear') {
-      const angleRad = gradientAngle * Math.PI / 180;
-      const startX = layerWidth / 2 - Math.cos(angleRad) * layerWidth / 2;
-      const startY = layerHeight / 2 - Math.sin(angleRad) * layerHeight / 2;
-      const endX = layerWidth / 2 + Math.cos(angleRad) * layerWidth / 2;
-      const endY = layerHeight / 2 + Math.sin(angleRad) * layerHeight / 2;
+    // Create a temporary canvas for the gradient to apply feathering
+    const tempGradientCanvas = document.createElement('canvas');
+    tempGradientCanvas.width = layerWidth;
+    tempGradientCanvas.height = layerHeight;
+    const tempGradientCtx = tempGradientCanvas.getContext('2d');
 
-      const gradient = ctx.createLinearGradient(startX, startY, endX, endY);
-      gradientColors.forEach((color, i) => {
-        gradient.addColorStop(gradientStops[i] ?? (i / (gradientColors.length - 1)), color);
-      });
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, layerWidth, layerHeight);
-    } else if (gradientType === 'radial') {
-      // Radial gradient implementation (coming soon)
-      // For now, draw a placeholder
-      ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
-      ctx.fillRect(0, 0, layerWidth, layerHeight);
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(0, 0, layerWidth, layerHeight);
-      ctx.fillStyle = 'white';
-      ctx.font = '20px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('Radial (Coming Soon)', layerWidth / 2, layerHeight / 2);
+    if (tempGradientCtx) {
+      let colors = [...gradientColors];
+      let stops = [...gradientStops];
+
+      if (gradientInverted) {
+        colors = colors.reverse();
+        stops = stops.map(s => 1 - s).reverse();
+      }
+
+      if (gradientType === 'linear') {
+        const angleRad = gradientAngle * Math.PI / 180;
+        const startX = layerWidth / 2 - Math.cos(angleRad) * layerWidth / 2;
+        const startY = layerHeight / 2 - Math.sin(angleRad) * layerHeight / 2;
+        const endX = layerWidth / 2 + Math.cos(angleRad) * layerWidth / 2;
+        const endY = layerHeight / 2 + Math.sin(angleRad) * layerHeight / 2;
+
+        const gradient = tempGradientCtx.createLinearGradient(startX, startY, endX, endY);
+        colors.forEach((color, i) => {
+          gradient.addColorStop(stops[i] ?? (i / (colors.length - 1)), color);
+        });
+        tempGradientCtx.fillStyle = gradient;
+        tempGradientCtx.fillRect(0, 0, layerWidth, layerHeight);
+      } else if (gradientType === 'radial') {
+        const centerX_px = (gradientCenterX / 100) * layerWidth;
+        const centerY_px = (gradientCenterY / 100) * layerHeight;
+        const radius_px = (gradientRadius / 100) * Math.min(layerWidth, layerHeight) / 2;
+
+        const gradient = tempGradientCtx.createRadialGradient(centerX_px, centerY_px, 0, centerX_px, centerY_px, radius_px);
+        colors.forEach((color, i) => {
+          gradient.addColorStop(stops[i] ?? (i / (colors.length - 1)), color);
+        });
+        tempGradientCtx.fillStyle = gradient;
+        tempGradientCtx.fillRect(0, 0, layerWidth, layerHeight);
+      }
+
+      // Apply feathering (blur) to the temporary gradient canvas
+      if (gradientFeather > 0) {
+        tempGradientCtx.filter = `blur(${gradientFeather * 0.5}px)`; // Adjust blur strength
+        tempGradientCtx.drawImage(tempGradientCanvas, 0, 0); // Redraw to apply filter
+      }
+
+      ctx.drawImage(tempGradientCanvas, 0, 0);
     }
     ctx.restore();
 

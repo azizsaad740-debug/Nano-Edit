@@ -142,6 +142,11 @@ export const useLayers = ({
       gradientColors: ["#FFFFFF", "#000000"],
       gradientStops: [0, 1],
       gradientAngle: 90, // Default to 90 degrees (top to bottom)
+      gradientFeather: 0, // Default feathering
+      gradientInverted: false, // Default not inverted
+      gradientCenterX: 50, // Default center for radial
+      gradientCenterY: 50, // Default center for radial
+      gradientRadius: 50, // Default radius for radial
     };
     const updated = [...layers, newLayer];
     updateLayersState(updated, "Add Gradient Layer");
