@@ -14,6 +14,7 @@ import {
   Circle,
   Triangle,
   ChevronDown,
+  Hand, // Import Hand icon
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Layer } from "@/hooks/useEditorState";
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape";
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move"; // Added 'move' tool
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -35,6 +36,7 @@ interface ToolsPanelProps {
 }
 
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
+  { name: "Move", icon: Hand, tool: "move", shortcut: "M" }, // New Move tool
   { name: "Lasso", icon: Pencil, tool: "lasso", shortcut: "L" },
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },

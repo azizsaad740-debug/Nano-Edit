@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { X, Move, Type, Layers, Copy, Merge, Trash2, Eye, EyeOff } from "lucide-react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Import ActiveTool
 import {
   DndContext,
   closestCenter,
@@ -32,7 +32,8 @@ interface SmartObjectEditorProps {
   smartObject: Layer;
   onClose: () => void;
   onSave: (updatedLayers: Layer[]) => void;
-  mainImage: string | null; // New prop for the main image
+  mainImage: string | null;
+  activeTool: ActiveTool | null; // Added activeTool prop
 }
 
 interface SmartLayerItemProps {
@@ -105,7 +106,7 @@ const SmartLayerItem = ({ layer, isSelected, onSelect, onToggleVisibility }: Sma
   );
 };
 
-export const SmartObjectEditor = ({ smartObject, onClose, onSave, mainImage }: SmartObjectEditorProps) => {
+export const SmartObjectEditor = ({ smartObject, onClose, onSave, mainImage, activeTool }: SmartObjectEditorProps) => {
   const [layers, setLayers] = React.useState<Layer[]>(smartObject.smartObjectData?.layers || []);
   const [selectedLayerId, setSelectedLayerId] = React.useState<string | null>(null);
 
@@ -359,6 +360,7 @@ export const SmartObjectEditor = ({ smartObject, onClose, onSave, mainImage }: S
                 onLayerUpdate={handleLayerUpdate}
                 onLayerCommit={handleLayerCommit}
                 mainImage={mainImage}
+                activeTool={activeTool} // Pass activeTool
               />
             </div>
 

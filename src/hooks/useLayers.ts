@@ -445,6 +445,22 @@ export const useLayers = ({
     showSuccess("Smart object changes saved.");
   }, [layers, updateLayersState, smartObjectEditingId, closeSmartObjectEditor]);
 
+  const moveSelectedLayer = useCallback((id: string, dx: number, dy: number) => {
+    setLayers(prevLayers => {
+      const updatedLayers = prevLayers.map(layer => {
+        if (layer.id === id && (layer.x !== undefined && layer.y !== undefined)) {
+          const newX = (layer.x ?? 0) + dx;
+          const newY = (layer.y ?? 0) + dy;
+          return { ...layer, x: newX, y: newY };
+        }
+        return layer;
+      });
+      return updatedLayers;
+    });
+    // No history record here, as it's for continuous movement.
+    // The commit will happen on mouse up or when the key is released.
+  }, []);
+
   return {
     layers,
     setLayers, // Expose setLayers for initial load from project
@@ -471,5 +487,6 @@ export const useLayers = ({
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
+    moveSelectedLayer, // Expose moveSelectedLayer
   };
 };

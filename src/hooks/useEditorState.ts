@@ -10,8 +10,8 @@ import { arrayMove } from "@dnd-kit/sortable";
 import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 import { readPsd } from "ag-psd";
-import { rasterizeLayerToCanvas } from "@/utils/layerUtils"; // Import the utility
-import { useLayers } from "./useLayers"; // Import the new useLayers hook
+import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
+import { useLayers } from "./useLayers";
 
 export interface EditState {
   adjustments: {
@@ -65,7 +65,7 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape"; // Added 'vector-shape'
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape";
   name: string;
   visible: boolean;
   opacity?: number;
@@ -99,7 +99,7 @@ export interface Layer {
   backgroundColor?: string;
   padding?: number;
   // Vector shape specific properties
-  shapeType?: "rect" | "circle" | "triangle" | "polygon"; // Added shape types
+  shapeType?: "rect" | "circle" | "triangle" | "polygon";
   fillColor?: string;
   strokeColor?: string;
   strokeWidth?: number;
@@ -119,7 +119,7 @@ export interface BrushState {
   color: string;
 }
 
-type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape"; // Added 'shape'
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move";
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -211,7 +211,7 @@ export const useEditorState = () => {
     setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
-    addShapeLayer, // Added addShapeLayer
+    addShapeLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -230,17 +230,18 @@ export const useEditorState = () => {
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
+    moveSelectedLayer,
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
-    updateCurrentState, // This is not directly used by useLayers, but passed for consistency if needed later
+    updateCurrentState,
     imgRef,
     imageNaturalDimensions: dimensions,
   });
 
   // Sync layers from useLayers back to history when they change
   React.useEffect(() => {
-    if (layers !== currentLayers) { // Only update if layers actually changed
+    if (layers !== currentLayers) {
       updateCurrentLayersInHistory(layers);
     }
   }, [layers, currentLayers, updateCurrentLayersInHistory]);
@@ -290,7 +291,7 @@ export const useEditorState = () => {
     const newHistoryItem = { ...initialHistoryItem, layers: initialLayers };
     setHistory([newHistoryItem]);
     setCurrentHistoryIndex(0);
-    setLayers(initialLayers); // Update layers state in useLayers
+    setLayers(initialLayers);
     setSelectedLayerId(initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null);
     setPendingCrop(undefined);
     setSelectionPath(null);
@@ -563,8 +564,8 @@ export const useEditorState = () => {
       setFileInfo(projectData.fileInfo);
       
       setExifData(null);
-      setSelectedLayerId(null); // Reset selected layer
-      setLayers(projectData.history[projectData.currentHistoryIndex].layers); // Load layers into useLayers
+      setSelectedLayerId(null);
+      setLayers(projectData.history[projectData.currentHistoryIndex].layers);
       setPendingCrop(undefined);
       setSelectionPath(null);
       
@@ -696,14 +697,14 @@ export const useEditorState = () => {
   const handleUndo = useCallback(() => {
     if (currentHistoryIndex > 0) {
       setCurrentHistoryIndex(currentHistoryIndex - 1);
-      setLayers(history[currentHistoryIndex - 1].layers); // Sync layers from history
+      setLayers(history[currentHistoryIndex - 1].layers);
     }
   }, [currentHistoryIndex, history, setLayers]);
 
   const handleRedo = useCallback(() => {
     if (currentHistoryIndex < history.length - 1) {
       setCurrentHistoryIndex(currentHistoryIndex + 1);
-      setLayers(history[currentHistoryIndex + 1].layers); // Sync layers from history
+      setLayers(history[currentHistoryIndex + 1].layers);
     }
   }, [currentHistoryIndex, history.length, history, setLayers]);
 
@@ -723,7 +724,7 @@ export const useEditorState = () => {
 
   const jumpToHistory = useCallback((index: number) => {
     setCurrentHistoryIndex(index);
-    setLayers(history[index].layers); // Sync layers from history
+    setLayers(history[index].layers);
   }, [history, setLayers]);
 
   /* ---------- Export / Copy ---------- */
@@ -839,12 +840,26 @@ export const useEditorState = () => {
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
   useHotkeys("c", () => setActiveTool("crop"), { enabled: !!image });
   useHotkeys("i", () => setActiveTool("eyedropper"), { enabled: !!image });
-  useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image }); // Shortcut for shape tool
+  useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image });
+  useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
     if (selectionPath) setSelectionPath(null);
   }, { enabled: !!image });
+
+  // Keyboard movement for selected layers
+  const handleKeyboardMove = useCallback((dx: number, dy: number, speedMultiplier: number) => {
+    if (selectedLayerId && (activeTool === 'move' || activeTool === null)) {
+      moveSelectedLayer(selectedLayerId, dx * speedMultiplier, dy * speedMultiplier);
+    }
+  }, [selectedLayerId, activeTool, moveSelectedLayer]);
+
+  useHotkeys("arrowup", (e) => handleKeyboardMove(0, -1, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
+  useHotkeys("arrowdown", (e) => handleKeyboardMove(0, 1, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
+  useHotkeys("arrowleft", (e) => handleKeyboardMove(-1, 0, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
+  useHotkeys("arrowright", (e) => handleKeyboardMove(1, 0, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
+
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
@@ -905,7 +920,7 @@ export const useEditorState = () => {
     setSelectedLayer: setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
-    addShapeLayer, // Exposed addShapeLayer
+    addShapeLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

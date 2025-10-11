@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -13,9 +13,10 @@ interface VectorShapeLayerProps {
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   isSelected: boolean;
+  activeTool: ActiveTool | null;
 }
 
-const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected }: VectorShapeLayerProps) => {
+const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool }: VectorShapeLayerProps) => {
   const {
     layerRef,
     handleDragMouseDown,
@@ -26,7 +27,9 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     containerRef,
     onUpdate,
     onCommit,
-    type: "smart-object", // Using smart-object type for transform logic as it handles width/height
+    type: "vector-shape",
+    activeTool,
+    isSelected,
   });
 
   if (!layer.visible || layer.type !== "vector-shape") return null;
@@ -61,15 +64,10 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
   const renderShape = () => {
     switch (shapeType) {
       case "rect":
-        // borderRadius is a percentage of the smaller dimension of the shape's bounding box
-        // For SVG rect, rx/ry are absolute values, so we need to calculate them based on the actual rendered size.
-        // However, since the SVG itself is 100% width/height of its container, and viewBox is 0 0 100 100,
-        // borderRadius as a percentage of 100 (viewBox units) works directly.
         return <rect x="0" y="0" width="100%" height="100%" rx={`${borderRadius || 0}%`} ry={`${borderRadius || 0}%`} />;
       case "circle":
         return <circle cx="50%" cy="50%" r="50%" />;
       case "triangle":
-        // Points are relative to a 100x100 viewBox for simplicity
         const trianglePoints = points || [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}];
         const svgPoints = trianglePoints.map(p => `${p.x}% ${p.y}%`).join(" ");
         return <polygon points={svgPoints} />;

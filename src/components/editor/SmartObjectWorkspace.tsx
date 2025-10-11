@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Import ActiveTool
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { cn } from "@/lib/utils";
-import { SmartObjectLayer } from "./SmartObjectLayer"; // Import SmartObjectLayer
-import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
+import { SmartObjectLayer } from "./SmartObjectLayer";
+import VectorShapeLayer from "./VectorShapeLayer";
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -16,7 +16,8 @@ interface SmartObjectWorkspaceProps {
   onSelectLayer: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
-  mainImage: string | null; // New prop for the main image
+  mainImage: string | null;
+  activeTool: ActiveTool | null; // Added activeTool prop
 }
 
 export const SmartObjectWorkspace = ({
@@ -27,7 +28,8 @@ export const SmartObjectWorkspace = ({
   onSelectLayer,
   onLayerUpdate,
   onLayerCommit,
-  mainImage, // Use the new prop
+  mainImage,
+  activeTool, // Destructure activeTool
 }: SmartObjectWorkspaceProps) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -85,10 +87,11 @@ export const SmartObjectWorkspace = ({
               <TextLayer
                 key={layer.id}
                 layer={layer}
-                containerRef={containerRef} // Pass the outer container ref
+                containerRef={containerRef}
                 onUpdate={onLayerUpdate}
                 onCommit={onLayerCommit}
                 isSelected={layer.id === selectedLayerId}
+                activeTool={activeTool} // Pass activeTool
               />
             );
           }
@@ -100,7 +103,7 @@ export const SmartObjectWorkspace = ({
               />
             );
           }
-          if (layer.type === 'smart-object') { // Render nested smart objects
+          if (layer.type === 'smart-object') {
             return (
               <SmartObjectLayer
                 key={layer.id}
@@ -109,11 +112,12 @@ export const SmartObjectWorkspace = ({
                 onUpdate={onLayerUpdate}
                 onCommit={onLayerCommit}
                 isSelected={layer.id === selectedLayerId}
-                parentDimensions={parentDimensions} // Pass parent dimensions
+                parentDimensions={parentDimensions}
+                activeTool={activeTool} // Pass activeTool
               />
             );
           }
-          if (layer.type === 'vector-shape') { // Render vector shapes
+          if (layer.type === 'vector-shape') {
             return (
               <VectorShapeLayer
                 key={layer.id}
@@ -122,6 +126,7 @@ export const SmartObjectWorkspace = ({
                 onUpdate={onLayerUpdate}
                 onCommit={onLayerCommit}
                 isSelected={layer.id === selectedLayerId}
+                activeTool={activeTool} // Pass activeTool
               />
             );
           }

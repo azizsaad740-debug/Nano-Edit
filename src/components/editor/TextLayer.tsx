@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
-import { useLayerTransform } from "@/hooks/useLayerTransform"; // Import the new hook
+import { useLayerTransform } from "@/hooks/useLayerTransform";
 
 interface TextLayerProps {
   layer: Layer;
@@ -13,9 +13,10 @@ interface TextLayerProps {
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   isSelected: boolean;
+  activeTool: ActiveTool | null;
 }
 
-export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected }: TextLayerProps) => {
+export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool }: TextLayerProps) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
@@ -30,6 +31,8 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
     onUpdate,
     onCommit,
     type: "text",
+    activeTool,
+    isSelected,
   });
 
   // Editing logic
@@ -97,13 +100,13 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
 
   return (
     <div
-      ref={layerRef} // Use layerRef from the hook
-      onMouseDown={handleDragMouseDown} // Use handleDragMouseDown from the hook
+      ref={layerRef}
+      onMouseDown={handleDragMouseDown}
       onDoubleClick={handleDoubleClick}
       className="absolute"
       style={{
-        left: `${layer.x ?? 50}%`, // Default to 50% if undefined
-        top: `${layer.y ?? 50}%`, // Default to 50% if undefined
+        left: `${layer.x ?? 50}%`,
+        top: `${layer.y ?? 50}%`,
         transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
         cursor: isSelected && !isEditing ? "move" : "default",
         mixBlendMode: layer.blendMode as any || 'normal',

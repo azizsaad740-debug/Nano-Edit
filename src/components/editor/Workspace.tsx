@@ -44,7 +44,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | null; // Added 'shape'
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | null; // Added 'move'
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -59,7 +59,7 @@ interface WorkspaceProps {
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | null) => void; // Added setActiveTool
+  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | null) => void; // Added setActiveTool
 }
 
 // New component for drawing shape preview
@@ -280,7 +280,7 @@ const Workspace = (props: WorkspaceProps) => {
       const minX_px = Math.min(startX_px, endX_px);
       const minY_px = Math.min(startY_px, endY_px);
       const maxX_px = Math.max(startX_px, endX_px);
-      const maxY_px = Math.max(startY_px, endY_px); // Corrected typo here
+      const maxY_px = Math.max(startY_px, endY_px);
 
       const width_px = maxX_px - minX_px;
       const height_px = maxY_px - minY_px;
@@ -504,6 +504,7 @@ const Workspace = (props: WorkspaceProps) => {
   }
 
   const eyedropperCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5c1.9 1.9 1.9 5.1 0 7L10 17l-4 4-1-1 4-4 6.5-6.5c1.9-1.9 5.1-1.9 7 0L16.5 3.5z"/><path d="m14 7 3 3"/><path d="M9 13.5 2.5 20"/></svg>\') 0 24, auto';
+  const moveToolCursor = 'grab';
 
   return (
     <div
@@ -515,7 +516,10 @@ const Workspace = (props: WorkspaceProps) => {
         activeTool === 'shape' && 'cursor-crosshair', // Cursor for shape tool
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
-      style={{ cursor: activeTool === 'eyedropper' ? eyedropperCursor : undefined }}
+      style={{ 
+        cursor: activeTool === 'eyedropper' ? eyedropperCursor : 
+                activeTool === 'move' ? moveToolCursor : undefined 
+      }}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -601,7 +605,7 @@ const Workspace = (props: WorkspaceProps) => {
                         )}
                         {layers.map((layer) => {
                           if (layer.type === 'text') {
-                            return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} />;
+                            return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} activeTool={activeTool} />;
                           }
                           if (layer.type === 'drawing') {
                             return <DrawingLayer key={layer.id} layer={layer} />;
@@ -616,6 +620,7 @@ const Workspace = (props: WorkspaceProps) => {
                                 onCommit={onLayerCommit}
                                 isSelected={layer.id === selectedLayerId}
                                 parentDimensions={imageNaturalDimensions} // Pass imageNaturalDimensions here
+                                activeTool={activeTool}
                               />
                             );
                           }
@@ -628,6 +633,7 @@ const Workspace = (props: WorkspaceProps) => {
                                 onUpdate={onLayerUpdate}
                                 onCommit={onLayerCommit}
                                 isSelected={layer.id === selectedLayerId}
+                                activeTool={activeTool}
                               />
                             );
                           }

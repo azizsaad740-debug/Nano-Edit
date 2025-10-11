@@ -89,7 +89,7 @@ const Index = () => {
     setSelectedLayer,
     addTextLayer,
     addDrawingLayer,
-    addShapeLayer, // Added addShapeLayer
+    addShapeLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -238,7 +238,7 @@ const Index = () => {
     layers,
     addTextLayer,
     addDrawingLayer,
-    addShapeLayer, // Added addShapeLayer
+    addShapeLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -365,7 +365,7 @@ const Index = () => {
                 layers={layers}
                 onAddTextLayer={addTextLayer}
                 onAddDrawingLayer={addDrawingLayer}
-                onAddShapeLayer={addShapeLayer} // Passed addShapeLayer
+                onAddShapeLayer={addShapeLayer}
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}
@@ -373,10 +373,10 @@ const Index = () => {
                 selectionPath={selectionPath}
                 onSelectionChange={setSelectionPath}
                 handleColorPick={handleColorPick}
-                imageNaturalDimensions={dimensions} // Pass dimensions here
-                selectedShapeType={selectedShapeType} // Pass selectedShapeType
-                setSelectedLayer={setSelectedLayer} // Pass setSelectedLayer
-                setActiveTool={setActiveTool} // Pass setActiveTool
+                imageNaturalDimensions={dimensions}
+                selectedShapeType={selectedShapeType}
+                setSelectedLayer={setSelectedLayer}
+                setActiveTool={setActiveTool}
               />
             </div>
           </ResizablePanel>
@@ -423,6 +423,7 @@ const Index = () => {
           onClose={closeSmartObjectEditor}
           onSave={saveSmartObjectChanges}
           mainImage={image}
+          activeTool={activeTool} // Pass activeTool
         />
       )}
       <input

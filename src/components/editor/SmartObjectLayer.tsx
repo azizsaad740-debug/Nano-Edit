@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import { useLayerTransform } from "@/hooks/useLayerTransform"; // Import the new hook
+import { useLayerTransform } from "@/hooks/useLayerTransform";
 
 interface SmartObjectLayerProps {
   layer: Layer;
@@ -15,6 +15,7 @@ interface SmartObjectLayerProps {
   onCommit: (id: string) => void;
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
+  activeTool: ActiveTool | null;
 }
 
 export const SmartObjectLayer = ({
@@ -24,6 +25,7 @@ export const SmartObjectLayer = ({
   onCommit,
   isSelected,
   parentDimensions,
+  activeTool,
 }: SmartObjectLayerProps) => {
   const [renderedDataUrl, setRenderedDataUrl] = React.useState<string | null>(null);
 
@@ -40,6 +42,8 @@ export const SmartObjectLayer = ({
     type: "smart-object",
     smartObjectData: layer.smartObjectData,
     parentDimensions,
+    activeTool,
+    isSelected,
   });
 
   // Render the smart object's content to a canvas
@@ -83,8 +87,8 @@ export const SmartObjectLayer = ({
 
   return (
     <div
-      ref={layerRef} // Use layerRef from the hook
-      onMouseDown={handleDragMouseDown} // Use handleDragMouseDown from the hook
+      ref={layerRef}
+      onMouseDown={handleDragMouseDown}
       className="absolute"
       style={style}
     >
