@@ -36,7 +36,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
     ctx.fillStyle = color;
     ctx.textAlign = textAlign;
-    ctx.letterSpacing = `${letterSpacing}px`;
+    // ctx.letterSpacing = `${letterSpacing}px`; // Removed: Not directly supported by Canvas API for rendering
 
     const posX = (x / 100) * imageDimensions.width;
     const posY = (y / 100) * imageDimensions.height;
