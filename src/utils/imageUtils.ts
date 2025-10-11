@@ -2,6 +2,7 @@ import { type Crop } from 'react-image-crop';
 import { showSuccess, showError } from "@/utils/toast";
 import { EditState, Layer } from '@/hooks/useEditorState';
 import { getFilterString } from './filterUtils';
+import { rasterizeLayerToCanvas } from './layerUtils'; // Import the utility
 
 interface ImageOptions extends EditState {
   image: HTMLImageElement;
@@ -42,7 +43,7 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  // Draw background image layer
+  // Apply base image filters and transforms to the main image layer
   const bgLayer = layers.find(l => l.type === 'image');
   if (bgLayer && bgLayer.visible) {
     ctx.filter = getFilterString(options);
@@ -64,25 +65,24 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     ctx.restore();
   }
 
-  // Draw other layers on top
-  ctx.filter = 'none';
+  // Draw other layers on top using the rasterize utility
+  ctx.filter = 'none'; // Reset filter for layers
   for (const layer of layers) {
-    if (layer.type === 'drawing' && layer.visible && layer.dataUrl) {
-      try {
-        const layerImg = new Image();
-        await new Promise((resolve, reject) => {
-          layerImg.onload = resolve;
-          layerImg.onerror = reject;
-          layerImg.src = layer.dataUrl!;
-        });
+    if (layer.type === 'image') continue; // Skip background image, already drawn
+    if (!layer.visible) continue;
+
+    try {
+      const layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
+      if (layerCanvas) {
         ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-        ctx.drawImage(layerImg, 0, 0, canvas.width, canvas.height);
-        ctx.globalAlpha = 1.0;
-      } catch (e) {
-        console.error("Failed to load drawing layer for export", e);
+        ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+        ctx.drawImage(layerCanvas, 0, 0);
       }
+    } catch (e) {
+      console.error(`Failed to rasterize layer ${layer.name} for export:`, e);
     }
   }
+  ctx.globalAlpha = 1.0; // Reset global alpha
 
   if (options.effects.vignette > 0) {
     const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
