@@ -25,7 +25,7 @@ import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
-import { GenerateImageDialog } from "@/components/editor/Generate/ImageDialog";
+import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { useHotkeys } from "react-hotkeys-hook";
@@ -127,7 +127,6 @@ const Index = () => {
     // grouping
     groupLayers,
     toggleGroupExpanded,
-    updateLayersState,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -272,7 +271,6 @@ const Index = () => {
     // grouping
     groupLayers,
     toggleGroupExpanded,
-    updateLayersState,
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;

@@ -313,14 +313,86 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, imgRef]);
 
-  const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
-    if (layers[oldIndex].type === 'image' || layers[newIndex].type === 'image') {
+  // Helper to find a layer's container (array it's in) and its index
+  const findLayerAndContainer = useCallback((
+    id: string,
+    currentLayers: Layer[],
+    parentContainer: Layer[] | null = null
+  ): { layer: Layer; container: Layer[]; index: number; parentGroup: Layer | null } | null => {
+    for (let i = 0; i < currentLayers.length; i++) {
+      const layer = currentLayers[i];
+      if (layer.id === id) {
+        return { layer, container: currentLayers, index: i, parentGroup: parentContainer ? parentContainer[0] : null };
+      }
+      if (layer.type === 'group' && layer.children) {
+        const found = findLayerAndContainer(id, layer.children, [layer]);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
+
+  const reorderLayers = useCallback((activeId: string, overId: string, isDroppingIntoGroup: boolean = false) => {
+    const activeInfo = findLayerAndContainer(activeId, layers);
+    const overInfo = findLayerAndContainer(overId, layers);
+
+    if (!activeInfo || !overInfo) {
+      showError("Could not find layers for reordering.");
+      return;
+    }
+
+    const { layer: activeLayer, container: activeContainer, index: activeIndex } = activeInfo;
+    const { layer: overLayer, container: overContainer, index: overIndex } = overInfo;
+
+    if (activeLayer.type === 'image') {
       showError("The background layer cannot be moved.");
       return;
     }
-    const updated = arrayMove(layers, oldIndex, newIndex);
-    updateLayersState(updated, "Reorder Layers");
-  }, [layers, updateLayersState]);
+
+    let newLayers = [...layers]; // Create a shallow copy of the top-level layers
+
+    // Function to update a nested group's children array
+    const updateNestedChildren = (current: Layer[], targetContainer: Layer[], updatedChildren: Layer[]): Layer[] => {
+      return current.map(layer => {
+        if (layer.type === 'group' && layer.children === targetContainer) {
+          return { ...layer, children: updatedChildren };
+        }
+        if (layer.type === 'group' && layer.children) {
+          return { ...layer, children: updateNestedChildren(layer.children, targetContainer, updatedChildren) };
+        }
+        return layer;
+      });
+    };
+
+    // Remove active layer from its original position
+    const [movedLayer] = activeContainer.splice(activeIndex, 1);
+    if (activeContainer !== layers) { // If it was in a nested group, update its parent
+      newLayers = updateNestedChildren(newLayers, activeContainer, activeContainer);
+    } else { // If it was a top-level layer, update the top-level array
+      newLayers = [...activeContainer];
+    }
+
+    // Determine target container and index for insertion
+    let targetContainer = overContainer;
+    let targetIndex = overIndex;
+
+    if (isDroppingIntoGroup && overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
+      targetContainer = overLayer.children;
+      targetIndex = 0; // Insert at the beginning of the group
+    } else if (overLayer.type === 'group' && !overLayer.expanded) {
+      // If dropping over a collapsed group, insert next to it, not inside
+      targetIndex = overIndex + 1;
+    }
+
+    targetContainer.splice(targetIndex, 0, movedLayer);
+    if (targetContainer !== layers) { // If it's a nested group, update its parent
+      newLayers = updateNestedChildren(newLayers, targetContainer, targetContainer);
+    } else { // If it's a top-level layer, update the top-level array
+      newLayers = [...targetContainer];
+    }
+
+    updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
+  }, [layers, updateLayersState, findLayerAndContainer]);
 
   /* ---------- Smart Object Functions ---------- */
   const createSmartObject = useCallback((layerIds: string[]) => {
@@ -551,9 +623,9 @@ export const useLayers = ({
     };
 
     // Remove original layers and insert the new group
-    const updatedLayers = layers.filter(layer => !layerIds.includes(layer.id));
-    const firstSelectedLayerIndex = layers.findIndex(l => l.id === layerIds[0]);
-    updatedLayers.splice(firstSelectedLayerIndex, 0, newGroup);
+    const updatedLayers = layers
+      .filter(layer => !layerIds.includes(layer.id))
+      .concat(newGroup);
 
     updateLayersState(updatedLayers, "Group Layers");
     setSelectedLayerId(newGroup.id);
@@ -589,7 +661,7 @@ export const useLayers = ({
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
-    reorderLayers,
+    reorderLayers, // Now handles nested reordering
     createSmartObject,
     openSmartObjectEditor,
     closeSmartObjectEditor,

@@ -53,7 +53,7 @@ interface SidebarProps {
   duplicateLayer: () => void;
   mergeLayerDown: () => void;
   rasterizeLayer: () => void;
-  reorderLayers: (oldIndex: number, newIndex: number) => void;
+  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void;
   // Selection props
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -81,7 +81,6 @@ interface SidebarProps {
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
-  updateLayersState: (newLayers: Layer[], historyName?: string) => void; // Add updateLayersState
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -144,7 +143,6 @@ const Sidebar = (props: SidebarProps) => {
                 setBrushState={props.setBrushState}
                 groupLayers={props.groupLayers} // Pass groupLayers
                 toggleGroupExpanded={props.toggleGroupExpanded} // Pass toggleGroupExpanded
-                updateLayersState={props.updateLayersState} // Pass updateLayersState
               />
             )}
           </div>

@@ -49,7 +49,7 @@ interface LayersPanelProps {
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
-  onReorder: (oldIndex: number, newIndex: number) => void;
+  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Updated signature
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
   channels: EditState['channels'];
@@ -72,7 +72,7 @@ interface LayersPanelProps {
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
-  updateLayersState: (newLayers: Layer[], historyName?: string) => void; // Add updateLayersState
+  // Removed updateLayersState as it's internal to useLayers
 }
 
 export const LayersPanel = ({
@@ -86,7 +86,7 @@ export const LayersPanel = ({
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
-  onReorder,
+  onReorder, // Updated
   selectedLayerId,
   onSelectLayer,
   channels,
@@ -104,7 +104,6 @@ export const LayersPanel = ({
   setBrushState,
   groupLayers,
   toggleGroupExpanded,
-  updateLayersState, // Destructure updateLayersState
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -148,7 +147,7 @@ export const LayersPanel = ({
       }
       if (layer.type === 'group' && layer.children) {
         const found = findLayerAndParent(id, layer.children, layer, [...path, layer]);
-        if (found.layer) return found;
+        if (found) return found;
       }
     }
     return { layer: undefined, parent: null, path: [] };
@@ -239,19 +238,6 @@ export const LayersPanel = ({
     ));
   };
 
-  const getParentContainer = (id: string, currentLayers: Layer[]): Layer[] | undefined => {
-    if (currentLayers.some(l => l.id === id)) {
-      return currentLayers; // It's a top-level layer
-    }
-    for (const layer of currentLayers) {
-      if (layer.type === 'group' && layer.children) {
-        const found = getParentContainer(id, layer.children);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  };
-
   const handleDragStart = (event: any) => {
     setActiveDragItem(event.active);
   };
@@ -263,108 +249,18 @@ export const LayersPanel = ({
     if (!over || active.id === over.id) {
       return;
     }
-
-    const { layer: activeLayer } = findLayerAndParent(active.id as string, layers);
-    if (!activeLayer || activeLayer.type === 'image') {
-      showError("Cannot move the background layer.");
-      return;
-    }
-
-    const activeContainer = getParentContainer(active.id as string, layers);
-    const overContainer = getParentContainer(over.id as string, layers);
-
-    if (!activeContainer || !overContainer) {
-      console.error("Could not find containers for active or over item.");
-      return;
-    }
-
-    const oldIndex = activeContainer.findIndex((l) => l.id === active.id);
-    const newIndex = overContainer.findIndex((l) => l.id === over.id);
-
-    if (oldIndex === -1 || newIndex === -1) {
-      return;
-    }
-
-    let newLayersState = [...layers];
-
-    // Case 1: Moving within the same container (top-level or within a group)
-    if (activeContainer === overContainer) {
-      const updatedContainer = arrayMove(activeContainer, oldIndex, newIndex);
-      if (activeContainer === layers) {
-        newLayersState = updatedContainer;
-      } else {
-        // Update the parent group's children
-        newLayersState = updateLayersRecursively(newLayersState, overContainer[0].id, {
-          children: updatedContainer,
-        });
-      }
-      onReorder(oldIndex, newIndex); // This needs to be adapted for nested reordering
-    }
-    // Case 2: Moving between different containers (e.g., into/out of a group)
-    else {
-      const [movedLayer] = activeContainer.splice(oldIndex, 1);
-      overContainer.splice(newIndex, 0, movedLayer);
-
-      // Update the state for both affected containers
-      newLayersState = layers.map(layer => {
-        if (layer.type === 'group' && layer.children === activeContainer) {
-          return { ...layer, children: activeContainer };
-        }
-        if (layer.type === 'group' && layer.children === overContainer) {
-          return { ...layer, children: overContainer };
-        }
-        return layer;
-      });
-      // If top-level layers were affected
-      if (activeContainer === layers) newLayersState = activeContainer;
-      if (overContainer === layers) newLayersState = overContainer;
-
-      // This is a simplified reorder, a full implementation would need to track parent IDs
-      // For now, we'll just update the state directly and record a generic history entry.
-      updateLayersState(newLayersState, "Reorder Layers");
-    }
-    updateLayersState(newLayersState, "Reorder Layers"); // Record history
+    onReorder(active.id as string, over.id as string);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const { layer: activeLayer } = findLayerAndParent(active.id as string, layers);
-    const { layer: overLayer, parent: overParent } = findLayerAndParent(over.id as string, layers);
+    const { layer: overLayer } = findLayerAndParent(over.id as string, layers);
 
-    if (!activeLayer || activeLayer.type === 'image') return; // Cannot drag background
-
-    // Logic for dropping into a group
+    // If dragging over an expanded group, treat as dropping into the group
     if (overLayer && overLayer.type === 'group' && overLayer.expanded) {
-      const newLayersState = [...layers];
-      const activeContainer = getParentContainer(active.id as string, newLayersState);
-      const overContainer = overLayer.children;
-
-      if (activeContainer && overContainer && activeContainer !== overContainer) {
-        const [movedLayer] = activeContainer.splice(activeContainer.findIndex(l => l.id === active.id), 1);
-        overContainer.unshift(movedLayer); // Add to the beginning of the group
-
-        updateLayersState(newLayersState, `Move Layer "${activeLayer.name}" into Group "${overLayer.name}"`);
-        return;
-      }
-    }
-    // Logic for dropping out of a group or reordering
-    else if (overLayer && overParent && overParent.type === 'group' && !overParent.expanded) {
-      // If dropping over a collapsed group, treat it as dropping onto the group itself
-      // This means the layer should be placed next to the group, not inside it.
-      const newLayersState = [...layers];
-      const activeContainer = getParentContainer(active.id as string, newLayersState);
-      const overContainer = getParentContainer(overParent.id as string, newLayersState);
-
-      if (activeContainer && overContainer && activeContainer !== overContainer) {
-        const [movedLayer] = activeContainer.splice(activeContainer.findIndex(l => l.id === active.id), 1);
-        const overParentIndex = overContainer.findIndex(l => l.id === overParent.id);
-        overContainer.splice(overParentIndex + 1, 0, movedLayer); // Place after the collapsed group
-
-        updateLayersState(newLayersState, `Move Layer "${activeLayer.name}" next to Group "${overParent.name}"`);
-        return;
-      }
+      onReorder(active.id as string, over.id as string, true);
     }
   };
 
