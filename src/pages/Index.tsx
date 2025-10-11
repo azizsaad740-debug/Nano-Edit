@@ -375,6 +375,7 @@ const Index = () => {
                 handleColorPick={handleColorPick}
                 imageNaturalDimensions={dimensions} // Pass dimensions here
                 selectedShapeType={selectedShapeType} // Pass selectedShapeType
+                setSelectedLayer={setSelectedLayer} // Pass setSelectedLayer
               />
             </div>
           </ResizablePanel>

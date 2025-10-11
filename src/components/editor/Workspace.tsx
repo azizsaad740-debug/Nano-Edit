@@ -58,6 +58,7 @@ interface WorkspaceProps {
   handleColorPick: (color: string) => void;
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
+  setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
 }
 
 // New component for drawing shape preview
@@ -67,9 +68,12 @@ interface ShapePreviewCanvasProps {
   shapeType: Layer['shapeType'];
   containerRect: DOMRect;
   imageNaturalDimensions: { width: number; height: number; } | null;
+  fillColor: string;
+  strokeColor: string;
+  strokeWidth: number;
 }
 
-const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNaturalDimensions }: ShapePreviewCanvasProps) => {
+const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNaturalDimensions, fillColor, strokeColor, strokeWidth }: ShapePreviewCanvasProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -81,12 +85,7 @@ const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNat
     canvas.height = imageNaturalDimensions.height;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = 'white';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 5]);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
+    
     const scaleX = imageNaturalDimensions.width / containerRect.width;
     const scaleY = imageNaturalDimensions.height / containerRect.height;
 
@@ -119,8 +118,17 @@ const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNat
       default:
         break;
     }
-    ctx.stroke();
-  }, [start, current, shapeType, containerRect, imageNaturalDimensions]);
+
+    if (fillColor !== 'none') {
+      ctx.fillStyle = fillColor;
+      ctx.fill();
+    }
+    if (strokeWidth > 0 && strokeColor !== 'none') {
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = strokeWidth;
+      ctx.stroke();
+    }
+  }, [start, current, shapeType, containerRect, imageNaturalDimensions, fillColor, strokeColor, strokeWidth]);
 
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
 };
@@ -163,6 +171,7 @@ const Workspace = (props: WorkspaceProps) => {
     handleColorPick,
     imageNaturalDimensions,
     selectedShapeType, // Destructure selectedShapeType
+    setSelectedLayer, // Destructure setSelectedLayer
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -337,13 +346,63 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current || !imgRef.current) return;
-    const rect = imageContainerRef.current.getBoundingClientRect();
-    const xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-    const yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+    if (!imageContainerRef.current || !imgRef.current || !imageNaturalDimensions) {
+      setSelectedLayer(null); // Deselect if no image or dimensions
+      return;
+    }
 
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // Convert click coordinates to natural image pixels
+    const scaleX = imageNaturalDimensions.width / rect.width;
+    const scaleY = imageNaturalDimensions.height / rect.height;
+    const nativeClickX = clickX * scaleX;
+    const nativeClickY = clickY * scaleY;
+
+    // Check for layer clicks (from top to bottom)
+    // Iterate in reverse order to check top-most layers first
+    for (let i = layers.length - 1; i >= 0; i--) {
+      const layer = layers[i];
+      if (!layer.visible || layer.type === 'image' || layer.type === 'drawing') continue; // Skip background and drawing layers for direct click selection
+
+      // For text and vector shapes, we need to check if the click is within their transformed bounds
+      // This is a simplified check and might not be pixel-perfect for rotated/scaled elements
+      const layerX_px = (layer.x / 100) * imageNaturalDimensions.width;
+      const layerY_px = (layer.y / 100) * imageNaturalDimensions.height;
+      const layerWidth_px = (layer.width / 100) * imageNaturalDimensions.width;
+      const layerHeight_px = (layer.height / 100) * imageNaturalDimensions.height;
+
+      // For text layers, approximate bounding box based on font size and content length
+      let effectiveWidth_px = layerWidth_px;
+      let effectiveHeight_px = layerHeight_px;
+
+      if (layer.type === 'text') {
+        const approxCharWidth = (layer.fontSize || 48) * 0.6; // Rough estimate
+        effectiveWidth_px = (layer.content?.length || 1) * approxCharWidth;
+        effectiveHeight_px = (layer.fontSize || 48) * 1.2;
+      }
+
+      // Adjust for center origin (x,y are center for text/vector shapes)
+      const minX = layerX_px - effectiveWidth_px / 2;
+      const minY = layerY_px - effectiveHeight_px / 2;
+      const maxX = layerX_px + effectiveWidth_px / 2;
+      const maxY = layerY_px + effectiveHeight_px / 2;
+
+      if (nativeClickX >= minX && nativeClickX <= maxX && nativeClickY >= minY && nativeClickY <= maxY) {
+        setSelectedLayer(layer.id);
+        e.stopPropagation(); // Prevent deselecting if a layer was clicked
+        return;
+      }
+    }
+
+    // If no layer was clicked, deselect any active layer
+    setSelectedLayer(null);
+
+    // Handle tool-specific clicks if no layer was selected
     if (activeTool === 'text') {
-      onAddTextLayer({ x: xPercent, y: yPercent });
+      onAddTextLayer({ x: (nativeClickX / imageNaturalDimensions.width) * 100, y: (nativeClickY / imageNaturalDimensions.height) * 100 });
     } else if (activeTool === 'eyedropper') {
       const canvas = document.createElement('canvas');
       const img = imgRef.current;
@@ -353,9 +412,7 @@ const Workspace = (props: WorkspaceProps) => {
       if (!ctx) return;
 
       ctx.drawImage(img, 0, 0);
-      const nativeX = (xPercent / 100) * img.naturalWidth;
-      const nativeY = (yPercent / 100) * img.naturalHeight;
-      const pixel = ctx.getImageData(nativeX, nativeY, 1, 1).data;
+      const pixel = ctx.getImageData(nativeClickX, nativeClickY, 1, 1).data;
       
       const toHex = (c: number) => ('0' + c.toString(16)).slice(-2);
       const hexColor = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
@@ -577,6 +634,9 @@ const Workspace = (props: WorkspaceProps) => {
                             shapeType={selectedShapeType || 'rect'}
                             containerRect={imageContainerRef.current.getBoundingClientRect()}
                             imageNaturalDimensions={imageNaturalDimensions}
+                            fillColor="#3B82F6" // Default fill for preview
+                            strokeColor="#FFFFFF" // Default stroke for preview
+                            strokeWidth={2} // Default stroke width for preview
                           />
                         )}
                       </div>

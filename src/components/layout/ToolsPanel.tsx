@@ -74,7 +74,7 @@ export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSe
                       <Button
                         variant={activeTool === item.tool ? "secondary" : "ghost"}
                         size="icon"
-                        className="w-10 h-10"
+                        className={cn("w-10 h-10", activeTool === item.tool && "bg-secondary")}
                         onClick={() => setActiveTool(item.tool === activeTool ? null : item.tool)}
                       >
                         {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
@@ -103,7 +103,7 @@ export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSe
                     variant={activeTool === item.tool ? "secondary" : "ghost"}
                     size="icon"
                     onClick={() => setActiveTool(item.tool === activeTool ? null : item.tool)}
-                    className="w-10 h-10"
+                    className={cn("w-10 h-10", activeTool === item.tool && "bg-secondary")}
                   >
                     <item.icon className="h-5 w-5" />
                   </Button>
