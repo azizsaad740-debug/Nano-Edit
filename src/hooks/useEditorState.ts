@@ -130,6 +130,8 @@ export interface BrushState {
   size: number;
   opacity: number;
   color: string;
+  hardness: number; // Added hardness
+  smoothness: number; // Added smoothness
 }
 
 export interface GradientToolState {
@@ -177,6 +179,8 @@ const initialBrushState: BrushState = {
   size: 50,
   opacity: 100,
   color: "#ff0000",
+  hardness: 50, // Default hardness (0-100)
+  smoothness: 0, // Default smoothness (0-100)
 };
 
 const initialGradientToolState: GradientToolState = {

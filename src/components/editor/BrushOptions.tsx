@@ -12,6 +12,10 @@ interface BrushOptionsProps {
   setBrushOpacity: (opacity: number) => void;
   brushColor: string;
   setBrushColor: (color: string) => void;
+  brushHardness: number; // Added hardness
+  setBrushHardness: (hardness: number) => void; // Added hardness setter
+  brushSmoothness: number; // Added smoothness
+  setBrushSmoothness: (smoothness: number) => void; // Added smoothness setter
   activeTool: "brush" | "eraser";
 }
 
@@ -22,10 +26,14 @@ export const BrushOptions = ({
   setBrushOpacity,
   brushColor,
   setBrushColor,
+  brushHardness, // Destructure hardness
+  setBrushHardness, // Destructure hardness setter
+  brushSmoothness, // Destructure smoothness
+  setBrushSmoothness, // Destructure smoothness setter
   activeTool,
 }: BrushOptionsProps) => {
   return (
-    <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-md">
+    <div className="flex flex-col gap-4 p-2 bg-muted/50 rounded-md">
       <div className="grid gap-1.5">
         <Label htmlFor="brush-size" className="text-xs">Size</Label>
         <Slider
@@ -35,7 +43,7 @@ export const BrushOptions = ({
           step={1}
           value={[brushSize]}
           onValueChange={([v]) => setBrushSize(v)}
-          className="w-24"
+          className="w-full"
         />
       </div>
       <div className="grid gap-1.5">
@@ -47,7 +55,31 @@ export const BrushOptions = ({
           step={1}
           value={[brushOpacity]}
           onValueChange={([v]) => setBrushOpacity(v)}
-          className="w-24"
+          className="w-full"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="brush-hardness" className="text-xs">Hardness</Label>
+        <Slider
+          id="brush-hardness"
+          min={0}
+          max={100}
+          step={1}
+          value={[brushHardness]}
+          onValueChange={([v]) => setBrushHardness(v)}
+          className="w-full"
+        />
+      </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="brush-smoothness" className="text-xs">Smoothness</Label>
+        <Slider
+          id="brush-smoothness"
+          min={0}
+          max={100}
+          step={1}
+          value={[brushSmoothness]}
+          onValueChange={([v]) => setBrushSmoothness(v)}
+          className="w-full"
         />
       </div>
       {activeTool === 'brush' && (
@@ -56,7 +88,7 @@ export const BrushOptions = ({
           <Input
             id="brush-color"
             type="color"
-            className="p-1 h-8 w-10"
+            className="p-1 h-8 w-full"
             value={brushColor}
             onChange={(e) => setBrushColor(e.target.value)}
           />
