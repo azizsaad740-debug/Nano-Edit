@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Move, Type, Layers, Copy, Merge, Trash2, Eye, EyeOff } from "lucide-react"; // Added Eye, EyeOff
+import { X, Move, Type, Layers, Copy, Merge, Trash2, Eye, EyeOff } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import {
   DndContext,
@@ -358,7 +358,7 @@ export const SmartObjectEditor = ({ smartObject, onClose, onSave, mainImage }: S
                 onSelectLayer={setSelectedLayerId}
                 onLayerUpdate={handleLayerUpdate}
                 onLayerCommit={handleLayerCommit}
-                mainImage={mainImage} {/* Pass mainImage here */}
+                mainImage={mainImage}
               />
             </div>
 
