@@ -121,6 +121,9 @@ const Index = () => {
     // selection
     selectionPath,
     setSelectionPath,
+    // shape tool
+    selectedShapeType,
+    setSelectedShapeType,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -255,6 +258,8 @@ const Index = () => {
     // smart objects
     onCreateSmartObject: createSmartObject,
     onOpenSmartObject: openSmartObjectEditor,
+    // shape tool
+    selectedShapeType,
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
@@ -325,7 +330,12 @@ const Index = () => {
       </Header>
 
       <main className="flex-1 flex overflow-hidden">
-        <ToolsPanel activeTool={activeTool} setActiveTool={setActiveTool} />
+        <ToolsPanel 
+          activeTool={activeTool} 
+          setActiveTool={setActiveTool} 
+          selectedShapeType={selectedShapeType}
+          setSelectedShapeType={setSelectedShapeType}
+        />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75}>
             <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
@@ -364,6 +374,7 @@ const Index = () => {
                 onSelectionChange={setSelectionPath}
                 handleColorPick={handleColorPick}
                 imageNaturalDimensions={dimensions} // Pass dimensions here
+                selectedShapeType={selectedShapeType} // Pass selectedShapeType
               />
             </div>
           </ResizablePanel>

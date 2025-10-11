@@ -96,16 +96,21 @@ export const useLayers = ({
     return newLayer.id;
   }, [layers, updateLayersState]);
 
-  const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect') => {
+  const addShapeLayer = useCallback((
+    coords: { x: number; y: number },
+    shapeType: Layer['shapeType'] = 'rect',
+    initialWidth?: number,
+    initialHeight?: number
+  ) => {
     const newLayer: Layer = {
       id: uuidv4(),
       type: "vector-shape",
-      name: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
       visible: true,
       x: coords.x,
       y: coords.y,
-      width: 10, // Default width in percentage
-      height: 10, // Default height in percentage
+      width: initialWidth ?? 10, // Default width in percentage
+      height: initialHeight ?? 10, // Default height in percentage
       rotation: 0,
       opacity: 100,
       blendMode: 'normal',
@@ -117,7 +122,7 @@ export const useLayers = ({
       points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined, // Default points for triangle
     };
     const updated = [...layers, newLayer];
-    updateLayersState(updated, `Add ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} Layer`);
+    updateLayersState(updated, `Add ${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} Layer`);
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState]);
 

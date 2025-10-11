@@ -169,6 +169,7 @@ export const useEditorState = () => {
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
+  const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
@@ -257,7 +258,7 @@ export const useEditorState = () => {
       // Leaving crop mode (since tool is not 'crop' here)
       setPendingCrop(undefined);
     }
-
+    
     _setActiveTool(tool);
   };
 
@@ -935,5 +936,8 @@ export const useEditorState = () => {
     // Selection
     selectionPath,
     setSelectionPath,
+    // Shape tool
+    selectedShapeType,
+    setSelectedShapeType,
   };
 };

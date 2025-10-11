@@ -11,13 +11,14 @@ interface LayerActionsProps {
   selectedLayerIds: string[];
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
+  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
 }
 
 export const LayerActions = ({
@@ -33,6 +34,7 @@ export const LayerActions = ({
   onRasterizeLayer,
   onCreateSmartObject,
   onOpenSmartObject,
+  selectedShapeType, // Destructure selectedShapeType
 }: LayerActionsProps) => {
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
   const hasMultipleSelection = selectedLayerIds.length > 1;
@@ -61,7 +63,7 @@ export const LayerActions = ({
           <Layers className="h-4 w-4 mr-2" />
           Add Layer
         </Button>
-        <Button size="sm" variant="outline" onClick={() => onAddShapeLayer({x: 50, y: 50}, 'rect')}> {/* Default to rect at center */}
+        <Button size="sm" variant="outline" onClick={() => onAddShapeLayer({x: 50, y: 50}, selectedShapeType || 'rect')}> {/* Use selectedShapeType */}
           <Square className="h-4 w-4 mr-2" />
           Add Shape
         </Button>

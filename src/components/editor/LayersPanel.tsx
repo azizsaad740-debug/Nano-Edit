@@ -39,7 +39,7 @@ interface LayersPanelProps {
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
@@ -57,6 +57,7 @@ interface LayersPanelProps {
   // Smart object functions
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
+  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
 }
 
 export const LayersPanel = ({
@@ -82,6 +83,7 @@ export const LayersPanel = ({
   onLayerPropertyCommit,
   onCreateSmartObject,
   onOpenSmartObject,
+  selectedShapeType, // Destructure selectedShapeType
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -255,6 +257,7 @@ export const LayersPanel = ({
               onRasterizeLayer={onRasterizeLayer}
               onCreateSmartObject={onCreateSmartObject}
               onOpenSmartObject={onOpenSmartObject}
+              selectedShapeType={selectedShapeType} // Pass selectedShapeType
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

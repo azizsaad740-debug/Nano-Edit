@@ -48,7 +48,7 @@ interface WorkspaceProps {
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
@@ -57,7 +57,74 @@ interface WorkspaceProps {
   onSelectionChange: (path: Point[]) => void;
   handleColorPick: (color: string) => void;
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
+  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
 }
+
+// New component for drawing shape preview
+interface ShapePreviewCanvasProps {
+  start: Point;
+  current: Point;
+  shapeType: Layer['shapeType'];
+  containerRect: DOMRect;
+  imageNaturalDimensions: { width: number; height: number; } | null;
+}
+
+const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNaturalDimensions }: ShapePreviewCanvasProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx || !imageNaturalDimensions) return;
+
+    canvas.width = imageNaturalDimensions.width;
+    canvas.height = imageNaturalDimensions.height;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 5]);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    const scaleX = imageNaturalDimensions.width / containerRect.width;
+    const scaleY = imageNaturalDimensions.height / containerRect.height;
+
+    const startX = (start.x - containerRect.left) * scaleX;
+    const startY = (start.y - containerRect.top) * scaleY;
+    const currentX = (current.x - containerRect.left) * scaleX;
+    const currentY = (current.y - containerRect.top) * scaleY;
+
+    const width = currentX - startX;
+    const height = currentY - startY;
+
+    ctx.beginPath();
+    switch (shapeType) {
+      case 'rect':
+        ctx.rect(startX, startY, width, height);
+        break;
+      case 'circle':
+        const centerX = startX + width / 2;
+        const centerY = startY + height / 2;
+        const radius = Math.min(Math.abs(width), Math.abs(height)) / 2;
+        ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+        break;
+      case 'triangle':
+        // Simple equilateral triangle based on width/height
+        ctx.moveTo(startX + width / 2, startY);
+        ctx.lineTo(startX + width, startY + height);
+        ctx.lineTo(startX, startY + height);
+        ctx.closePath();
+        break;
+      default:
+        break;
+    }
+    ctx.stroke();
+  }, [start, current, shapeType, containerRect, imageNaturalDimensions]);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
+};
+
 
 const Workspace = (props: WorkspaceProps) => {
   const {
@@ -95,6 +162,7 @@ const Workspace = (props: WorkspaceProps) => {
     onSelectionChange,
     handleColorPick,
     imageNaturalDimensions,
+    selectedShapeType, // Destructure selectedShapeType
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -108,6 +176,11 @@ const Workspace = (props: WorkspaceProps) => {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
+
+  // Shape drawing state
+  const [isDrawingShape, setIsDrawingShape] = useState(false);
+  const [shapeStartCoords, setShapeStartCoords] = useState<Point | null>(null);
+  const [shapeCurrentCoords, setShapeCurrentCoords] = useState<Point | null>(null);
 
   const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
   const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
@@ -141,11 +214,13 @@ const Workspace = (props: WorkspaceProps) => {
   }, [image, handleFitScreen, imgRef]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if ((isSpaceDownRef.current || e.button === 1) && image) {
+    if (!image) return;
+
+    if ((isSpaceDownRef.current || e.button === 1)) {
       e.preventDefault();
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
-    } else if ((activeTool === 'brush' || activeTool === 'eraser') && image) {
+    } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
       if (selectedLayer && selectedLayer.type === 'drawing') {
         activeDrawingLayerIdRef.current = selectedLayer.id;
@@ -153,22 +228,67 @@ const Workspace = (props: WorkspaceProps) => {
         activeDrawingLayerIdRef.current = onAddDrawingLayer();
       }
       setIsDrawing(true);
+    } else if (activeTool === 'shape' && imageContainerRef.current) {
+      setIsDrawingShape(true);
+      setShapeStartCoords({ x: e.clientX, y: e.clientY });
+      setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!image) return;
+
     if (isPanning) {
       e.preventDefault();
       setPanOffset({
         x: e.clientX - panStartRef.current.x,
         y: e.clientY - panStartRef.current.y,
       });
+    } else if (isDrawingShape) {
+      setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!image) return;
+
     if (isPanning) {
       setIsPanning(false);
+    } else if (isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && imageNaturalDimensions) {
+      setIsDrawingShape(false);
+
+      const containerRect = imageContainerRef.current.getBoundingClientRect();
+      const scaleX = imageNaturalDimensions.width / containerRect.width;
+      const scaleY = imageNaturalDimensions.height / containerRect.height;
+
+      const startX_px = (shapeStartCoords.x - containerRect.left) * scaleX;
+      const startY_px = (shapeStartCoords.y - containerRect.top) * scaleY;
+      const endX_px = (shapeCurrentCoords.x - containerRect.left) * scaleX;
+      const endY_px = (shapeCurrentCoords.y - containerRect.top) * scaleY;
+
+      const minX_px = Math.min(startX_px, endX_px);
+      const minY_px = Math.min(startY_px, endY_px);
+      const maxX_px = Math.max(startX_px, endX_px);
+      const maxY_px = Math.max(startY_px, endY_px);
+
+      const width_px = maxX_px - minX_px;
+      const height_px = maxY_px - minY_px;
+
+      if (width_px > 1 && height_px > 1 && selectedShapeType) { // Ensure a minimum size
+        const centerX_percent = ((minX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
+        const centerY_percent = ((minY_px + height_px / 2) / imageNaturalDimensions.height) * 100;
+        const width_percent = (width_px / imageNaturalDimensions.width) * 100;
+        const height_percent = (height_px / imageNaturalDimensions.height) * 100;
+
+        onAddShapeLayer(
+          { x: centerX_percent, y: centerY_percent },
+          selectedShapeType,
+          width_percent,
+          height_percent
+        );
+      }
+      setShapeStartCoords(null);
+      setShapeCurrentCoords(null);
     }
   };
 
@@ -224,8 +344,6 @@ const Workspace = (props: WorkspaceProps) => {
 
     if (activeTool === 'text') {
       onAddTextLayer({ x: xPercent, y: yPercent });
-    } else if (activeTool === 'shape') {
-      onAddShapeLayer({ x: xPercent, y: yPercent }, 'rect'); // Default to rectangle for now
     } else if (activeTool === 'eyedropper') {
       const canvas = document.createElement('canvas');
       const img = imgRef.current;
@@ -450,6 +568,15 @@ const Workspace = (props: WorkspaceProps) => {
                             imageRef={imgRef}
                             onDrawEnd={handleDrawEnd}
                             activeTool={activeTool}
+                          />
+                        )}
+                        {isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && (
+                          <ShapePreviewCanvas
+                            start={shapeStartCoords}
+                            current={shapeCurrentCoords}
+                            shapeType={selectedShapeType || 'rect'}
+                            containerRect={imageContainerRef.current.getBoundingClientRect()}
+                            imageNaturalDimensions={imageNaturalDimensions}
                           />
                         )}
                       </div>

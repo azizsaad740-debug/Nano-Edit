@@ -112,7 +112,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="border-radius">Corner Radius</Label>
-            <span className="text-sm text-muted-foreground">{layer.borderRadius}%</span>
+            <span className="text-sm text-muted-foreground">{layer.borderRadius}px</span>
           </div>
           <Slider
             id="border-radius"

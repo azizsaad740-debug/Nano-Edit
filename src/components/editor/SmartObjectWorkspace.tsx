@@ -6,6 +6,7 @@ import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { cn } from "@/lib/utils";
 import { SmartObjectLayer } from "./SmartObjectLayer"; // Import SmartObjectLayer
+import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -109,6 +110,18 @@ export const SmartObjectWorkspace = ({
                 onCommit={onLayerCommit}
                 isSelected={layer.id === selectedLayerId}
                 parentDimensions={parentDimensions} // Pass parent dimensions
+              />
+            );
+          }
+          if (layer.type === 'vector-shape') { // Render vector shapes
+            return (
+              <VectorShapeLayer
+                key={layer.id}
+                layer={layer}
+                containerRef={containerRef}
+                onUpdate={onLayerUpdate}
+                onCommit={onLayerCommit}
+                isSelected={layer.id === selectedLayerId}
               />
             );
           }

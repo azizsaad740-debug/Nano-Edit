@@ -45,7 +45,7 @@ interface SidebarProps {
   layers: Layer[];
   addTextLayer: (coords?: { x: number; y: number }) => void;
   addDrawingLayer: () => string;
-  addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
+  addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
@@ -70,6 +70,8 @@ interface SidebarProps {
   // Smart object functions
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
+  // Shape tool
+  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -108,6 +110,7 @@ const Sidebar = (props: SidebarProps) => {
                 onLayerPropertyCommit={props.onLayerPropertyCommit}
                 onCreateSmartObject={props.onCreateSmartObject}
                 onOpenSmartObject={props.onOpenSmartObject}
+                selectedShapeType={props.selectedShapeType} // Pass selectedShapeType
               />
             )}
           </div>
