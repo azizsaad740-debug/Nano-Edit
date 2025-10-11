@@ -406,6 +406,7 @@ const Index = () => {
           smartObject={smartObjectToEdit}
           onClose={closeSmartObjectEditor}
           onSave={saveSmartObjectChanges}
+          mainImage={image} {/* Pass the main image here */}
         />
       )}
       <input

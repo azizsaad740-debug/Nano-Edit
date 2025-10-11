@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, Move, Type, Layers, Eye, EyeOff, Copy, Merge, Trash2 } from "lucide-react";
+import { X, Move, Type, Layers, Copy, Merge, Trash2, Eye, EyeOff } from "lucide-react"; // Added Eye, EyeOff
 import type { Layer } from "@/hooks/useEditorState";
 import {
   DndContext,
@@ -32,6 +32,7 @@ interface SmartObjectEditorProps {
   smartObject: Layer;
   onClose: () => void;
   onSave: (updatedLayers: Layer[]) => void;
+  mainImage: string | null; // New prop for the main image
 }
 
 interface SmartLayerItemProps {
@@ -104,7 +105,7 @@ const SmartLayerItem = ({ layer, isSelected, onSelect, onToggleVisibility }: Sma
   );
 };
 
-export const SmartObjectEditor = ({ smartObject, onClose, onSave }: SmartObjectEditorProps) => {
+export const SmartObjectEditor = ({ smartObject, onClose, onSave, mainImage }: SmartObjectEditorProps) => {
   const [layers, setLayers] = React.useState<Layer[]>(smartObject.smartObjectData?.layers || []);
   const [selectedLayerId, setSelectedLayerId] = React.useState<string | null>(null);
 
@@ -357,6 +358,7 @@ export const SmartObjectEditor = ({ smartObject, onClose, onSave }: SmartObjectE
                 onSelectLayer={setSelectedLayerId}
                 onLayerUpdate={handleLayerUpdate}
                 onLayerCommit={handleLayerCommit}
+                mainImage={mainImage} {/* Pass mainImage here */}
               />
             </div>
 

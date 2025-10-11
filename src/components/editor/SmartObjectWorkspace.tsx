@@ -14,6 +14,7 @@ interface SmartObjectWorkspaceProps {
   onSelectLayer: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
+  mainImage: string | null; // New prop for the main image
 }
 
 export const SmartObjectWorkspace = ({
@@ -24,6 +25,7 @@ export const SmartObjectWorkspace = ({
   onSelectLayer,
   onLayerUpdate,
   onLayerCommit,
+  mainImage, // Use the new prop
 }: SmartObjectWorkspaceProps) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -34,23 +36,33 @@ export const SmartObjectWorkspace = ({
     }
   };
 
+  const backgroundStyle: React.CSSProperties = {
+    width: '100%',
+    height: '100%',
+    aspectRatio: width / height,
+    maxWidth: '100%',
+    maxHeight: '100%',
+  };
+
+  if (mainImage) {
+    backgroundStyle.backgroundImage = `url(${mainImage})`;
+    backgroundStyle.backgroundSize = 'contain';
+    backgroundStyle.backgroundRepeat = 'no-repeat';
+    backgroundStyle.backgroundPosition = 'center';
+  } else {
+    // Checkerboard effect for transparency if no main image
+    backgroundStyle.backgroundImage = 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)';
+    backgroundStyle.backgroundSize = '20px 20px';
+    backgroundStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
+  }
+
   return (
     <div
       ref={containerRef}
       className={cn(
         "relative overflow-hidden border rounded-md bg-muted flex-1",
-        "bg-gradient-to-br from-muted/50 to-muted/80" // Checkerboard effect for transparency
       )}
-      style={{
-        width: '100%',
-        height: '100%',
-        aspectRatio: width / height,
-        maxWidth: '100%',
-        maxHeight: '100%',
-        backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
-        backgroundSize: '20px 20px',
-        backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-      }}
+      style={backgroundStyle}
       onClick={handleClick}
     >
       <div
