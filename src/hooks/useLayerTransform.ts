@@ -1,6 +1,6 @@
 "use client";
 
-import type { Layer, ActiveTool } from "./useEditorState"; // Corrected import
+import type { Layer, ActiveTool } from "./useEditorState";
 import * as React from "react";
 
 interface UseLayerTransformProps {
@@ -45,7 +45,7 @@ export const useLayerTransform = ({
 
   // --- Dragging Logic ---
   const handleDragMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Always stop propagation for clicks on layers
     // Only allow dragging if 'move' tool is active OR the layer is already selected
     if (activeTool === 'move' || isSelected) {
       setIsDragging(true);

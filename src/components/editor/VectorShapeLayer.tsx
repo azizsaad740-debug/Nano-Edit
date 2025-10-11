@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
+import type { Layer, ActiveTool } from "@/hooks/useEditorState";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -42,6 +42,8 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
   const currentWidth = width ?? defaultWidth;
   const currentHeight = height ?? defaultHeight;
 
+  const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
+
   const style: React.CSSProperties = {
     left: `${x ?? 50}%`,
     top: `${y ?? 50}%`,
@@ -50,7 +52,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     transform: `translate(-50%, -50%) rotateZ(${rotation || 0}deg)`,
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
-    cursor: isSelected ? "move" : "default",
+    cursor: isMovable ? "grab" : "default",
   };
 
   const svgProps = {

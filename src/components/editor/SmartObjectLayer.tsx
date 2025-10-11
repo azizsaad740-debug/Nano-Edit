@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
+import type { Layer, ActiveTool } from "@/hooks/useEditorState";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -74,6 +74,8 @@ export const SmartObjectLayer = ({
   const currentWidthPercent = layer.width ?? (parentDimensions ? (defaultWidthPx / parentDimensions.width) * 100 : 0);
   const currentHeightPercent = layer.height ?? (parentDimensions ? (defaultHeightPx / parentDimensions.height) * 100 : 0);
 
+  const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
+
   const style: React.CSSProperties = {
     left: `${layer.x ?? 50}%`,
     top: `${layer.y ?? 50}%`,
@@ -82,7 +84,7 @@ export const SmartObjectLayer = ({
     transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg)`,
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
-    cursor: isSelected ? "move" : "default",
+    cursor: isMovable ? "grab" : "default",
   };
 
   return (

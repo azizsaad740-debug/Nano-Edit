@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Corrected import
+import type { Layer, ActiveTool } from "@/hooks/useEditorState";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -98,6 +98,8 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     wrapperStyle.borderRadius = 'var(--radius)';
   }
 
+  const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
+
   return (
     <div
       ref={layerRef}
@@ -108,7 +110,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
         left: `${layer.x ?? 50}%`,
         top: `${layer.y ?? 50}%`,
         transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
-        cursor: isSelected && !isEditing ? "move" : "default",
+        cursor: isEditing ? "text" : (isMovable ? "grab" : "default"),
         mixBlendMode: layer.blendMode as any || 'normal',
       }}
     >
