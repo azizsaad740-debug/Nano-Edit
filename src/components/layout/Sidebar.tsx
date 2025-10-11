@@ -125,7 +125,7 @@ const Sidebar = (props: SidebarProps) => {
                 onDuplicateLayer={props.duplicateLayer}
                 onMergeLayerDown={props.mergeLayerDown}
                 onRasterizeLayer={props.rasterizeLayer}
-                onReorder={props.reorderLayers}
+                onReorder={props.onReorder}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}
                 channels={props.channels}
