@@ -43,14 +43,14 @@ interface SidebarProps {
   onDeletePreset: (name: string) => void;
   // Layer props
   layers: Layer[];
-  addTextLayer: () => void;
-  addDrawingLayer: () => void;
+  addTextLayer: (coords?: { x: number; y: number }) => void;
+  addDrawingLayer: () => string;
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  duplicateLayer: () => void;
-  mergeLayerDown: () => void;
-  rasterizeLayer: () => void;
+  duplicateLayer: () => void; // Corrected type
+  mergeLayerDown: () => void; // Corrected type
+  rasterizeLayer: () => void; // Corrected type
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;

@@ -37,10 +37,10 @@ interface LayersPanelProps {
   onRename: (id: string, newName: string) => void;
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
-  onAddDrawingLayer: () => void;
-  onDuplicateLayer: () => void;
-  onMergeLayerDown: () => void;
-  onRasterizeLayer: () => void;
+  onAddDrawingLayer: () => string;
+  onDuplicateLayer: () => void; // Changed from (id: string) => void
+  onMergeLayerDown: () => void; // Changed from (id: string) => void
+  onRasterizeLayer: () => void; // Changed from (id: string) => void
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;

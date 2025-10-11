@@ -85,6 +85,8 @@ const Index = () => {
     applyPreset,
     // layer utilities
     layers,
+    selectedLayerId,
+    setSelectedLayer,
     addTextLayer,
     addDrawingLayer,
     toggleLayerVisibility,
@@ -116,8 +118,6 @@ const Index = () => {
     // generative
     applyGenerativeResult,
     // selection
-    selectedLayerId,
-    setSelectedLayer,
     selectionPath,
     setSelectionPath,
   } = useEditorState();

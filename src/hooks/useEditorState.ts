@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { type Crop } from "react-image-crop";
 import { useHotkeys } from "react-hotkeys-hook";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
@@ -11,6 +11,7 @@ import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 import { readPsd } from "ag-psd";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils"; // Import the utility
+import { useLayers } from "./useLayers"; // Import the new useLayers hook
 
 export interface EditState {
   adjustments: {
@@ -133,21 +134,10 @@ const initialEditState: EditState = {
   crop: undefined,
 };
 
-const initialLayers: Layer[] = [
-  {
-    id: uuidv4(),
-    type: "image",
-    name: "Background",
-    visible: true,
-    opacity: 100,
-    blendMode: 'normal',
-  },
-];
-
 const initialHistoryItem: HistoryItem = {
   name: "Initial State",
   state: initialEditState,
-  layers: initialLayers,
+  layers: [], // Layers will be managed by useLayers
 };
 
 const initialBrushState: BrushState = {
@@ -168,33 +158,13 @@ export const useEditorState = () => {
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, _setActiveTool] = useState<ActiveTool | null>(null);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
-  const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
-  const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentState = history[currentHistoryIndex].state;
-  const currentLayers = history[currentHistoryIndex].layers;
-
-  const setActiveTool = (tool: ActiveTool | null) => {
-    if (tool !== 'lasso') {
-      setSelectionPath(null);
-    }
-
-    // Handle entering/leaving crop mode
-    if (tool === 'crop') {
-      // Entering crop mode
-      setPendingCrop(currentState.crop || { unit: '%', width: 50, height: 50, x: 25, y: 25 });
-    } else if (activeTool === 'crop') {
-      // Leaving crop mode (since tool is not 'crop' here)
-      setPendingCrop(undefined);
-    }
-
-    _setActiveTool(tool);
-  };
+  const currentLayers = history[currentHistoryIndex].layers; // Get layers from history
 
   /* ---------- History helpers ---------- */
   const recordHistory = useCallback(
@@ -216,7 +186,7 @@ export const useEditorState = () => {
     [currentState, history, currentHistoryIndex]
   );
 
-  const updateCurrentLayers = useCallback(
+  const updateCurrentLayersInHistory = useCallback(
     (layers: Layer[]) => {
       const newHistory = [...history];
       newHistory[currentHistoryIndex] = { ...newHistory[currentHistoryIndex], layers };
@@ -224,6 +194,63 @@ export const useEditorState = () => {
     },
     [history, currentHistoryIndex]
   );
+
+  const {
+    layers,
+    setLayers,
+    selectedLayerId,
+    setSelectedLayerId,
+    addTextLayer,
+    addDrawingLayer,
+    toggleLayerVisibility,
+    renameLayer,
+    deleteLayer,
+    duplicateLayer,
+    mergeLayerDown,
+    rasterizeLayer,
+    updateLayer,
+    commitLayerChange,
+    handleLayerPropertyCommit,
+    handleLayerOpacityChange,
+    handleLayerOpacityCommit,
+    reorderLayers,
+    createSmartObject,
+    openSmartObjectEditor,
+    closeSmartObjectEditor,
+    saveSmartObjectChanges,
+    isSmartObjectEditorOpen,
+    smartObjectEditingId,
+  } = useLayers({
+    currentEditState: currentState,
+    recordHistory: (name, state, layers) => recordHistory(name, state, layers),
+    updateCurrentState, // This is not directly used by useLayers, but passed for consistency if needed later
+    imgRef,
+    imageNaturalDimensions: dimensions,
+  });
+
+  // Sync layers from useLayers back to history when they change
+  React.useEffect(() => {
+    if (layers !== currentLayers) { // Only update if layers actually changed
+      updateCurrentLayersInHistory(layers);
+    }
+  }, [layers, currentLayers, updateCurrentLayersInHistory]);
+
+  const setActiveTool = (tool: ActiveTool | null) => {
+    if (tool !== 'lasso') {
+      setSelectionPath(null);
+    }
+
+    // Handle entering/leaving crop mode
+    if (tool === 'crop') {
+      // Entering crop mode
+      setPendingCrop(currentState.crop || { unit: '%', width: 50, height: 50, x: 25, y: 25 });
+    } else if (activeTool === 'crop') {
+      // Leaving crop mode (since tool is not 'crop' here)
+      setPendingCrop(undefined);
+    }
+
+    _setActiveTool(tool);
+  };
 
   /* ---------- Preset application ---------- */
   const applyPreset = useCallback(
@@ -233,9 +260,9 @@ export const useEditorState = () => {
         curves: { ...initialCurvesState, ...preset.state.curves },
       };
       const newState = { ...currentState, ...presetState };
-      recordHistory(`Apply Preset "${preset.name}"`, newState, currentLayers);
+      recordHistory(`Apply Preset "${preset.name}"`, newState, layers);
     },
-    [currentState, currentLayers, recordHistory]
+    [currentState, layers, recordHistory]
   );
 
   /* ---------- Image loading ---------- */
@@ -248,16 +275,17 @@ export const useEditorState = () => {
     }
   }, []);
 
-  const loadImageData = useCallback((dataUrl: string, successMsg: string, layers: Layer[] = initialLayers) => {
+  const loadImageData = useCallback((dataUrl: string, successMsg: string, initialLayers: Layer[]) => {
     setImage(dataUrl);
-    const newHistoryItem = { ...initialHistoryItem, layers };
+    const newHistoryItem = { ...initialHistoryItem, layers: initialLayers };
     setHistory([newHistoryItem]);
     setCurrentHistoryIndex(0);
-    setSelectedLayerId(layers.length > 1 ? layers[layers.length - 1].id : null);
+    setLayers(initialLayers); // Update layers state in useLayers
+    setSelectedLayerId(initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null);
     setPendingCrop(undefined);
     setSelectionPath(null);
     showSuccess(successMsg);
-  }, []);
+  }, [setLayers, setSelectedLayerId]);
 
   const handleNewProject = useCallback((settings: NewProjectSettings) => {
     const { width, height, backgroundColor } = settings;
@@ -269,7 +297,14 @@ export const useEditorState = () => {
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/png');
-      loadImageData(dataUrl, "New project created.");
+      loadImageData(dataUrl, "New project created.", [{
+        id: uuidv4(),
+        type: "image",
+        name: "Background",
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+      }]);
       setFileInfo({ name: "Untitled-1.png", size: 0 });
       setExifData(null);
     } else {
@@ -278,7 +313,14 @@ export const useEditorState = () => {
   }, [loadImageData]);
 
   const handleGeneratedImageLoad = useCallback((dataUrl: string) => {
-    loadImageData(dataUrl, "New image generated successfully.");
+    loadImageData(dataUrl, "New image generated successfully.", [{
+      id: uuidv4(),
+      type: "image",
+      name: "Background",
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+    }]);
     setFileInfo({ name: "generated-image.png", size: 0 });
     setExifData(null);
   }, [loadImageData]);
@@ -295,7 +337,7 @@ export const useEditorState = () => {
           const compositeImageUrl = psd.canvas.toDataURL();
           
           const importedLayers: Layer[] = [
-            { ...initialLayers[0], id: uuidv4() } // New background
+            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal' }
           ];
 
           // Process PSD layers and convert unsupported ones to flattened layers
@@ -395,7 +437,14 @@ export const useEditorState = () => {
     const reader = new FileReader();
     reader.onloadend = () => {
       dismissToast(toastId);
-      loadImageData(reader.result as string, "Image uploaded successfully.");
+      loadImageData(reader.result as string, "Image uploaded successfully.", [{
+        id: uuidv4(),
+        type: "image",
+        name: "Background",
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+      }]);
     };
     reader.onerror = () => {
       dismissToast(toastId);
@@ -425,7 +474,14 @@ export const useEditorState = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         dismissToast(toastId);
-        loadImageData(reader.result as string, "Image loaded successfully.");
+        loadImageData(reader.result as string, "Image loaded successfully.", [{
+          id: uuidv4(),
+          type: "image",
+          name: "Background",
+          visible: true,
+          opacity: 100,
+          blendMode: 'normal',
+        }]);
       };
       reader.onerror = () => {
         dismissToast(toastId);
@@ -497,7 +553,8 @@ export const useEditorState = () => {
       setFileInfo(projectData.fileInfo);
       
       setExifData(null);
-      setSelectedLayerId(null);
+      setSelectedLayerId(null); // Reset selected layer
+      setLayers(projectData.history[projectData.currentHistoryIndex].layers); // Load layers into useLayers
       setPendingCrop(undefined);
       setSelectionPath(null);
       
@@ -508,7 +565,7 @@ export const useEditorState = () => {
       console.error("Failed to load project:", error);
       showError(error.message || "Could not open the project file.");
     }
-  }, []);
+  }, [setSelectedLayerId, setLayers]);
 
   /* ---------- Adjustment handlers ---------- */
   const handleAdjustmentChange = useCallback((key: string, value: number) => {
@@ -518,8 +575,8 @@ export const useEditorState = () => {
   const handleAdjustmentCommit = useCallback((key: string, value: number) => {
     const newAdj = { ...currentState.adjustments, [key]: value };
     const name = `Adjust ${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    recordHistory(name, { ...currentState, adjustments: newAdj });
-  }, [currentState, recordHistory]);
+    recordHistory(name, { ...currentState, adjustments: newAdj }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleEffectChange = useCallback((key: string, value: number) => {
     updateCurrentState({ effects: { ...currentState.effects, [key]: value } });
@@ -528,8 +585,8 @@ export const useEditorState = () => {
   const handleEffectCommit = useCallback((key: string, value: number) => {
     const newEff = { ...currentState.effects, [key]: value };
     const name = `Adjust ${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    recordHistory(name, { ...currentState, effects: newEff });
-  }, [currentState, recordHistory]);
+    recordHistory(name, { ...currentState, effects: newEff }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleGradingChange = useCallback((key: string, value: number) => {
     updateCurrentState({ grading: { ...currentState.grading, [key]: value } });
@@ -538,14 +595,14 @@ export const useEditorState = () => {
   const handleGradingCommit = useCallback((key: string, value: number) => {
     const newGrad = { ...currentState.grading, [key]: value };
     const name = `Adjust ${key.charAt(0).toUpperCase() + key.slice(1)}`;
-    recordHistory(name, { ...currentState, grading: newGrad });
-  }, [currentState, recordHistory]);
+    recordHistory(name, { ...currentState, grading: newGrad }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleChannelChange = useCallback((channel: 'r' | 'g' | 'b', value: boolean) => {
     const newChannels = { ...currentState.channels, [channel]: value };
     const name = `Toggle ${channel.toUpperCase()} Channel`;
-    recordHistory(name, { ...currentState, channels: newChannels });
-  }, [currentState, recordHistory]);
+    recordHistory(name, { ...currentState, channels: newChannels }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleCurvesChange = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
     updateCurrentState({ curves: { ...currentState.curves, [channel]: points } });
@@ -554,13 +611,13 @@ export const useEditorState = () => {
   const handleCurvesCommit = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
     const newCurves = { ...currentState.curves, [channel]: points };
     const channelName = channel === 'all' ? 'RGB' : channel.toUpperCase();
-    recordHistory(`Adjust ${channelName} Curve`, { ...currentState, curves: newCurves });
-  }, [currentState, recordHistory]);
+    recordHistory(`Adjust ${channelName} Curve`, { ...currentState, curves: newCurves }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleFilterChange = useCallback((value: string, name: string) => {
     const entryName = name === "None" ? "Remove Filter" : `Apply ${name} Filter`;
-    recordHistory(entryName, { ...currentState, selectedFilter: value });
-  }, [currentState, recordHistory]);
+    recordHistory(entryName, { ...currentState, selectedFilter: value }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleTransformChange = useCallback((type: string) => {
     const newTrans = { ...currentState.transforms };
@@ -586,8 +643,8 @@ export const useEditorState = () => {
       default:
         return;
     }
-    recordHistory(nameMap[type] ?? "Transform", { ...currentState, transforms: newTrans });
-  }, [currentState, recordHistory]);
+    recordHistory(nameMap[type] ?? "Transform", { ...currentState, transforms: newTrans }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleFramePresetChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
     const newFrame = {
@@ -595,8 +652,8 @@ export const useEditorState = () => {
       width: options?.width ?? 0,
       color: options?.color ?? '#000000',
     };
-    recordHistory(`Set Frame: ${name}`, { ...currentState, frame: newFrame });
-  }, [currentState, recordHistory]);
+    recordHistory(`Set Frame: ${name}`, { ...currentState, frame: newFrame }, layers);
+  }, [currentState, recordHistory, layers]);
 
   const handleFramePropertyChange = useCallback((key: 'width' | 'color', value: number | string) => {
     const newFrame = { ...currentState.frame, [key]: value };
@@ -609,16 +666,16 @@ export const useEditorState = () => {
   }, [currentState.frame, updateCurrentState]);
 
   const handleFramePropertyCommit = useCallback(() => {
-    recordHistory("Adjust Frame", currentState);
-  }, [currentState, recordHistory]);
+    recordHistory("Adjust Frame", currentState, layers);
+  }, [currentState, recordHistory, layers]);
 
   /* ---------- Crop ---------- */
   const applyCrop = useCallback(() => {
     if (!pendingCrop) return;
-    recordHistory("Crop Image", { ...currentState, crop: pendingCrop });
+    recordHistory("Crop Image", { ...currentState, crop: pendingCrop }, layers);
     setPendingCrop(undefined);
     setActiveTool(null);
-  }, [currentState, recordHistory, pendingCrop]);
+  }, [currentState, recordHistory, pendingCrop, layers]);
 
   const cancelCrop = useCallback(() => {
     setPendingCrop(undefined);
@@ -627,390 +684,51 @@ export const useEditorState = () => {
 
   /* ---------- Undo / Redo / Reset ---------- */
   const handleUndo = useCallback(() => {
-    if (currentHistoryIndex > 0) setCurrentHistoryIndex(currentHistoryIndex - 1);
-  }, [currentHistoryIndex]);
+    if (currentHistoryIndex > 0) {
+      setCurrentHistoryIndex(currentHistoryIndex - 1);
+      setLayers(history[currentHistoryIndex - 1].layers); // Sync layers from history
+    }
+  }, [currentHistoryIndex, history, setLayers]);
 
   const handleRedo = useCallback(() => {
-    if (currentHistoryIndex < history.length - 1) setCurrentHistoryIndex(currentHistoryIndex + 1);
-  }, [currentHistoryIndex, history.length]);
+    if (currentHistoryIndex < history.length - 1) {
+      setCurrentHistoryIndex(currentHistoryIndex + 1);
+      setLayers(history[currentHistoryIndex + 1].layers); // Sync layers from history
+    }
+  }, [currentHistoryIndex, history.length, history, setLayers]);
 
   const handleReset = useCallback(() => {
-    recordHistory("Reset All", initialEditState, initialLayers);
+    recordHistory("Reset All", initialEditState, [{
+      id: uuidv4(),
+      type: "image",
+      name: "Background",
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+    }]);
     setSelectedLayerId(null);
     setPendingCrop(undefined);
     setSelectionPath(null);
-  }, [recordHistory]);
+  }, [recordHistory, setSelectedLayerId]);
 
   const jumpToHistory = useCallback((index: number) => {
     setCurrentHistoryIndex(index);
-  }, []);
+    setLayers(history[index].layers); // Sync layers from history
+  }, [history, setLayers]);
 
   /* ---------- Export / Copy ---------- */
   const handleDownload = useCallback((options: { format: string; quality: number; width: number; height: number }) => {
     if (!imgRef.current) return;
     downloadImage(
-      { image: imgRef.current, layers: currentLayers, ...currentState },
+      { image: imgRef.current, layers: layers, ...currentState },
       options
     );
-  }, [currentState, currentLayers]);
+  }, [currentState, layers]);
 
   const handleCopy = useCallback(() => {
     if (!imgRef.current) return;
-    copyImageToClipboard({ image: imgRef.current, layers: currentLayers, ...currentState });
-  }, [currentState, currentLayers]);
-
-  /* ---------- Layer management ---------- */
-  const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "text",
-      name: `Text ${currentLayers.filter((l) => l.type === "text").length + 1}`,
-      visible: true,
-      content: "New Text",
-      x: coords?.x ?? 50,
-      y: coords?.y ?? 50,
-      fontSize: 48,
-      color: "#FFFFFF",
-      fontFamily: "Roboto",
-      opacity: 100,
-      blendMode: 'normal',
-      fontWeight: "normal",
-      fontStyle: "normal",
-      textAlign: "center",
-      rotation: 0,
-      letterSpacing: 0,
-      padding: 10,
-    };
-    const updated = [...currentLayers, newLayer];
-    recordHistory("Add Text Layer", currentState, updated);
-    setSelectedLayerId(newLayer.id);
-    setActiveTool(null);
-  }, [currentLayers, currentState, recordHistory]);
-
-  const addDrawingLayer = useCallback(() => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "drawing",
-      name: `Drawing ${currentLayers.filter((l) => l.type === "drawing").length + 1}`,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      dataUrl: "",
-    };
-    const updated = [...currentLayers, newLayer];
-    recordHistory("Add Drawing Layer", currentState, updated);
-    setSelectedLayerId(newLayer.id);
-    return newLayer.id;
-  }, [currentLayers, currentState, recordHistory]);
-
-  const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-    const updatedLayers = currentLayers.map((l) => (l.id === id ? { ...l, ...updates } : l));
-    updateCurrentLayers(updatedLayers);
-  }, [currentLayers, updateCurrentLayers]);
-
-  const commitLayerChange = useCallback((id: string) => {
-    const layer = currentLayers.find((l) => l.id === id);
-    if (!layer) return;
-    const action = layer.type === 'drawing' ? 'Brush Stroke' : `Edit Layer "${layer.name}"`;
-    recordHistory(action, currentState, currentLayers);
-  }, [currentState, currentLayers, recordHistory]);
-
-  const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
-    const updatedLayers = currentLayers.map((l) => (l.id === id ? { ...l, ...updates } : l));
-    recordHistory(historyName, currentState, updatedLayers);
-  }, [currentLayers, currentState, recordHistory]);
-
-  const handleLayerOpacityChange = useCallback((opacity: number) => {
-    if (selectedLayerId) {
-      updateLayer(selectedLayerId, { opacity });
-    }
-  }, [selectedLayerId, updateLayer]);
-
-  const handleLayerOpacityCommit = useCallback(() => {
-    if (selectedLayerId) {
-      commitLayerChange(selectedLayerId);
-    }
-  }, [selectedLayerId, commitLayerChange]);
-
-  const toggleLayerVisibility = useCallback((id: string) => {
-    const updated = currentLayers.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
-    updateCurrentLayers(updated);
-  }, [currentLayers, updateCurrentLayers]);
-
-  const renameLayer = useCallback((id: string, newName: string) => {
-    const layerToRename = currentLayers.find(l => l.id === id);
-    if (layerToRename && layerToRename.type === 'image') {
-      showError("The background layer cannot be renamed.");
-      return;
-    }
-    const updated = currentLayers.map(l => l.id === id ? { ...l, name: newName } : l);
-    recordHistory(`Rename Layer to "${newName}"`, currentState, updated);
-  }, [currentLayers, currentState, recordHistory]);
-
-  const deleteLayer = useCallback((id: string) => {
-    const layerToDelete = currentLayers.find(l => l.id === id);
-    if (layerToDelete && layerToDelete.type === 'image') {
-      showError("The background layer cannot be deleted.");
-      return;
-    }
-    if (id === selectedLayerId) {
-      setSelectedLayerId(null);
-    }
-    const updated = currentLayers.filter(l => l.id !== id);
-    recordHistory("Delete Layer", currentState, updated);
-  }, [currentLayers, currentState, recordHistory, selectedLayerId]);
-
-  const duplicateLayer = useCallback((id: string) => {
-    const layerIndex = currentLayers.findIndex(l => l.id === id);
-    const layerToDuplicate = currentLayers[layerIndex];
-
-    if (!layerToDuplicate || layerToDuplicate.type === 'image') {
-      showError("The background layer cannot be duplicated.");
-      return;
-    }
-
-    const newLayer: Layer = {
-      ...layerToDuplicate,
-      id: uuidv4(),
-      name: `${layerToDuplicate.name} Copy`,
-    };
-
-    const updated = [
-      ...currentLayers.slice(0, layerIndex + 1),
-      newLayer,
-      ...currentLayers.slice(layerIndex + 1),
-    ];
-
-    recordHistory("Duplicate Layer", currentState, updated);
-    setSelectedLayerId(newLayer.id);
-  }, [currentLayers, currentState, recordHistory]);
-
-  const rasterizeLayer = useCallback(async (id: string) => {
-    const layerToRasterize = currentLayers.find(l => l.id === id);
-
-    if (!layerToRasterize || layerToRasterize.type !== 'text' || !imgRef.current) {
-      showError("Only text layers can be rasterized.");
-      return;
-    }
-
-    const toastId = showLoading("Rasterizing layer...");
-    try {
-      const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
-      const canvas = await rasterizeLayerToCanvas(layerToRasterize, imageDimensions);
-      if (!canvas) throw new Error("Failed to create canvas for rasterization.");
-
-      const dataUrl = canvas.toDataURL();
-
-      const newLayer: Layer = {
-        ...layerToRasterize,
-        type: 'drawing',
-        dataUrl: dataUrl,
-        content: undefined, x: undefined, y: undefined, fontSize: undefined,
-        fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
-        textAlign: undefined, rotation: undefined, letterSpacing: undefined,
-        textShadow: undefined, stroke: undefined, backgroundColor: undefined,
-        padding: undefined, width: undefined, height: undefined,
-      };
-
-      const updatedLayers = currentLayers.map(l => l.id === id ? newLayer : l);
-      recordHistory(`Rasterize Layer "${layerToRasterize.name}"`, currentState, updatedLayers);
-      
-      dismissToast(toastId);
-      showSuccess("Layer rasterized.");
-    } catch (err: any) {
-      console.error("Failed to rasterize layer:", err);
-      dismissToast(toastId);
-      showError(err.message || "Failed to rasterize layer.");
-    }
-  }, [currentLayers, currentState, recordHistory, imgRef]);
-
-  const mergeLayerDown = useCallback(async (id: string) => {
-    const layerIndex = currentLayers.findIndex(l => l.id === id);
-    
-    if (layerIndex < 1 || currentLayers[layerIndex - 1].type === 'image') {
-      showError("This layer cannot be merged down.");
-      return;
-    }
-
-    const topLayer = currentLayers[layerIndex];
-    const bottomLayer = currentLayers[layerIndex - 1];
-
-    const toastId = showLoading("Merging layers...");
-
-    try {
-      if (!imgRef.current) throw new Error("Image reference is not available.");
-      const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
-
-      const bottomCanvas = await rasterizeLayerToCanvas(bottomLayer, imageDimensions);
-      const topCanvas = await rasterizeLayerToCanvas(topLayer, imageDimensions);
-
-      if (!bottomCanvas || !topCanvas) throw new Error("Failed to rasterize layers for merging.");
-
-      const mergedCanvas = document.createElement('canvas');
-      mergedCanvas.width = imageDimensions.width;
-      mergedCanvas.height = imageDimensions.height;
-      const ctx = mergedCanvas.getContext('2d');
-      if (!ctx) throw new Error("Failed to create canvas for merging.");
-
-      // Draw bottom layer
-      ctx.globalAlpha = (bottomLayer.opacity ?? 100) / 100;
-      ctx.globalCompositeOperation = (bottomLayer.blendMode || 'normal') as GlobalCompositeOperation;
-      ctx.drawImage(bottomCanvas, 0, 0);
-
-      // Draw top layer
-      ctx.globalAlpha = (topLayer.opacity ?? 100) / 100;
-      ctx.globalCompositeOperation = (topLayer.blendMode || 'normal') as GlobalCompositeOperation;
-      ctx.drawImage(topCanvas, 0, 0);
-
-      const mergedDataUrl = mergedCanvas.toDataURL();
-
-      const newBottomLayer: Layer = {
-        id: bottomLayer.id,
-        type: 'drawing',
-        name: bottomLayer.name,
-        visible: bottomLayer.visible,
-        dataUrl: mergedDataUrl,
-        opacity: 100, // Opacity is baked in, so reset to 100
-        blendMode: 'normal', // Blend mode is baked in
-      };
-
-      const updatedLayers = currentLayers
-        .filter(l => l.id !== topLayer.id)
-        .map(l => l.id === bottomLayer.id ? newBottomLayer : l);
-
-      recordHistory(`Merge Layer "${topLayer.name}" Down`, currentState, updatedLayers);
-      setSelectedLayerId(bottomLayer.id);
-      dismissToast(toastId);
-      showSuccess("Layers merged.");
-
-    } catch (err: any) {
-      console.error("Failed to merge layers:", err);
-      dismissToast(toastId);
-      showError(err.message || "Failed to merge layers.");
-    }
-  }, [currentLayers, currentState, recordHistory, imgRef]);
-
-  const reorderLayers = useCallback((oldIndex: number, newIndex: number) => {
-    if (currentLayers[oldIndex].type === 'image' || currentLayers[newIndex].type === 'image') {
-      showError("The background layer cannot be moved.");
-      return;
-    }
-    const updated = arrayMove(currentLayers, oldIndex, newIndex);
-    recordHistory("Reorder Layers", currentState, updated);
-  }, [currentLayers, currentState, recordHistory]);
-
-  /* ---------- Smart Object Functions ---------- */
-  const createSmartObject = useCallback((layerIds: string[]) => {
-    if (layerIds.length < 1) {
-      showError("Please select at least one layer to create a smart object.");
-      return;
-    }
-
-    // Get the selected layers
-    const selectedLayers = currentLayers.filter(layer => layerIds.includes(layer.id));
-    
-    // Find the bounds of all selected layers
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    
-    selectedLayers.forEach(layer => {
-      if (layer.type === 'text' && layer.x !== undefined && layer.y !== undefined) {
-        // For text layers, we need to calculate approximate bounds
-        const fontSize = layer.fontSize || 16;
-        const textWidth = (layer.content?.length || 1) * fontSize * 0.6; // Approximate width
-        const textHeight = fontSize * 1.2; // Approximate height
-        
-        const x = (layer.x / 100) * (dimensions?.width || 1000);
-        const y = (layer.y / 100) * (dimensions?.height || 1000);
-        
-        minX = Math.min(minX, x - textWidth / 2);
-        minY = Math.min(minY, y - textHeight / 2);
-        maxX = Math.max(maxX, x + textWidth / 2);
-        maxY = Math.max(maxY, y + textHeight / 2);
-      } else if (layer.type === 'drawing' && imgRef.current) {
-        // For drawing layers, assume they cover the whole canvas for now
-        minX = Math.min(minX, 0);
-        minY = Math.min(minY, 0);
-        maxX = Math.max(maxX, imgRef.current.naturalWidth);
-        maxY = Math.max(maxY, imgRef.current.naturalHeight);
-      }
-    });
-    
-    // If we couldn't determine bounds, use default size
-    if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
-      minX = 0;
-      minY = 0;
-      maxX = dimensions?.width || 1000;
-      maxY = dimensions?.height || 1000;
-    }
-    
-    const width = maxX - minX;
-    const height = maxY - minY;
-    
-    // Create the smart object layer
-    const smartObjectLayer: Layer = {
-      id: uuidv4(),
-      type: "smart-object",
-      name: "Smart Object",
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      x: (minX / (dimensions?.width || 1000)) * 100,
-      y: (minY / (dimensions?.height || 1000)) * 100,
-      width: (width / (dimensions?.width || 1000)) * 100,
-      height: (height / (dimensions?.height || 1000)) * 100,
-      rotation: 0,
-      smartObjectData: {
-        layers: selectedLayers,
-        width,
-        height
-      }
-    };
-
-    // Remove the original layers and add the smart object
-    const updatedLayers = currentLayers
-      .filter(layer => !layerIds.includes(layer.id))
-      .concat(smartObjectLayer);
-
-    recordHistory("Create Smart Object", currentState, updatedLayers);
-    setSelectedLayerId(smartObjectLayer.id);
-  }, [currentLayers, currentState, recordHistory, dimensions, imgRef]);
-
-  const openSmartObjectEditor = useCallback((id: string) => {
-    const layer = currentLayers.find(l => l.id === id);
-    if (!layer || layer.type !== 'smart-object') {
-      showError("Invalid smart object layer.");
-      return;
-    }
-    
-    setSmartObjectEditingId(id);
-    setIsSmartObjectEditorOpen(true);
-  }, [currentLayers]);
-
-  const closeSmartObjectEditor = useCallback(() => {
-    setIsSmartObjectEditorOpen(false);
-    setSmartObjectEditingId(null);
-  }, []);
-
-  const saveSmartObjectChanges = useCallback((updatedLayers: Layer[]) => {
-    if (!smartObjectEditingId) return;
-    
-    const updatedAllLayers = currentLayers.map(layer => {
-      if (layer.id === smartObjectEditingId && layer.type === 'smart-object' && layer.smartObjectData) {
-        return {
-          ...layer,
-          smartObjectData: {
-            ...layer.smartObjectData,
-            layers: updatedLayers
-          }
-        };
-      }
-      return layer;
-    });
-    
-    recordHistory("Edit Smart Object", currentState, updatedAllLayers);
-    closeSmartObjectEditor();
-    showSuccess("Smart object changes saved.");
-  }, [currentLayers, currentState, recordHistory, smartObjectEditingId, closeSmartObjectEditor]);
+    copyImageToClipboard({ image: imgRef.current, layers: layers, ...currentState });
+  }, [currentState, layers]);
 
   /* ---------- Generative fill ---------- */
   const applyGenerativeResult = useCallback((url: string) => {
@@ -1052,13 +770,13 @@ export const useEditorState = () => {
       const newLayer: Layer = {
         id: uuidv4(),
         type: "drawing",
-        name: `Fill ${currentLayers.filter((l) => l.type === "drawing").length + 1}`,
+        name: `Fill ${layers.filter((l) => l.type === "drawing").length + 1}`,
         visible: true,
         opacity: 100,
         blendMode: 'normal',
         dataUrl: dataUrl,
       };
-      const updatedLayers = [...currentLayers, newLayer];
+      const updatedLayers = [...layers, newLayer];
       recordHistory("Generative Fill", currentState, updatedLayers);
       setSelectedLayerId(newLayer.id);
       setSelectionPath(null);
@@ -1070,7 +788,7 @@ export const useEditorState = () => {
       showError("Failed to load generated image for fill.");
     };
     generatedImage.src = url;
-  }, [selectionPath, imgRef, currentLayers, recordHistory, currentState]);
+  }, [selectionPath, imgRef, layers, recordHistory, currentState, setSelectedLayerId]);
 
   const handleSetBrushState = useCallback((updates: Partial<BrushState>) => {
     setBrushState(prev => ({ ...prev, ...updates }));
@@ -1170,8 +888,10 @@ export const useEditorState = () => {
     isExporting,
     setIsExporting,
     applyPreset,
-    // Layer utilities
-    layers: currentLayers,
+    // Layer utilities from useLayers
+    layers,
+    selectedLayerId,
+    setSelectedLayer: setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
     toggleLayerVisibility,
@@ -1186,7 +906,6 @@ export const useEditorState = () => {
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,
-    // Smart object utilities
     createSmartObject,
     openSmartObjectEditor,
     closeSmartObjectEditor,
@@ -1203,8 +922,6 @@ export const useEditorState = () => {
     // Generative
     applyGenerativeResult,
     // Selection
-    selectedLayerId,
-    setSelectedLayer: setSelectedLayerId,
     selectionPath,
     setSelectionPath,
   };

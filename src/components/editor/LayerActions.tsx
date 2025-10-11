@@ -12,9 +12,9 @@ interface LayerActionsProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onDeleteLayer: () => void;
-  onDuplicateLayer: () => void;
-  onMergeLayerDown: () => void;
-  onRasterizeLayer: () => void;
+  onDuplicateLayer: () => void; // Changed from (id: string) => void
+  onMergeLayerDown: () => void; // Changed from (id: string) => void
+  onRasterizeLayer: () => void; // Changed from (id: string) => void
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
 }
