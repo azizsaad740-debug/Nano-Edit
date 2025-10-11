@@ -248,7 +248,7 @@ const Index = () => {
     duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     mergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     rasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
-    reorderLayers,
+    reorderLayers, // Passed here
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
