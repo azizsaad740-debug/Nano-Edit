@@ -61,6 +61,10 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
   const renderShape = () => {
     switch (shapeType) {
       case "rect":
+        // borderRadius is a percentage of the smaller dimension of the shape's bounding box
+        // For SVG rect, rx/ry are absolute values, so we need to calculate them based on the actual rendered size.
+        // However, since the SVG itself is 100% width/height of its container, and viewBox is 0 0 100 100,
+        // borderRadius as a percentage of 100 (viewBox units) works directly.
         return <rect x="0" y="0" width="100%" height="100%" rx={`${borderRadius || 0}%`} ry={`${borderRadius || 0}%`} />;
       case "circle":
         return <circle cx="50%" cy="50%" r="50%" />;

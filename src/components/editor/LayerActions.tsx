@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square } from "lucide-react"; // Added Square icon
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface LayerActionsProps {
   layers: Layer[];
@@ -11,14 +12,14 @@ interface LayerActionsProps {
   selectedLayerIds: string[];
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
-  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
+  selectedShapeType: Layer['shapeType'] | null;
 }
 
 export const LayerActions = ({
@@ -27,14 +28,14 @@ export const LayerActions = ({
   selectedLayerIds,
   onAddTextLayer,
   onAddDrawingLayer,
-  onAddShapeLayer, // Destructure onAddShapeLayer
+  onAddShapeLayer,
   onDeleteLayer,
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
   onCreateSmartObject,
   onOpenSmartObject,
-  selectedShapeType, // Destructure selectedShapeType
+  selectedShapeType,
 }: LayerActionsProps) => {
   const isActionable = selectedLayer && selectedLayer.type !== 'image';
   const hasMultipleSelection = selectedLayerIds.length > 1;
@@ -42,92 +43,142 @@ export const LayerActions = ({
   const isMergeable = React.useMemo(() => {
     if (!selectedLayer) return false;
     const layerIndex = layers.findIndex(l => l.id === selectedLayer.id);
-    // Cannot merge if it's the first layer or the layer directly above the background
     if (layerIndex < 1 || layers[layerIndex - 1].type === 'image') {
       return false;
     }
     return true;
   }, [layers, selectedLayer]);
 
-  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape'; // Updated for vector shapes
+  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape';
   const isSmartObject = selectedLayer?.type === 'smart-object';
 
   return (
     <div className="mt-4 space-y-2 border-t pt-4">
-      <div className="grid grid-cols-2 gap-2">
-        <Button size="sm" variant="outline" onClick={onAddTextLayer}>
-          <Type className="h-4 w-4 mr-2" />
-          Add Text
-        </Button>
-        <Button size="sm" variant="outline" onClick={onAddDrawingLayer}>
-          <Layers className="h-4 w-4 mr-2" />
-          Add Layer
-        </Button>
-        {/* Removed "Add Shape" button from here */}
-        {hasMultipleSelection ? (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => onCreateSmartObject(selectedLayerIds)}
-            className="col-span-2"
-          >
-            <FileArchive className="h-4 w-4 mr-2" />
-            Create Smart Object
-          </Button>
-        ) : (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onDuplicateLayer}
-              disabled={!isActionable}
-            >
-              <Copy className="h-4 w-4 mr-2" />
-              Duplicate
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onMergeLayerDown}
-              disabled={!isMergeable}
-            >
-              <Merge className="h-4 w-4 mr-2" />
-              Merge Down
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onRasterizeLayer}
-              disabled={!isRasterizable}
-              className="col-span-2"
-            >
-              <Layers className="h-4 w-4 mr-2" />
-              Rasterize Layer
-            </Button>
-            {isSmartObject && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => selectedLayer.id && onOpenSmartObject(selectedLayer.id)}
-                className="col-span-2"
-              >
-                <FileArchive className="h-4 w-4 mr-2" />
-                Open Smart Object
+      <TooltipProvider>
+        <div className="flex flex-wrap gap-1 justify-center">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="outline" onClick={onAddTextLayer}>
+                <Type className="h-4 w-4" />
               </Button>
-            )}
-          </>
-        )}
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={onDeleteLayer}
-          disabled={!isActionable}
-          className="col-span-2"
-        >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete Selected Layer
-        </Button>
-      </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Add Text Layer</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" variant="outline" onClick={onAddDrawingLayer}>
+                <Layers className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Add Drawing Layer</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {hasMultipleSelection ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => onCreateSmartObject(selectedLayerIds)}
+                >
+                  <FileArchive className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Create Smart Object</p>
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={onDuplicateLayer}
+                    disabled={!isActionable}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Duplicate Layer</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={onMergeLayerDown}
+                    disabled={!isMergeable}
+                  >
+                    <Merge className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Merge Down</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    onClick={onRasterizeLayer}
+                    disabled={!isRasterizable}
+                  >
+                    <Layers className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Rasterize Layer</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {isSmartObject && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={() => selectedLayer.id && onOpenSmartObject(selectedLayer.id)}
+                    >
+                      <FileArchive className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open Smart Object</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </>
+          )}
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onDeleteLayer}
+                disabled={!isActionable}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Delete Selected Layer</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </TooltipProvider>
     </div>
   );
 };

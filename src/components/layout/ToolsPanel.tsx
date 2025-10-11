@@ -9,7 +9,7 @@ import {
   Crop as CropIcon,
   Eraser,
   Pipette,
-  Square, // Added Square icon for shapes
+  Square,
   RectangleHorizontal,
   Circle,
   Triangle,
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Layer } from "@/hooks/useEditorState";
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape"; // Added 'shape'
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape";
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -39,6 +39,7 @@ const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: stri
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },
+  { name: "Shape", icon: Square, tool: "shape", shortcut: "P" },
   { name: "Crop", icon: CropIcon, tool: "crop", shortcut: "C" },
   { name: "Eyedropper", icon: Pipette, tool: "eyedropper", shortcut: "I" },
 ];
@@ -66,22 +67,19 @@ export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSe
         <div className="flex flex-col items-center gap-2">
           {tools.map((item) => {
             if (item.tool === "shape") {
-              // Render Shape tool with dropdown
               return (
                 <DropdownMenu key={item.name}>
                   <Tooltip>
                     <DropdownMenuTrigger asChild>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={activeTool === item.tool ? "secondary" : "ghost"}
-                          size="icon"
-                          className="w-10 h-10"
-                          onClick={() => setActiveTool(item.tool === activeTool ? null : item.tool)}
-                        >
-                          {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
-                          <ChevronDown className="h-3 w-3 ml-1" />
-                        </Button>
-                      </TooltipTrigger>
+                      <Button
+                        variant={activeTool === item.tool ? "secondary" : "ghost"}
+                        size="icon"
+                        className="w-10 h-10"
+                        onClick={() => setActiveTool(item.tool === activeTool ? null : item.tool)}
+                      >
+                        {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
+                        <ChevronDown className="h-3 w-3 ml-1" />
+                      </Button>
                     </DropdownMenuTrigger>
                     <TooltipContent side="right">
                       <p>{item.name} ({item.shortcut})</p>
@@ -98,7 +96,6 @@ export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSe
                 </DropdownMenu>
               );
             }
-            // Render other tools normally
             return (
               <Tooltip key={item.name}>
                 <TooltipTrigger asChild>
