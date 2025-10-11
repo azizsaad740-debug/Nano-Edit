@@ -461,6 +461,17 @@ export const useLayers = ({
     // The commit will happen on mouse up or when the key is released.
   }, []);
 
+  // --- Stub for Group Layers (will be fully implemented later) ---
+  const groupLayers = useCallback((layerIds: string[]) => {
+    showError("Layer grouping is not yet implemented.");
+    console.warn("Attempted to group layers:", layerIds);
+  }, []);
+
+  // --- Stub for Toggle Group Expanded (will be fully implemented later) ---
+  const toggleGroupExpanded = useCallback((id: string) => {
+    console.warn("Attempted to toggle group expanded state for:", id);
+  }, []);
+
   return {
     layers,
     setLayers, // Expose setLayers for initial load from project
@@ -488,5 +499,7 @@ export const useLayers = ({
     isSmartObjectEditorOpen,
     smartObjectEditingId,
     moveSelectedLayer, // Expose moveSelectedLayer
+    groupLayers, // Now exposed
+    toggleGroupExpanded, // Now exposed
   };
 };

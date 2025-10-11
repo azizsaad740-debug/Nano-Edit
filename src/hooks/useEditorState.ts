@@ -65,7 +65,7 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape";
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group"; // Added 'group' type
   name: string;
   visible: boolean;
   opacity?: number;
@@ -80,6 +80,9 @@ export interface Layer {
     width: number;
     height: number;
   };
+  // Group layer properties
+  children?: Layer[]; // For 'group' type
+  expanded?: boolean; // For 'group' type
   // Common transform properties for movable layers (x, y, width, height, rotation)
   x?: number; // percentage from left
   y?: number; // percentage from top
@@ -231,6 +234,8 @@ export const useEditorState = () => {
     isSmartObjectEditorOpen,
     smartObjectEditingId,
     moveSelectedLayer,
+    groupLayers, // Added groupLayers
+    toggleGroupExpanded, // Added toggleGroupExpanded
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
@@ -954,5 +959,8 @@ export const useEditorState = () => {
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,
+    // Grouping
+    groupLayers,
+    toggleGroupExpanded,
   };
 };
