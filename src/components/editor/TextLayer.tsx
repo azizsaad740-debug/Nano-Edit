@@ -5,6 +5,7 @@ import type { Layer } from "@/hooks/useEditorState";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
+import { useLayerTransform } from "@/hooks/useLayerTransform"; // Import the new hook
 
 interface TextLayerProps {
   layer: Layer;
@@ -15,158 +16,21 @@ interface TextLayerProps {
 }
 
 export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected }: TextLayerProps) => {
-  const textRef = React.useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [isResizing, setIsResizing] = React.useState(false);
-  const [isRotating, setIsRotating] = React.useState(false);
-  const dragStartPos = React.useRef({ x: 0, y: 0, initialX: 0, initialY: 0 });
-  const resizeStartInfo = React.useRef({
-    x: 0,
-    y: 0,
-    fontSize: 48,
-    handle: "",
-  });
-  const rotateStartInfo = React.useRef({ angle: 0, rotation: 0 });
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
-  // Dragging logic
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isEditing || !isSelected) return;
-    e.stopPropagation();
-    setIsDragging(true);
-    dragStartPos.current = { 
-      x: e.clientX, 
-      y: e.clientY,
-      initialX: layer.x ?? 0,
-      initialY: layer.y ?? 0,
-    };
-  };
-
-  const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isDragging || !containerRef.current) return;
-
-    const containerRect = containerRef.current.getBoundingClientRect();
-    const dx = e.clientX - dragStartPos.current.x;
-    const dy = e.clientY - dragStartPos.current.y;
-
-    const dxPercent = (dx / containerRect.width) * 100;
-    const dyPercent = (dy / containerRect.height) * 100;
-
-    onUpdate(layer.id, { 
-      x: dragStartPos.current.initialX + dxPercent, 
-      y: dragStartPos.current.initialY + dyPercent 
-    });
-  }, [isDragging, containerRef, layer.id, onUpdate]);
-
-  const handleMouseUp = React.useCallback(() => {
-    if (isDragging) {
-      setIsDragging(false);
-      onCommit(layer.id);
-    }
-  }, [isDragging, layer.id, onCommit]);
-
-  React.useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
-
-  // Resizing logic
-  const handleResizeMouseDown = (
-    e: React.MouseEvent<HTMLDivElement>,
-    handle: string
-  ) => {
-    e.stopPropagation();
-    setIsResizing(true);
-    resizeStartInfo.current = {
-      x: e.clientX,
-      y: e.clientY,
-      fontSize: layer.fontSize || 48,
-      handle,
-    };
-  };
-
-  const handleResizeMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-
-    const dx = e.clientX - resizeStartInfo.current.x;
-    const dy = e.clientY - resizeStartInfo.current.y;
-    
-    let change = 0;
-    switch (resizeStartInfo.current.handle) {
-      case "top-left": change = -(dx + dy); break;
-      case "top-right": change = dx - dy; break;
-      case "bottom-left": change = -dx + dy; break;
-      case "bottom-right": change = dx + dy; break;
-    }
-
-    const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.fontSize + (change * 0.5)));
-    onUpdate(layer.id, { fontSize: newFontSize });
-  }, [isResizing, layer.id, onUpdate]);
-
-  const handleResizeMouseUp = React.useCallback(() => {
-    if (isResizing) {
-      setIsResizing(false);
-      onCommit(layer.id);
-    }
-  }, [isResizing, layer.id, onCommit]);
-
-  React.useEffect(() => {
-    if (isResizing) {
-      document.addEventListener("mousemove", handleResizeMouseMove);
-      document.addEventListener("mouseup", handleResizeMouseUp);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleResizeMouseMove);
-      document.removeEventListener("mouseup", handleResizeMouseUp);
-    };
-  }, [isResizing, handleResizeMouseMove, handleResizeMouseUp]);
-
-  // Rotation logic
-  const handleRotateMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    if (!textRef.current) return;
-    setIsRotating(true);
-    const rect = textRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-    rotateStartInfo.current = { angle: startAngle, rotation: layer.rotation || 0 };
-  };
-
-  const handleRotateMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isRotating || !textRef.current) return;
-    const rect = textRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-    const newRotation = rotateStartInfo.current.rotation + (currentAngle - rotateStartInfo.current.angle);
-    onUpdate(layer.id, { rotation: newRotation });
-  }, [isRotating, layer.id, onUpdate]);
-
-  const handleRotateMouseUp = React.useCallback(() => {
-    if (isRotating) {
-      setIsRotating(false);
-      onCommit(layer.id);
-    }
-  }, [isRotating, layer.id, onCommit]);
-
-  React.useEffect(() => {
-    if (isRotating) {
-      document.addEventListener("mousemove", handleRotateMouseMove);
-      document.addEventListener("mouseup", handleRotateMouseUp);
-    }
-    return () => {
-      document.removeEventListener("mousemove", handleRotateMouseMove);
-      document.removeEventListener("mouseup", handleRotateMouseUp);
-    };
-  }, [isRotating, handleRotateMouseMove, handleRotateMouseUp]);
+  const {
+    layerRef,
+    handleDragMouseDown,
+    handleResizeMouseDown,
+    handleRotateMouseDown,
+  } = useLayerTransform({
+    layer,
+    containerRef,
+    onUpdate,
+    onCommit,
+    type: "text",
+  });
 
   // Editing logic
   const handleDoubleClick = () => {
@@ -233,13 +97,13 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected 
 
   return (
     <div
-      ref={textRef}
-      onMouseDown={handleMouseDown}
+      ref={layerRef} // Use layerRef from the hook
+      onMouseDown={handleDragMouseDown} // Use handleDragMouseDown from the hook
       onDoubleClick={handleDoubleClick}
       className="absolute"
       style={{
-        left: `${layer.x}%`,
-        top: `${layer.y}%`,
+        left: `${layer.x ?? 50}%`, // Default to 50% if undefined
+        top: `${layer.y ?? 50}%`, // Default to 50% if undefined
         transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
         cursor: isSelected && !isEditing ? "move" : "default",
         mixBlendMode: layer.blendMode as any || 'normal',
