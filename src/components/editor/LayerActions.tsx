@@ -39,8 +39,8 @@ export const LayerActions = ({
   selectedShapeType,
   groupLayers, // Destructure groupLayers
 }: LayerActionsProps) => {
-  const isActionable = selectedLayer && selectedLayer.type !== 'image';
   const hasMultipleSelection = selectedLayerIds.length > 1;
+  const isAnyLayerSelected = selectedLayerIds.length > 0;
 
   const isMergeable = React.useMemo(() => {
     if (!selectedLayer) return false;
@@ -102,6 +102,7 @@ export const LayerActions = ({
                     size="icon"
                     variant="outline"
                     onClick={groupLayers} // Call groupLayers here
+                    disabled={selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')} // Disable if background is selected
                   >
                     <Group className="h-4 w-4" />
                   </Button>
@@ -119,7 +120,7 @@ export const LayerActions = ({
                     size="icon"
                     variant="outline"
                     onClick={onDuplicateLayer}
-                    disabled={!isActionable}
+                    disabled={!selectedLayer || selectedLayer.type === 'image'} // Disable if no layer or background is selected
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
@@ -186,7 +187,7 @@ export const LayerActions = ({
                 size="icon"
                 variant="outline"
                 onClick={onDeleteLayer}
-                disabled={!isActionable && !hasMultipleSelection} // Allow deleting multiple selected layers
+                disabled={!isAnyLayerSelected || selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')} // Disable if no layer selected or background is selected
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

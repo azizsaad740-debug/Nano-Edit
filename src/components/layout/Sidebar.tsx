@@ -53,7 +53,7 @@ interface SidebarProps {
   duplicateLayer: () => void;
   mergeLayerDown: () => void;
   rasterizeLayer: () => void;
-  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void;
+  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Added this line
   // Selection props
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
