@@ -381,10 +381,12 @@ const Index = () => {
                 onAddTextLayer={addTextLayer}
                 onAddDrawingLayer={addDrawingLayer}
                 onAddShapeLayer={addShapeLayer}
+                onAddGradientLayer={addGradientLayer}
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}
                 brushState={brushState}
+                gradientToolState={gradientToolState}
                 selectionPath={selectionPath}
                 onSelectionChange={setSelectionPath}
                 handleColorPick={handleColorPick}

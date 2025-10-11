@@ -128,7 +128,12 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState]);
 
-  const addGradientLayer = useCallback(() => {
+  const addGradientLayer = useCallback((options?: {
+    x: number; y: number; width: number; height: number; rotation: number;
+    gradientType: Layer['gradientType']; gradientColors: string[]; gradientStops: number[];
+    gradientAngle: number; gradientCenterX: number; gradientCenterY: number;
+    gradientRadius: number; gradientFeather: number; gradientInverted: boolean;
+  }) => {
     const newLayer: Layer = {
       id: uuidv4(),
       type: "gradient",
@@ -136,19 +141,20 @@ export const useLayers = ({
       visible: true,
       opacity: 100,
       blendMode: 'normal',
-      x: 50, // Center of the canvas
-      y: 50, // Center of the canvas
-      width: 100, // Full width
-      height: 100, // Full height
-      gradientType: gradientToolState.type,
-      gradientColors: gradientToolState.colors,
-      gradientStops: gradientToolState.stops,
-      gradientAngle: gradientToolState.angle,
-      gradientFeather: gradientToolState.feather,
-      gradientInverted: gradientToolState.inverted,
-      gradientCenterX: gradientToolState.centerX,
-      gradientCenterY: gradientToolState.centerY,
-      gradientRadius: gradientToolState.radius,
+      x: options?.x ?? 50,
+      y: options?.y ?? 50,
+      width: options?.width ?? 100,
+      height: options?.height ?? 100,
+      rotation: options?.rotation ?? 0,
+      gradientType: options?.gradientType ?? gradientToolState.type,
+      gradientColors: options?.gradientColors ?? gradientToolState.colors,
+      gradientStops: options?.gradientStops ?? gradientToolState.stops,
+      gradientAngle: options?.gradientAngle ?? gradientToolState.angle,
+      gradientFeather: options?.gradientFeather ?? gradientToolState.feather,
+      gradientInverted: options?.gradientInverted ?? gradientToolState.inverted,
+      gradientCenterX: options?.gradientCenterX ?? gradientToolState.centerX,
+      gradientCenterY: options?.gradientCenterY ?? gradientToolState.centerY,
+      gradientRadius: options?.gradientRadius ?? gradientToolState.radius,
     };
     const updated = [...layers, newLayer];
     updateLayersState(updated, "Add Gradient Layer");

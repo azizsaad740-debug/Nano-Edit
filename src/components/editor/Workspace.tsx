@@ -12,7 +12,7 @@ import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import type { Layer, BrushState, Point, EditState } from "@/hooks/useEditorState";
+import type { Layer, BrushState, Point, EditState, GradientToolState } from "@/hooks/useEditorState";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
 import { SelectionCanvas } from "./SelectionCanvas";
@@ -23,6 +23,7 @@ import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
 import GroupLayer from "./GroupLayer"; // Import GroupLayer
 import GradientLayer from "./GradientLayer"; // Import GradientLayer
+import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import GradientPreviewCanvas
 
 interface WorkspaceProps {
   image: string | null;
@@ -51,10 +52,17 @@ interface WorkspaceProps {
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
+  onAddGradientLayer: (options?: {
+    x: number; y: number; width: number; height: number; rotation: number;
+    gradientType: Layer['gradientType']; gradientColors: string[]; gradientStops: number[];
+    gradientAngle: number; gradientCenterX: number; gradientCenterY: number;
+    gradientRadius: number; gradientFeather: number; gradientInverted: boolean;
+  }) => void; // Updated onAddGradientLayer signature
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
   brushState: BrushState;
+  gradientToolState: GradientToolState; // Added gradientToolState
   selectionPath: Point[] | null;
   onSelectionChange: (path: Point[]) => void;
   handleColorPick: (color: string) => void;
@@ -87,7 +95,7 @@ const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNat
     canvas.width = imageNaturalDimensions.width;
     canvas.height = imageNaturalDimensions.height;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
     const scaleX = imageNaturalDimensions.width / containerRect.width;
     const scaleY = imageNaturalDimensions.height / containerRect.height;
@@ -165,10 +173,12 @@ const Workspace = (props: WorkspaceProps) => {
     onAddTextLayer,
     onAddDrawingLayer,
     onAddShapeLayer, // Destructure onAddShapeLayer
+    onAddGradientLayer, // Destructure onAddGradientLayer
     onLayerUpdate,
     onLayerCommit,
     selectedLayerId,
     brushState,
+    gradientToolState, // Destructure gradientToolState
     selectionPath,
     onSelectionChange,
     handleColorPick,
@@ -194,6 +204,11 @@ const Workspace = (props: WorkspaceProps) => {
   const [isDrawingShape, setIsDrawingShape] = useState(false);
   const [shapeStartCoords, setShapeStartCoords] = useState<Point | null>(null);
   const [shapeCurrentCoords, setShapeCurrentCoords] = useState<Point | null>(null);
+
+  // Gradient drawing state
+  const [isDrawingGradient, setIsDrawingGradient] = useState(false);
+  const [gradientStartCoords, setGradientStartCoords] = useState<Point | null>(null);
+  const [gradientCurrentCoords, setGradientCurrentCoords] = useState<Point | null>(null);
 
   const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
   const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
@@ -227,14 +242,20 @@ const Workspace = (props: WorkspaceProps) => {
   }, [image, handleFitScreen, imgRef]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!image) return;
+    if (!image || !imageContainerRef.current || !imageNaturalDimensions) return;
 
     // Prioritize drawing tools
-    if (activeTool === 'shape' && imageContainerRef.current) {
+    if (activeTool === 'shape') {
       setIsDrawingShape(true);
       setShapeStartCoords({ x: e.clientX, y: e.clientY });
       setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
       e.preventDefault(); // Prevent other actions like panning
+      return;
+    } else if (activeTool === 'gradient') {
+      setIsDrawingGradient(true);
+      setGradientStartCoords({ x: e.clientX, y: e.clientY });
+      setGradientCurrentCoords({ x: e.clientX, y: e.clientY });
+      e.preventDefault();
       return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
@@ -268,15 +289,17 @@ const Workspace = (props: WorkspaceProps) => {
       });
     } else if (isDrawingShape) {
       setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
+    } else if (isDrawingGradient) {
+      setGradientCurrentCoords({ x: e.clientX, y: e.clientY });
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!image) return;
+    if (!image || !imageContainerRef.current || !imageNaturalDimensions) return;
 
     if (isPanning) {
       setIsPanning(false);
-    } else if (isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && imageNaturalDimensions) {
+    } else if (isDrawingShape && shapeStartCoords && shapeCurrentCoords) {
       setIsDrawingShape(false);
 
       const containerRect = imageContainerRef.current.getBoundingClientRect();
@@ -312,6 +335,67 @@ const Workspace = (props: WorkspaceProps) => {
       }
       setShapeStartCoords(null);
       setShapeCurrentCoords(null);
+    } else if (isDrawingGradient && gradientStartCoords && gradientCurrentCoords) {
+      setIsDrawingGradient(false);
+
+      const containerRect = imageContainerRef.current.getBoundingClientRect();
+      const scaleX = imageNaturalDimensions.width / containerRect.width;
+      const scaleY = imageNaturalDimensions.height / containerRect.height;
+
+      const startX_px = (gradientStartCoords.x - containerRect.left) * scaleX;
+      const startY_px = (gradientStartCoords.y - containerRect.top) * scaleY;
+      const endX_px = (gradientCurrentCoords.x - containerRect.left) * scaleX;
+      const endY_px = (gradientCurrentCoords.y - containerRect.top) * scaleY;
+
+      const minX_px = Math.min(startX_px, endX_px);
+      const minY_px = Math.min(startY_px, endY_px);
+      const maxX_px = Math.max(startX_px, endX_px);
+      const maxY_px = Math.max(startY_px, endY_px);
+
+      const width_px = maxX_px - minX_px;
+      const height_px = maxY_px - minY_px;
+
+      if (width_px > 1 && height_px > 1) { // Ensure a minimum size
+        const centerX_percent = ((minX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
+        const centerY_percent = ((minY_px + height_px / 2) / imageNaturalDimensions.height) * 100;
+        const width_percent = (width_px / imageNaturalDimensions.width) * 100;
+        const height_percent = (height_px / imageNaturalDimensions.height) * 100;
+
+        let gradientAngle = 0;
+        let radialCenterX = 50;
+        let radialCenterY = 50;
+        let radialRadius = 50;
+
+        if (gradientToolState.type === 'linear') {
+          gradientAngle = Math.atan2(endY_px - startY_px, endX_px - startX_px) * (180 / Math.PI);
+          // Adjust angle to be 0-360 and relative to vertical for consistency with CSS gradients
+          gradientAngle = (gradientAngle + 90 + 360) % 360;
+        } else if (gradientToolState.type === 'radial') {
+          radialCenterX = ((startX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
+          radialCenterY = ((startY_px + height_px / 2) / imageNaturalDimensions.height) * 100;
+          radialRadius = (Math.sqrt(width_px * width_px + height_px * height_px) / 2 / Math.min(imageNaturalDimensions.width, imageNaturalDimensions.height)) * 100;
+        }
+
+        onAddGradientLayer({
+          x: centerX_percent,
+          y: centerY_percent,
+          width: width_percent,
+          height: height_percent,
+          rotation: 0, // Gradients don't have a direct rotation property, angle handles it
+          gradientType: gradientToolState.type,
+          gradientColors: gradientToolState.colors,
+          gradientStops: gradientToolState.stops,
+          gradientAngle: gradientAngle,
+          gradientCenterX: radialCenterX,
+          gradientCenterY: radialCenterY,
+          gradientRadius: radialRadius,
+          gradientFeather: gradientToolState.feather,
+          gradientInverted: gradientToolState.inverted,
+        });
+        setActiveTool(null); // Deactivate gradient tool after drawing
+      }
+      setGradientStartCoords(null);
+      setGradientCurrentCoords(null);
     }
   };
 
@@ -717,6 +801,15 @@ const Workspace = (props: WorkspaceProps) => {
                             fillColor="#3B82F6"
                             strokeColor="#FFFFFF"
                             strokeWidth={2}
+                          />
+                        )}
+                        {isDrawingGradient && gradientStartCoords && gradientCurrentCoords && imageContainerRef.current && (
+                          <GradientPreviewCanvas
+                            start={gradientStartCoords}
+                            current={gradientCurrentCoords}
+                            gradientToolState={gradientToolState}
+                            containerRect={imageContainerRef.current.getBoundingClientRect()}
+                            imageNaturalDimensions={imageNaturalDimensions}
                           />
                         )}
                       </div>
