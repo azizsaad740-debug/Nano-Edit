@@ -10,6 +10,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import type { NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 import { readPsd } from "ag-psd";
+import { rasterizeLayerToCanvas } from "@/utils/layerUtils"; // Import the utility
 
 export interface EditState {
   adjustments: {
@@ -92,6 +93,9 @@ export interface Layer {
     width: number;
     height: number;
   };
+  // Common transform properties for movable layers
+  width?: number; // percentage of parent container width
+  height?: number; // percentage of parent container height
 }
 
 export interface HistoryItem {
@@ -656,100 +660,6 @@ export const useEditorState = () => {
   }, [currentState, currentLayers]);
 
   /* ---------- Layer management ---------- */
-  const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { width: number; height: number }): Promise<HTMLCanvasElement | null> => {
-    const canvas = document.createElement('canvas');
-    canvas.width = imageDimensions.width;
-    canvas.height = imageDimensions.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return null;
-
-    if (layer.type === 'drawing' && layer.dataUrl) {
-        const img = new Image();
-        await new Promise((res, rej) => {
-            img.onload = res;
-            img.onerror = rej;
-            img.src = layer.dataUrl!;
-        });
-        ctx.drawImage(img, 0, 0);
-    } else if (layer.type === 'text') {
-        const {
-            content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
-            fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
-            textAlign = 'center', rotation = 0, textShadow, stroke,
-            backgroundColor, padding = 0,
-        } = layer;
-
-        ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
-        ctx.fillStyle = color;
-        ctx.textAlign = textAlign;
-
-        const posX = (x / 100) * imageDimensions.width;
-        const posY = (y / 100) * imageDimensions.height;
-
-        ctx.save();
-        ctx.translate(posX, posY);
-        ctx.rotate(rotation * Math.PI / 180);
-
-        const metrics = ctx.measureText(content);
-        const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-
-        if (backgroundColor) {
-            ctx.fillStyle = backgroundColor;
-            let bgX = -padding;
-            if (textAlign === 'center') bgX = -metrics.width / 2 - padding;
-            else if (textAlign === 'right') bgX = -metrics.width - padding;
-            
-            const bgY = -metrics.actualBoundingBoxAscent - padding;
-            const bgWidth = metrics.width + padding * 2;
-            const bgHeight = textHeight + padding * 2;
-            ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
-            ctx.fillStyle = color;
-        }
-
-        if (textShadow) {
-            ctx.shadowColor = textShadow.color;
-            ctx.shadowBlur = textShadow.blur;
-            ctx.shadowOffsetX = textShadow.offsetX;
-            ctx.shadowOffsetY = textShadow.offsetY;
-        }
-
-        if (stroke && stroke.width > 0) {
-            ctx.strokeStyle = stroke.color;
-            ctx.lineWidth = stroke.width;
-            ctx.strokeText(content, 0, 0);
-        }
-        ctx.fillText(content, 0, 0);
-        ctx.restore();
-    } else if (layer.type === 'smart-object' && layer.smartObjectData) {
-      // For smart objects, we need to render all nested layers
-      const smartCanvas = document.createElement('canvas');
-      smartCanvas.width = layer.smartObjectData.width;
-      smartCanvas.height = layer.smartObjectData.height;
-      const smartCtx = smartCanvas.getContext('2d');
-      
-      if (smartCtx) {
-        // Render all layers in the smart object
-        for (const smartLayer of layer.smartObjectData.layers) {
-          if (!smartLayer.visible) continue;
-          
-          smartCtx.globalAlpha = (smartLayer.opacity ?? 100) / 100;
-          smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'normal') as GlobalCompositeOperation;
-          
-          // Recursively rasterize nested layers
-          const nestedLayerCanvas = await rasterizeLayerToCanvas(smartLayer, { width: smartCanvas.width, height: smartCanvas.height });
-          if (nestedLayerCanvas) {
-            smartCtx.drawImage(nestedLayerCanvas, 0, 0);
-          }
-        }
-        
-        // Draw the smart object onto the main canvas
-        ctx.drawImage(smartCanvas, 0, 0, imageDimensions.width, imageDimensions.height);
-      }
-    }
-    
-    return canvas;
-  };
-
   const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
     const newLayer: Layer = {
       id: uuidv4(),
@@ -899,7 +809,7 @@ export const useEditorState = () => {
         fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
         textAlign: undefined, rotation: undefined, letterSpacing: undefined,
         textShadow: undefined, stroke: undefined, backgroundColor: undefined,
-        padding: undefined,
+        padding: undefined, width: undefined, height: undefined,
       };
 
       const updatedLayers = currentLayers.map(l => l.id === id ? newLayer : l);
@@ -1016,11 +926,17 @@ export const useEditorState = () => {
         minY = Math.min(minY, y - textHeight / 2);
         maxX = Math.max(maxX, x + textWidth / 2);
         maxY = Math.max(maxY, y + textHeight / 2);
+      } else if (layer.type === 'drawing' && imgRef.current) {
+        // For drawing layers, assume they cover the whole canvas for now
+        minX = Math.min(minX, 0);
+        minY = Math.min(minY, 0);
+        maxX = Math.max(maxX, imgRef.current.naturalWidth);
+        maxY = Math.max(maxY, imgRef.current.naturalHeight);
       }
     });
     
     // If we couldn't determine bounds, use default size
-    if (minX === Infinity) {
+    if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
       minX = 0;
       minY = 0;
       maxX = dimensions?.width || 1000;
@@ -1038,6 +954,11 @@ export const useEditorState = () => {
       visible: true,
       opacity: 100,
       blendMode: 'normal',
+      x: (minX / (dimensions?.width || 1000)) * 100,
+      y: (minY / (dimensions?.height || 1000)) * 100,
+      width: (width / (dimensions?.width || 1000)) * 100,
+      height: (height / (dimensions?.height || 1000)) * 100,
+      rotation: 0,
       smartObjectData: {
         layers: selectedLayers,
         width,
@@ -1052,7 +973,7 @@ export const useEditorState = () => {
 
     recordHistory("Create Smart Object", currentState, updatedLayers);
     setSelectedLayerId(smartObjectLayer.id);
-  }, [currentLayers, currentState, recordHistory, dimensions]);
+  }, [currentLayers, currentState, recordHistory, dimensions, imgRef]);
 
   const openSmartObjectEditor = useCallback((id: string) => {
     const layer = currentLayers.find(l => l.id === id);

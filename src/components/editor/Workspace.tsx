@@ -19,6 +19,7 @@ import { SelectionCanvas } from "./SelectionCanvas";
 import { ChannelFilter } from "./ChannelFilter";
 import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
+import { SmartObjectLayer } from "./SmartObjectLayer"; // Import SmartObjectLayer
 
 interface WorkspaceProps {
   image: string | null;
@@ -53,6 +54,7 @@ interface WorkspaceProps {
   selectionPath: Point[] | null;
   onSelectionChange: (path: Point[]) => void;
   handleColorPick: (color: string) => void;
+  imageNaturalDimensions: { width: number; height: number } | null; // Pass natural dimensions
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -89,6 +91,7 @@ const Workspace = (props: WorkspaceProps) => {
     selectionPath,
     onSelectionChange,
     handleColorPick,
+    imageNaturalDimensions,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -409,17 +412,16 @@ const Workspace = (props: WorkspaceProps) => {
                             return <DrawingLayer key={layer.id} layer={layer} />;
                           }
                           if (layer.type === 'smart-object') {
-                            // For smart objects, we render a placeholder
                             return (
-                              <div 
+                              <SmartObjectLayer
                                 key={layer.id}
-                                className="absolute inset-0 border-2 border-dashed border-blue-500 rounded flex items-center justify-center"
-                                style={{ opacity: (layer.opacity ?? 100) / 100 }}
-                              >
-                                <div className="bg-blue-500/20 px-2 py-1 rounded text-xs font-medium">
-                                  {layer.name}
-                                </div>
-                              </div>
+                                layer={layer}
+                                containerRef={imageContainerRef}
+                                onUpdate={onLayerUpdate}
+                                onCommit={onLayerCommit}
+                                isSelected={layer.id === selectedLayerId}
+                                imageNaturalDimensions={imageNaturalDimensions}
+                              />
                             );
                           }
                           return null;

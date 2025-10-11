@@ -360,6 +360,7 @@ const Index = () => {
                 selectionPath={selectionPath}
                 onSelectionChange={setSelectionPath}
                 handleColorPick={handleColorPick}
+                imageNaturalDimensions={dimensions} // Pass dimensions here
               />
             </div>
           </ResizablePanel>
