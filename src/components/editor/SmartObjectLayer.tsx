@@ -13,7 +13,7 @@ interface SmartObjectLayerProps {
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   isSelected: boolean;
-  imageNaturalDimensions: { width: number; height: number } | null;
+  parentDimensions: { width: number; height: number } | null; // Changed from imageNaturalDimensions
 }
 
 export const SmartObjectLayer = ({
@@ -22,7 +22,7 @@ export const SmartObjectLayer = ({
   onUpdate,
   onCommit,
   isSelected,
-  imageNaturalDimensions,
+  parentDimensions, // Use parentDimensions
 }: SmartObjectLayerProps) => {
   const smartObjectRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -43,12 +43,12 @@ export const SmartObjectLayer = ({
   // Render the smart object's content to a canvas
   React.useEffect(() => {
     const renderSmartObject = async () => {
-      if (!layer.smartObjectData || !imageNaturalDimensions) {
+      if (!layer.smartObjectData || !parentDimensions) { // Use parentDimensions here
         setRenderedDataUrl(null);
         return;
       }
 
-      const canvas = await rasterizeLayerToCanvas(layer, imageNaturalDimensions);
+      const canvas = await rasterizeLayerToCanvas(layer, parentDimensions); // Use parentDimensions here
       if (canvas) {
         setRenderedDataUrl(canvas.toDataURL());
       } else {
@@ -57,7 +57,7 @@ export const SmartObjectLayer = ({
     };
 
     renderSmartObject();
-  }, [layer.smartObjectData, imageNaturalDimensions, layer.opacity, layer.blendMode]); // Re-render if smart object data or main image dimensions change
+  }, [layer.smartObjectData, parentDimensions, layer.opacity, layer.blendMode]); // Re-render if smart object data or parent dimensions change
 
   // Dragging logic
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -123,7 +123,7 @@ export const SmartObjectLayer = ({
   };
 
   const handleResizeMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isResizing || !containerRef.current || !smartObjectRef.current) return;
+    if (!isResizing || !containerRef.current || !smartObjectRef.current || !parentDimensions) return; // Check parentDimensions
 
     const containerRect = containerRef.current.getBoundingClientRect();
     const dx = e.clientX - resizeStartInfo.current.x;
@@ -171,7 +171,7 @@ export const SmartObjectLayer = ({
       x: newX,
       y: newY,
     });
-  }, [isResizing, containerRef, layer.id, layer.x, layer.y, layer.smartObjectData, onUpdate]);
+  }, [isResizing, containerRef, layer.id, layer.x, layer.y, layer.smartObjectData, onUpdate, parentDimensions]);
 
   const handleResizeMouseUp = React.useCallback(() => {
     if (isResizing) {
@@ -231,10 +231,11 @@ export const SmartObjectLayer = ({
     };
   }, [isRotating, handleRotateMouseMove, handleRotateMouseUp]);
 
-  if (!layer.visible || layer.type !== "smart-object" || !renderedDataUrl) return null;
+  if (!layer.visible || layer.type !== "smart-object" || !renderedDataUrl || !parentDimensions) return null;
 
-  const defaultWidth = (layer.smartObjectData?.width || 1000) / (imageNaturalDimensions?.width || 1000) * 100;
-  const defaultHeight = (layer.smartObjectData?.height || 1000) / (imageNaturalDimensions?.height || 1000) * 100;
+  // Calculate default width/height relative to parentDimensions
+  const defaultWidth = (layer.smartObjectData?.width || 1000) / parentDimensions.width * 100;
+  const defaultHeight = (layer.smartObjectData?.height || 1000) / parentDimensions.height * 100;
 
   const style: React.CSSProperties = {
     left: `${layer.x ?? 0}%`,

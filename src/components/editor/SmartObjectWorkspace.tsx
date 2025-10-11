@@ -5,6 +5,7 @@ import type { Layer } from "@/hooks/useEditorState";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { cn } from "@/lib/utils";
+import { SmartObjectLayer } from "./SmartObjectLayer"; // Import SmartObjectLayer
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -56,6 +57,8 @@ export const SmartObjectWorkspace = ({
     backgroundStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
   }
 
+  const parentDimensions = { width, height }; // Dimensions of this smart object's canvas
+
   return (
     <div
       ref={containerRef}
@@ -93,6 +96,19 @@ export const SmartObjectWorkspace = ({
               <DrawingLayer
                 key={layer.id}
                 layer={layer}
+              />
+            );
+          }
+          if (layer.type === 'smart-object') { // Render nested smart objects
+            return (
+              <SmartObjectLayer
+                key={layer.id}
+                layer={layer}
+                containerRef={containerRef}
+                onUpdate={onLayerUpdate}
+                onCommit={onLayerCommit}
+                isSelected={layer.id === selectedLayerId}
+                parentDimensions={parentDimensions} // Pass parent dimensions
               />
             );
           }

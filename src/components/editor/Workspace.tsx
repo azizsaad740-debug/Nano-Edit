@@ -420,7 +420,7 @@ const Workspace = (props: WorkspaceProps) => {
                                 onUpdate={onLayerUpdate}
                                 onCommit={onLayerCommit}
                                 isSelected={layer.id === selectedLayerId}
-                                imageNaturalDimensions={imageNaturalDimensions}
+                                parentDimensions={imageNaturalDimensions} // Pass imageNaturalDimensions here
                               />
                             );
                           }
