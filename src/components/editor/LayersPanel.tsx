@@ -23,14 +23,15 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer, EditState } from "@/hooks/useEditorState";
+import type { Layer, EditState, ActiveTool, BrushState } from "@/hooks/useEditorState"; // Import ActiveTool and BrushState
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
 import { LayerProperties } from "./LayerProperties";
 import TextProperties from "./TextProperties";
-import ShapeProperties from "./ShapeProperties"; // Import ShapeProperties
+import ShapeProperties from "./ShapeProperties";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { BrushOptions } from "./BrushOptions"; // Import BrushOptions
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -39,7 +40,7 @@ interface LayersPanelProps {
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
@@ -57,7 +58,12 @@ interface LayersPanelProps {
   // Smart object functions
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
-  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
+  selectedShapeType: Layer['shapeType'] | null;
+  // Tool state
+  activeTool: ActiveTool | null; // New prop
+  // Brush state
+  brushState: BrushState; // New prop
+  setBrushState: (updates: Partial<BrushState>) => void; // New prop
 }
 
 export const LayersPanel = ({
@@ -67,7 +73,7 @@ export const LayersPanel = ({
   onDelete,
   onAddTextLayer,
   onAddDrawingLayer,
-  onAddShapeLayer, // Destructure onAddShapeLayer
+  onAddShapeLayer,
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
@@ -83,7 +89,10 @@ export const LayersPanel = ({
   onLayerPropertyCommit,
   onCreateSmartObject,
   onOpenSmartObject,
-  selectedShapeType, // Destructure selectedShapeType
+  selectedShapeType,
+  activeTool, // Destructure activeTool
+  brushState, // Destructure brushState
+  setBrushState, // Destructure setBrushState
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -168,52 +177,12 @@ export const LayersPanel = ({
     <Card className="mt-4 flex flex-col h-full">
       <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
         <Tabs defaultValue="layers" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3"> {/* Changed to 3 columns */}
             <TabsTrigger value="layers">Layers</TabsTrigger>
+            <TabsTrigger value="properties">Properties</TabsTrigger> {/* New Properties Tab */}
             <TabsTrigger value="channels">Channels</TabsTrigger>
           </TabsList>
           <TabsContent value="layers" className="flex-1 flex flex-col mt-2 overflow-hidden">
-            {selectedLayer && selectedLayer.type !== 'image' && (
-              <ScrollArea className="pr-3 pb-2 mb-2 border-b">
-                <Accordion type="multiple" className="w-full" defaultValue={['properties']}>
-                  <AccordionItem value="properties">
-                    <AccordionTrigger>Properties</AccordionTrigger>
-                    <AccordionContent>
-                      <LayerProperties
-                        selectedLayer={selectedLayer}
-                        onOpacityChange={onLayerOpacityChange}
-                        onOpacityCommit={onLayerOpacityCommit}
-                        onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
-                      />
-                    </AccordionContent>
-                  </AccordionItem>
-                  {selectedLayer.type === 'text' && (
-                    <AccordionItem value="text">
-                      <AccordionTrigger>Text</AccordionTrigger>
-                      <AccordionContent>
-                        <TextProperties
-                          layer={selectedLayer}
-                          onUpdate={onLayerUpdate}
-                          onCommit={onLayerCommit}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                  {selectedLayer.type === 'vector-shape' && ( // New: Shape properties
-                    <AccordionItem value="shape">
-                      <AccordionTrigger>Shape</AccordionTrigger>
-                      <AccordionContent>
-                        <ShapeProperties
-                          layer={selectedLayer}
-                          onUpdate={onLayerUpdate}
-                          onCommit={onLayerCommit}
-                        />
-                      </AccordionContent>
-                    </AccordionItem>
-                  )}
-                </Accordion>
-              </ScrollArea>
-            )}
             <ScrollArea className="flex-1 pr-3">
               <DndContext
                 sensors={sensors}
@@ -250,15 +219,73 @@ export const LayersPanel = ({
               selectedLayerIds={selectedLayerIds}
               onAddTextLayer={onAddTextLayer}
               onAddDrawingLayer={onAddDrawingLayer}
-              onAddShapeLayer={onAddShapeLayer} // Passed onAddShapeLayer
+              onAddShapeLayer={onAddShapeLayer}
               onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
               onCreateSmartObject={onCreateSmartObject}
               onOpenSmartObject={onOpenSmartObject}
-              selectedShapeType={selectedShapeType} // Pass selectedShapeType
+              selectedShapeType={selectedShapeType}
             />
+          </TabsContent>
+          {/* New Properties Tab Content */}
+          <TabsContent value="properties" className="flex-1 flex flex-col mt-2 overflow-hidden">
+            <ScrollArea className="flex-1 pr-3 pb-2">
+              {selectedLayer ? (
+                <Accordion type="multiple" className="w-full" defaultValue={['properties']}>
+                  <AccordionItem value="properties">
+                    <AccordionTrigger>General Properties</AccordionTrigger>
+                    <AccordionContent>
+                      <LayerProperties
+                        selectedLayer={selectedLayer}
+                        onOpacityChange={onLayerOpacityChange}
+                        onOpacityCommit={onLayerOpacityCommit}
+                        onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                  {selectedLayer.type === 'text' && (
+                    <AccordionItem value="text">
+                      <AccordionTrigger>Text Properties</AccordionTrigger>
+                      <AccordionContent>
+                        <TextProperties
+                          layer={selectedLayer}
+                          onUpdate={onLayerUpdate}
+                          onCommit={onLayerCommit}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                  {selectedLayer.type === 'vector-shape' && (
+                    <AccordionItem value="shape">
+                      <AccordionTrigger>Shape Properties</AccordionTrigger>
+                      <AccordionContent>
+                        <ShapeProperties
+                          layer={selectedLayer}
+                          onUpdate={onLayerUpdate}
+                          onCommit={onLayerCommit}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
+                </Accordion>
+              ) : (activeTool === 'brush' || activeTool === 'eraser') ? (
+                <BrushOptions
+                  activeTool={activeTool}
+                  brushSize={brushState.size}
+                  setBrushSize={(size) => setBrushState({ size })}
+                  brushOpacity={brushState.opacity}
+                  setBrushOpacity={(opacity) => setBrushState({ opacity })}
+                  brushColor={brushState.color}
+                  setBrushColor={(color) => setBrushState({ color })}
+                />
+              ) : (
+                <p className="text-sm text-muted-foreground text-center pt-4">
+                  Select a layer or an active tool to view its properties.
+                </p>
+              )}
+            </ScrollArea>
           </TabsContent>
           <TabsContent value="channels" className="mt-2">
             <ChannelsPanel channels={channels} onChannelChange={onChannelChange} />

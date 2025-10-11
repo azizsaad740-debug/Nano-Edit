@@ -1,7 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, EditState, Point } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState"; // Import ActiveTool and BrushState
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import {
   ResizablePanelGroup,
@@ -45,7 +45,7 @@ interface SidebarProps {
   layers: Layer[];
   addTextLayer: (coords?: { x: number; y: number }) => void;
   addDrawingLayer: () => string;
-  addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
+  addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
@@ -71,7 +71,12 @@ interface SidebarProps {
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
   // Shape tool
-  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
+  selectedShapeType: Layer['shapeType'] | null;
+  // Tool state
+  activeTool: ActiveTool | null; // New prop
+  // Brush state
+  brushState: BrushState; // New prop
+  setBrushState: (updates: Partial<BrushState>) => void; // New prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -94,7 +99,7 @@ const Sidebar = (props: SidebarProps) => {
                 onDelete={props.deleteLayer}
                 onAddTextLayer={props.addTextLayer}
                 onAddDrawingLayer={props.addDrawingLayer}
-                onAddShapeLayer={props.addShapeLayer} // Passed onAddShapeLayer
+                onAddShapeLayer={props.addShapeLayer}
                 onDuplicateLayer={props.duplicateLayer}
                 onMergeLayerDown={props.mergeLayerDown}
                 onRasterizeLayer={props.rasterizeLayer}
@@ -110,7 +115,10 @@ const Sidebar = (props: SidebarProps) => {
                 onLayerPropertyCommit={props.onLayerPropertyCommit}
                 onCreateSmartObject={props.onCreateSmartObject}
                 onOpenSmartObject={props.onOpenSmartObject}
-                selectedShapeType={props.selectedShapeType} // Pass selectedShapeType
+                selectedShapeType={props.selectedShapeType}
+                activeTool={props.activeTool} // Pass activeTool
+                brushState={props.brushState} // Pass brushState
+                setBrushState={props.setBrushState} // Pass setBrushState
               />
             )}
           </div>

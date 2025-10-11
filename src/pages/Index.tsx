@@ -258,6 +258,11 @@ const Index = () => {
     // smart objects
     onCreateSmartObject: createSmartObject,
     onOpenSmartObject: openSmartObjectEditor,
+    // tool state
+    activeTool, // Pass activeTool
+    // brush state
+    brushState, // Pass brushState
+    setBrushState, // Pass setBrushState
     // shape tool
     selectedShapeType,
   };
@@ -287,17 +292,7 @@ const Index = () => {
         onOpenProject={handleOpenProjectClick}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {(activeTool === 'brush' || activeTool === 'eraser') && (
-            <BrushOptions
-              activeTool={activeTool}
-              brushSize={brushState.size}
-              setBrushSize={(size) => setBrushState({ size })}
-              brushOpacity={brushState.opacity}
-              setBrushOpacity={(opacity) => setBrushState({ opacity })}
-              brushColor={brushState.color}
-              setBrushColor={(color) => setBrushState({ color })}
-            />
-          )}
+          {/* BrushOptions moved to LayersPanel */}
           {activeTool === "lasso" && hasSelection && (
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)}>
@@ -423,7 +418,7 @@ const Index = () => {
           onClose={closeSmartObjectEditor}
           onSave={saveSmartObjectChanges}
           mainImage={image}
-          activeTool={activeTool} // Pass activeTool
+          activeTool={activeTool}
         />
       )}
       <input
