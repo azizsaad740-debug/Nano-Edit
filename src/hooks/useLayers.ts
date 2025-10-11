@@ -313,19 +313,26 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, imgRef]);
 
+  interface LayerLocation {
+    layer: Layer;
+    container: Layer[]; // The direct array this layer is in
+    index: number;
+    parentGroups: Layer[]; // Array of parent group layers, from root down to immediate parent
+  }
+
   // Helper to find a layer's container (array it's in) and its index
-  const findLayerAndContainer = useCallback((
+  const findLayerLocation = useCallback((
     id: string,
     currentLayers: Layer[],
-    parentContainer: Layer[] | null = null
-  ): { layer: Layer; container: Layer[]; index: number; parentGroup: Layer | null } | null => {
+    parentGroups: Layer[] = []
+  ): LayerLocation | null => {
     for (let i = 0; i < currentLayers.length; i++) {
       const layer = currentLayers[i];
       if (layer.id === id) {
-        return { layer, container: currentLayers, index: i, parentGroup: parentContainer ? parentContainer[0] : null };
+        return { layer, container: currentLayers, index: i, parentGroups };
       }
       if (layer.type === 'group' && layer.children) {
-        const found = findLayerAndContainer(id, layer.children, [layer]);
+        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
         if (found) return found;
       }
     }
@@ -333,66 +340,71 @@ export const useLayers = ({
   }, []);
 
   const reorderLayers = useCallback((activeId: string, overId: string, isDroppingIntoGroup: boolean = false) => {
-    const activeInfo = findLayerAndContainer(activeId, layers);
-    const overInfo = findLayerAndContainer(overId, layers);
+    const activeLocation = findLayerLocation(activeId, layers);
+    const overLocation = findLayerLocation(overId, layers);
 
-    if (!activeInfo || !overInfo) {
+    if (!activeLocation || !overLocation) {
       showError("Could not find layers for reordering.");
       return;
     }
 
-    const { layer: activeLayer, container: activeContainer, index: activeIndex } = activeInfo;
-    const { layer: overLayer, container: overContainer, index: overIndex } = overInfo;
+    const { layer: activeLayer, container: activeContainer, index: activeIndex, parentGroups: activeParentGroups } = activeLocation;
+    const { layer: overLayer, container: overContainer, index: overIndex, parentGroups: overParentGroups } = overLocation;
 
     if (activeLayer.type === 'image') {
       showError("The background layer cannot be moved.");
       return;
     }
 
-    let newLayers = [...layers]; // Create a shallow copy of the top-level layers
+    // Create a deep copy of the layers to modify
+    let newLayers = JSON.parse(JSON.stringify(layers)) as Layer[];
 
-    // Function to update a nested group's children array
-    const updateNestedChildren = (current: Layer[], targetContainer: Layer[], updatedChildren: Layer[]): Layer[] => {
-      return current.map(layer => {
-        if (layer.type === 'group' && layer.children === targetContainer) {
-          return { ...layer, children: updatedChildren };
+    // Helper to get a mutable reference to a nested container in the newLayers tree
+    const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
+      let currentContainer = tree;
+      for (const group of path) {
+        const foundGroup = currentContainer.find(l => l.id === group.id);
+        if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
+          currentContainer = foundGroup.children;
+        } else {
+          // This should not happen if path is valid, but for safety
+          console.error("Invalid path in getMutableContainer or group not found.");
+          return []; // Return empty array or throw error
         }
-        if (layer.type === 'group' && layer.children) {
-          return { ...layer, children: updateNestedChildren(layer.children, targetContainer, updatedChildren) };
-        }
-        return layer;
-      });
+      }
+      return currentContainer;
     };
 
-    // Remove active layer from its original position
-    const [movedLayer] = activeContainer.splice(activeIndex, 1);
-    if (activeContainer !== layers) { // If it was in a nested group, update its parent
-      newLayers = updateNestedChildren(newLayers, activeContainer, activeContainer);
-    } else { // If it was a top-level layer, update the top-level array
-      newLayers = [...activeContainer];
-    }
+    // Get mutable references to the containers in the newLayers tree
+    const mutableActiveContainer = getMutableContainer(newLayers, activeParentGroups);
+    const mutableOverContainer = getMutableContainer(newLayers, overParentGroups);
 
-    // Determine target container and index for insertion
-    let targetContainer = overContainer;
-    let targetIndex = overIndex;
+    // 1. Remove active layer from its original position
+    const [movedLayer] = mutableActiveContainer.splice(activeIndex, 1);
+
+    // 2. Determine target container and index for insertion
+    let targetContainer: Layer[];
+    let targetIndex: number;
 
     if (isDroppingIntoGroup && overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
-      targetContainer = overLayer.children;
+      // Dropping into an expanded group
+      targetContainer = getMutableContainer(newLayers, [...overParentGroups, overLayer]);
       targetIndex = 0; // Insert at the beginning of the group
     } else if (overLayer.type === 'group' && !overLayer.expanded) {
-      // If dropping over a collapsed group, insert next to it, not inside
+      // Dropping over a collapsed group, insert next to it
+      targetContainer = mutableOverContainer;
       targetIndex = overIndex + 1;
+    } else {
+      // Standard reorder within the same container or between root/root
+      targetContainer = mutableOverContainer;
+      targetIndex = overIndex;
     }
 
+    // 3. Insert the active layer into the target container
     targetContainer.splice(targetIndex, 0, movedLayer);
-    if (targetContainer !== layers) { // If it's a nested group, update its parent
-      newLayers = updateNestedChildren(newLayers, targetContainer, targetContainer);
-    } else { // If it's a top-level layer, update the top-level array
-      newLayers = [...targetContainer];
-    }
 
     updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
-  }, [layers, updateLayersState, findLayerAndContainer]);
+  }, [layers, updateLayersState, findLayerLocation]);
 
   /* ---------- Smart Object Functions ---------- */
   const createSmartObject = useCallback((layerIds: string[]) => {
