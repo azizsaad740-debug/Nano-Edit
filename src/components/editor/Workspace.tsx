@@ -227,10 +227,13 @@ const Workspace = (props: WorkspaceProps) => {
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!image) return;
 
-    if ((isSpaceDownRef.current || e.button === 1)) {
-      e.preventDefault();
-      setIsPanning(true);
-      panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+    // Prioritize drawing tools
+    if (activeTool === 'shape' && imageContainerRef.current) {
+      setIsDrawingShape(true);
+      setShapeStartCoords({ x: e.clientX, y: e.clientY });
+      setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
+      e.preventDefault(); // Prevent other actions like panning
+      return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
       if (selectedLayer && selectedLayer.type === 'drawing') {
@@ -239,10 +242,16 @@ const Workspace = (props: WorkspaceProps) => {
         activeDrawingLayerIdRef.current = onAddDrawingLayer();
       }
       setIsDrawing(true);
-    } else if (activeTool === 'shape' && imageContainerRef.current) {
-      setIsDrawingShape(true);
-      setShapeStartCoords({ x: e.clientX, y: e.clientY });
-      setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
+      e.preventDefault(); // Prevent other actions like panning
+      return;
+    }
+
+    // Then handle panning if no drawing tool is active
+    if ((isSpaceDownRef.current || e.button === 1 || activeTool === 'move')) {
+      e.preventDefault();
+      setIsPanning(true);
+      panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
+      return;
     }
   };
 
