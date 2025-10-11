@@ -422,7 +422,7 @@ export const LayersPanel = ({
               onAddTextLayer={onAddTextLayer}
               onAddDrawingLayer={onAddDrawingLayer}
               onAddShapeLayer={onAddShapeLayer}
-              onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+              onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))} // Delete all selected layers
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
