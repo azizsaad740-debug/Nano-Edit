@@ -89,6 +89,7 @@ const Index = () => {
     setSelectedLayer,
     addTextLayer,
     addDrawingLayer,
+    addShapeLayer, // Added addShapeLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -234,6 +235,7 @@ const Index = () => {
     layers,
     addTextLayer,
     addDrawingLayer,
+    addShapeLayer, // Added addShapeLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -353,6 +355,7 @@ const Index = () => {
                 layers={layers}
                 onAddTextLayer={addTextLayer}
                 onAddDrawingLayer={addDrawingLayer}
+                onAddShapeLayer={addShapeLayer} // Passed addShapeLayer
                 onLayerUpdate={updateLayer}
                 onLayerCommit={commitLayerChange}
                 selectedLayerId={selectedLayerId}

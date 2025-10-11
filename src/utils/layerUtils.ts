@@ -1,7 +1,7 @@
 import type { Layer } from "@/hooks/useEditorState";
 
 /**
- * Rasterizes a single layer (text, drawing, or smart-object) to a canvas.
+ * Rasterizes a single layer (text, drawing, smart-object, or vector-shape) to a canvas.
  * For smart-objects, it recursively renders its nested layers.
  * @param layer The layer to rasterize.
  * @param imageDimensions The target dimensions for the canvas (e.g., natural width/height of the main image).
@@ -75,6 +75,63 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     }
     ctx.fillText(content, 0, 0);
     ctx.restore();
+  } else if (layer.type === 'vector-shape') { // New: Handle vector shapes
+    const {
+      x = 50, y = 50, width = 10, height = 10, rotation = 0,
+      fillColor = 'none', strokeColor = 'none', strokeWidth = 0,
+      borderRadius = 0, shapeType, points,
+    } = layer;
+
+    const shapeX = (x / 100) * imageDimensions.width;
+    const shapeY = (y / 100) * imageDimensions.height;
+    const shapeWidth = (width / 100) * imageDimensions.width;
+    const shapeHeight = (height / 100) * imageDimensions.height;
+
+    ctx.save();
+    ctx.translate(shapeX, shapeY);
+    ctx.rotate(rotation * Math.PI / 180);
+    ctx.translate(-shapeWidth / 2, -shapeHeight / 2); // Adjust for center origin
+
+    ctx.fillStyle = fillColor;
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = strokeWidth;
+
+    ctx.beginPath();
+    switch (shapeType) {
+      case 'rect':
+        if (borderRadius && borderRadius > 0) {
+          const radiusPx = Math.min(shapeWidth, shapeHeight) * (borderRadius / 100);
+          ctx.roundRect(0, 0, shapeWidth, shapeHeight, radiusPx);
+        } else {
+          ctx.rect(0, 0, shapeWidth, shapeHeight);
+        }
+        break;
+      case 'circle':
+        ctx.arc(shapeWidth / 2, shapeHeight / 2, Math.min(shapeWidth, shapeHeight) / 2, 0, 2 * Math.PI);
+        break;
+      case 'triangle':
+        if (points && points.length === 3) {
+          // Points are defined relative to a 100x100 box, scale them
+          ctx.moveTo((points[0].x / 100) * shapeWidth, (points[0].y / 100) * shapeHeight);
+          ctx.lineTo((points[1].x / 100) * shapeWidth, (points[1].y / 100) * shapeHeight);
+          ctx.lineTo((points[2].x / 100) * shapeWidth, (points[2].y / 100) * shapeHeight);
+          ctx.closePath();
+        } else {
+          // Default equilateral triangle
+          ctx.moveTo(shapeWidth / 2, 0);
+          ctx.lineTo(shapeWidth, shapeHeight);
+          ctx.lineTo(0, shapeHeight);
+          ctx.closePath();
+        }
+        break;
+      default:
+        break;
+    }
+
+    if (fillColor !== 'none') ctx.fill();
+    if (strokeWidth > 0 && strokeColor !== 'none') ctx.stroke();
+    ctx.restore();
+
   } else if (layer.type === 'smart-object' && layer.smartObjectData) {
     const smartCanvas = document.createElement('canvas');
     smartCanvas.width = layer.smartObjectData.width;

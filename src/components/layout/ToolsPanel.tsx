@@ -9,11 +9,12 @@ import {
   Crop as CropIcon,
   Eraser,
   Pipette,
+  Square, // Added Square icon for shapes
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper";
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape"; // Added 'shape'
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -25,6 +26,7 @@ const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: stri
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },
+  { name: "Shape", icon: Square, tool: "shape", shortcut: "P" }, // New Shape tool
   { name: "Crop", icon: CropIcon, tool: "crop", shortcut: "C" },
   { name: "Eyedropper", icon: Pipette, tool: "eyedropper", shortcut: "I" },
 ];

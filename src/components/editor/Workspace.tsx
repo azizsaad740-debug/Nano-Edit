@@ -19,7 +19,8 @@ import { SelectionCanvas } from "./SelectionCanvas";
 import { ChannelFilter } from "./ChannelFilter";
 import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
-import { SmartObjectLayer } from "./SmartObjectLayer"; // Import SmartObjectLayer
+import { SmartObjectLayer } from "./SmartObjectLayer";
+import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
 
 interface WorkspaceProps {
   image: string | null;
@@ -43,10 +44,11 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | null;
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | null; // Added 'shape'
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
@@ -54,7 +56,7 @@ interface WorkspaceProps {
   selectionPath: Point[] | null;
   onSelectionChange: (path: Point[]) => void;
   handleColorPick: (color: string) => void;
-  imageNaturalDimensions: { width: number; height: number } | null; // Pass natural dimensions
+  imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
 }
 
 const Workspace = (props: WorkspaceProps) => {
@@ -84,6 +86,7 @@ const Workspace = (props: WorkspaceProps) => {
     layers,
     onAddTextLayer,
     onAddDrawingLayer,
+    onAddShapeLayer, // Destructure onAddShapeLayer
     onLayerUpdate,
     onLayerCommit,
     selectedLayerId,
@@ -221,6 +224,8 @@ const Workspace = (props: WorkspaceProps) => {
 
     if (activeTool === 'text') {
       onAddTextLayer({ x: xPercent, y: yPercent });
+    } else if (activeTool === 'shape') {
+      onAddShapeLayer({ x: xPercent, y: yPercent }, 'rect'); // Default to rectangle for now
     } else if (activeTool === 'eyedropper') {
       const canvas = document.createElement('canvas');
       const img = imgRef.current;
@@ -318,6 +323,7 @@ const Workspace = (props: WorkspaceProps) => {
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
         activeTool === 'text' && 'cursor-crosshair',
+        activeTool === 'shape' && 'cursor-crosshair', // Cursor for shape tool
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       style={{ cursor: activeTool === 'eyedropper' ? eyedropperCursor : undefined }}
@@ -400,7 +406,7 @@ const Workspace = (props: WorkspaceProps) => {
                             className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
                             style={{
                               opacity: effects.noise / 100,
-                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYnVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
+                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYmVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48L2ZpbHRlcj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
                             }}
                           />
                         )}
@@ -421,6 +427,18 @@ const Workspace = (props: WorkspaceProps) => {
                                 onCommit={onLayerCommit}
                                 isSelected={layer.id === selectedLayerId}
                                 parentDimensions={imageNaturalDimensions} // Pass imageNaturalDimensions here
+                              />
+                            );
+                          }
+                          if (layer.type === 'vector-shape') { // Render vector shapes
+                            return (
+                              <VectorShapeLayer
+                                key={layer.id}
+                                layer={layer}
+                                containerRef={imageContainerRef}
+                                onUpdate={onLayerUpdate}
+                                onCommit={onLayerCommit}
+                                isSelected={layer.id === selectedLayerId}
                               />
                             );
                           }

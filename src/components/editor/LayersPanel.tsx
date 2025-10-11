@@ -29,6 +29,7 @@ import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
 import { LayerProperties } from "./LayerProperties";
 import TextProperties from "./TextProperties";
+import ShapeProperties from "./ShapeProperties"; // Import ShapeProperties
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 interface LayersPanelProps {
@@ -38,9 +39,10 @@ interface LayersPanelProps {
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
-  onDuplicateLayer: () => void; // Changed from (id: string) => void
-  onMergeLayerDown: () => void; // Changed from (id: string) => void
-  onRasterizeLayer: () => void; // Changed from (id: string) => void
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
+  onDuplicateLayer: () => void;
+  onMergeLayerDown: () => void;
+  onRasterizeLayer: () => void;
   onReorder: (oldIndex: number, newIndex: number) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
@@ -64,6 +66,7 @@ export const LayersPanel = ({
   onDelete,
   onAddTextLayer,
   onAddDrawingLayer,
+  onAddShapeLayer, // Destructure onAddShapeLayer
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
@@ -194,6 +197,18 @@ export const LayersPanel = ({
                       </AccordionContent>
                     </AccordionItem>
                   )}
+                  {selectedLayer.type === 'vector-shape' && ( // New: Shape properties
+                    <AccordionItem value="shape">
+                      <AccordionTrigger>Shape</AccordionTrigger>
+                      <AccordionContent>
+                        <ShapeProperties
+                          layer={selectedLayer}
+                          onUpdate={onLayerUpdate}
+                          onCommit={onLayerCommit}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  )}
                 </Accordion>
               </ScrollArea>
             )}
@@ -233,6 +248,7 @@ export const LayersPanel = ({
               selectedLayerIds={selectedLayerIds}
               onAddTextLayer={onAddTextLayer}
               onAddDrawingLayer={onAddDrawingLayer}
+              onAddShapeLayer={onAddShapeLayer} // Passed onAddShapeLayer
               onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}

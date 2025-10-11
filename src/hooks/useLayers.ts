@@ -96,6 +96,31 @@ export const useLayers = ({
     return newLayer.id;
   }, [layers, updateLayersState]);
 
+  const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect') => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "vector-shape",
+      name: `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      visible: true,
+      x: coords.x,
+      y: coords.y,
+      width: 10, // Default width in percentage
+      height: 10, // Default height in percentage
+      rotation: 0,
+      opacity: 100,
+      blendMode: 'normal',
+      shapeType: shapeType,
+      fillColor: "#3B82F6", // Default blue fill
+      strokeColor: "#FFFFFF", // Default white stroke
+      strokeWidth: 2,
+      borderRadius: 0, // Default for rect
+      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined, // Default points for triangle
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, `Add ${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} Layer`);
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState]);
+
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
   }, []);
@@ -103,7 +128,9 @@ export const useLayers = ({
   const commitLayerChange = useCallback((id: string) => {
     const layer = layers.find((l) => l.id === id);
     if (!layer) return;
-    const action = layer.type === 'drawing' ? 'Brush Stroke' : `Edit Layer "${layer.name}"`;
+    let action = `Edit Layer "${layer.name}"`;
+    if (layer.type === 'drawing') action = 'Brush Stroke';
+    if (layer.type === 'vector-shape') action = `Edit Shape "${layer.name}"`;
     recordHistory(action, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
@@ -180,8 +207,8 @@ export const useLayers = ({
   const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = layers.find(l => l.id === id);
 
-    if (!layerToRasterize || layerToRasterize.type !== 'text' || !imgRef.current) {
-      showError("Only text layers can be rasterized.");
+    if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape') || !imgRef.current) {
+      showError("Only text and vector shape layers can be rasterized.");
       return;
     }
 
@@ -194,14 +221,13 @@ export const useLayers = ({
       const dataUrl = canvas.toDataURL();
 
       const newLayer: Layer = {
-        ...layerToRasterize,
+        id: uuidv4(), // New ID for the rasterized layer
         type: 'drawing',
+        name: `${layerToRasterize.name} (Rasterized)`,
+        visible: layerToRasterize.visible,
+        opacity: layerToRasterize.opacity,
+        blendMode: layerToRasterize.blendMode,
         dataUrl: dataUrl,
-        content: undefined, x: undefined, y: undefined, fontSize: undefined,
-        fontFamily: undefined, fontWeight: undefined, fontStyle: undefined,
-        textAlign: undefined, rotation: undefined, letterSpacing: undefined,
-        textShadow: undefined, stroke: undefined, backgroundColor: undefined,
-        padding: undefined, width: undefined, height: undefined,
       };
 
       const updatedLayers = layers.map(l => l.id === id ? newLayer : l);
@@ -324,6 +350,16 @@ export const useLayers = ({
         minY = Math.min(minY, 0);
         maxX = Math.max(maxX, imgRef.current.naturalWidth);
         maxY = Math.max(maxY, imgRef.current.naturalHeight);
+      } else if (layer.type === 'vector-shape' && layer.x !== undefined && layer.y !== undefined && layer.width !== undefined && layer.height !== undefined) {
+        const shapeX = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
+        const shapeY = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
+        const shapeWidth = (layer.width / 100) * (imageNaturalDimensions?.width || 1000);
+        const shapeHeight = (layer.height / 100) * (imageNaturalDimensions?.height || 1000);
+
+        minX = Math.min(minX, shapeX - shapeWidth / 2);
+        minY = Math.min(minY, shapeY - shapeHeight / 2);
+        maxX = Math.max(maxX, shapeX + shapeWidth / 2);
+        maxY = Math.max(maxY, shapeY + shapeHeight / 2);
       }
     });
     
@@ -411,6 +447,7 @@ export const useLayers = ({
     setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
+    addShapeLayer, // Exposed addShapeLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

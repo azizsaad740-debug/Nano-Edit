@@ -65,27 +65,13 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object";
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape"; // Added 'vector-shape'
   name: string;
   visible: boolean;
   opacity?: number;
   blendMode?: string;
   // Text layer specific properties
   content?: string;
-  x?: number; // percentage from left
-  y?: number; // percentage from top
-  fontSize?: number; // pixels
-  color?: string;
-  fontFamily?: string;
-  fontWeight?: "normal" | "bold";
-  fontStyle?: "normal" | "italic";
-  textAlign?: "left" | "center" | "right";
-  rotation?: number; // degrees
-  letterSpacing?: number; // pixels
-  textShadow?: { color: string; blur: number; offsetX: number; offsetY: number };
-  stroke?: { color: string; width: number };
-  backgroundColor?: string;
-  padding?: number;
   // Drawing layer specific properties
   dataUrl?: string;
   // Smart object properties
@@ -94,9 +80,31 @@ export interface Layer {
     width: number;
     height: number;
   };
-  // Common transform properties for movable layers
+  // Common transform properties for movable layers (x, y, width, height, rotation)
+  x?: number; // percentage from left
+  y?: number; // percentage from top
   width?: number; // percentage of parent container width
   height?: number; // percentage of parent container height
+  rotation?: number; // degrees
+  // Text specific properties (moved here for clarity, but still text-specific)
+  fontSize?: number; // pixels
+  color?: string;
+  fontFamily?: string;
+  fontWeight?: "normal" | "bold";
+  fontStyle?: "normal" | "italic";
+  textAlign?: "left" | "center" | "right";
+  letterSpacing?: number; // pixels
+  textShadow?: { color: string; blur: number; offsetX: number; offsetY: number };
+  stroke?: { color: string; width: number };
+  backgroundColor?: string;
+  padding?: number;
+  // Vector shape specific properties
+  shapeType?: "rect" | "circle" | "triangle" | "polygon"; // Added shape types
+  fillColor?: string;
+  strokeColor?: string;
+  strokeWidth?: number;
+  borderRadius?: number; // For rect
+  points?: { x: number; y: number }[]; // For polygon/triangle
 }
 
 export interface HistoryItem {
@@ -111,7 +119,7 @@ export interface BrushState {
   color: string;
 }
 
-type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper";
+type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape"; // Added 'shape'
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -202,6 +210,7 @@ export const useEditorState = () => {
     setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
+    addShapeLayer, // Added addShapeLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -829,6 +838,7 @@ export const useEditorState = () => {
   useHotkeys("l", () => setActiveTool("lasso"), { enabled: !!image });
   useHotkeys("c", () => setActiveTool("crop"), { enabled: !!image });
   useHotkeys("i", () => setActiveTool("eyedropper"), { enabled: !!image });
+  useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image }); // Shortcut for shape tool
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
@@ -894,6 +904,7 @@ export const useEditorState = () => {
     setSelectedLayer: setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
+    addShapeLayer, // Exposed addShapeLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

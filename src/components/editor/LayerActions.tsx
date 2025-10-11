@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive } from "lucide-react";
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square } from "lucide-react"; // Added Square icon
 import type { Layer } from "@/hooks/useEditorState";
 
 interface LayerActionsProps {
@@ -11,10 +11,11 @@ interface LayerActionsProps {
   selectedLayerIds: string[];
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
   onDeleteLayer: () => void;
-  onDuplicateLayer: () => void; // Changed from (id: string) => void
-  onMergeLayerDown: () => void; // Changed from (id: string) => void
-  onRasterizeLayer: () => void; // Changed from (id: string) => void
+  onDuplicateLayer: () => void;
+  onMergeLayerDown: () => void;
+  onRasterizeLayer: () => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
 }
@@ -25,6 +26,7 @@ export const LayerActions = ({
   selectedLayerIds,
   onAddTextLayer,
   onAddDrawingLayer,
+  onAddShapeLayer, // Destructure onAddShapeLayer
   onDeleteLayer,
   onDuplicateLayer,
   onMergeLayerDown,
@@ -45,7 +47,7 @@ export const LayerActions = ({
     return true;
   }, [layers, selectedLayer]);
 
-  const isRasterizable = selectedLayer?.type === 'text';
+  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape'; // Updated for vector shapes
   const isSmartObject = selectedLayer?.type === 'smart-object';
 
   return (
@@ -58,6 +60,10 @@ export const LayerActions = ({
         <Button size="sm" variant="outline" onClick={onAddDrawingLayer}>
           <Layers className="h-4 w-4 mr-2" />
           Add Layer
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onAddShapeLayer({x: 50, y: 50}, 'rect')}> {/* Default to rect at center */}
+          <Square className="h-4 w-4 mr-2" />
+          Add Shape
         </Button>
         {hasMultipleSelection ? (
           <Button

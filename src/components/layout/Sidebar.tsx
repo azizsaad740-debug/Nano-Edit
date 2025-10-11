@@ -45,12 +45,13 @@ interface SidebarProps {
   layers: Layer[];
   addTextLayer: (coords?: { x: number; y: number }) => void;
   addDrawingLayer: () => string;
+  addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType']) => void; // Added onAddShapeLayer
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  duplicateLayer: () => void; // Corrected type
-  mergeLayerDown: () => void; // Corrected type
-  rasterizeLayer: () => void; // Corrected type
+  duplicateLayer: () => void;
+  mergeLayerDown: () => void;
+  rasterizeLayer: () => void;
   reorderLayers: (oldIndex: number, newIndex: number) => void;
   // Selection props
   selectedLayerId: string | null;
@@ -91,6 +92,7 @@ const Sidebar = (props: SidebarProps) => {
                 onDelete={props.deleteLayer}
                 onAddTextLayer={props.addTextLayer}
                 onAddDrawingLayer={props.addDrawingLayer}
+                onAddShapeLayer={props.addShapeLayer} // Passed onAddShapeLayer
                 onDuplicateLayer={props.duplicateLayer}
                 onMergeLayerDown={props.mergeLayerDown}
                 onRasterizeLayer={props.rasterizeLayer}
