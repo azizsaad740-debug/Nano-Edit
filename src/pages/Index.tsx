@@ -259,10 +259,10 @@ const Index = () => {
     onCreateSmartObject: createSmartObject,
     onOpenSmartObject: openSmartObjectEditor,
     // tool state
-    activeTool, // Pass activeTool
+    activeTool,
     // brush state
-    brushState, // Pass brushState
-    setBrushState, // Pass setBrushState
+    brushState,
+    setBrushState,
     // shape tool
     selectedShapeType,
   };
@@ -292,7 +292,6 @@ const Index = () => {
         onOpenProject={handleOpenProjectClick}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {/* BrushOptions moved to LayersPanel */}
           {activeTool === "lasso" && hasSelection && (
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)}>

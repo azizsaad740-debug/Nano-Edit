@@ -1,8 +1,9 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState"; // Import ActiveTool and BrushState
+import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
+import { PropertiesPanel } from "@/components/layout/PropertiesPanel"; // Import the new PropertiesPanel
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -73,23 +74,41 @@ interface SidebarProps {
   // Shape tool
   selectedShapeType: Layer['shapeType'] | null;
   // Tool state
-  activeTool: ActiveTool | null; // New prop
+  activeTool: ActiveTool | null;
   // Brush state
-  brushState: BrushState; // New prop
-  setBrushState: (updates: Partial<BrushState>) => void; // New prop
+  brushState: BrushState;
+  setBrushState: (updates: Partial<BrushState>) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
   return (
     <aside className="h-full border-r bg-muted/40">
       <ResizablePanelGroup direction="vertical">
-        <ResizablePanel defaultSize={60} minSize={30}>
+        <ResizablePanel defaultSize={40} minSize={20}>
           <div className="p-4 h-full overflow-y-auto">
             <EditorControls {...props} />
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={40} minSize={20}>
+        <ResizablePanel defaultSize={30} minSize={15}> {/* New panel for Properties */}
+          <div className="p-4 h-full overflow-y-auto flex flex-col">
+            {props.hasImage && (
+              <PropertiesPanel
+                selectedLayer={props.layers.find(l => l.id === props.selectedLayerId)}
+                activeTool={props.activeTool}
+                brushState={props.brushState}
+                setBrushState={props.setBrushState}
+                onLayerUpdate={props.onLayerUpdate}
+                onLayerCommit={props.onLayerCommit}
+                onLayerOpacityChange={props.onLayerOpacityChange}
+                onLayerOpacityCommit={props.onLayerOpacityCommit}
+                onLayerPropertyCommit={props.onLayerPropertyCommit}
+              />
+            )}
+          </div>
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        <ResizablePanel defaultSize={30} minSize={20}>
           <div className="p-4 h-full overflow-y-auto flex flex-col">
             {props.hasImage && (
               <LayersPanel
@@ -116,9 +135,9 @@ const Sidebar = (props: SidebarProps) => {
                 onCreateSmartObject={props.onCreateSmartObject}
                 onOpenSmartObject={props.onOpenSmartObject}
                 selectedShapeType={props.selectedShapeType}
-                activeTool={props.activeTool} // Pass activeTool
-                brushState={props.brushState} // Pass brushState
-                setBrushState={props.setBrushState} // Pass setBrushState
+                activeTool={props.activeTool}
+                brushState={props.brushState}
+                setBrushState={props.setBrushState}
               />
             )}
           </div>
