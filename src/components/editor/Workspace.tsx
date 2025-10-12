@@ -258,13 +258,15 @@ const Workspace = (props: WorkspaceProps) => {
       e.preventDefault();
       return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
+      // Brush/Eraser tool interaction is now handled by LiveBrushCanvas's internal pointer events
+      // We just need to ensure a drawing layer is active
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
-      if (selectedLayer && selectedLayer.type === 'drawing') {
-        activeDrawingLayerIdRef.current = selectedLayer.id;
-      } else {
+      if (!selectedLayer || selectedLayer.type !== 'drawing') {
         activeDrawingLayerIdRef.current = onAddDrawingLayer();
+      } else {
+        activeDrawingLayerIdRef.current = selectedLayer.id;
       }
-      setIsDrawing(true);
+      setIsDrawing(true); // Indicate that drawing is active for LiveBrushCanvas to render
       e.preventDefault(); // Prevent other actions like panning
       return;
     }
@@ -396,6 +398,8 @@ const Workspace = (props: WorkspaceProps) => {
       }
       setGradientStartCoords(null);
       setGradientCurrentCoords(null);
+    } else if (isDrawing) { // This handles the case where LiveBrushCanvas finishes drawing
+      setIsDrawing(false);
     }
   };
 
@@ -446,6 +450,11 @@ const Workspace = (props: WorkspaceProps) => {
   const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageContainerRef.current || !imgRef.current || !imageNaturalDimensions) {
       setSelectedLayer(null); // Deselect if no image or dimensions
+      return;
+    }
+
+    // If a drawing tool is active, don't deselect layers on click
+    if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient') {
       return;
     }
 
@@ -503,8 +512,8 @@ const Workspace = (props: WorkspaceProps) => {
           layerClicked = true;
           e.stopPropagation(); // Prevent deselecting if a layer was clicked
           
-          // If a layer is clicked, deactivate text/shape/gradient tools
-          if (activeTool === 'text' || activeTool === 'shape' || activeTool === 'gradient') {
+          // If a layer is clicked, deactivate text tool if it was active
+          if (activeTool === 'text') {
             setActiveTool(null);
           }
           return true;
@@ -544,7 +553,10 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleDrawEnd = useCallback((strokeDataUrl: string) => {
-    setIsDrawing(false);
+    // This function is now called by LiveBrushCanvas with the final stroke dataUrl
+    // We no longer need to set isDrawing to false here, as LiveBrushCanvas manages its own drawing state.
+    // The isDrawing state in Workspace is primarily to conditionally render LiveBrushCanvas.
+    
     const layerId = activeDrawingLayerIdRef.current;
     if (!layerId) return;
 
@@ -567,16 +579,15 @@ const Workspace = (props: WorkspaceProps) => {
     Promise.all([basePromise, strokePromise]).then(() => {
       if (baseDataUrl) tempCtx.drawImage(baseImg, 0, 0);
       
-      if (activeTool === 'eraser') {
-        tempCtx.globalCompositeOperation = 'destination-out';
-      }
+      // The composite operation for eraser is now handled within LiveBrushCanvas
+      // so we don't need to set it here.
       
       tempCtx.drawImage(strokeImg, 0, 0);
       const combinedDataUrl = tempCanvas.toDataURL();
       onLayerUpdate(layerId, { dataUrl: combinedDataUrl });
       onLayerCommit(layerId);
     });
-  }, [layers, onLayerUpdate, onLayerCommit, imgRef, activeTool]);
+  }, [layers, onLayerUpdate, onLayerCommit, imgRef]);
 
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
@@ -693,6 +704,7 @@ const Workspace = (props: WorkspaceProps) => {
         activeTool === 'text' && 'cursor-crosshair',
         activeTool === 'shape' && 'cursor-crosshair',
         activeTool === 'gradient' && 'cursor-crosshair', // Added cursor for gradient tool
+        (activeTool === 'brush' || activeTool === 'eraser') && 'cursor-none', // Hide cursor for brush/eraser
         isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       style={{ 
