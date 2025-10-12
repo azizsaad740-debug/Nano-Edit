@@ -25,8 +25,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer, BrushState } from "@/hooks/useEditorState"; // Import BrushState
 import { ColorTool } from "./ColorTool"; // Import ColorTool
+import { Slider } from "@/components/ui/slider"; // Import Slider
+import { Label } from "@/components/ui/label"; // Import Label
 
 type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
 
@@ -40,6 +42,8 @@ interface ToolsPanelProps {
   backgroundColor: string; // New prop
   onBackgroundColorChange: (color: string) => void; // New prop
   onSwapColors: () => void; // New prop
+  brushState: BrushState; // New prop for brush state
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void; // New prop for setting brush state
 }
 
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
@@ -70,6 +74,8 @@ export const ToolsPanel = ({
   backgroundColor,
   onBackgroundColorChange,
   onSwapColors,
+  brushState, // Destructure brushState
+  setBrushState, // Destructure setBrushState
 }: ToolsPanelProps) => {
   const currentShapeIcon = React.useMemo(() => {
     const subTool = shapeSubTools.find(st => st.type === selectedShapeType);
@@ -84,7 +90,7 @@ export const ToolsPanel = ({
   return (
     <aside className="h-full border-r bg-muted/40 p-2 flex flex-col">
       <TooltipProvider delayDuration={0}>
-        <div className="flex flex-col items-center gap-2"> {/* Removed flex-1 from here */}
+        <div className="flex flex-col items-center gap-2">
           {tools.map((item) => {
             if (item.tool === "shape") {
               return (
@@ -135,6 +141,37 @@ export const ToolsPanel = ({
             );
           })}
           <div className="w-full h-px bg-border my-2" /> {/* Separator */}
+          
+          {(activeTool === 'brush' || activeTool === 'eraser') && (
+            <div className="w-full space-y-2 mb-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="brush-size-quick" className="text-xs">Size</Label>
+                <Slider
+                  id="brush-size-quick"
+                  min={1}
+                  max={200}
+                  step={1}
+                  value={[brushState.size]}
+                  onValueChange={([v]) => setBrushState({ size: v })}
+                  className="w-full"
+                />
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="brush-opacity-quick" className="text-xs">Opacity</Label>
+                <Slider
+                  id="brush-opacity-quick"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[brushState.opacity]}
+                  onValueChange={([v]) => setBrushState({ opacity: v })}
+                  className="w-full"
+                />
+              </div>
+              <div className="w-full h-px bg-border my-2" /> {/* Separator */}
+            </div>
+          )}
+
           <ColorTool
             foregroundColor={foregroundColor}
             onForegroundColorChange={onForegroundColorChange}

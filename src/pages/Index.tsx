@@ -15,7 +15,7 @@ import EditorControls from "@/components/layout/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
-import { useGradientPresets } from "@/hooks/useGradientPresets"; // Import useGradientPresets
+import { useGradientPresets } from "@/hooks/useGradientPresets";
 import {
   ResizablePanelGroup,
   ResizablePanel,
@@ -31,8 +31,8 @@ import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
-import { ToolsPanel } from "@/components/layout/ToolsPanel"; // Added import for ToolsPanel
-import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog"; // Import SaveGradientPresetDialog
+import { ToolsPanel } from "@/components/layout/ToolsPanel";
+import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 
 const Index = () => {
   const {
@@ -66,8 +66,8 @@ const Index = () => {
     handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
-    handleRotationChange, // Destructure new rotation handler
-    handleRotationCommit, // Destructure new rotation commit handler
+    handleRotationChange,
+    handleRotationCommit,
     handleFramePresetChange,
     handleFramePropertyChange,
     handleFramePropertyCommit,
@@ -94,13 +94,13 @@ const Index = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
-    addGradientLayer, // Added addGradientLayer
+    addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    duplicateLayer,
-    mergeLayerDown,
-    rasterizeLayer,
+    duplicateLayer, // Destructure directly
+    mergeLayerDown, // Destructure directly
+    rasterizeLayer, // Destructure directly
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -144,7 +144,7 @@ const Index = () => {
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
-  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // Use gradient presets
+  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
   const { apiKey } = useSettings();
 
   const [isSavingPreset, setIsSavingPreset] = useState(false);
@@ -153,7 +153,7 @@ const Index = () => {
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openNewProject, setOpenNewProject] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false); // New state for fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const openProjectInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenProjectClick = () => {
@@ -170,7 +170,6 @@ const Index = () => {
     }
   };
 
-  // Fullscreen toggle handler
   const handleToggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().then(() => {
@@ -187,7 +186,6 @@ const Index = () => {
     }
   }, []);
 
-  // Listen for fullscreen change events
   useEffect(() => {
     const onFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -196,7 +194,6 @@ const Index = () => {
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
 
-  // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
     "ctrl+i, cmd+i",
     (e) => {
@@ -206,7 +203,6 @@ const Index = () => {
     { enabled: true }
   );
 
-  // Paste handling (unchanged)
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
       const items = event.clipboardData?.items;
@@ -262,9 +258,9 @@ const Index = () => {
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
-    rotation: transforms.rotation, // Pass current rotation
-    onRotationChange: handleRotationChange, // Pass handler for continuous change
-    onRotationCommit: handleRotationCommit, // Pass handler for commit
+    rotation: transforms.rotation,
+    onRotationChange: handleRotationChange,
+    onRotationCommit: handleRotationCommit,
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
@@ -287,14 +283,14 @@ const Index = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
-    addGradientLayer, // Passed addGradientLayer
+    addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
     duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     mergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     rasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
-    onReorder: reorderLayers, // Changed from reorderLayers to onReorder: reorderLayers
+    onReorder: reorderLayers,
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
@@ -327,7 +323,7 @@ const Index = () => {
     toggleGroupExpanded,
     // Foreground/Background Colors
     foregroundColor,
-    setForegroundColor: handleForegroundColorChange, // Pass setter
+    setForegroundColor: handleForegroundColorChange,
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
@@ -353,8 +349,8 @@ const Index = () => {
         onNewFromClipboard={handleNewFromClipboard}
         onSaveProject={handleSaveProject}
         onOpenProject={handleOpenProjectClick}
-        onToggleFullscreen={handleToggleFullscreen} // Pass fullscreen handler
-        isFullscreen={isFullscreen} // Pass fullscreen state
+        onToggleFullscreen={handleToggleFullscreen}
+        isFullscreen={isFullscreen}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {activeTool === "lasso" && hasSelection && (
@@ -394,11 +390,13 @@ const Index = () => {
           setActiveTool={setActiveTool} 
           selectedShapeType={selectedShapeType}
           setSelectedShapeType={setSelectedShapeType}
-          foregroundColor={foregroundColor} // Pass foregroundColor
-          onForegroundColorChange={handleForegroundColorChange} // Pass handler
-          backgroundColor={backgroundColor} // Pass backgroundColor
-          onBackgroundColorChange={handleBackgroundColorChange} // Pass handler
-          onSwapColors={handleSwapColors} // Pass swap handler
+          foregroundColor={foregroundColor} 
+          onForegroundColorChange={handleForegroundColorChange} 
+          backgroundColor={backgroundColor} 
+          onBackgroundColorChange={handleBackgroundColorChange} 
+          onSwapColors={handleSwapColors} 
+          brushState={brushState} 
+          setBrushState={setBrushState} 
         />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75}>
@@ -418,7 +416,7 @@ const Index = () => {
                 transforms={transforms}
                 frame={frame}
                 crop={currentState.crop}
-                pendingCrop={pendingCrop} // Corrected: pass the state variable
+                pendingCrop={pendingCrop}
                 onCropChange={setPendingCrop}
                 onApplyCrop={applyCrop}
                 onCancelCrop={cancelCrop}
@@ -443,7 +441,7 @@ const Index = () => {
                 selectedShapeType={selectedShapeType}
                 setSelectedLayer={setSelectedLayer}
                 setActiveTool={setActiveTool}
-                foregroundColor={foregroundColor} // Pass foregroundColor
+                foregroundColor={foregroundColor}
               />
             </div>
           </ResizablePanel>
@@ -471,15 +469,15 @@ const Index = () => {
         onOpenChange={setOpenGenerative}
         onApply={applyGenerativeResult}
         apiKey={apiKey}
-        originalImage={image} // Pass originalImage
-        selectionPath={selectionPath} // Pass selectionPath
+        originalImage={image}
+        selectionPath={selectionPath}
       />
       <GenerateImageDialog
         open={openGenerateImage}
         onOpenChange={setOpenGenerateImage}
         onGenerate={handleGeneratedImageLoad}
         apiKey={apiKey}
-        imageNaturalDimensions={dimensions} // Pass imageNaturalDimensions
+        imageNaturalDimensions={dimensions}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
       <NewProjectDialog
