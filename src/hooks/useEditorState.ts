@@ -12,6 +12,7 @@ import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 import { readPsd } from "ag-psd";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import { useLayers } from "./useLayers";
+import { maskToPolygon } from "@/utils/maskToPolygon"; // Import the new utility
 
 export interface EditState {
   adjustments: {
@@ -950,71 +951,32 @@ export const useEditorState = () => {
     showSuccess("Selection cleared.");
   }, []);
 
-  const applyMaskToSelectionPath = useCallback(() => {
-    if (!selectionMaskDataUrl || !imgRef.current) {
+  const applyMaskToSelectionPath = useCallback(async () => { // Made async
+    if (!selectionMaskDataUrl || !imgRef.current || !dimensions) {
       showError("No selection to apply.");
       return;
     }
 
     const toastId = showLoading("Applying selection...");
 
-    const maskImage = new Image();
-    maskImage.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = imgRef.current!.naturalWidth;
-      canvas.height = imgRef.current!.naturalHeight;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        dismissToast(toastId);
-        showError("Failed to create canvas for selection.");
-        return;
-      }
-
-      ctx.drawImage(maskImage, 0, 0);
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imageData.data;
-
-      let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
-      let foundPixel = false;
-
-      for (let y = 0; y < canvas.height; y++) {
-        for (let x = 0; x < canvas.width; x++) {
-          const i = (y * canvas.width + x) * 4;
-          // Check if the pixel is not black (i.e., part of the selection)
-          if (data[i] > 0 || data[i+1] > 0 || data[i+2] > 0) {
-            foundPixel = true;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-          }
-        }
-      }
-
-      if (foundPixel) {
-        // Create a rectangular selection path from the bounding box
-        const newSelectionPath: Point[] = [
-          { x: minX, y: minY },
-          { x: maxX, y: minY },
-          { x: maxX, y: maxY },
-          { x: minX, y: maxY },
-        ];
+    try {
+      const newSelectionPath = await maskToPolygon(selectionMaskDataUrl, dimensions.width, dimensions.height);
+      
+      if (newSelectionPath.length > 0) {
         setSelectionPath(newSelectionPath);
         setSelectionMaskDataUrl(null); // Clear the mask overlay after applying
         dismissToast(toastId);
         showSuccess("Selection applied.");
-        // Do NOT call setActiveTool(null) here, as it would clear selectionPath
       } else {
         dismissToast(toastId);
         showError("No area selected with the brush.");
       }
-    };
-    maskImage.onerror = () => {
+    } catch (error: any) {
       dismissToast(toastId);
-      showError("Failed to load selection mask.");
-    };
-    maskImage.src = selectionMaskDataUrl;
-  }, [selectionMaskDataUrl, imgRef]);
+      console.error("Failed to convert mask to polygon:", error);
+      showError(error.message || "Failed to apply selection.");
+    }
+  }, [selectionMaskDataUrl, imgRef, dimensions]);
 
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
