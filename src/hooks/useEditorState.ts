@@ -147,7 +147,7 @@ export interface GradientToolState {
   inverted: boolean;
 }
 
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush"; // Added 'selectionBrush' tool
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -212,6 +212,7 @@ export const useEditorState = () => {
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
+  const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null); // New state for selection mask
   const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -298,8 +299,11 @@ export const useEditorState = () => {
   }, [layers, currentLayers, updateCurrentLayersInHistory]);
 
   const setActiveTool = (tool: ActiveTool | null) => {
-    if (tool !== 'lasso') {
+    if (tool !== 'lasso' && tool !== 'selectionBrush') { // Clear selection path if not lasso or selection brush
       setSelectionPath(null);
+    }
+    if (tool !== 'selectionBrush') { // Clear selection mask if not selection brush
+      setSelectionMaskDataUrl(null);
     }
 
     // Handle entering/leaving crop mode
@@ -346,6 +350,7 @@ export const useEditorState = () => {
     setSelectedLayerId(initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null);
     setPendingCrop(undefined);
     setSelectionPath(null);
+    setSelectionMaskDataUrl(null); // Clear mask on new image load
     showSuccess(successMsg);
   }, [setLayers, setSelectedLayerId]);
 
@@ -619,6 +624,7 @@ export const useEditorState = () => {
       setLayers(projectData.history[projectData.currentHistoryIndex].layers);
       setPendingCrop(undefined);
       setSelectionPath(null);
+      setSelectionMaskDataUrl(null); // Clear mask on project load
       
       dismissToast(toastId);
       showSuccess("Project opened successfully.");
@@ -779,6 +785,7 @@ export const useEditorState = () => {
     setSelectedLayerId(null);
     setPendingCrop(undefined);
     setSelectionPath(null);
+    setSelectionMaskDataUrl(null); // Clear mask on reset
     setForegroundColor("#000000"); // Reset foreground color
     setBackgroundColor("#FFFFFF"); // Reset background color
   }, [recordHistory, setSelectedLayerId]);
@@ -908,6 +915,106 @@ export const useEditorState = () => {
     showSuccess("Colors swapped!");
   }, [foregroundColor, backgroundColor]);
 
+  /* ---------- Selection Brush Functions ---------- */
+  const handleSelectionBrushStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+    if (!imgRef.current) return;
+
+    const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageDimensions.width;
+    tempCanvas.height = imageDimensions.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
+
+    // Draw existing mask if any
+    if (selectionMaskDataUrl) {
+      const existingMask = new Image();
+      await new Promise((res, rej) => { existingMask.onload = res; existingMask.onerror = rej; existingMask.src = selectionMaskDataUrl; });
+      tempCtx.drawImage(existingMask, 0, 0);
+    }
+
+    // Apply new stroke
+    const strokeImg = new Image();
+    await new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
+
+    tempCtx.globalCompositeOperation = operation === 'add' ? 'source-over' : 'destination-out';
+    tempCtx.drawImage(strokeImg, 0, 0);
+    tempCtx.globalCompositeOperation = 'source-over'; // Reset
+
+    setSelectionMaskDataUrl(tempCanvas.toDataURL());
+  }, [imgRef, selectionMaskDataUrl]);
+
+  const clearSelectionMask = useCallback(() => {
+    setSelectionMaskDataUrl(null);
+    setSelectionPath(null);
+    showSuccess("Selection cleared.");
+  }, []);
+
+  const applyMaskToSelectionPath = useCallback(() => {
+    if (!selectionMaskDataUrl || !imgRef.current) {
+      showError("No selection to apply.");
+      return;
+    }
+
+    const toastId = showLoading("Applying selection...");
+
+    const maskImage = new Image();
+    maskImage.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = imgRef.current!.naturalWidth;
+      canvas.height = imgRef.current!.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        dismissToast(toastId);
+        showError("Failed to create canvas for selection.");
+        return;
+      }
+
+      ctx.drawImage(maskImage, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+      let foundPixel = false;
+
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          // Check if the pixel is not black (i.e., part of the selection)
+          if (data[i] > 0 || data[i+1] > 0 || data[i+2] > 0) {
+            foundPixel = true;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+          }
+        }
+      }
+
+      if (foundPixel) {
+        // Create a rectangular selection path from the bounding box
+        const newSelectionPath: Point[] = [
+          { x: minX, y: minY },
+          { x: maxX, y: minY },
+          { x: maxX, y: maxY },
+          { x: minX, y: maxY },
+        ];
+        setSelectionPath(newSelectionPath);
+        dismissToast(toastId);
+        showSuccess("Selection applied.");
+        setActiveTool(null); // Deactivate selection brush
+      } else {
+        dismissToast(toastId);
+        showError("No area selected with the brush.");
+      }
+    };
+    maskImage.onerror = () => {
+      dismissToast(toastId);
+      showError("Failed to load selection mask.");
+    };
+    maskImage.src = selectionMaskDataUrl;
+  }, [selectionMaskDataUrl, imgRef, setActiveTool]);
+
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -949,9 +1056,11 @@ export const useEditorState = () => {
   useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image });
   useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
   useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image }); // Added shortcut for gradient tool
+  useHotkeys("s", () => setActiveTool("selectionBrush"), { enabled: !!image }); // Shortcut for selection brush
   useHotkeys("x", handleSwapColors, { enabled: true, preventDefault: true }); // Shortcut to swap foreground/background colors
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
+    else if (activeTool === 'selectionBrush') clearSelectionMask();
     else setActiveTool(null);
     if (selectionPath) setSelectionPath(null);
   }, { enabled: !!image, preventDefault: true }); // Ensure escape prevents default
@@ -1108,6 +1217,10 @@ export const useEditorState = () => {
     // Selection
     selectionPath,
     setSelectionPath,
+    selectionMaskDataUrl, // Exposed selection mask
+    handleSelectionBrushStroke, // Exposed selection brush stroke handler
+    clearSelectionMask, // Exposed clear selection mask handler
+    applyMaskToSelectionPath, // Exposed apply mask to selection path handler
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,

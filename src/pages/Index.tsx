@@ -129,6 +129,10 @@ const Index = () => {
     // selection
     selectionPath,
     setSelectionPath,
+    selectionMaskDataUrl, // New
+    handleSelectionBrushStroke, // New
+    clearSelectionMask, // New
+    applyMaskToSelectionPath, // New
     // shape tool
     selectedShapeType,
     setSelectedShapeType,
@@ -327,6 +331,7 @@ const Index = () => {
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
+  const hasSelectionMask = selectionMaskDataUrl !== null;
   
   const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
 
@@ -353,16 +358,19 @@ const Index = () => {
         isFullscreen={isFullscreen}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {activeTool === "lasso" && hasSelection && (
+          {(activeTool === "lasso" && hasSelection) || (activeTool === "selectionBrush" && hasSelectionMask) ? (
             <div className="flex items-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)}>
+              <Button size="sm" onClick={applyMaskToSelectionPath} disabled={!hasSelectionMask}>
+                Apply Selection
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasSelection}>
                 Generative Fill
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setSelectionPath(null)}>
-                Deselect
+              <Button variant="outline" size="sm" onClick={clearSelectionMask}>
+                Clear Selection
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
         <div className="md:hidden">
           <Sheet>
@@ -435,13 +443,16 @@ const Index = () => {
                 brushState={brushState}
                 gradientToolState={gradientToolState}
                 selectionPath={selectionPath}
+                selectionMaskDataUrl={selectionMaskDataUrl} // New
                 onSelectionChange={setSelectionPath}
+                onSelectionBrushStrokeEnd={handleSelectionBrushStroke} // New
                 handleColorPick={handleColorPick}
                 imageNaturalDimensions={dimensions}
                 selectedShapeType={selectedShapeType}
                 setSelectedLayer={setSelectedLayer}
                 setActiveTool={setActiveTool}
                 foregroundColor={foregroundColor}
+                backgroundColor={backgroundColor}
               />
             </div>
           </ResizablePanel>

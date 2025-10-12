@@ -24,6 +24,7 @@ import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
 import GroupLayer from "./GroupLayer"; // Import GroupLayer
 import GradientLayer from "./GradientLayer"; // Import GradientLayer
 import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import GradientPreviewCanvas
+import { SelectionMaskOverlay } from "./SelectionMaskOverlay"; // Import SelectionMaskOverlay
 
 interface WorkspaceProps {
   image: string | null;
@@ -47,7 +48,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | null; // Added 'gradient'
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | null; // Added 'selectionBrush'
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -64,13 +65,16 @@ interface WorkspaceProps {
   brushState: BrushState;
   gradientToolState: GradientToolState; // Added gradientToolState
   selectionPath: Point[] | null;
+  selectionMaskDataUrl: string | null; // New prop
   onSelectionChange: (path: Point[]) => void;
+  onSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
   handleColorPick: (color: string) => void;
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | null) => void; // Added setActiveTool
+  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | null) => void; // Added setActiveTool
   foregroundColor: string; // New prop
+  backgroundColor: string; // New prop
 }
 
 // New component for drawing shape preview
@@ -195,13 +199,16 @@ const Workspace = (props: WorkspaceProps) => {
     brushState,
     gradientToolState, // Destructure gradientToolState
     selectionPath,
+    selectionMaskDataUrl, // Destructure
     onSelectionChange,
+    onSelectionBrushStrokeEnd, // Destructure
     handleColorPick,
     imageNaturalDimensions,
     selectedShapeType, // Destructure selectedShapeType
     setSelectedLayer, // Destructure setSelectedLayer
     setActiveTool, // Destructure setActiveTool
     foregroundColor, // Destructure foregroundColor
+    backgroundColor, // Destructure backgroundColor
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -270,7 +277,7 @@ const Workspace = (props: WorkspaceProps) => {
       setGradientCurrentCoords({ x: e.clientX, y: e.clientY });
       e.preventDefault();
       return;
-    } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
+    } else if ((activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush')) {
       // LiveBrushCanvas handles its own pointer events, so we don't need to do anything here
       // except prevent default if we want to stop other interactions.
       e.preventDefault();
@@ -458,7 +465,7 @@ const Workspace = (props: WorkspaceProps) => {
     }
 
     // If a drawing tool is active, don't deselect layers on click
-    if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient') {
+    if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient' || activeTool === 'selectionBrush') {
       return;
     }
 
@@ -623,6 +630,7 @@ const Workspace = (props: WorkspaceProps) => {
   const cropCursor = 'crosshair';
   const shapeCursor = 'crosshair';
   const gradientCursor = 'crosshair';
+  const selectionBrushCursor = 'crosshair'; // Default for selection brush
 
   const brushSize = brushState.size;
   const brushBorderColor = activeTool === 'eraser' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
@@ -648,9 +656,10 @@ const Workspace = (props: WorkspaceProps) => {
       case 'shape': return shapeCursor;
       case 'move': return moveToolCursor;
       case 'gradient': return gradientCursor;
+      case 'selectionBrush': return selectionBrushCursor;
       default: return 'default';
     }
-  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, brushState.shape]);
+  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
     return layersToRender.map((layer) => {
@@ -728,7 +737,7 @@ const Workspace = (props: WorkspaceProps) => {
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
-        (activeTool === 'brush' || activeTool === 'eraser') && 'cursor-none', // Hide cursor for brush/eraser
+        (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && 'cursor-none', // Hide cursor for brush/eraser/selectionBrush
       )}
       style={{ 
         cursor: getCursorStyle()
@@ -803,6 +812,13 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
 
+                        {activeTool === 'selectionBrush' && ( // Render SelectionMaskOverlay
+                          <SelectionMaskOverlay
+                            maskDataUrl={selectionMaskDataUrl}
+                            imageNaturalDimensions={imageNaturalDimensions}
+                          />
+                        )}
+
                         {!isPreviewingOriginal && effects.vignette > 0 && (
                           <div
                             className="absolute inset-0 pointer-events-none rounded-lg"
@@ -821,7 +837,7 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
                         
-                        {(activeTool === 'brush' || activeTool === 'eraser') && (
+                        {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && (
                           <LiveBrushCanvas
                             brushState={brushState}
                             imageRef={imgRef}
@@ -830,6 +846,10 @@ const Workspace = (props: WorkspaceProps) => {
                             selectedLayerId={selectedLayerId}
                             onAddDrawingLayer={onAddDrawingLayer}
                             layers={layers}
+                            isSelectionBrush={activeTool === 'selectionBrush'}
+                            onSelectionBrushStrokeEnd={onSelectionBrushStrokeEnd}
+                            foregroundColor={foregroundColor}
+                            backgroundColor={backgroundColor}
                           />
                         )}
                         {isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && (

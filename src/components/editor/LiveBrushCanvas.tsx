@@ -7,10 +7,14 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string, layerId: string) => void;
-  activeTool: "brush" | "eraser";
+  activeTool: "brush" | "eraser" | "selectionBrush"; // Added selectionBrush
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
-  layers: Layer[]; // Added layers prop
+  layers: Layer[];
+  isSelectionBrush: boolean; // New prop
+  onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
+  foregroundColor: string; // New prop
+  backgroundColor: string; // New prop
 }
 
 export const LiveBrushCanvas = ({
@@ -20,7 +24,11 @@ export const LiveBrushCanvas = ({
   activeTool,
   selectedLayerId,
   onAddDrawingLayer,
-  layers, // Destructure layers
+  layers,
+  isSelectionBrush, // Destructure
+  onSelectionBrushStrokeEnd, // Destructure
+  foregroundColor, // Destructure
+  backgroundColor, // Destructure
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
@@ -41,28 +49,51 @@ export const LiveBrushCanvas = ({
     };
   }, [imageRef]);
 
-  const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, isFinalRender: boolean) => {
-    // Line width, alpha, line join, line cap will be set per point for pressure sensitivity
-    // Shadow blur and color are set here, but shadow blur will be adjusted per point
-    
-    if (activeTool === 'eraser') {
+  const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, isFinalRender: boolean, operation: 'add' | 'subtract' = 'add') => {
+    ctx.lineWidth = brushState.size;
+    ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
+    ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
+
+    const maxBlur = brushState.size * 0.75;
+    ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
+
+    if (isSelectionBrush) {
+      ctx.globalCompositeOperation = 'source-over'; // Always draw visibly for live preview
       if (isFinalRender) {
-        ctx.globalCompositeOperation = 'destination-out'; // Apply for final erase
+        ctx.strokeStyle = operation === 'add' ? 'white' : 'black';
+        ctx.fillStyle = operation === 'add' ? 'white' : 'black';
+        ctx.shadowColor = operation === 'add' ? 'white' : 'black';
+        ctx.globalAlpha = 1.0; // Full opacity for final mask
       } else {
-        ctx.globalCompositeOperation = 'source-over'; // Preview is always source-over
+        ctx.strokeStyle = operation === 'add' ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)'; // Red for add, Blue for subtract
+        ctx.fillStyle = operation === 'add' ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
+        ctx.shadowColor = operation === 'add' ? 'rgba(255, 0, 0, 0.5)' : 'rgba(0, 0, 255, 0.5)';
+        ctx.globalAlpha = 0.5; // 50% opacity for live preview
       }
-      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Eraser color for drawing
-      ctx.fillStyle = 'rgba(0,0,0,1)';
-      ctx.shadowColor = 'rgba(0,0,0,1)';
+    } else if (activeTool === 'eraser') {
+      if (isFinalRender) {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)'; // Black for erasing
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+        ctx.shadowColor = 'rgba(0,0,0,1)';
+        ctx.globalAlpha = 1.0;
+      } else { // Live preview for eraser
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Semi-transparent grey
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.globalAlpha = 0.5;
+      }
     } else { // brush tool
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = brushState.color;
       ctx.fillStyle = brushState.color;
       ctx.shadowColor = brushState.color;
+      ctx.globalAlpha = brushState.opacity / 100;
     }
-  }, [brushState, activeTool]);
+  }, [brushState, activeTool, isSelectionBrush]);
 
-  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
+  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>, operation: 'add' | 'subtract' = 'add') => {
     if (points.length === 0) return;
 
     // Temporarily ignore smoothness for this drawing method, as it's designed for continuous paths.
@@ -75,11 +106,9 @@ export const LiveBrushCanvas = ({
       const effectiveSize = brushState.size * pressure;
       const effectiveOpacity = (brushState.opacity / 100) * pressure;
 
+      // Apply settings for each point
+      applyBrushSettings(ctx, false, operation); // Use false for live render, operation for color
       ctx.globalAlpha = effectiveOpacity; // Apply opacity per point
-
-      // Apply hardness (shadow blur)
-      const maxBlur = effectiveSize * 0.75; // Max blur scales with effective size
-      ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
 
       ctx.beginPath();
       if (brushState.shape === 'circle') {
@@ -89,38 +118,30 @@ export const LiveBrushCanvas = ({
       }
       ctx.fill();
     }
-  }, [brushState.size, brushState.opacity, brushState.hardness, brushState.shape]);
+  }, [brushState.size, brushState.opacity, brushState.hardness, brushState.shape, applyBrushSettings]);
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
     if (!ctx) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    applyBrushSettings(ctx, false); // Pass false for live render
-
-    drawPath(ctx, pathPointsRef.current);
+    
+    const operation = foregroundColor === brushState.color ? 'add' : 'subtract'; // Determine operation for live preview
+    drawPath(ctx, pathPointsRef.current, operation);
 
     if (isDrawingRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
     }
-  }, [applyBrushSettings, drawPath]);
+  }, [drawPath, foregroundColor, brushState.color]);
 
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
     if (!coords || !contextRef.current) return;
 
-    // Determine which layer to draw on
-    const selectedLayer = layers.find(l => l.id === selectedLayerId);
-    if (selectedLayer && selectedLayer.type === 'drawing') {
-      activeDrawingLayerIdRef.current = selectedLayerId;
-    } else {
-      activeDrawingLayerIdRef.current = onAddDrawingLayer(); // Create a new drawing layer
-    }
-
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers]);
+  }, [getCoords, renderLiveStroke]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -130,7 +151,7 @@ export const LiveBrushCanvas = ({
   }, [getCoords]);
 
   const endDrawing = React.useCallback(() => {
-    if (!isDrawingRef.current || !canvasRef.current || !imageRef.current || !activeDrawingLayerIdRef.current) return;
+    if (!isDrawingRef.current || !canvasRef.current || !imageRef.current) return;
     isDrawingRef.current = false;
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
@@ -143,9 +164,19 @@ export const LiveBrushCanvas = ({
     const offscreenCtx = offscreenCanvas.getContext('2d');
 
     if (offscreenCtx) {
-      applyBrushSettings(offscreenCtx, true); // Pass true for final render
-      drawPath(offscreenCtx, pathPointsRef.current);
-      onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
+      const operation = foregroundColor === brushState.color ? 'add' : 'subtract'; // Determine operation for final render
+      applyBrushSettings(offscreenCtx, true, operation); // Pass true for final render
+      drawPath(offscreenCtx, pathPointsRef.current, operation);
+
+      if (isSelectionBrush && onSelectionBrushStrokeEnd) {
+        onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
+      } else if (activeTool !== 'selectionBrush' && activeDrawingLayerIdRef.current) {
+        onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
+      } else if (activeTool !== 'selectionBrush') {
+        // If not selection brush and no active drawing layer, create one
+        activeDrawingLayerIdRef.current = onAddDrawingLayer();
+        onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
+      }
     } else {
       console.error("Failed to get offscreen canvas context for brush stroke.");
     }
@@ -153,7 +184,7 @@ export const LiveBrushCanvas = ({
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
     activeDrawingLayerIdRef.current = null; // Reset active drawing layer
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, onSelectionBrushStrokeEnd, activeTool, foregroundColor, brushState.color, onAddDrawingLayer]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
