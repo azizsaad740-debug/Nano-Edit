@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { type BrushState } from "@/hooks/useEditorState";
+import { type BrushState, type Layer } from "@/hooks/useEditorState";
 
 interface LiveBrushCanvasProps {
   brushState: BrushState;
@@ -10,6 +10,7 @@ interface LiveBrushCanvasProps {
   activeTool: "brush" | "eraser";
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
+  layers: Layer[]; // Added layers prop
 }
 
 export const LiveBrushCanvas = ({
@@ -19,6 +20,7 @@ export const LiveBrushCanvas = ({
   activeTool,
   selectedLayerId,
   onAddDrawingLayer,
+  layers, // Destructure layers
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
@@ -55,13 +57,13 @@ export const LiveBrushCanvas = ({
         ctx.fillStyle = 'rgba(0,0,0,1)';
         ctx.shadowColor = 'rgba(0,0,0,1)';
       } else { // Live preview for eraser
-        ctx.globalCompositeOperation = 'source-over'; // Draw visibly
+        ctx.globalCompositeOperation = 'source-over'; // Always draw visibly for live preview
         ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Semi-transparent grey
         ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
         ctx.shadowColor = 'rgba(0,0,0,0.5)';
       }
     } else { // brush tool
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalCompositeOperation = 'source-over'; // Always draw visibly for live preview
       ctx.strokeStyle = brushState.color;
       ctx.fillStyle = brushState.color;
       ctx.shadowColor = brushState.color;
@@ -122,7 +124,8 @@ export const LiveBrushCanvas = ({
     if (!coords || !contextRef.current) return;
 
     // Determine which layer to draw on
-    if (selectedLayerId && imageRef.current?.dataset.layerType === 'drawing') { // Assuming dataset.layerType is set on the image for the selected layer
+    const selectedLayer = layers.find(l => l.id === selectedLayerId);
+    if (selectedLayer && selectedLayer.type === 'drawing') {
       activeDrawingLayerIdRef.current = selectedLayerId;
     } else {
       activeDrawingLayerIdRef.current = onAddDrawingLayer(); // Create a new drawing layer
@@ -131,7 +134,7 @@ export const LiveBrushCanvas = ({
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, imageRef]);
+  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;

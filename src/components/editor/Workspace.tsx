@@ -819,6 +819,7 @@ const Workspace = (props: WorkspaceProps) => {
                             activeTool={activeTool}
                             selectedLayerId={selectedLayerId}
                             onAddDrawingLayer={onAddDrawingLayer}
+                            layers={layers}
                           />
                         )}
                         {isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && (
