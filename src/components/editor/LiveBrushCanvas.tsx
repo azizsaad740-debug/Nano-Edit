@@ -41,6 +41,7 @@ export const LiveBrushCanvas = ({
 
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D) => {
     ctx.strokeStyle = brushState.color;
+    ctx.fillStyle = brushState.color; // Ensure fillStyle is also set for single dots
     ctx.lineWidth = brushState.size;
     ctx.globalAlpha = brushState.opacity / 100;
     ctx.lineCap = "round";
@@ -53,7 +54,15 @@ export const LiveBrushCanvas = ({
   }, [brushState, activeTool]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>) => {
-    if (points.length < 2) return;
+    if (points.length === 0) return;
+
+    if (points.length === 1) {
+      // Draw a single dot for the very first point
+      ctx.beginPath();
+      ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, 2 * Math.PI); // Draw a circle with radius half the line width
+      ctx.fill(); // Fill the circle
+      return;
+    }
 
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
