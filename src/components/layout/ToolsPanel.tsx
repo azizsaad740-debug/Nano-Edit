@@ -82,17 +82,9 @@ export const ToolsPanel = ({
   };
 
   return (
-    <aside className="h-full border-r bg-muted/40 p-2">
+    <aside className="h-full border-r bg-muted/40 p-2 flex flex-col"> {/* Added flex-col to make items stack vertically */}
       <TooltipProvider delayDuration={0}>
-        <div className="flex flex-col items-center gap-2">
-          <ColorTool
-            foregroundColor={foregroundColor}
-            onForegroundColorChange={onForegroundColorChange}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={onBackgroundColorChange}
-            onSwapColors={onSwapColors}
-          />
-          <div className="w-full h-px bg-border my-2" /> {/* Separator */}
+        <div className="flex flex-col items-center gap-2 flex-1"> {/* Added flex-1 to push color tool to bottom */}
           {tools.map((item) => {
             if (item.tool === "shape") {
               return (
@@ -144,6 +136,14 @@ export const ToolsPanel = ({
           })}
         </div>
       </TooltipProvider>
+      <div className="w-full h-px bg-border my-2" /> {/* Separator */}
+      <ColorTool
+        foregroundColor={foregroundColor}
+        onForegroundColorChange={onForegroundColorChange}
+        backgroundColor={backgroundColor}
+        onBackgroundColorChange={onBackgroundColorChange}
+        onSwapColors={onSwapColors}
+      />
     </aside>
   );
 };
