@@ -703,6 +703,14 @@ export const useEditorState = () => {
     recordHistory(nameMap[type] ?? "Transform", { ...currentState, transforms: newTrans }, layers);
   }, [currentState, recordHistory, layers]);
 
+  const handleRotationChange = useCallback((value: number) => {
+    updateCurrentState({ transforms: { ...currentState.transforms, rotation: value } });
+  }, [currentState.transforms, updateCurrentState]);
+
+  const handleRotationCommit = useCallback((value: number) => {
+    recordHistory("Adjust Rotation", { ...currentState, transforms: { ...currentState.transforms, rotation: value } }, layers);
+  }, [currentState, recordHistory, layers]);
+
   const handleFramePresetChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
     const newFrame = {
       type: type as 'none' | 'solid',
@@ -888,15 +896,24 @@ export const useEditorState = () => {
       e.preventDefault();
       if (image) setIsExporting(true);
     },
-    { enabled: !!image }
+    { enabled: !!image, preventDefault: true } // Ensure preventDefault is true
   );
   useHotkeys(
-    "ctrl+shift+c, cmd+shift+c",
+    "ctrl+c, cmd+c", // Added Ctrl+C / Cmd+C for copy
     (e) => {
       e.preventDefault();
       handleCopy();
     },
-    { enabled: !!image }
+    { enabled: !!image, preventDefault: true }
+  );
+  useHotkeys(
+    "ctrl+v, cmd+v", // Added Ctrl+V / Cmd+V for paste
+    (e) => {
+      e.preventDefault();
+      // Paste logic is handled by a global event listener in Index.tsx
+      // This hotkey just ensures the default browser paste is prevented.
+    },
+    { enabled: true, preventDefault: true } // Always prevent default for paste
   );
   useHotkeys("r", () => handleTransformChange("rotate-right"), { enabled: !!image, preventDefault: true });
   useHotkeys("shift+r", () => handleTransformChange("rotate-left"), { enabled: !!image, preventDefault: true });
@@ -915,7 +932,7 @@ export const useEditorState = () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
     if (selectionPath) setSelectionPath(null);
-  }, { enabled: !!image });
+  }, { enabled: !!image, preventDefault: true }); // Ensure escape prevents default
 
   // Keyboard movement for selected layers
   const handleKeyboardMove = useCallback((dx: number, dy: number, speedMultiplier: number) => {
@@ -964,6 +981,8 @@ export const useEditorState = () => {
     handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
+    handleRotationChange, // Exposed for continuous rotation
+    handleRotationCommit, // Exposed for continuous rotation commit
     handleFramePresetChange,
     handleFramePropertyChange,
     handleFramePropertyCommit,

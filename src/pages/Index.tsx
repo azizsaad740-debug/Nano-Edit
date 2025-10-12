@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import Header from "@/components/layout/Header";
 import Sidebar from "@/components/layout/Sidebar";
 import Workspace from "@/components/editor/Workspace";
@@ -66,6 +66,8 @@ const Index = () => {
     handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
+    handleRotationChange, // Destructure new rotation handler
+    handleRotationCommit, // Destructure new rotation commit handler
     handleFramePresetChange,
     handleFramePropertyChange,
     handleFramePropertyCommit,
@@ -145,6 +147,7 @@ const Index = () => {
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openNewProject, setOpenNewProject] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false); // New state for fullscreen
   const openProjectInputRef = useRef<HTMLInputElement>(null);
 
   const handleOpenProjectClick = () => {
@@ -160,6 +163,32 @@ const Index = () => {
       event.target.value = "";
     }
   };
+
+  // Fullscreen toggle handler
+  const handleToggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch((err) => {
+        console.error(`Error attempting to enable fullscreen mode: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      }).catch((err) => {
+        console.error(`Error attempting to disable fullscreen mode: ${err.message}`);
+      });
+    }
+  }, []);
+
+  // Listen for fullscreen change events
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, []);
 
   // Shortcut to open Import Presets dialog (Ctrl+I / Cmd+I)
   useHotkeys(
@@ -227,6 +256,9 @@ const Index = () => {
     selectedFilter,
     onFilterChange: handleFilterChange,
     onTransformChange: handleTransformChange,
+    rotation: transforms.rotation, // Pass current rotation
+    onRotationChange: handleRotationChange, // Pass handler for continuous change
+    onRotationCommit: handleRotationCommit, // Pass handler for commit
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
@@ -269,21 +301,21 @@ const Index = () => {
     // smart objects
     onCreateSmartObject: createSmartObject,
     onOpenSmartObject: openSmartObjectEditor,
-    // tool state
+    // Shape tool
+    selectedShapeType,
+    // Tool state
     activeTool,
-    // brush state
+    // Brush state
     brushState,
     setBrushState,
-    // gradient tool state
+    // Gradient tool state
     gradientToolState,
     setGradientToolState,
-    // gradient presets
+    // Gradient Presets
     gradientPresets,
     onSaveGradientPreset: saveGradientPreset,
     onDeleteGradientPreset: deleteGradientPreset,
-    // shape tool
-    selectedShapeType,
-    // grouping
+    // Grouping
     groupLayers,
     toggleGroupExpanded,
   };
@@ -311,6 +343,8 @@ const Index = () => {
         onNewFromClipboard={handleNewFromClipboard}
         onSaveProject={handleSaveProject}
         onOpenProject={handleOpenProjectClick}
+        onToggleFullscreen={handleToggleFullscreen} // Pass fullscreen handler
+        isFullscreen={isFullscreen} // Pass fullscreen state
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {activeTool === "lasso" && hasSelection && (

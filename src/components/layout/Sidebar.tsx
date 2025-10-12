@@ -30,6 +30,9 @@ interface SidebarProps {
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
+  rotation: number; // Added rotation prop
+  onRotationChange: (value: number) => void; // Added onRotationChange prop
+  onRotationCommit: (value: number) => void; // Added onRotationCommit prop
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
   history: { name: string }[];

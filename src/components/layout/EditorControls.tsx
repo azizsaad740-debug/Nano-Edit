@@ -72,6 +72,9 @@ interface EditorControlsProps {
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
+  rotation: number; // Added rotation prop
+  onRotationChange: (value: number) => void; // Added onRotationChange prop
+  onRotationCommit: (value: number) => void; // Added onRotationCommit prop
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
   history: { name: string }[];
@@ -109,6 +112,9 @@ const EditorControls = (props: EditorControlsProps) => {
     onFilterChange,
     selectedFilter,
     onTransformChange,
+    rotation, // Destructure rotation
+    onRotationChange, // Destructure onRotationChange
+    onRotationCommit, // Destructure onRotationCommit
     onAspectChange,
     aspect,
     history,
@@ -248,7 +254,12 @@ const EditorControls = (props: EditorControlsProps) => {
           <AccordionItem value="transform">
             <AccordionTrigger>Transform</AccordionTrigger>
             <AccordionContent>
-              <Transform onTransformChange={onTransformChange} />
+              <Transform 
+                onTransformChange={onTransformChange} 
+                rotation={rotation} // Pass current rotation
+                onRotationChange={(value) => onRotationChange(value)} // Pass handler for continuous change
+                onRotationCommit={(value) => onRotationCommit(value)} // Pass handler for commit
+              />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

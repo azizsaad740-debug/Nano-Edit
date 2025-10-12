@@ -14,6 +14,8 @@ import {
   FolderOpen,
   ChevronDown,
   ClipboardPaste,
+  Maximize, // Import Maximize icon for fullscreen
+  Minimize, // Import Minimize icon for fullscreen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -50,6 +52,8 @@ interface HeaderProps {
   onNewFromClipboard: () => void;
   onSaveProject: () => void;
   onOpenProject: () => void;
+  onToggleFullscreen: () => void; // New prop for fullscreen
+  isFullscreen: boolean; // New prop to indicate fullscreen state
 }
 
 const Header = ({
@@ -70,6 +74,8 @@ const Header = ({
   onNewFromClipboard,
   onSaveProject,
   onOpenProject,
+  onToggleFullscreen, // Destructure new prop
+  isFullscreen, // Destructure new prop
 }: HeaderProps) => {
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
@@ -176,6 +182,17 @@ const Header = ({
           </TooltipTrigger>
           <TooltipContent>
             <p>Settings</p>
+          </TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" onClick={onToggleFullscreen}>
+              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</p>
           </TooltipContent>
         </Tooltip>
 
