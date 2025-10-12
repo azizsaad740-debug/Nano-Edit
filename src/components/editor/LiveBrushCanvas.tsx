@@ -51,7 +51,7 @@ export const LiveBrushCanvas = ({
 
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, operation: 'add' | 'subtract' = 'add') => {
     // These settings are for the FINAL render on the offscreen canvas
-    ctx.lineWidth = brushState.size;
+    ctx.lineWidth = brushState.size; // Set base line width here
     ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
     ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
 
@@ -80,29 +80,21 @@ export const LiveBrushCanvas = ({
   }, [brushState, activeTool, isSelectionBrush]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
-    if (points.length === 0) return;
+    if (points.length < 1) return;
 
-    // Temporarily ignore smoothness for this drawing method, as it's designed for continuous paths.
-    // For true smoothness with variable width, more complex interpolation and drawing is needed.
+    // Settings like lineWidth, lineJoin, lineCap, strokeStyle, fillStyle, shadowBlur, globalAlpha
+    // are already set in applyBrushSettings before calling drawPath.
 
-    for (let i = 0; i < points.length; i++) {
-      const p = points[i];
-      const pressure = p.pressure || 0.5; // Default pressure for mouse events
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
 
-      const effectiveSize = brushState.size * pressure;
-      // Opacity and shadow blur are set once per stroke in endDrawing, not per point here
-      // ctx.globalAlpha = effectiveOpacity; // Apply opacity per point
-      // ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
-
-      ctx.beginPath();
-      if (brushState.shape === 'circle') {
-        ctx.arc(p.x, p.y, effectiveSize / 2, 0, 2 * Math.PI);
-      } else { // square
-        ctx.rect(p.x - effectiveSize / 2, p.y - effectiveSize / 2, effectiveSize, effectiveSize);
-      }
-      ctx.fill();
+    // Simple linear interpolation for now.
+    // For smoothness, one could implement Catmull-Rom splines or Bezier curves here.
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
     }
-  }, [brushState.size, brushState.shape]);
+    ctx.stroke(); // Draw the continuous line
+  }, []);
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
