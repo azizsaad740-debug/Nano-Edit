@@ -786,13 +786,17 @@ const Workspace = (props: WorkspaceProps) => {
                           style={imageStyle}
                           onLoad={onImageLoad}
                         />
-                        {activeTool === 'lasso' && (
+                        
+                        {renderWorkspaceLayers(layers)} {/* Render layers first */}
+
+                        {activeTool === 'lasso' && ( // Render SelectionCanvas after layers
                           <SelectionCanvas 
                             imageRef={imgRef}
                             selectionPath={selectionPath}
                             onSelectionComplete={onSelectionChange}
                           />
                         )}
+
                         {!isPreviewingOriginal && effects.vignette > 0 && (
                           <div
                             className="absolute inset-0 pointer-events-none rounded-lg"
@@ -810,7 +814,7 @@ const Workspace = (props: WorkspaceProps) => {
                             }}
                           />
                         )}
-                        {renderWorkspaceLayers(layers)}
+                        
                         {(activeTool === 'brush' || activeTool === 'eraser') && (
                           <LiveBrushCanvas
                             brushState={brushState}
