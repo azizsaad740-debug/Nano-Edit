@@ -25,6 +25,19 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       img.src = layer.dataUrl!;
     });
     ctx.drawImage(img, 0, 0);
+
+    // Apply mask if present
+    if (layer.maskDataUrl) {
+      const maskImg = new Image();
+      await new Promise((res, rej) => {
+        maskImg.onload = res;
+        maskImg.onerror = rej;
+        maskImg.src = layer.maskDataUrl!;
+      });
+      ctx.globalCompositeOperation = 'destination-in'; // Use mask to clip content
+      ctx.drawImage(maskImg, 0, 0);
+      ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation; // Reset to layer's blend mode
+    }
   } else if (layer.type === 'text') {
     const {
       content = '', x = 50, y = 50, fontSize = 48, color = '#000000',

@@ -75,6 +75,7 @@ export interface Layer {
   content?: string;
   // Drawing layer specific properties
   dataUrl?: string;
+  maskDataUrl?: string; // New: Mask for drawing layers
   // Smart object properties
   smartObjectData?: {
     layers: Layer[];
@@ -811,37 +812,30 @@ export const useEditorState = () => {
   }, [currentState, layers]);
 
   /* ---------- Generative fill ---------- */
-  const applyGenerativeResult = useCallback((url: string) => {
-    if (!selectionPath || selectionPath.length < 2) {
+  const applyGenerativeResult = useCallback(async (url: string) => {
+    if (!selectionPath || selectionPath.length < 2 || !imgRef.current || !dimensions) {
       showError("A selection is required for generative fill.");
       return;
     }
 
     const toastId = showLoading("Applying generative fill...");
 
-    const generatedImage = new Image();
-    generatedImage.crossOrigin = "Anonymous";
-    generatedImage.onload = () => {
-      const mainCanvas = document.createElement('canvas');
-      const mainCtx = mainCanvas.getContext('2d');
-      if (!mainCtx || !imgRef.current) {
-        dismissToast(toastId);
-        showError("Failed to create canvas for fill.");
-        return;
-      }
+    try {
+      const generatedImage = new Image();
+      generatedImage.crossOrigin = "Anonymous";
+      await new Promise((resolve, reject) => {
+        generatedImage.onload = resolve;
+        generatedImage.onerror = reject;
+        generatedImage.src = url;
+      });
 
-      mainCanvas.width = imgRef.current.naturalWidth;
-      mainCanvas.height = imgRef.current.naturalHeight;
-
-      // 1. Create a mask canvas
+      // 1. Create a mask canvas from the selectionPath
       const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = mainCanvas.width;
-      maskCanvas.height = mainCanvas.height;
+      maskCanvas.width = dimensions.width;
+      maskCanvas.height = dimensions.height;
       const maskCtx = maskCanvas.getContext('2d');
       if (!maskCtx) {
-        dismissToast(toastId);
-        showError("Failed to create mask canvas for feathering.");
-        return;
+        throw new Error("Failed to create mask canvas for feathering.");
       }
 
       // Draw the selection path onto the mask canvas
@@ -858,39 +852,32 @@ export const useEditorState = () => {
       const featherRadius = 20; // Adjust this value for desired feathering
       maskCtx.filter = `blur(${featherRadius}px)`;
       maskCtx.drawImage(maskCanvas, 0, 0); // Redraw to apply filter
+      const featheredMaskDataUrl = maskCanvas.toDataURL();
 
-      // 2. Draw the generated image onto the main canvas
-      mainCtx.drawImage(generatedImage, 0, 0, mainCanvas.width, mainCanvas.height);
-
-      // 3. Apply the blurred mask to the generated image
-      mainCtx.globalCompositeOperation = 'destination-in';
-      mainCtx.drawImage(maskCanvas, 0, 0);
-      mainCtx.globalCompositeOperation = 'source-over'; // Reset composite operation
-
-      const dataUrl = mainCanvas.toDataURL();
-      
+      // Create a new drawing layer with the generated image and the feathered mask
       const newLayer: Layer = {
         id: uuidv4(),
         type: "drawing",
-        name: `Fill ${layers.filter((l) => l.type === "drawing").length + 1}`,
+        name: `Generative Fill ${layers.filter((l) => l.type === "drawing").length + 1}`,
         visible: true,
         opacity: 100,
         blendMode: 'normal',
-        dataUrl: dataUrl,
+        dataUrl: generatedImage.src, // The full generated image
+        maskDataUrl: featheredMaskDataUrl, // The feathered mask
       };
       const updatedLayers = [...layers, newLayer];
       recordHistory("Generative Fill", currentState, updatedLayers);
       setSelectedLayerId(newLayer.id);
-      setSelectionPath(null);
+      setSelectionPath(null); // Clear the selection path
+      setSelectionMaskDataUrl(null); // Clear the selection mask overlay
       dismissToast(toastId);
-      showSuccess("Generative fill applied.");
-    };
-    generatedImage.onerror = () => {
+      showSuccess("Generative fill applied as a new layer.");
+    } catch (e: any) {
+      console.error(e);
       dismissToast(toastId);
-      showError("Failed to load generated image for fill.");
-    };
-    generatedImage.src = url;
-  }, [selectionPath, imgRef, layers, recordHistory, currentState, setSelectedLayerId]);
+      showError(e.message || "Generation failed.");
+    }
+  }, [selectionPath, imgRef, dimensions, layers, recordHistory, currentState, setSelectedLayerId]);
 
   const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
     setBrushStateInternal(prev => ({ ...prev, ...updates }));
