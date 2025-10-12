@@ -37,77 +37,59 @@ export const LiveBrushCanvas = ({
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY,
-      pressure: (e as PointerEvent).pressure || 0.5,
+      pressure: (e as PointerEvent).pressure || 0.5, // Capture pressure, default to 0.5 for mouse
     };
   }, [imageRef]);
 
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, isFinalRender: boolean) => {
-    ctx.lineWidth = brushState.size;
-    ctx.globalAlpha = brushState.opacity / 100;
-    ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
-    ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
-
-    const maxBlur = brushState.size * 0.75;
-    ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
-
+    // Line width, alpha, line join, line cap will be set per point for pressure sensitivity
+    // Shadow blur and color are set here, but shadow blur will be adjusted per point
+    
     if (activeTool === 'eraser') {
       if (isFinalRender) {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.strokeStyle = 'rgba(0,0,0,1)'; // Black for erasing
-        ctx.fillStyle = 'rgba(0,0,0,1)';
-        ctx.shadowColor = 'rgba(0,0,0,1)';
-      } else { // Live preview for eraser
-        ctx.globalCompositeOperation = 'source-over'; // Always draw visibly for live preview
-        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Semi-transparent grey
-        ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.globalCompositeOperation = 'destination-out'; // Apply for final erase
+      } else {
+        ctx.globalCompositeOperation = 'source-over'; // Preview is always source-over
       }
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Eraser color for drawing
+      ctx.fillStyle = 'rgba(0,0,0,1)';
+      ctx.shadowColor = 'rgba(0,0,0,1)';
     } else { // brush tool
-      ctx.globalCompositeOperation = 'source-over'; // Always draw visibly for live preview
+      ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = brushState.color;
       ctx.fillStyle = brushState.color;
       ctx.shadowColor = brushState.color;
     }
   }, [brushState, activeTool]);
 
-  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>) => {
+  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
     if (points.length === 0) return;
 
-    if (points.length === 1) {
-      // Draw a single dot for the very first point
+    // Temporarily ignore smoothness for this drawing method, as it's designed for continuous paths.
+    // For true smoothness with variable width, more complex interpolation and drawing is needed.
+
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const pressure = p.pressure || 0.5; // Default pressure for mouse events
+
+      const effectiveSize = brushState.size * pressure;
+      const effectiveOpacity = (brushState.opacity / 100) * pressure;
+
+      ctx.globalAlpha = effectiveOpacity; // Apply opacity per point
+
+      // Apply hardness (shadow blur)
+      const maxBlur = effectiveSize * 0.75; // Max blur scales with effective size
+      ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
+
       ctx.beginPath();
       if (brushState.shape === 'circle') {
-        ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, 2 * Math.PI); // Draw a circle with radius half the line width
+        ctx.arc(p.x, p.y, effectiveSize / 2, 0, 2 * Math.PI);
       } else { // square
-        ctx.rect(points[0].x - ctx.lineWidth / 2, points[0].y - ctx.lineWidth / 2, ctx.lineWidth, ctx.lineWidth);
+        ctx.rect(p.x - effectiveSize / 2, p.y - effectiveSize / 2, effectiveSize, effectiveSize);
       }
-      ctx.fill(); // Fill the shape
-      return;
+      ctx.fill();
     }
-
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-
-    for (let i = 1; i < points.length - 1; i++) {
-      const p0 = points[i - 1];
-      const p1 = points[i];
-      const p2 = points[i + 1];
-
-      const controlX = p1.x;
-      const controlY = p1.y;
-
-      const midX = (p1.x + p2.x) / 2;
-      const midY = (p1.y + p2.y) / 2;
-
-      const smoothFactor = brushState.smoothness / 100;
-      const smoothedControlX = controlX * (1 - smoothFactor) + midX * smoothFactor;
-      const smoothedControlY = controlY * (1 - smoothFactor) + midY * smoothFactor;
-
-      ctx.quadraticCurveTo(smoothedControlX, smoothedControlY, midX, midY);
-    }
-    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
-    ctx.stroke();
-  }, [brushState.smoothness, brushState.shape]);
+  }, [brushState.size, brushState.opacity, brushState.hardness, brushState.shape]);
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
