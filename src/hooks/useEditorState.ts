@@ -214,7 +214,7 @@ export const useEditorState = () => {
   const [brushStateInternal, setBrushStateInternal] = useState<Omit<BrushState, 'color'>>(initialBrushState); // Renamed to avoid conflict
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
-  const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
+  const [selectionPath, _setSelectionPath] = useState<Point[] | null>(null); // Renamed internal setter
   const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null); // New state for selection mask
   const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
   const imgRef = useRef<HTMLImageElement>(null);
@@ -304,7 +304,7 @@ export const useEditorState = () => {
   const setActiveTool = (tool: ActiveTool | null) => {
     // Clear selection states if switching away from selection tools
     if (tool !== 'lasso' && tool !== 'selectionBrush') {
-      setSelectionPath(null);
+      _setSelectionPath(null); // Use the internal setter directly
       setSelectionMaskDataUrl(null);
     }
     // Clear pending crop if switching away from crop tool
@@ -313,8 +313,6 @@ export const useEditorState = () => {
     }
     // Clear shape/gradient drawing states if switching away from them
     // These are managed in Workspace, but good to have a fallback here.
-    // The Workspace component will manage its own `isDrawingShape`, `isDrawingGradient` states,
-    // but we ensure the tool state here is consistent.
     
     _setActiveTool(tool);
   };
@@ -350,7 +348,7 @@ export const useEditorState = () => {
     setLayers(initialLayers);
     setSelectedLayerId(initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null);
     setPendingCrop(undefined);
-    setSelectionPath(null);
+    _setSelectionPath(null); // Clear selection path on new image load
     setSelectionMaskDataUrl(null); // Clear mask on new image load
     showSuccess(successMsg);
   }, [setLayers, setSelectedLayerId]);
@@ -624,7 +622,7 @@ export const useEditorState = () => {
       setSelectedLayerId(null);
       setLayers(projectData.history[projectData.currentHistoryIndex].layers);
       setPendingCrop(undefined);
-      setSelectionPath(null);
+      _setSelectionPath(null); // Clear selection path on project load
       setSelectionMaskDataUrl(null); // Clear mask on project load
       
       dismissToast(toastId);
@@ -785,7 +783,7 @@ export const useEditorState = () => {
     }]);
     setSelectedLayerId(null);
     setPendingCrop(undefined);
-    setSelectionPath(null);
+    _setSelectionPath(null); // Clear selection path on reset
     setSelectionMaskDataUrl(null); // Clear mask on reset
     setForegroundColor("#000000"); // Reset foreground color
     setBackgroundColor("#FFFFFF"); // Reset background color
@@ -846,7 +844,7 @@ export const useEditorState = () => {
       const updatedLayers = [...layers, newLayer];
       recordHistory("Generative Fill", currentState, updatedLayers);
       setSelectedLayerId(newLayer.id);
-      setSelectionPath(null); // Clear the selection path
+      _setSelectionPath(null); // Clear the selection path
       setSelectionMaskDataUrl(null); // Clear the selection mask overlay
       dismissToast(toastId);
       showSuccess("Generative fill applied as a new layer.");
@@ -912,7 +910,7 @@ export const useEditorState = () => {
 
   const clearSelectionMask = useCallback(() => {
     setSelectionMaskDataUrl(null);
-    setSelectionPath(null);
+    _setSelectionPath(null); // Use the internal setter directly
     showSuccess("Selection cleared.");
   }, []);
 
@@ -928,7 +926,7 @@ export const useEditorState = () => {
       const newSelectionPath = await maskToPolygon(selectionMaskDataUrl, dimensions.width, dimensions.height);
       
       if (newSelectionPath.length > 0) {
-        setSelectionPath(newSelectionPath);
+        _setSelectionPath(newSelectionPath); // Use the internal setter directly
         setSelectionMaskDataUrl(null); // Clear the mask overlay after applying
         dismissToast(toastId);
         showSuccess("Selection applied.");
@@ -966,7 +964,7 @@ export const useEditorState = () => {
 
   // New: Handle setting selection path and generating mask for visual feedback
   const setSelectionPathAndGenerateMask = useCallback(async (path: Point[] | null) => {
-    setSelectionPath(path);
+    _setSelectionPath(path); // Use the internal setter
     if (path && path.length > 1 && dimensions) {
       try {
         const maskData = await polygonToMaskDataUrl(path, dimensions.width, dimensions.height);
@@ -1027,7 +1025,7 @@ export const useEditorState = () => {
     if (activeTool === 'crop') cancelCrop();
     else if (activeTool === 'selectionBrush') clearSelectionMask();
     else setActiveTool(null);
-    if (selectionPath) setSelectionPathAndGenerateMask(null); // Clear selection path and mask
+    if (selectionPath) _setSelectionPath(null); // Use the internal setter directly
   }, { enabled: !!image, preventDefault: true }); // Ensure escape prevents default
 
   // Keyboard movement for selected layers
