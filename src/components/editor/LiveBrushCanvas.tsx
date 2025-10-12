@@ -39,18 +39,33 @@ export const LiveBrushCanvas = ({
     };
   }, [imageRef]);
 
-  const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D) => {
-    ctx.strokeStyle = brushState.color;
-    ctx.fillStyle = brushState.color; // Ensure fillStyle is also set for single dots
+  const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, isFinalRender: boolean) => {
     ctx.lineWidth = brushState.size;
     ctx.globalAlpha = brushState.opacity / 100;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.globalCompositeOperation = activeTool === 'eraser' ? 'destination-out' : 'source-over';
 
     const maxBlur = brushState.size * 0.75;
     ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
-    ctx.shadowColor = activeTool === 'eraser' ? 'rgba(0,0,0,1)' : brushState.color;
+
+    if (activeTool === 'eraser') {
+      if (isFinalRender) {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.strokeStyle = 'rgba(0,0,0,1)'; // Black for erasing
+        ctx.fillStyle = 'rgba(0,0,0,1)';
+        ctx.shadowColor = 'rgba(0,0,0,1)';
+      } else { // Live preview for eraser
+        ctx.globalCompositeOperation = 'source-over'; // Draw visibly
+        ctx.strokeStyle = 'rgba(128, 128, 128, 0.5)'; // Semi-transparent grey
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.5)';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      }
+    } else { // brush tool
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = brushState.color;
+      ctx.fillStyle = brushState.color;
+      ctx.shadowColor = brushState.color;
+    }
   }, [brushState, activeTool]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>) => {
@@ -93,7 +108,7 @@ export const LiveBrushCanvas = ({
     if (!ctx) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    applyBrushSettings(ctx);
+    applyBrushSettings(ctx, false); // Pass false for live render
 
     drawPath(ctx, pathPointsRef.current);
 
@@ -139,7 +154,7 @@ export const LiveBrushCanvas = ({
     const offscreenCtx = offscreenCanvas.getContext('2d');
 
     if (offscreenCtx) {
-      applyBrushSettings(offscreenCtx);
+      applyBrushSettings(offscreenCtx, true); // Pass true for final render
       drawPath(offscreenCtx, pathPointsRef.current);
       onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
     } else {
@@ -181,7 +196,7 @@ export const LiveBrushCanvas = ({
   
   React.useEffect(() => {
     if (contextRef.current) {
-      applyBrushSettings(contextRef.current);
+      applyBrushSettings(contextRef.current, false); // Pass false for live render
     }
   }, [brushState, activeTool, applyBrushSettings]);
 
