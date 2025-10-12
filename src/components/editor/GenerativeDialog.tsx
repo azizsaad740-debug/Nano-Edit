@@ -17,10 +17,12 @@ import { generativeFillApi } from "@/utils/aiImageGenerator"; // Import the simu
 interface GenerativeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onApply: (resultUrl: string) => void;
+  onApply: (resultUrl: string, maskDataUrl: string | null) => void; // Updated signature
   apiKey: string;
-  originalImage: string | null; // Added originalImage prop
-  selectionPath: Point[] | null; // Added selectionPath prop
+  originalImage: string | null;
+  selectionPath: Point[] | null;
+  selectionMaskDataUrl: string | null; // New prop
+  imageNaturalDimensions: { width: number; height: number } | null; // New prop
 }
 
 interface Point { // Define Point interface here or import from a common type file
@@ -33,8 +35,10 @@ export const GenerativeDialog = ({
   onOpenChange,
   onApply,
   apiKey,
-  originalImage, // Destructure originalImage
-  selectionPath, // Destructure selectionPath
+  originalImage,
+  selectionPath,
+  selectionMaskDataUrl, // Destructure new prop
+  imageNaturalDimensions, // Destructure new prop
 }: GenerativeDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -48,7 +52,11 @@ export const GenerativeDialog = ({
       showError("Prompt cannot be empty.");
       return;
     }
-    if (!originalImage || !selectionPath || selectionPath.length < 2) {
+    if (!originalImage || !imageNaturalDimensions) {
+      showError("An image must be loaded to use generative fill.");
+      return;
+    }
+    if (!selectionPath && !selectionMaskDataUrl) {
       showError("A selection is required for generative fill.");
       return;
     }
@@ -59,11 +67,36 @@ export const GenerativeDialog = ({
       const generatedResultUrl = await generativeFillApi(prompt.trim());
       
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         setPreviewUrl(generatedResultUrl);
+
+        // Determine the mask to use: prioritize selectionMaskDataUrl, then create from selectionPath
+        let finalMaskDataUrl = selectionMaskDataUrl;
+        if (!finalMaskDataUrl && selectionPath && selectionPath.length > 1) {
+          const maskCanvas = document.createElement('canvas');
+          maskCanvas.width = imageNaturalDimensions.width;
+          maskCanvas.height = imageNaturalDimensions.height;
+          const maskCtx = maskCanvas.getContext('2d');
+          if (maskCtx) {
+            maskCtx.fillStyle = 'white';
+            maskCtx.beginPath();
+            maskCtx.moveTo(selectionPath[0].x, selectionPath[0].y);
+            for (let i = 1; i < selectionPath.length; i++) {
+              maskCtx.lineTo(selectionPath[i].x, selectionPath[i].y);
+            }
+            maskCtx.closePath();
+            maskCtx.fill();
+            // Apply a default feathering if mask was generated from path
+            const featherRadius = 20; 
+            maskCtx.filter = `blur(${featherRadius}px)`;
+            maskCtx.drawImage(maskCanvas, 0, 0);
+            finalMaskDataUrl = maskCanvas.toDataURL();
+          }
+        }
+
         // Simulate a short delay before applying
         setTimeout(() => {
-          onApply(generatedResultUrl);
+          onApply(generatedResultUrl, finalMaskDataUrl); // Pass the final mask
           dismissToast(toastId);
           showSuccess("Generated image ready.");
           setPreviewUrl(null);

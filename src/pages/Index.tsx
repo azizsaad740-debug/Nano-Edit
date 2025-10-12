@@ -370,7 +370,7 @@ const Index = () => {
                   Refine Selection
                 </Button>
               )}
-              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasSelection}>
+              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasSelection && !hasSelectionMask}>
                 Generative Fill
               </Button>
               <Button variant="outline" size="sm" onClick={clearSelectionMask}>
@@ -489,6 +489,8 @@ const Index = () => {
         apiKey={apiKey}
         originalImage={image}
         selectionPath={selectionPath}
+        selectionMaskDataUrl={selectionMaskDataUrl} // Pass new prop
+        imageNaturalDimensions={dimensions} // Pass new prop
       />
       <GenerateImageDialog
         open={openGenerateImage}

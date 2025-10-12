@@ -813,9 +813,13 @@ export const useEditorState = () => {
   }, [currentState, layers]);
 
   /* ---------- Generative fill ---------- */
-  const applyGenerativeResult = useCallback(async (url: string) => {
-    if (!selectionPath || selectionPath.length < 2 || !imgRef.current || !dimensions) {
-      showError("A selection is required for generative fill.");
+  const applyGenerativeResult = useCallback(async (url: string, maskDataUrl: string | null) => { // Updated signature
+    if (!imgRef.current || !dimensions) {
+      showError("Image dimensions are required for generative fill.");
+      return;
+    }
+    if (!maskDataUrl) {
+      showError("A selection mask is required for generative fill.");
       return;
     }
 
@@ -830,32 +834,7 @@ export const useEditorState = () => {
         generatedImage.src = url;
       });
 
-      // 1. Create a mask canvas from the selectionPath
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = dimensions.width;
-      maskCanvas.height = dimensions.height;
-      const maskCtx = maskCanvas.getContext('2d');
-      if (!maskCtx) {
-        throw new Error("Failed to create mask canvas for feathering.");
-      }
-
-      // Draw the selection path onto the mask canvas
-      maskCtx.fillStyle = 'white';
-      maskCtx.beginPath();
-      maskCtx.moveTo(selectionPath[0].x, selectionPath[0].y);
-      for (let i = 1; i < selectionPath.length; i++) {
-        maskCtx.lineTo(selectionPath[i].x, selectionPath[i].y);
-      }
-      maskCtx.closePath();
-      maskCtx.fill();
-
-      // Apply blur to the mask for feathering
-      const featherRadius = 20; // Adjust this value for desired feathering
-      maskCtx.filter = `blur(${featherRadius}px)`;
-      maskCtx.drawImage(maskCanvas, 0, 0); // Redraw to apply filter
-      const featheredMaskDataUrl = maskCanvas.toDataURL();
-
-      // Create a new drawing layer with the generated image and the feathered mask
+      // Create a new drawing layer with the generated image and the provided mask
       const newLayer: Layer = {
         id: uuidv4(),
         type: "drawing",
@@ -864,7 +843,7 @@ export const useEditorState = () => {
         opacity: 100,
         blendMode: 'normal',
         dataUrl: generatedImage.src, // The full generated image
-        maskDataUrl: featheredMaskDataUrl, // The feathered mask
+        maskDataUrl: maskDataUrl, // The feathered mask provided by the dialog
       };
       const updatedLayers = [...layers, newLayer];
       recordHistory("Generative Fill", currentState, updatedLayers);
@@ -878,7 +857,7 @@ export const useEditorState = () => {
       dismissToast(toastId);
       showError(e.message || "Generation failed.");
     }
-  }, [selectionPath, imgRef, dimensions, layers, recordHistory, currentState, setSelectedLayerId]);
+  }, [imgRef, dimensions, layers, recordHistory, currentState, setSelectedLayerId]);
 
   const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
     setBrushStateInternal(prev => ({ ...prev, ...updates }));
