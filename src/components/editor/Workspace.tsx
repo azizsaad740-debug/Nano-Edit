@@ -812,7 +812,7 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
 
-                        {activeTool === 'selectionBrush' && ( // Render SelectionMaskOverlay
+                        {(activeTool === 'lasso' || activeTool === 'selectionBrush') && selectionMaskDataUrl && ( // Render SelectionMaskOverlay for both lasso and selectionBrush
                           <SelectionMaskOverlay
                             maskDataUrl={selectionMaskDataUrl}
                             imageNaturalDimensions={imageNaturalDimensions}

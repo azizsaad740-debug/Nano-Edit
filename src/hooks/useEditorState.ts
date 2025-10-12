@@ -302,21 +302,17 @@ export const useEditorState = () => {
   }, [layers, currentLayers, updateCurrentLayersInHistory]);
 
   const setActiveTool = (tool: ActiveTool | null) => {
-    if (tool !== 'lasso' && tool !== 'selectionBrush') { // Clear selection path if not lasso or selection brush
+    // Clear selection states if switching away from selection tools
+    if (tool !== 'lasso' && tool !== 'selectionBrush') {
       setSelectionPath(null);
-    }
-    if (tool !== 'selectionBrush') { // Clear selection mask if not selection brush
       setSelectionMaskDataUrl(null);
     }
-
-    // Handle entering/leaving crop mode
-    if (tool === 'crop') {
-      // Entering crop mode
-      setPendingCrop(currentState.crop || { unit: '%', width: 50, height: 50, x: 25, y: 25 });
-    } else if (activeTool === 'crop') {
-      // Leaving crop mode (since tool is not 'crop' here)
+    // Clear pending crop if switching away from crop tool
+    if (tool !== 'crop' && activeTool === 'crop') {
       setPendingCrop(undefined);
     }
+    // Clear shape/gradient drawing states if switching away from them
+    // These are managed in Workspace, but good to have a fallback here.
     
     _setActiveTool(tool);
   };
@@ -966,6 +962,22 @@ export const useEditorState = () => {
     }
   }, [selectionPath, dimensions]);
 
+  // New: Handle setting selection path and generating mask for visual feedback
+  const setSelectionPathAndGenerateMask = useCallback(async (path: Point[] | null) => {
+    setSelectionPath(path);
+    if (path && path.length > 1 && dimensions) {
+      try {
+        const maskData = await polygonToMaskDataUrl(path, dimensions.width, dimensions.height);
+        setSelectionMaskDataUrl(maskData);
+      } catch (error) {
+        console.error("Failed to generate mask from path:", error);
+        setSelectionMaskDataUrl(null);
+      }
+    } else {
+      setSelectionMaskDataUrl(null);
+    }
+  }, [dimensions]);
+
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -1013,7 +1025,7 @@ export const useEditorState = () => {
     if (activeTool === 'crop') cancelCrop();
     else if (activeTool === 'selectionBrush') clearSelectionMask();
     else setActiveTool(null);
-    if (selectionPath) setSelectionPath(null);
+    if (selectionPath) setSelectionPathAndGenerateMask(null); // Clear selection path and mask
   }, { enabled: !!image, preventDefault: true }); // Ensure escape prevents default
 
   // Keyboard movement for selected layers
@@ -1167,7 +1179,7 @@ export const useEditorState = () => {
     applyGenerativeResult,
     // Selection
     selectionPath,
-    setSelectionPath,
+    setSelectionPath: setSelectionPathAndGenerateMask, // Use the new function for lasso
     selectionMaskDataUrl, // Exposed selection mask
     handleSelectionBrushStroke, // Exposed selection brush stroke handler
     clearSelectionMask, // Exposed clear selection mask handler
