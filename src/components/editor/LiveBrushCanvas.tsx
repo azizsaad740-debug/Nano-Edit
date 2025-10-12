@@ -6,8 +6,10 @@ import { type BrushState } from "@/hooks/useEditorState";
 interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
-  onDrawEnd: (dataUrl: string) => void;
+  onDrawEnd: (dataUrl: string, layerId: string) => void;
   activeTool: "brush" | "eraser";
+  selectedLayerId: string | null;
+  onAddDrawingLayer: () => string;
 }
 
 export const LiveBrushCanvas = ({
@@ -15,12 +17,15 @@ export const LiveBrushCanvas = ({
   imageRef,
   onDrawEnd,
   activeTool,
+  selectedLayerId,
+  onAddDrawingLayer,
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
   const isDrawingRef = React.useRef(false);
-  const pathPointsRef = React.useRef<Array<{ x: number; y: number; pressure?: number }>>([]); // Added pressure for future use
+  const pathPointsRef = React.useRef<Array<{ x: number; y: number; pressure?: number }>>([]);
   const animationFrameIdRef = React.useRef<number | null>(null);
+  const activeDrawingLayerIdRef = React.useRef<string | null>(null);
 
   const getCoords = React.useCallback((e: MouseEvent): { x: number; y: number; pressure?: number } | null => {
     if (!imageRef.current) return null;
@@ -30,7 +35,7 @@ export const LiveBrushCanvas = ({
     return {
       x: (e.clientX - rect.left) * scaleX,
       y: (e.clientY - rect.top) * scaleY,
-      pressure: (e as PointerEvent).pressure || 0.5, // Default pressure if not a PointerEvent
+      pressure: (e as PointerEvent).pressure || 0.5,
     };
   }, [imageRef]);
 
@@ -42,14 +47,9 @@ export const LiveBrushCanvas = ({
     ctx.lineJoin = "round";
     ctx.globalCompositeOperation = activeTool === 'eraser' ? 'destination-out' : 'source-over';
 
-    // Simulate hardness using shadowBlur
-    // A hardness of 100 means no blur (sharp edge), 0 means maximum blur (softest edge)
-    const maxBlur = brushState.size * 0.75; // Max blur can be up to 75% of brush size
+    const maxBlur = brushState.size * 0.75;
     ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
-    ctx.shadowColor = brushState.color; // Shadow color should match brush color for soft edges
-    if (activeTool === 'eraser') {
-      ctx.shadowColor = 'rgba(0,0,0,1)'; // Eraser shadow should be opaque black for destination-out
-    }
+    ctx.shadowColor = activeTool === 'eraser' ? 'rgba(0,0,0,1)' : brushState.color;
   }, [brushState, activeTool]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>) => {
@@ -58,28 +58,23 @@ export const LiveBrushCanvas = ({
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    // Implement basic smoothing using quadratic curves
     for (let i = 1; i < points.length - 1; i++) {
       const p0 = points[i - 1];
       const p1 = points[i];
       const p2 = points[i + 1];
 
-      // Calculate control point for quadratic curve
       const controlX = p1.x;
       const controlY = p1.y;
 
-      // Calculate midpoint between p1 and p2 for smoother connection
       const midX = (p1.x + p2.x) / 2;
       const midY = (p1.y + p2.y) / 2;
 
-      // Adjust control point based on smoothness
       const smoothFactor = brushState.smoothness / 100;
       const smoothedControlX = controlX * (1 - smoothFactor) + midX * smoothFactor;
       const smoothedControlY = controlY * (1 - smoothFactor) + midY * smoothFactor;
 
       ctx.quadraticCurveTo(smoothedControlX, smoothedControlY, midX, midY);
     }
-    // Draw the last segment
     ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
     ctx.stroke();
   }, [brushState.smoothness]);
@@ -88,8 +83,8 @@ export const LiveBrushCanvas = ({
     const ctx = contextRef.current;
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height); // Clear for redraw of live preview
-    applyBrushSettings(ctx); // Apply settings for live preview
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    applyBrushSettings(ctx);
 
     drawPath(ctx, pathPointsRef.current);
 
@@ -101,10 +96,18 @@ export const LiveBrushCanvas = ({
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
     if (!coords || !contextRef.current) return;
+
+    // Determine which layer to draw on
+    if (selectedLayerId && imageRef.current?.dataset.layerType === 'drawing') { // Assuming dataset.layerType is set on the image for the selected layer
+      activeDrawingLayerIdRef.current = selectedLayerId;
+    } else {
+      activeDrawingLayerIdRef.current = onAddDrawingLayer(); // Create a new drawing layer
+    }
+
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke]);
+  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, imageRef]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -114,30 +117,29 @@ export const LiveBrushCanvas = ({
   }, [getCoords]);
 
   const endDrawing = React.useCallback(() => {
-    if (!isDrawingRef.current || !canvasRef.current || !imageRef.current) return;
+    if (!isDrawingRef.current || !canvasRef.current || !imageRef.current || !activeDrawingLayerIdRef.current) return;
     isDrawingRef.current = false;
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
       animationFrameIdRef.current = null;
     }
 
-    // Create an offscreen canvas to render the final stroke
     const offscreenCanvas = document.createElement('canvas');
     offscreenCanvas.width = imageRef.current.naturalWidth;
     offscreenCanvas.height = imageRef.current.naturalHeight;
     const offscreenCtx = offscreenCanvas.getContext('2d');
 
     if (offscreenCtx) {
-      applyBrushSettings(offscreenCtx); // Apply settings to offscreen canvas
-      drawPath(offscreenCtx, pathPointsRef.current); // Draw the complete path
-      onDrawEnd(offscreenCanvas.toDataURL());
+      applyBrushSettings(offscreenCtx);
+      drawPath(offscreenCtx, pathPointsRef.current);
+      onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
     } else {
       console.error("Failed to get offscreen canvas context for brush stroke.");
     }
 
-    // Clear the live preview canvas after drawing is complete
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
+    activeDrawingLayerIdRef.current = null; // Reset active drawing layer
   }, [onDrawEnd, imageRef, applyBrushSettings, drawPath]);
 
   React.useEffect(() => {
@@ -152,11 +154,10 @@ export const LiveBrushCanvas = ({
 
     contextRef.current = ctx;
 
-    // Use Pointer Events for better brush control (pressure, etc.)
     canvas.addEventListener("pointerdown", startDrawing);
     canvas.addEventListener("pointermove", draw);
     canvas.addEventListener("pointerup", endDrawing);
-    canvas.addEventListener("pointerleave", endDrawing); // End drawing if pointer leaves canvas
+    canvas.addEventListener("pointerleave", endDrawing);
 
     return () => {
       canvas.removeEventListener("pointerdown", startDrawing);
@@ -167,9 +168,8 @@ export const LiveBrushCanvas = ({
         cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
-  }, [startDrawing, draw, endDrawing, imageRef]); // Dependencies for useEffect
+  }, [startDrawing, draw, endDrawing, imageRef]);
   
-  // Update brush settings on contextRef when brushState changes
   React.useEffect(() => {
     if (contextRef.current) {
       applyBrushSettings(contextRef.current);
@@ -179,7 +179,7 @@ export const LiveBrushCanvas = ({
   return (
     <canvas
       ref={canvasRef}
-      className="absolute top-0 left-0 w-full h-full pointer-events-auto touch-none" // Use touch-none to prevent browser scrolling/zooming
+      className="absolute top-0 left-0 w-full h-full pointer-events-auto touch-none"
     />
   );
 };

@@ -144,6 +144,14 @@ const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNat
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
 };
 
+// Utility to generate a circle SVG cursor
+const createCircleCursor = (size: number, color: string, borderColor: string, borderWidth: number) => {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size + borderWidth * 2}" height="${size + borderWidth * 2}" viewBox="0 0 ${size + borderWidth * 2} ${size + borderWidth * 2}">
+    <circle cx="${size / 2 + borderWidth}" cy="${size / 2 + borderWidth}" r="${size / 2}" fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>
+  </svg>`;
+  return `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${size / 2 + borderWidth} ${size / 2 + borderWidth}, auto`;
+};
+
 
 const Workspace = (props: WorkspaceProps) => {
   const {
@@ -191,9 +199,6 @@ const Workspace = (props: WorkspaceProps) => {
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const activeDrawingLayerIdRef = useRef<string | null>(null);
-  
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -258,16 +263,9 @@ const Workspace = (props: WorkspaceProps) => {
       e.preventDefault();
       return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser')) {
-      // Brush/Eraser tool interaction is now handled by LiveBrushCanvas's internal pointer events
-      // We just need to ensure a drawing layer is active
-      const selectedLayer = layers.find(l => l.id === selectedLayerId);
-      if (!selectedLayer || selectedLayer.type !== 'drawing') {
-        activeDrawingLayerIdRef.current = onAddDrawingLayer();
-      } else {
-        activeDrawingLayerIdRef.current = selectedLayer.id;
-      }
-      setIsDrawing(true); // Indicate that drawing is active for LiveBrushCanvas to render
-      e.preventDefault(); // Prevent other actions like panning
+      // LiveBrushCanvas handles its own pointer events, so we don't need to do anything here
+      // except prevent default if we want to stop other interactions.
+      e.preventDefault();
       return;
     }
 
@@ -398,8 +396,6 @@ const Workspace = (props: WorkspaceProps) => {
       }
       setGradientStartCoords(null);
       setGradientCurrentCoords(null);
-    } else if (isDrawing) { // This handles the case where LiveBrushCanvas finishes drawing
-      setIsDrawing(false);
     }
   };
 
@@ -552,23 +548,16 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
-  const handleDrawEnd = useCallback((strokeDataUrl: string) => {
-    // This function is now called by LiveBrushCanvas with the final stroke dataUrl
-    // We no longer need to set isDrawing to false here, as LiveBrushCanvas manages its own drawing state.
-    // The isDrawing state in Workspace is primarily to conditionally render LiveBrushCanvas.
-    
-    const layerId = activeDrawingLayerIdRef.current;
-    if (!layerId) return;
-
+  const handleDrawEnd = useCallback((strokeDataUrl: string, layerId: string) => {
     const layer = layers.find(l => l.id === layerId);
     const baseDataUrl = layer?.dataUrl;
 
     const tempCanvas = document.createElement('canvas');
     const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx || !imgRef.current) return;
+    if (!tempCtx || !imageNaturalDimensions) return;
 
-    tempCanvas.width = imgRef.current.naturalWidth;
-    tempCanvas.height = imgRef.current.naturalHeight;
+    tempCanvas.width = imageNaturalDimensions.width;
+    tempCanvas.height = imageNaturalDimensions.height;
 
     const baseImg = new Image();
     const strokeImg = new Image();
@@ -578,16 +567,12 @@ const Workspace = (props: WorkspaceProps) => {
 
     Promise.all([basePromise, strokePromise]).then(() => {
       if (baseDataUrl) tempCtx.drawImage(baseImg, 0, 0);
-      
-      // The composite operation for eraser is now handled within LiveBrushCanvas
-      // so we don't need to set it here.
-      
       tempCtx.drawImage(strokeImg, 0, 0);
       const combinedDataUrl = tempCanvas.toDataURL();
       onLayerUpdate(layerId, { dataUrl: combinedDataUrl });
       onLayerCommit(layerId);
     });
-  }, [layers, onLayerUpdate, onLayerCommit, imgRef]);
+  }, [layers, onLayerUpdate, onLayerCommit, imageNaturalDimensions]);
 
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
@@ -622,8 +607,43 @@ const Workspace = (props: WorkspaceProps) => {
     cropClipPathStyle.clipPath = `inset(${top}% ${right}% ${bottom}% ${left}%)`;
   }
 
+  // Custom Cursors
+  const lassoCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>\') 0 24, auto';
   const eyedropperCursor = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5c1.9 1.9 1.9 5.1 0 7L10 17l-4 4-1-1 4-4 6.5-6.5c1.9-1.9 5.1-1.9 7 0L16.5 3.5z"/><path d="m14 7 3 3"/><path d="M9 13.5 2.5 20"/></svg>\') 0 24, auto';
   const moveToolCursor = 'grab';
+  const textCursor = 'text';
+  const cropCursor = 'crosshair';
+  const shapeCursor = 'crosshair';
+  const gradientCursor = 'crosshair';
+
+  const brushColor = brushState.color;
+  const brushSize = brushState.size;
+  const brushBorderColor = activeTool === 'eraser' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
+  const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : brushColor;
+  const brushBorderWidth = 1;
+
+  const dynamicBrushCursor = createCircleCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth);
+  const dynamicEraserCursor = createCircleCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth);
+
+
+  const getCursorStyle = useCallback(() => {
+    if (!image) return 'default';
+    if (isPanning) return 'grabbing';
+    if (isSpaceDownRef.current) return 'grab';
+
+    switch (activeTool) {
+      case 'lasso': return lassoCursor;
+      case 'brush': return dynamicBrushCursor;
+      case 'eraser': return dynamicEraserCursor;
+      case 'text': return textCursor;
+      case 'crop': return cropCursor;
+      case 'eyedropper': return eyedropperCursor;
+      case 'shape': return shapeCursor;
+      case 'move': return moveToolCursor;
+      case 'gradient': return gradientCursor;
+      default: return 'default';
+    }
+  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
     return layersToRender.map((layer) => {
@@ -701,15 +721,10 @@ const Workspace = (props: WorkspaceProps) => {
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
-        activeTool === 'text' && 'cursor-crosshair',
-        activeTool === 'shape' && 'cursor-crosshair',
-        activeTool === 'gradient' && 'cursor-crosshair', // Added cursor for gradient tool
         (activeTool === 'brush' || activeTool === 'eraser') && 'cursor-none', // Hide cursor for brush/eraser
-        isPanning ? 'cursor-grabbing' : (isSpaceDownRef.current && image ? 'cursor-grab' : '')
       )}
       style={{ 
-        cursor: activeTool === 'eyedropper' ? eyedropperCursor : 
-                activeTool === 'move' ? moveToolCursor : undefined 
+        cursor: getCursorStyle()
       }}
       onDragOver={handleDragOver}
       onDragEnter={handleDragEnter}
@@ -795,12 +810,14 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
                         {renderWorkspaceLayers(layers)}
-                        {isDrawing && (activeTool === 'brush' || activeTool === 'eraser') && (
+                        {(activeTool === 'brush' || activeTool === 'eraser') && (
                           <LiveBrushCanvas
                             brushState={brushState}
                             imageRef={imgRef}
                             onDrawEnd={handleDrawEnd}
                             activeTool={activeTool}
+                            selectedLayerId={selectedLayerId}
+                            onAddDrawingLayer={onAddDrawingLayer}
                           />
                         )}
                         {isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && (

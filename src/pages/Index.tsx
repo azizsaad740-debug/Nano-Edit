@@ -308,6 +308,7 @@ const Index = () => {
     // Brush state
     brushState,
     setBrushState,
+    handleColorPick,
     // Gradient tool state
     gradientToolState,
     setGradientToolState,
@@ -403,7 +404,7 @@ const Index = () => {
                 transforms={transforms}
                 frame={frame}
                 crop={currentState.crop}
-                pendingCrop={pendingCrop}
+                pendingCrop={pendingCrop} // Corrected: pass the state variable
                 onCropChange={setPendingCrop}
                 onApplyCrop={applyCrop}
                 onCancelCrop={cancelCrop}
