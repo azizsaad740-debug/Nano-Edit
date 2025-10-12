@@ -17,7 +17,7 @@ interface PropertiesPanelProps {
   selectedLayer: Layer | undefined;
   activeTool: ActiveTool | null;
   brushState: BrushState;
-  setBrushState: (updates: Partial<BrushState>) => void;
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void; // Updated type
   gradientToolState: GradientToolState;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
@@ -28,6 +28,8 @@ interface PropertiesPanelProps {
   gradientPresets: GradientPreset[];
   onSaveGradientPreset: (name: string, state: GradientToolState) => void;
   onDeleteGradientPreset: (name: string) => void;
+  foregroundColor: string; // New prop
+  setForegroundColor: (color: string) => void; // New prop
 }
 
 export const PropertiesPanel = ({
@@ -45,6 +47,8 @@ export const PropertiesPanel = ({
   gradientPresets,
   onSaveGradientPreset,
   onDeleteGradientPreset,
+  foregroundColor, // Destructure new props
+  setForegroundColor,
 }: PropertiesPanelProps) => {
   return (
     <Card className="flex flex-col h-full">
@@ -110,8 +114,8 @@ export const PropertiesPanel = ({
               setBrushSize={(size) => setBrushState({ size })}
               brushOpacity={brushState.opacity}
               setBrushOpacity={(opacity) => setBrushState({ opacity })}
-              brushColor={brushState.color}
-              setBrushColor={(color) => setBrushState({ color })}
+              foregroundColor={foregroundColor} // Pass foregroundColor
+              setForegroundColor={setForegroundColor} // Pass setForegroundColor
               brushHardness={brushState.hardness} // Pass hardness
               setBrushHardness={(hardness) => setBrushState({ hardness })} // Pass hardness setter
               brushSmoothness={brushState.smoothness} // Pass smoothness

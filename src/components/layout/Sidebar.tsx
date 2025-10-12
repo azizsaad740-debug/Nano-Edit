@@ -82,7 +82,7 @@ interface SidebarProps {
   activeTool: ActiveTool | null;
   // Brush state
   brushState: BrushState;
-  setBrushState: (updates: Partial<BrushState>) => void;
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void; // Updated type
   // Gradient tool state
   gradientToolState: GradientToolState;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
@@ -93,6 +93,9 @@ interface SidebarProps {
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
+  // Foreground/Background Colors
+  foregroundColor: string; // New prop
+  setForegroundColor: (color: string) => void; // New prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -123,6 +126,8 @@ const Sidebar = (props: SidebarProps) => {
                 gradientPresets={props.gradientPresets}
                 onSaveGradientPreset={props.onSaveGradientPreset}
                 onDeleteGradientPreset={props.onDeleteGradientPreset}
+                foregroundColor={props.foregroundColor} // Pass foregroundColor
+                setForegroundColor={props.setForegroundColor} // Pass setForegroundColor
               />
             )}
           </div>

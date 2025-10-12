@@ -70,6 +70,7 @@ interface WorkspaceProps {
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
   setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | null) => void; // Added setActiveTool
+  foregroundColor: string; // New prop
 }
 
 // New component for drawing shape preview
@@ -194,6 +195,7 @@ const Workspace = (props: WorkspaceProps) => {
     selectedShapeType, // Destructure selectedShapeType
     setSelectedLayer, // Destructure setSelectedLayer
     setActiveTool, // Destructure setActiveTool
+    foregroundColor, // Destructure foregroundColor
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -616,10 +618,9 @@ const Workspace = (props: WorkspaceProps) => {
   const shapeCursor = 'crosshair';
   const gradientCursor = 'crosshair';
 
-  const brushColor = brushState.color;
   const brushSize = brushState.size;
   const brushBorderColor = activeTool === 'eraser' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
-  const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : brushColor;
+  const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : foregroundColor; // Use foregroundColor
   const brushBorderWidth = 1;
 
   const dynamicBrushCursor = createCircleCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth);

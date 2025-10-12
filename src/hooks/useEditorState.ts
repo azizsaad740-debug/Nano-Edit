@@ -129,7 +129,7 @@ export interface HistoryItem {
 export interface BrushState {
   size: number;
   opacity: number;
-  color: string;
+  color: string; // This will now be derived from foregroundColor
   hardness: number; // Added hardness
   smoothness: number; // Added smoothness
 }
@@ -175,10 +175,9 @@ const initialHistoryItem: HistoryItem = {
   layers: [], // Layers will be managed by useLayers
 };
 
-const initialBrushState: BrushState = {
+const initialBrushState: Omit<BrushState, 'color'> = { // Removed color from initial state
   size: 50,
   opacity: 100,
-  color: "#ff0000",
   hardness: 50, // Default hardness (0-100)
   smoothness: 0, // Default smoothness (0-100)
 };
@@ -207,12 +206,16 @@ export const useEditorState = () => {
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [activeTool, _setActiveTool] = useState<ActiveTool | null>(null);
-  const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
+  const [brushStateInternal, setBrushStateInternal] = useState<Omit<BrushState, 'color'>>(initialBrushState); // Renamed to avoid conflict
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
   const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
   const imgRef = useRef<HTMLImageElement>(null);
+
+  // New color states
+  const [foregroundColor, setForegroundColor] = useState<string>("#000000");
+  const [backgroundColor, setBackgroundColor] = useState<string>("#FFFFFF");
 
   const currentState = history[currentHistoryIndex].state;
   const currentLayers = history[currentHistoryIndex].layers; // Get layers from history
@@ -774,6 +777,8 @@ export const useEditorState = () => {
     setSelectedLayerId(null);
     setPendingCrop(undefined);
     setSelectionPath(null);
+    setForegroundColor("#000000"); // Reset foreground color
+    setBackgroundColor("#FFFFFF"); // Reset background color
   }, [recordHistory, setSelectedLayerId]);
 
   const jumpToHistory = useCallback((index: number) => {
@@ -877,15 +882,29 @@ export const useEditorState = () => {
     generatedImage.src = url;
   }, [selectionPath, imgRef, layers, recordHistory, currentState, setSelectedLayerId]);
 
-  const handleSetBrushState = useCallback((updates: Partial<BrushState>) => {
-    setBrushState(prev => ({ ...prev, ...updates }));
+  const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
+    setBrushStateInternal(prev => ({ ...prev, ...updates }));
   }, []);
 
   const handleColorPick = useCallback((color: string) => {
-    setBrushState(prev => ({ ...prev, color }));
+    setForegroundColor(color);
     _setActiveTool('brush');
     showSuccess(`Color picked: ${color}`);
   }, []);
+
+  const handleForegroundColorChange = useCallback((color: string) => {
+    setForegroundColor(color);
+  }, []);
+
+  const handleBackgroundColorChange = useCallback((color: string) => {
+    setBackgroundColor(color);
+  }, []);
+
+  const handleSwapColors = useCallback(() => {
+    setForegroundColor(backgroundColor);
+    setBackgroundColor(foregroundColor);
+    showSuccess("Colors swapped!");
+  }, [foregroundColor, backgroundColor]);
 
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
@@ -928,6 +947,7 @@ export const useEditorState = () => {
   useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image });
   useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
   useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image }); // Added shortcut for gradient tool
+  useHotkeys("x", handleSwapColors, { enabled: true, preventDefault: true }); // Shortcut to swap foreground/background colors
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else setActiveTool(null);
@@ -937,9 +957,45 @@ export const useEditorState = () => {
   // Keyboard movement for selected layers
   const handleKeyboardMove = useCallback((dx: number, dy: number, speedMultiplier: number) => {
     if (selectedLayerId && (activeTool === 'move' || activeTool === null)) {
-      moveSelectedLayer(selectedLayerId, dx * speedMultiplier, dy * speedMultiplier);
+      // Find the selected layer and its parent container to calculate movement relative to its parent
+      const findLayerAndParent = (
+        id: string,
+        currentLayers: Layer[],
+        parent: Layer | null = null,
+        path: Layer[] = []
+      ): { layer: Layer | undefined; parent: Layer | null; path: Layer[] } => {
+        for (const layer of currentLayers) {
+          if (layer.id === id) {
+            return { layer, parent, path: [...path, layer] };
+          }
+          if (layer.type === 'group' && layer.children) {
+            const found = findLayerAndParent(id, layer.children, layer, [...path, layer]);
+            if (found) return found;
+          }
+        }
+        return { layer: undefined, parent: null, path: [] };
+      };
+
+      const { layer: selectedLayer, parent: parentLayer } = findLayerAndParent(selectedLayerId, layers);
+
+      if (selectedLayer && (selectedLayer.x !== undefined && selectedLayer.y !== undefined)) {
+        // Determine the effective dimensions of the parent container for percentage calculation
+        let parentWidth = dimensions?.width || 1;
+        let parentHeight = dimensions?.height || 1;
+
+        if (parentLayer && parentLayer.type === 'group' && parentLayer.width && parentLayer.height) {
+          // If the parent is a group, its dimensions are in percentage of the main image
+          parentWidth = (parentLayer.width / 100) * (dimensions?.width || 1);
+          parentHeight = (parentLayer.height / 100) * (dimensions?.height || 1);
+        }
+
+        const newX = (selectedLayer.x ?? 0) + (dx * speedMultiplier / parentWidth) * 100;
+        const newY = (selectedLayer.y ?? 0) + (dy * speedMultiplier / parentHeight) * 100;
+        
+        updateLayer(selectedLayerId, { x: newX, y: newY });
+      }
     }
-  }, [selectedLayerId, activeTool, moveSelectedLayer]);
+  }, [selectedLayerId, activeTool, layers, dimensions, updateLayer]);
 
   useHotkeys("arrowup", (e) => handleKeyboardMove(0, -1, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
   useHotkeys("arrowdown", (e) => handleKeyboardMove(0, 1, e.shiftKey ? 5 : 1), { preventDefault: true, enabled: !!image });
@@ -949,6 +1005,12 @@ export const useEditorState = () => {
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
+
+  // Combine brushStateInternal with foregroundColor for the exposed brushState
+  const brushState: BrushState = {
+    ...brushStateInternal,
+    color: foregroundColor,
+  };
 
   return {
     image,
@@ -1033,7 +1095,7 @@ export const useEditorState = () => {
     setActiveTool,
     // Brush state
     brushState,
-    setBrushState: handleSetBrushState,
+    setBrushState, // Now takes Partial<Omit<BrushState, 'color'>>
     handleColorPick,
     // Gradient tool state
     gradientToolState,
@@ -1049,5 +1111,11 @@ export const useEditorState = () => {
     // Grouping
     groupLayers,
     toggleGroupExpanded,
+    // Foreground/Background Colors
+    foregroundColor,
+    handleForegroundColorChange,
+    backgroundColor,
+    handleBackgroundColorChange,
+    handleSwapColors,
   };
 };

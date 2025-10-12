@@ -26,6 +26,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Layer } from "@/hooks/useEditorState";
+import { ColorTool } from "./ColorTool"; // Import ColorTool
 
 type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient"; // Added 'gradient' tool
 
@@ -34,6 +35,11 @@ interface ToolsPanelProps {
   setActiveTool: (tool: Tool | null) => void;
   selectedShapeType: Layer['shapeType'] | null;
   setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
+  foregroundColor: string; // New prop
+  onForegroundColorChange: (color: string) => void; // New prop
+  backgroundColor: string; // New prop
+  onBackgroundColorChange: (color: string) => void; // New prop
+  onSwapColors: () => void; // New prop
 }
 
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
@@ -54,7 +60,17 @@ const shapeSubTools: { name: string; icon: React.ElementType; type: Layer['shape
   { name: "Triangle", icon: Triangle, type: "triangle" },
 ];
 
-export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSelectedShapeType }: ToolsPanelProps) => {
+export const ToolsPanel = ({ 
+  activeTool, 
+  setActiveTool, 
+  selectedShapeType, 
+  setSelectedShapeType,
+  foregroundColor, // Destructure new props
+  onForegroundColorChange,
+  backgroundColor,
+  onBackgroundColorChange,
+  onSwapColors,
+}: ToolsPanelProps) => {
   const currentShapeIcon = React.useMemo(() => {
     const subTool = shapeSubTools.find(st => st.type === selectedShapeType);
     return subTool ? subTool.icon : Square;
@@ -69,6 +85,14 @@ export const ToolsPanel = ({ activeTool, setActiveTool, selectedShapeType, setSe
     <aside className="h-full border-r bg-muted/40 p-2">
       <TooltipProvider delayDuration={0}>
         <div className="flex flex-col items-center gap-2">
+          <ColorTool
+            foregroundColor={foregroundColor}
+            onForegroundColorChange={onForegroundColorChange}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={onBackgroundColorChange}
+            onSwapColors={onSwapColors}
+          />
+          <div className="w-full h-px bg-border my-2" /> {/* Separator */}
           {tools.map((item) => {
             if (item.tool === "shape") {
               return (

@@ -10,8 +10,8 @@ interface BrushOptionsProps {
   setBrushSize: (size: number) => void;
   brushOpacity: number;
   setBrushOpacity: (opacity: number) => void;
-  brushColor: string;
-  setBrushColor: (color: string) => void;
+  foregroundColor: string; // Changed from brushColor
+  setForegroundColor: (color: string) => void; // Changed from setBrushColor
   brushHardness: number; // Added hardness
   setBrushHardness: (hardness: number) => void; // Added hardness setter
   brushSmoothness: number; // Added smoothness
@@ -24,8 +24,8 @@ export const BrushOptions = ({
   setBrushSize,
   brushOpacity,
   setBrushOpacity,
-  brushColor,
-  setBrushColor,
+  foregroundColor, // Destructure foregroundColor
+  setForegroundColor, // Destructure setForegroundColor
   brushHardness, // Destructure hardness
   setBrushHardness, // Destructure hardness setter
   brushSmoothness, // Destructure smoothness
@@ -89,8 +89,8 @@ export const BrushOptions = ({
             id="brush-color"
             type="color"
             className="p-1 h-8 w-full"
-            value={brushColor}
-            onChange={(e) => setBrushColor(e.target.value)}
+            value={foregroundColor} // Use foregroundColor
+            onChange={(e) => setForegroundColor(e.target.value)} // Update foregroundColor
           />
         </div>
       )}

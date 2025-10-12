@@ -135,6 +135,12 @@ const Index = () => {
     // grouping
     groupLayers,
     toggleGroupExpanded,
+    // Foreground/Background Colors
+    foregroundColor,
+    handleForegroundColorChange,
+    backgroundColor,
+    handleBackgroundColorChange,
+    handleSwapColors,
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -319,6 +325,9 @@ const Index = () => {
     // Grouping
     groupLayers,
     toggleGroupExpanded,
+    // Foreground/Background Colors
+    foregroundColor,
+    setForegroundColor: handleForegroundColorChange, // Pass setter
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;
@@ -385,6 +394,11 @@ const Index = () => {
           setActiveTool={setActiveTool} 
           selectedShapeType={selectedShapeType}
           setSelectedShapeType={setSelectedShapeType}
+          foregroundColor={foregroundColor} // Pass foregroundColor
+          onForegroundColorChange={handleForegroundColorChange} // Pass handler
+          backgroundColor={backgroundColor} // Pass backgroundColor
+          onBackgroundColorChange={handleBackgroundColorChange} // Pass handler
+          onSwapColors={handleSwapColors} // Pass swap handler
         />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75}>
@@ -429,6 +443,7 @@ const Index = () => {
                 selectedShapeType={selectedShapeType}
                 setSelectedLayer={setSelectedLayer}
                 setActiveTool={setActiveTool}
+                foregroundColor={foregroundColor} // Pass foregroundColor
               />
             </div>
           </ResizablePanel>
