@@ -146,35 +146,7 @@ export const ToolsPanel = ({
           })}
           <div className="w-full h-px bg-border my-2" /> {/* Separator */}
           
-          {(activeTool === 'brush' || activeTool === 'eraser' || isSelectionBrushActive) && (
-            <div className="w-full space-y-2 mb-2">
-              <div className="grid gap-1.5">
-                <Label htmlFor="brush-size-quick" className="text-xs">Size</Label>
-                <Slider
-                  id="brush-size-quick"
-                  min={1}
-                  max={200}
-                  step={1}
-                  value={[brushState.size]}
-                  onValueChange={([v]) => setBrushState({ size: v })}
-                  className="w-full"
-                />
-              </div>
-              <div className="grid gap-1.5">
-                <Label htmlFor="brush-opacity-quick" className="text-xs">Opacity</Label>
-                <Slider
-                  id="brush-opacity-quick"
-                  min={0}
-                  max={100}
-                  step={1}
-                  value={[brushState.opacity]}
-                  onValueChange={([v]) => setBrushState({ opacity: v })}
-                  className="w-full"
-                />
-              </div>
-              <div className="w-full h-px bg-border my-2" /> {/* Separator */}
-            </div>
-          )}
+          {/* Removed BrushOptions from here */}
 
           <ColorTool
             foregroundColor={foregroundColor}

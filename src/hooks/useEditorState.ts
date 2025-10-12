@@ -1000,9 +1000,10 @@ export const useEditorState = () => {
           { x: minX, y: maxY },
         ];
         setSelectionPath(newSelectionPath);
+        setSelectionMaskDataUrl(null); // Clear the mask overlay after applying
         dismissToast(toastId);
         showSuccess("Selection applied.");
-        setActiveTool(null); // Deactivate selection brush
+        // Do NOT call setActiveTool(null) here, as it would clear selectionPath
       } else {
         dismissToast(toastId);
         showError("No area selected with the brush.");
@@ -1013,7 +1014,7 @@ export const useEditorState = () => {
       showError("Failed to load selection mask.");
     };
     maskImage.src = selectionMaskDataUrl;
-  }, [selectionMaskDataUrl, imgRef, setActiveTool]);
+  }, [selectionMaskDataUrl, imgRef]);
 
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
