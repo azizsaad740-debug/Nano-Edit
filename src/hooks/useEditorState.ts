@@ -1093,9 +1093,6 @@ export const useEditorState = () => {
     isSmartObjectEditorOpen,
     smartObjectEditingId,
     moveSelectedLayer,
-    // Grouping
-    groupLayers,
-    toggleGroupExpanded,
     // Tool state
     activeTool,
     setActiveTool,
@@ -1114,6 +1111,9 @@ export const useEditorState = () => {
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,
+    // Grouping
+    groupLayers,
+    toggleGroupExpanded,
     // Foreground/Background Colors
     foregroundColor,
     handleForegroundColorChange,
