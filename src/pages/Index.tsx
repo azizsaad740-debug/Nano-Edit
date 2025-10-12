@@ -133,6 +133,7 @@ const Index = () => {
     handleSelectionBrushStroke, // New
     clearSelectionMask, // New
     applyMaskToSelectionPath, // New
+    convertSelectionPathToMask, // New
     // shape tool
     selectedShapeType,
     setSelectedShapeType,
@@ -358,11 +359,17 @@ const Index = () => {
         isFullscreen={isFullscreen}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {(activeTool === "lasso" && hasSelection) || (activeTool === "selectionBrush" && hasSelectionMask) ? (
+          {(activeTool === "lasso" && hasSelection) || (activeTool === "selectionBrush" && hasSelectionMask) || (hasSelection && !hasSelectionMask && activeTool !== 'selectionBrush') ? (
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={applyMaskToSelectionPath} disabled={!hasSelectionMask}>
-                Apply Selection
-              </Button>
+              {activeTool === 'selectionBrush' ? (
+                <Button size="sm" onClick={applyMaskToSelectionPath} disabled={!hasSelectionMask}>
+                  Apply Selection
+                </Button>
+              ) : (
+                <Button size="sm" onClick={convertSelectionPathToMask} disabled={!hasSelection}>
+                  Refine Selection
+                </Button>
+              )}
               <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasSelection}>
                 Generative Fill
               </Button>

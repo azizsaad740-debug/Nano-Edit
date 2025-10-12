@@ -12,7 +12,8 @@ import { saveProjectToFile, loadProjectFromFile } from "@/utils/projectUtils";
 import { readPsd } from "ag-psd";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import { useLayers } from "./useLayers";
-import { maskToPolygon } from "@/utils/maskToPolygon"; // Import the new utility
+import { maskToPolygon } from "@/utils/maskToPolygon";
+import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import the new utility
 
 export interface EditState {
   adjustments: {
@@ -938,7 +939,7 @@ export const useEditorState = () => {
     showSuccess("Selection cleared.");
   }, []);
 
-  const applyMaskToSelectionPath = useCallback(async () => { // Made async
+  const applyMaskToSelectionPath = useCallback(async () => {
     if (!selectionMaskDataUrl || !imgRef.current || !dimensions) {
       showError("No selection to apply.");
       return;
@@ -954,6 +955,7 @@ export const useEditorState = () => {
         setSelectionMaskDataUrl(null); // Clear the mask overlay after applying
         dismissToast(toastId);
         showSuccess("Selection applied.");
+        setActiveTool(null); // Deactivate tool after applying
       } else {
         dismissToast(toastId);
         showError("No area selected with the brush.");
@@ -964,6 +966,26 @@ export const useEditorState = () => {
       showError(error.message || "Failed to apply selection.");
     }
   }, [selectionMaskDataUrl, imgRef, dimensions]);
+
+  const convertSelectionPathToMask = useCallback(async () => {
+    if (!selectionPath || selectionPath.length < 2 || !dimensions) {
+      showError("No polygonal selection to refine.");
+      return;
+    }
+
+    const toastId = showLoading("Preparing selection for refinement...");
+    try {
+      const maskData = await polygonToMaskDataUrl(selectionPath, dimensions.width, dimensions.height);
+      setSelectionMaskDataUrl(maskData);
+      setActiveTool('selectionBrush');
+      dismissToast(toastId);
+      showSuccess("Selection ready for brush refinement.");
+    } catch (error: any) {
+      dismissToast(toastId);
+      console.error("Failed to convert selection path to mask:", error);
+      showError(error.message || "Failed to prepare selection for refinement.");
+    }
+  }, [selectionPath, dimensions]);
 
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
@@ -1171,6 +1193,7 @@ export const useEditorState = () => {
     handleSelectionBrushStroke, // Exposed selection brush stroke handler
     clearSelectionMask, // Exposed clear selection mask handler
     applyMaskToSelectionPath, // Exposed apply mask to selection path handler
+    convertSelectionPathToMask, // Exposed convert selection path to mask handler
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,
