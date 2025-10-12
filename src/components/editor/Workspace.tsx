@@ -219,6 +219,7 @@ const Workspace = (props: WorkspaceProps) => {
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false); // New state for mouse over image
 
   // Shape drawing state
   const [isDrawingShape, setIsDrawingShape] = useState(false);
@@ -646,20 +647,23 @@ const Workspace = (props: WorkspaceProps) => {
     if (isPanning) return 'grabbing';
     if (isSpaceDownRef.current) return 'grab';
 
-    switch (activeTool) {
-      case 'lasso': return lassoCursor;
-      case 'brush': return dynamicBrushCursor;
-      case 'eraser': return dynamicEraserCursor;
-      case 'text': return textCursor;
-      case 'crop': return cropCursor;
-      case 'eyedropper': return eyedropperCursor;
-      case 'shape': return shapeCursor;
-      case 'move': return moveToolCursor;
-      case 'gradient': return gradientCursor;
-      case 'selectionBrush': return selectionBrushCursor;
-      default: return 'default';
+    if (isMouseOverImage) { // Apply tool-specific cursors only when over the image
+      switch (activeTool) {
+        case 'lasso': return lassoCursor;
+        case 'brush': return dynamicBrushCursor;
+        case 'eraser': return dynamicEraserCursor;
+        case 'text': return textCursor;
+        case 'crop': return cropCursor;
+        case 'eyedropper': return eyedropperCursor;
+        case 'shape': return shapeCursor;
+        case 'move': return moveToolCursor;
+        case 'gradient': return gradientCursor;
+        case 'selectionBrush': return selectionBrushCursor;
+        default: return 'default';
+      }
     }
-  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
+    return 'default'; // Default cursor when not over the image
+  }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
     return layersToRender.map((layer) => {
@@ -737,7 +741,8 @@ const Workspace = (props: WorkspaceProps) => {
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
-        (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && 'cursor-none', // Hide cursor for brush/eraser/selectionBrush
+        // Apply cursor-none only when mouse is over image and tool is active
+        (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && isMouseOverImage && 'cursor-none',
       )}
       style={{ 
         cursor: getCursorStyle()
@@ -792,7 +797,13 @@ const Workspace = (props: WorkspaceProps) => {
                     disabled={activeTool !== 'crop'}
                   >
                     <div style={wrapperTransformStyle}>
-                      <div ref={imageContainerRef} className="relative" style={containerStyle}>
+                      <div 
+                        ref={imageContainerRef} 
+                        className="relative" 
+                        style={containerStyle}
+                        onMouseEnter={() => setIsMouseOverImage(true)} // Track mouse over image
+                        onMouseLeave={() => setIsMouseOverImage(false)} // Track mouse leave image
+                      >
                         <img
                           ref={imgRef}
                           src={image}
@@ -832,7 +843,7 @@ const Workspace = (props: WorkspaceProps) => {
                             className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
                             style={{
                               opacity: effects.noise / 100,
-                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYmVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
+                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIz۰۰IiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYmVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
                             }}
                           />
                         )}

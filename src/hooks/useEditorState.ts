@@ -313,6 +313,8 @@ export const useEditorState = () => {
     }
     // Clear shape/gradient drawing states if switching away from them
     // These are managed in Workspace, but good to have a fallback here.
+    // The Workspace component will manage its own `isDrawingShape`, `isDrawingGradient` states,
+    // but we ensure the tool state here is consistent.
     
     _setActiveTool(tool);
   };
