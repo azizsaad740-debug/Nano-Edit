@@ -132,6 +132,7 @@ export interface BrushState {
   color: string; // This will now be derived from foregroundColor
   hardness: number; // Added hardness
   smoothness: number; // Added smoothness
+  shape: 'circle' | 'square'; // Added brush shape
 }
 
 export interface GradientToolState {
@@ -180,6 +181,7 @@ const initialBrushState: Omit<BrushState, 'color'> = { // Removed color from ini
   opacity: 100,
   hardness: 50, // Default hardness (0-100)
   smoothness: 0, // Default smoothness (0-100)
+  shape: 'circle', // Default brush shape
 };
 
 const initialGradientToolState: GradientToolState = {
@@ -1090,6 +1092,10 @@ export const useEditorState = () => {
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
+    moveSelectedLayer,
+    // Grouping
+    groupLayers,
+    toggleGroupExpanded,
     // Tool state
     activeTool,
     setActiveTool,
@@ -1108,9 +1114,6 @@ export const useEditorState = () => {
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,
-    // Grouping
-    groupLayers,
-    toggleGroupExpanded,
     // Foreground/Background Colors
     foregroundColor,
     handleForegroundColorChange,

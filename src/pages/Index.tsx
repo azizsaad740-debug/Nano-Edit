@@ -98,9 +98,9 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    duplicateLayer, // Destructure directly
-    mergeLayerDown, // Destructure directly
-    rasterizeLayer, // Destructure directly
+    duplicateLayer,
+    mergeLayerDown,
+    rasterizeLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,

@@ -44,8 +44,8 @@ export const LiveBrushCanvas = ({
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, isFinalRender: boolean) => {
     ctx.lineWidth = brushState.size;
     ctx.globalAlpha = brushState.opacity / 100;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
+    ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
+    ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
 
     const maxBlur = brushState.size * 0.75;
     ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
@@ -76,8 +76,12 @@ export const LiveBrushCanvas = ({
     if (points.length === 1) {
       // Draw a single dot for the very first point
       ctx.beginPath();
-      ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, 2 * Math.PI); // Draw a circle with radius half the line width
-      ctx.fill(); // Fill the circle
+      if (brushState.shape === 'circle') {
+        ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, 2 * Math.PI); // Draw a circle with radius half the line width
+      } else { // square
+        ctx.rect(points[0].x - ctx.lineWidth / 2, points[0].y - ctx.lineWidth / 2, ctx.lineWidth, ctx.lineWidth);
+      }
+      ctx.fill(); // Fill the shape
       return;
     }
 
@@ -103,7 +107,7 @@ export const LiveBrushCanvas = ({
     }
     ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
     ctx.stroke();
-  }, [brushState.smoothness]);
+  }, [brushState.smoothness, brushState.shape]);
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;

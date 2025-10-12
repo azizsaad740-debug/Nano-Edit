@@ -70,6 +70,8 @@ export const PropertiesPanel = ({
               setBrushHardness={(hardness) => setBrushState({ hardness })} // Pass hardness setter
               brushSmoothness={brushState.smoothness} // Pass smoothness
               setBrushSmoothness={(smoothness) => setBrushState({ smoothness })} // Pass smoothness setter
+              brushShape={brushState.shape} // Pass brush shape
+              setBrushShape={(shape) => setBrushState({ shape })} // Pass brush shape setter
             />
           ) : activeTool === 'gradient' ? ( // New conditional rendering for GradientToolOptions
             <GradientToolOptions

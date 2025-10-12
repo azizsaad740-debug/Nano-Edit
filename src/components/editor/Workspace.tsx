@@ -145,12 +145,18 @@ const ShapePreviewCanvas = ({ start, current, shapeType, containerRect, imageNat
   return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
 };
 
-// Utility to generate a circle SVG cursor
-const createCircleCursor = (size: number, color: string, borderColor: string, borderWidth: number) => {
+// Utility to generate a circle or square SVG cursor
+const createBrushCursor = (size: number, color: string, borderColor: string, borderWidth: number, shape: 'circle' | 'square') => {
+  const halfSize = size / 2;
+  const offset = halfSize + borderWidth;
+  const svgContent = shape === 'circle'
+    ? `<circle cx="${offset}" cy="${offset}" r="${halfSize}" fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>`
+    : `<rect x="${borderWidth}" y="${borderWidth}" width="${size}" height="${size}" fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>`;
+  
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size + borderWidth * 2}" height="${size + borderWidth * 2}" viewBox="0 0 ${size + borderWidth * 2} ${size + borderWidth * 2}">
-    <circle cx="${size / 2 + borderWidth}" cy="${size / 2 + borderWidth}" r="${size / 2}" fill="${color}" stroke="${borderColor}" stroke-width="${borderWidth}"/>
+    ${svgContent}
   </svg>`;
-  return `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${size / 2 + borderWidth} ${size / 2 + borderWidth}, auto`;
+  return `url('data:image/svg+xml;utf8,${encodeURIComponent(svg)}') ${offset} ${offset}, auto`;
 };
 
 
@@ -623,8 +629,8 @@ const Workspace = (props: WorkspaceProps) => {
   const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : foregroundColor; // Use foregroundColor
   const brushBorderWidth = 1;
 
-  const dynamicBrushCursor = createCircleCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth);
-  const dynamicEraserCursor = createCircleCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth);
+  const dynamicBrushCursor = createBrushCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth, brushState.shape);
+  const dynamicEraserCursor = createBrushCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth, brushState.shape);
 
 
   const getCursorStyle = useCallback(() => {
@@ -644,7 +650,7 @@ const Workspace = (props: WorkspaceProps) => {
       case 'gradient': return gradientCursor;
       default: return 'default';
     }
-  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor]);
+  }, [image, isPanning, isSpaceDownRef, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
     return layersToRender.map((layer) => {

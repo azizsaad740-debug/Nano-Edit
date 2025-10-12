@@ -4,6 +4,8 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Circle, Square } from "lucide-react"; // Import icons for shapes
 
 interface BrushOptionsProps {
   brushSize: number;
@@ -16,6 +18,8 @@ interface BrushOptionsProps {
   setBrushHardness: (hardness: number) => void; // Added hardness setter
   brushSmoothness: number; // Added smoothness
   setBrushSmoothness: (smoothness: number) => void; // Added smoothness setter
+  brushShape: 'circle' | 'square'; // New prop for brush shape
+  setBrushShape: (shape: 'circle' | 'square') => void; // New prop for setting brush shape
   activeTool: "brush" | "eraser";
 }
 
@@ -30,6 +34,8 @@ export const BrushOptions = ({
   setBrushHardness, // Destructure hardness setter
   brushSmoothness, // Destructure smoothness
   setBrushSmoothness, // Destructure smoothness setter
+  brushShape, // Destructure brushShape
+  setBrushShape, // Destructure setBrushShape
   activeTool,
 }: BrushOptionsProps) => {
   return (
@@ -82,6 +88,19 @@ export const BrushOptions = ({
           className="w-full"
         />
       </div>
+
+      <div className="grid gap-1.5">
+        <Label className="text-xs">Shape</Label>
+        <ToggleGroup type="single" value={brushShape} onValueChange={(value: 'circle' | 'square') => setBrushShape(value)} className="justify-start">
+          <ToggleGroupItem value="circle" aria-label="Circle brush">
+            <Circle className="h-4 w-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="square" aria-label="Square brush">
+            <Square className="h-4 w-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
       {activeTool === 'brush' && (
         <div className="grid gap-1.5">
           <Label htmlFor="brush-color" className="text-xs">Color</Label>
