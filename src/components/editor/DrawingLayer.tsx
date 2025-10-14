@@ -32,18 +32,22 @@ export const DrawingLayer = ({ layer }: DrawingLayerProps) => {
         canvas.width = contentImage.naturalWidth;
         canvas.height = contentImage.naturalHeight;
         
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Ensure canvas is transparent
         
         // Apply layer's blend mode and opacity
         ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-        ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+        ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Explicitly set to source-over or layer's blend mode
 
         ctx.drawImage(contentImage, 0, 0);
+
+        // Reset composite operation before applying mask to ensure it's applied correctly
+        ctx.globalCompositeOperation = 'source-over'; 
 
         if (layer.maskDataUrl) {
           const maskImage = await loadImage(layer.maskDataUrl);
           ctx.globalCompositeOperation = 'destination-in'; // Use mask to clip content
           ctx.drawImage(maskImage, 0, 0);
+          ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Reset to layer's blend mode after mask
         }
         setIsLoaded(true);
       } catch (error) {
@@ -64,11 +68,6 @@ export const DrawingLayer = ({ layer }: DrawingLayerProps) => {
       ref={canvasRef}
       className="absolute top-0 left-0 w-full h-full pointer-events-none"
       style={{
-        // Opacity and blend mode are applied directly to the canvas context,
-        // but we keep them here for consistency if the canvas itself needs styling.
-        // However, for blendMode, it's usually better to apply to context.
-        // opacity: (layer.opacity ?? 100) / 100,
-        // mixBlendMode: layer.blendMode as any || 'normal',
         visibility: isLoaded ? 'visible' : 'hidden', // Hide until fully loaded and rendered
       }}
     />

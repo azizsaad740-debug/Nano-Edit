@@ -15,7 +15,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
   if (!ctx) return null;
 
   ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-  ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+  ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Explicitly set to source-over or layer's blend mode
 
   if (layer.type === 'drawing' && layer.dataUrl) {
     const img = new Image();
@@ -25,6 +25,9 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       img.src = layer.dataUrl!;
     });
     ctx.drawImage(img, 0, 0);
+
+    // Reset composite operation before applying mask to ensure it's applied correctly
+    ctx.globalCompositeOperation = 'source-over'; 
 
     // Apply mask if present
     if (layer.maskDataUrl) {
@@ -36,7 +39,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       });
       ctx.globalCompositeOperation = 'destination-in'; // Use mask to clip content
       ctx.drawImage(maskImg, 0, 0);
-      ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation; // Reset to layer's blend mode
+      ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Reset to layer's blend mode
     }
   } else if (layer.type === 'text') {
     const {
@@ -88,7 +91,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     }
     ctx.fillText(content, 0, 0);
     ctx.restore();
-  } else if (layer.type === 'vector-shape') { // New: Handle vector shapes
+  } else if (layer.type === 'vector-shape') {
     const {
       x = 50, y = 50, width = 10, height = 10, rotation = 0,
       fillColor = 'none', strokeColor = 'none', strokeWidth = 0,
@@ -145,7 +148,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     if (strokeWidth > 0 && strokeColor !== 'none') ctx.stroke();
     ctx.restore();
 
-  } else if (layer.type === 'gradient') { // New: Handle gradient layers
+  } else if (layer.type === 'gradient') {
     const {
       x = 50, y = 50, width = 100, height = 100, rotation = 0,
       gradientType = 'linear', gradientColors = ["#FFFFFF", "#000000"], gradientAngle = 90,
@@ -163,7 +166,6 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.rotate(rotation * Math.PI / 180);
     ctx.translate(-layerWidth / 2, -layerHeight / 2); // Adjust for center origin
 
-    // Create a temporary canvas for the gradient to apply feathering
     const tempGradientCanvas = document.createElement('canvas');
     tempGradientCanvas.width = layerWidth;
     tempGradientCanvas.height = layerHeight;
@@ -204,10 +206,9 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
         tempGradientCtx.fillRect(0, 0, layerWidth, layerHeight);
       }
 
-      // Apply feathering (blur) to the temporary gradient canvas
       if (gradientFeather > 0) {
-        tempGradientCtx.filter = `blur(${gradientFeather * 0.5}px)`; // Adjust blur strength
-        tempGradientCtx.drawImage(tempGradientCanvas, 0, 0); // Redraw to apply filter
+        tempGradientCtx.filter = `blur(${gradientFeather * 0.5}px)`;
+        tempGradientCtx.drawImage(tempGradientCanvas, 0, 0);
       }
 
       ctx.drawImage(tempGradientCanvas, 0, 0);
@@ -227,12 +228,11 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
         const nestedLayerCanvas = await rasterizeLayerToCanvas(smartLayer, { width: smartCanvas.width, height: smartCanvas.height });
         if (nestedLayerCanvas) {
           smartCtx.globalAlpha = (smartLayer.opacity ?? 100) / 100;
-          smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'normal') as GlobalCompositeOperation;
+          smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'source-over') as GlobalCompositeOperation;
           smartCtx.drawImage(nestedLayerCanvas, 0, 0);
         }
       }
       
-      // Apply smart object layer's own transforms (x, y, width, height, rotation)
       ctx.save();
       
       const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
@@ -241,40 +241,31 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
       const layerRotation = layer.rotation ?? 0;
 
-      // Translate to the center of the smart object for rotation
       ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
       ctx.rotate(layerRotation * Math.PI / 180);
-      // Translate back to draw the image
       ctx.drawImage(smartCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
       
       ctx.restore();
     }
-  } else if (layer.type === 'group' && layer.children) { // New: Handle group layers
+  } else if (layer.type === 'group' && layer.children) {
     const groupCanvas = document.createElement('canvas');
     groupCanvas.width = imageDimensions.width;
     groupCanvas.height = imageDimensions.height;
     const groupCtx = groupCanvas.getContext('2d');
 
     if (groupCtx) {
-      // Render children layers onto the group canvas
       for (const childLayer of layer.children) {
         if (!childLayer.visible) continue;
 
         const nestedLayerCanvas = await rasterizeLayerToCanvas(childLayer, imageDimensions);
         if (nestedLayerCanvas) {
           groupCtx.globalAlpha = (childLayer.opacity ?? 100) / 100;
-          groupCtx.globalCompositeOperation = (childLayer.blendMode || 'normal') as GlobalCompositeOperation;
+          groupCtx.globalCompositeOperation = (childLayer.blendMode || 'source-over') as GlobalCompositeOperation;
           
-          // Apply child's position relative to the group's bounding box
-          // This assumes child.x, child.y, child.width, child.height are relative to the group's dimensions
-          // For now, we'll draw them directly onto the main canvas, assuming their (x,y) are already global
-          // A more robust solution would involve drawing to a temporary canvas at group's size, then drawing that canvas
-          // onto the main canvas with group's transforms.
           groupCtx.drawImage(nestedLayerCanvas, 0, 0);
         }
       }
 
-      // Apply group layer's own transforms (x, y, width, height, rotation)
       ctx.save();
       
       const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
@@ -283,10 +274,8 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
       const layerRotation = layer.rotation ?? 0;
 
-      // Translate to the center of the group for rotation
       ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
       ctx.rotate(layerRotation * Math.PI / 180);
-      // Translate back to draw the image
       ctx.drawImage(groupCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
       
       ctx.restore();
