@@ -50,7 +50,6 @@ export const LiveBrushCanvas = ({
   }, [imageRef]);
 
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, operation: 'add' | 'subtract' = 'add') => {
-    // These settings are for the FINAL render on the offscreen canvas
     ctx.lineWidth = brushState.size; // Set base line width here
     ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
     ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
@@ -65,11 +64,13 @@ export const LiveBrushCanvas = ({
       ctx.shadowColor = operation === 'add' ? 'white' : 'black';
       ctx.globalAlpha = 1.0; // Full opacity for the mask itself
     } else if (activeTool === 'eraser') {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      // For eraser, we want to draw an opaque shape on the offscreen canvas
+      // which will then be used with 'destination-out' in handleDrawEnd.
+      ctx.globalCompositeOperation = 'source-over'; // Draw opaque shape
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't strictly matter, but opaque is key
       ctx.fillStyle = 'rgba(0,0,0,1)';
       ctx.shadowColor = 'rgba(0,0,0,1)';
-      ctx.globalAlpha = 1.0;
+      ctx.globalAlpha = 1.0; // Full opacity for the shape itself
     } else { // brush tool
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = brushState.color;
@@ -82,14 +83,9 @@ export const LiveBrushCanvas = ({
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
     if (points.length < 1) return;
 
-    // Settings like lineWidth, lineJoin, lineCap, strokeStyle, fillStyle, shadowBlur, globalAlpha
-    // are already set in applyBrushSettings before calling drawPath.
-
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
-    // Simple linear interpolation for now.
-    // For smoothness, one could implement Catmull-Rom splines or Bezier curves here.
     for (let i = 1; i < points.length; i++) {
       ctx.lineTo(points[i].x, points[i].y);
     }
@@ -105,16 +101,9 @@ export const LiveBrushCanvas = ({
     if (isSelectionBrush) {
       // No live drawing on this canvas for selection brush.
       // Visual feedback comes from SelectionMaskOverlay.
-      // We can draw a simple cursor outline here if needed, but for now, just clear.
-      // For example:
-      // ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-      // ctx.lineWidth = 1;
-      // ctx.beginPath();
-      // ctx.arc(pathPointsRef.current[pathPointsRef.current.length - 1].x, pathPointsRef.current[pathPointsRef.current.length - 1].y, brushState.size / 2, 0, 2 * Math.PI);
-      // ctx.stroke();
-      // return;
     } else {
       // For regular brush/eraser, draw live preview
+      // Note: For eraser, this will draw an opaque black line as per applyBrushSettings
       applyBrushSettings(ctx, foregroundColor === brushState.color ? 'add' : 'subtract');
       drawPath(ctx, pathPointsRef.current);
     }
@@ -166,7 +155,7 @@ export const LiveBrushCanvas = ({
     if (offscreenCtx) {
       const operation = foregroundColor === brushState.color ? 'add' : 'subtract'; // Determine operation for final render
       
-      // Apply settings for the offscreen canvas
+      // Apply settings for the offscreen canvas (this will draw an opaque shape for eraser)
       applyBrushSettings(offscreenCtx, operation);
       
       // Draw the path
@@ -175,6 +164,8 @@ export const LiveBrushCanvas = ({
       if (isSelectionBrush && onSelectionBrushStrokeEnd) {
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
       } else if (activeTool !== 'selectionBrush' && activeDrawingLayerIdRef.current) {
+        // Now, in onDrawEnd, we need to apply the composite operation to the layer's canvas
+        // based on the activeTool.
         onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
       }
     } else {

@@ -190,7 +190,7 @@ const initialBrushState: Omit<BrushState, 'color'> = { // Removed color from ini
 const initialGradientToolState: GradientToolState = {
   type: "linear",
   colors: ["#FFFFFF", "#000000"],
-  stops: [0, 1],
+    stops: [0, 1],
   angle: 90,
   centerX: 50,
   centerY: 50,
@@ -285,6 +285,7 @@ export const useEditorState = () => {
     moveSelectedLayer,
     groupLayers, // Added groupLayers
     toggleGroupExpanded, // Added toggleGroupExpanded
+    handleDrawingStrokeEnd, // Destructure the new drawing stroke handler
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
@@ -292,6 +293,7 @@ export const useEditorState = () => {
     imgRef,
     imageNaturalDimensions: dimensions,
     gradientToolState, // Pass gradientToolState to useLayers
+    activeTool, // Pass activeTool to useLayers
   });
 
   // Sync layers from useLayers back to history when they change

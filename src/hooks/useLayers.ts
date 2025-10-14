@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import type { Layer, EditState, Point, GradientToolState } from "./useEditorState";
+import type { Layer, EditState, Point, GradientToolState, ActiveTool } from "./useEditorState"; // Import ActiveTool
 
 export interface HistoryItem {
   name: string;
@@ -19,7 +19,8 @@ export interface UseLayersProps {
   updateCurrentState: (updates: Partial<EditState>) => void;
   imgRef: React.RefObject<HTMLImageElement>;
   imageNaturalDimensions: { width: number; height: number } | null;
-  gradientToolState: GradientToolState; // Added gradientToolState
+  gradientToolState: GradientToolState;
+  activeTool: ActiveTool | null; // Added activeTool prop
 }
 
 const initialLayers: Layer[] = [
@@ -39,10 +40,11 @@ export const useLayers = ({
   updateCurrentState,
   imgRef,
   imageNaturalDimensions,
-  gradientToolState, // Destructure gradientToolState
+  gradientToolState,
+  activeTool, // Destructure activeTool
 }: UseLayersProps) => {
   const [layers, setLayers] = useState<Layer[]>(initialLayers);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null); // Initialized to null
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
 
@@ -171,7 +173,7 @@ export const useLayers = ({
     let action = `Edit Layer "${layer.name}"`;
     if (layer.type === 'drawing') action = 'Brush Stroke';
     if (layer.type === 'vector-shape') action = `Edit Shape "${layer.name}"`;
-    if (layer.type === 'gradient') action = `Edit Gradient "${layer.name}"`; // Added for gradient
+    if (layer.type === 'gradient') action = `Edit Gradient "${layer.name}"`;
     recordHistory(action, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
@@ -248,7 +250,7 @@ export const useLayers = ({
   const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = layers.find(l => l.id === id);
 
-    if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape' && layerToRasterize.type !== 'gradient') || !imgRef.current) { // Added gradient
+    if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape' && layerToRasterize.type !== 'gradient') || !imgRef.current) {
       showError("Only text, vector shape, and gradient layers can be rasterized.");
       return;
     }
@@ -262,7 +264,7 @@ export const useLayers = ({
       const dataUrl = canvas.toDataURL();
 
       const newLayer: Layer = {
-        id: uuidv4(), // New ID for the rasterized layer
+        id: uuidv4(),
         type: 'drawing',
         name: `${layerToRasterize.name} (Rasterized)`,
         visible: layerToRasterize.visible,
@@ -329,8 +331,8 @@ export const useLayers = ({
         name: bottomLayer.name,
         visible: bottomLayer.visible,
         dataUrl: mergedDataUrl,
-        opacity: 100, // Opacity is baked in, so reset to 100
-        blendMode: 'normal', // Blend mode is baked in
+        opacity: 100,
+        blendMode: 'normal',
       };
 
       const updatedLayers = layers
@@ -351,12 +353,11 @@ export const useLayers = ({
 
   interface LayerLocation {
     layer: Layer;
-    container: Layer[]; // The direct array this layer is in
+    container: Layer[];
     index: number;
-    parentGroups: Layer[]; // Array of parent group layers, from root down to immediate parent
+    parentGroups: Layer[];
   }
 
-  // Helper to find a layer's container (array it's in) and its index
   const findLayerLocation = useCallback((
     id: string,
     currentLayers: Layer[],
@@ -384,18 +385,16 @@ export const useLayers = ({
       return;
     }
 
-    const { layer: activeLayer, container: activeContainer, index: activeIndex, parentGroups: activeParentGroups } = activeLocation;
-    const { layer: overLayer, container: overContainer, index: overIndex, parentGroups: overParentGroups } = overLocation;
+    const { layer: activeLayer, index: activeIndex, parentGroups: activeParentGroups } = activeLocation;
+    const { layer: overLayer, index: overIndex, parentGroups: overParentGroups } = overLocation;
 
     if (activeLayer.type === 'image') {
       showError("The background layer cannot be moved.");
       return;
     }
 
-    // Create a deep copy of the layers to modify
     let newLayers = JSON.parse(JSON.stringify(layers)) as Layer[];
 
-    // Helper to get a mutable reference to a nested container in the newLayers tree
     const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
       let currentContainer = tree;
       for (const group of path) {
@@ -403,40 +402,32 @@ export const useLayers = ({
         if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
           currentContainer = foundGroup.children;
         } else {
-          // This should not happen if path is valid, but for safety
           console.error("Invalid path in getMutableContainer or group not found.");
-          return []; // Return empty array or throw error
+          return [];
         }
       }
       return currentContainer;
     };
 
-    // Get mutable references to the containers in the newLayers tree
     const mutableActiveContainer = getMutableContainer(newLayers, activeParentGroups);
     const mutableOverContainer = getMutableContainer(newLayers, overParentGroups);
 
-    // 1. Remove active layer from its original position
     const [movedLayer] = mutableActiveContainer.splice(activeIndex, 1);
 
-    // 2. Determine target container and index for insertion
     let targetContainer: Layer[];
     let targetIndex: number;
 
     if (isDroppingIntoGroup && overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
-      // Dropping into an expanded group
       targetContainer = getMutableContainer(newLayers, [...overParentGroups, overLayer]);
-      targetIndex = 0; // Insert at the beginning of the group
+      targetIndex = 0;
     } else if (overLayer.type === 'group' && !overLayer.expanded) {
-      // Dropping over a collapsed group, insert next to it
       targetContainer = mutableOverContainer;
       targetIndex = overIndex + 1;
     } else {
-      // Standard reorder within the same container or between root/root
       targetContainer = mutableOverContainer;
       targetIndex = overIndex;
     }
 
-    // 3. Insert the active layer into the target container
     targetContainer.splice(targetIndex, 0, movedLayer);
 
     updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
@@ -449,18 +440,15 @@ export const useLayers = ({
       return;
     }
 
-    // Get the selected layers
     const selectedLayers = layers.filter(layer => layerIds.includes(layer.id));
     
-    // Find the bounds of all selected layers
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     
     selectedLayers.forEach(layer => {
       if (layer.type === 'text' && layer.x !== undefined && layer.y !== undefined) {
-        // For text layers, we need to calculate approximate bounds
         const fontSize = layer.fontSize || 16;
-        const textWidth = (layer.content?.length || 1) * fontSize * 0.6; // Approximate width
-        const textHeight = fontSize * 1.2; // Approximate height
+        const textWidth = (layer.content?.length || 1) * fontSize * 0.6;
+        const textHeight = fontSize * 1.2;
         
         const x = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
         const y = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
@@ -470,7 +458,6 @@ export const useLayers = ({
         maxX = Math.max(maxX, x + textWidth / 2);
         maxY = Math.max(maxY, y + textHeight / 2);
       } else if (layer.type === 'drawing' && imgRef.current) {
-        // For drawing layers, assume they cover the whole canvas for now
         minX = Math.min(minX, 0);
         minY = Math.min(minY, 0);
         maxX = Math.max(maxX, imgRef.current.naturalWidth);
@@ -498,7 +485,6 @@ export const useLayers = ({
       }
     });
     
-    // If we couldn't determine bounds, use default size
     if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
       minX = 0;
       minY = 0;
@@ -509,7 +495,6 @@ export const useLayers = ({
     const width = maxX - minX;
     const height = maxY - minY;
     
-    // Create the smart object layer
     const smartObjectLayer: Layer = {
       id: uuidv4(),
       type: "smart-object",
@@ -529,7 +514,6 @@ export const useLayers = ({
       }
     };
 
-    // Remove the original layers and add the smart object
     const updatedLayers = layers
       .filter(layer => !layerIds.includes(layer.id))
       .concat(smartObjectLayer);
@@ -587,8 +571,6 @@ export const useLayers = ({
       });
       return updatedLayers;
     });
-    // No history record here, as it's for continuous movement.
-    // The commit will happen on mouse up or when the key is released.
   }, []);
 
   const groupLayers = useCallback((layerIds: string[]) => {
@@ -609,13 +591,9 @@ export const useLayers = ({
       return;
     }
 
-    // Calculate bounding box of selected layers
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     nonBackgroundSelected.forEach(layer => {
-      // For simplicity, we'll assume x, y, width, height are defined for movable layers
-      // and represent their center and dimensions in percentage.
-      // We need to convert to pixel values to calculate a proper bounding box.
       const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
       const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
       let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
@@ -623,10 +601,9 @@ export const useLayers = ({
 
       if (layer.type === 'text') {
         const fontSize = layer.fontSize || 48;
-        layerWidth_px = (layer.content?.length || 1) * fontSize * 0.6; // Approximate text width
-        layerHeight_px = fontSize * 1.2; // Approximate text height
+        layerWidth_px = (layer.content?.length || 1) * fontSize * 0.6;
+        layerHeight_px = fontSize * 1.2;
       } else if (layer.type === 'drawing' && imgRef.current) {
-        // For drawing layers, assume they cover the whole canvas for now
         layerWidth_px = imgRef.current.naturalWidth;
         layerHeight_px = imgRef.current.naturalHeight;
       } else if (layer.type === 'smart-object' && layer.smartObjectData) {
@@ -667,8 +644,6 @@ export const useLayers = ({
       height: groupHeight_percent,
       rotation: 0,
       children: nonBackgroundSelected.map(layer => {
-        // Adjust children's positions to be relative to the new group's top-left corner
-        // The group's (x,y) is its center, so we need to calculate relative to minX, minY
         const childX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
         const childY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
 
@@ -677,13 +652,12 @@ export const useLayers = ({
 
         return {
           ...layer,
-          x: (relativeX_px / groupWidth_px) * 100, // Child's center X relative to group's width
-          y: (relativeY_px / groupHeight_px) * 100, // Child's center Y relative to group's height
+          x: (relativeX_px / groupWidth_px) * 100,
+          y: (relativeY_px / groupHeight_px) * 100,
         };
       }),
     };
 
-    // Remove original layers and insert the new group
     const updatedLayers = layers
       .filter(layer => !layerIds.includes(layer.id))
       .concat(newGroup);
@@ -700,18 +674,56 @@ export const useLayers = ({
       }
       return layer;
     }));
-    // No history record here, as it's a UI state change
   }, []);
+
+  const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    const targetLayer = layers.find(l => l.id === layerId);
+    if (!targetLayer || !imgRef.current) return;
+
+    const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageDimensions.width;
+    tempCanvas.height = imageDimensions.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
+
+    const baseImg = new Image();
+    const strokeImg = new Image();
+
+    const basePromise = targetLayer.dataUrl ? new Promise((res) => { baseImg.onload = res; baseImg.src = targetLayer.dataUrl!; }) : Promise.resolve();
+    const strokePromise = new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
+
+    await Promise.all([basePromise, strokePromise]);
+
+    if (targetLayer.dataUrl) {
+      tempCtx.drawImage(baseImg, 0, 0);
+    }
+
+    if (activeTool === 'eraser') { // Use the activeTool prop directly
+      tempCtx.globalCompositeOperation = 'destination-out';
+    } else {
+      tempCtx.globalCompositeOperation = 'source-over';
+    }
+    
+    tempCtx.drawImage(strokeImg, 0, 0);
+    
+    tempCtx.globalCompositeOperation = 'source-over'; 
+
+    const combinedDataUrl = tempCanvas.toDataURL();
+    updateLayer(layerId, { dataUrl: combinedDataUrl });
+    commitLayerChange(layerId);
+  }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]); // Use activeTool directly in dependency array
+
 
   return {
     layers,
-    setLayers, // Expose setLayers for initial load from project
+    setLayers,
     selectedLayerId,
     setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
-    addShapeLayer, // Exposed addShapeLayer
-    addGradientLayer, // Exposed addGradientLayer
+    addShapeLayer,
+    addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -723,15 +735,16 @@ export const useLayers = ({
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
-    reorderLayers, // Now handles nested reordering
+    reorderLayers,
     createSmartObject,
     openSmartObjectEditor,
     closeSmartObjectEditor,
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
-    moveSelectedLayer, // Expose moveSelectedLayer
-    groupLayers, // Now exposed
-    toggleGroupExpanded, // Now exposed
+    moveSelectedLayer,
+    groupLayers,
+    toggleGroupExpanded,
+    handleDrawingStrokeEnd,
   };
 };
