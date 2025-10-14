@@ -85,6 +85,23 @@ export const useLayers = ({
   }, [layers, updateLayersState]);
 
   const addDrawingLayer = useCallback(() => {
+    if (!imageNaturalDimensions) {
+      showError("Cannot add drawing layer without image dimensions.");
+      return ""; // Return empty string or throw error
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imageNaturalDimensions.width;
+    canvas.height = imageNaturalDimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      showError("Failed to create canvas for new drawing layer.");
+      return "";
+    }
+    // Fill with transparent black
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const transparentDataUrl = canvas.toDataURL(); // This will be a transparent PNG
+
     const newLayer: Layer = {
       id: uuidv4(),
       type: "drawing",
@@ -92,13 +109,13 @@ export const useLayers = ({
       visible: true,
       opacity: 100,
       blendMode: 'normal',
-      dataUrl: "",
+      dataUrl: transparentDataUrl, // Initialize with transparent image
     };
     const updated = [...layers, newLayer];
     updateLayersState(updated, "Add Drawing Layer");
     setSelectedLayerId(newLayer.id);
     return newLayer.id;
-  }, [layers, updateLayersState]);
+  }, [layers, updateLayersState, imageNaturalDimensions]); // Add imageNaturalDimensions to dependencies
 
   const addShapeLayer = useCallback((
     coords: { x: number; y: number },
@@ -690,29 +707,36 @@ export const useLayers = ({
     const baseImg = new Image();
     const strokeImg = new Image();
 
-    const basePromise = targetLayer.dataUrl ? new Promise((res) => { baseImg.onload = res; baseImg.src = targetLayer.dataUrl!; }) : Promise.resolve();
+    const basePromise = targetLayer.dataUrl ? new Promise((res, rej) => { baseImg.onload = res; baseImg.onerror = rej; baseImg.src = targetLayer.dataUrl!; }) : Promise.resolve();
     const strokePromise = new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
 
     await Promise.all([basePromise, strokePromise]);
 
+    // Ensure default composite operation and full opacity for initial drawing
+    tempCtx.globalCompositeOperation = 'source-over';
+    tempCtx.globalAlpha = 1.0;
+
     if (targetLayer.dataUrl) {
-      tempCtx.drawImage(baseImg, 0, 0);
+      tempCtx.drawImage(baseImg, 0, 0); // Draw existing content
     }
 
-    if (activeTool === 'eraser') { // Use the activeTool prop directly
-      tempCtx.globalCompositeOperation = 'destination-out';
+    // Apply the correct composite operation for the new stroke
+    if (activeTool === 'eraser') {
+      tempCtx.globalCompositeOperation = 'destination-out'; // Cut out from existing content
     } else {
-      tempCtx.globalCompositeOperation = 'source-over';
+      tempCtx.globalCompositeOperation = 'source-over'; // Draw over existing content
     }
     
-    tempCtx.drawImage(strokeImg, 0, 0);
+    tempCtx.drawImage(strokeImg, 0, 0); // Draw the new stroke
     
+    // Reset composite operation to default for subsequent operations if any
     tempCtx.globalCompositeOperation = 'source-over'; 
+    tempCtx.globalAlpha = 1.0; // Reset global alpha
 
     const combinedDataUrl = tempCanvas.toDataURL();
     updateLayer(layerId, { dataUrl: combinedDataUrl });
     commitLayerChange(layerId);
-  }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]); // Use activeTool directly in dependency array
+  }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]);
 
 
   return {
