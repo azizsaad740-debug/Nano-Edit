@@ -96,6 +96,10 @@ interface SidebarProps {
   // Foreground/Background Colors
   foregroundColor: string; // New prop
   setForegroundColor: (color: string) => void; // New prop
+  // Selective Blur Props
+  selectiveBlurStrength: number; // NEW prop
+  onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
+  onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -128,6 +132,9 @@ const Sidebar = (props: SidebarProps) => {
                 onDeleteGradientPreset={props.onDeleteGradientPreset}
                 foregroundColor={props.foregroundColor} // Pass foregroundColor
                 setForegroundColor={props.setForegroundColor} // Pass setForegroundColor
+                selectiveBlurStrength={props.selectiveBlurStrength} // NEW prop
+                onSelectiveBlurStrengthChange={props.onSelectiveBlurStrengthChange} // NEW prop
+                onSelectiveBlurStrengthCommit={props.onSelectiveBlurStrengthCommit} // NEW prop
               />
             )}
           </div>

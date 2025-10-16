@@ -10,6 +10,7 @@ import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions"; // Import GradientToolOptions
+import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions"; // NEW Import
 import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 
@@ -30,6 +31,10 @@ interface PropertiesPanelProps {
   onDeleteGradientPreset: (name: string) => void;
   foregroundColor: string; // New prop
   setForegroundColor: (color: string) => void; // New prop
+  // Selective Blur Props
+  selectiveBlurStrength: number; // NEW prop
+  onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
+  onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
 }
 
 export const PropertiesPanel = ({
@@ -49,7 +54,14 @@ export const PropertiesPanel = ({
   onDeleteGradientPreset,
   foregroundColor, // Destructure new props
   setForegroundColor,
+  selectiveBlurStrength, // Destructure NEW props
+  onSelectiveBlurStrengthChange,
+  onSelectiveBlurStrengthCommit,
 }: PropertiesPanelProps) => {
+  const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush';
+  const isBlurBrushTool = activeTool === 'blurBrush';
+  const isGradientTool = activeTool === 'gradient';
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader className="pb-2">
@@ -57,23 +69,32 @@ export const PropertiesPanel = ({
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
         <ScrollArea className="flex-1 pr-3 pb-2">
-          {(activeTool === 'brush' || activeTool === 'eraser') ? (
-            <BrushOptions
-              activeTool={activeTool}
-              brushSize={brushState.size}
-              setBrushSize={(size) => setBrushState({ size })}
-              brushOpacity={brushState.opacity}
-              setBrushOpacity={(opacity) => setBrushState({ opacity })}
-              foregroundColor={foregroundColor} // Pass foregroundColor
-              setForegroundColor={setForegroundColor} // Pass setForegroundColor
-              brushHardness={brushState.hardness} // Pass hardness
-              setBrushHardness={(hardness) => setBrushState({ hardness })} // Pass hardness setter
-              brushSmoothness={brushState.smoothness} // Pass smoothness
-              setBrushSmoothness={(smoothness) => setBrushState({ smoothness })} // Pass smoothness setter
-              brushShape={brushState.shape} // Pass brush shape
-              setBrushShape={(shape) => setBrushState({ shape })} // Pass brush shape setter
-            />
-          ) : activeTool === 'gradient' ? ( // New conditional rendering for GradientToolOptions
+          {isBrushTool || isBlurBrushTool ? (
+            <div className="space-y-4">
+              <BrushOptions
+                activeTool={activeTool as "brush" | "eraser"}
+                brushSize={brushState.size}
+                setBrushSize={(size) => setBrushState({ size })}
+                brushOpacity={brushState.opacity}
+                setBrushOpacity={(opacity) => setBrushState({ opacity })}
+                foregroundColor={foregroundColor} // Pass foregroundColor
+                setForegroundColor={setForegroundColor} // Pass setForegroundColor
+                brushHardness={brushState.hardness} // Pass hardness
+                setBrushHardness={(hardness) => setBrushState({ hardness })} // Pass hardness setter
+                brushSmoothness={brushState.smoothness} // Pass smoothness
+                setBrushSmoothness={(smoothness) => setBrushState({ smoothness })} // Pass smoothness setter
+                brushShape={brushState.shape} // Pass brush shape
+                setBrushShape={(shape) => setBrushState({ shape })} // Pass brush shape setter
+              />
+              {isBlurBrushTool && (
+                <BlurBrushOptions
+                  selectiveBlurStrength={selectiveBlurStrength}
+                  onStrengthChange={onSelectiveBlurStrengthChange}
+                  onStrengthCommit={onSelectiveBlurStrengthCommit}
+                />
+              )}
+            </div>
+          ) : isGradientTool ? (
             <GradientToolOptions
               gradientToolState={gradientToolState}
               setGradientToolState={setGradientToolState}

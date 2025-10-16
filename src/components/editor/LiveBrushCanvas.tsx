@@ -13,7 +13,7 @@ interface LiveBrushCanvasProps {
   layers: Layer[];
   isSelectionBrush: boolean;
   onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  onBlurBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => void; // NEW prop
+  onBlurBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // UPDATED: Removed blurAmount
   foregroundColor: string;
   backgroundColor: string;
 }
@@ -178,7 +178,7 @@ export const LiveBrushCanvas = ({
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
       } else if (isBlurBrush && onBlurBrushStrokeEnd) { // NEW: Handle blur brush end
         const blurOperation = foregroundColor === brushState.color ? 'add' : 'subtract';
-        onBlurBrushStrokeEnd(offscreenCanvas.toDataURL(), blurOperation, brushState.size); // Use brush size as blur amount
+        onBlurBrushStrokeEnd(offscreenCanvas.toDataURL(), blurOperation); // UPDATED: Removed blurAmount
       } else if (activeTool !== 'selectionBrush' && activeDrawingLayerIdRef.current) {
         onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
       }
@@ -189,7 +189,7 @@ export const LiveBrushCanvas = ({
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
     activeDrawingLayerIdRef.current = null; 
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onBlurBrushStrokeEnd, activeTool, foregroundColor, brushState.color, brushState.size]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onBlurBrushStrokeEnd, activeTool, foregroundColor, brushState.color]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;

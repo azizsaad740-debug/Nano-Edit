@@ -137,6 +137,8 @@ const Index = () => {
     convertSelectionPathToMask, // New
     // Selective Blur
     handleSelectiveBlurStroke, // NEW destructuring
+    handleSelectiveBlurStrengthChange, // NEW destructuring
+    handleSelectiveBlurStrengthCommit, // NEW destructuring
     // shape tool
     selectedShapeType,
     setSelectedShapeType,
@@ -261,7 +263,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad]);
 
-  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame } = currentState;
+  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength } = currentState;
 
   const sidebarProps = {
     hasImage: !!image,
@@ -348,6 +350,10 @@ const Index = () => {
     // Foreground/Background Colors
     foregroundColor,
     setForegroundColor: handleForegroundColorChange,
+    // Selective Blur Props
+    selectiveBlurStrength, // NEW prop
+    onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange, // NEW prop
+    onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit, // NEW prop
   };
 
   const hasSelection = selectionPath && selectionPath.length > 0;

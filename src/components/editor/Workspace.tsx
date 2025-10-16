@@ -70,7 +70,7 @@ interface WorkspaceProps {
   selectionMaskDataUrl: string | null; // New prop
   onSelectionChange: (path: Point[]) => void;
   onSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
-  onSelectiveBlurStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => void; // NEW prop
+  onSelectiveBlurStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // UPDATED: Removed blurAmount
   handleColorPick: (color: string) => void;
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
@@ -205,8 +205,8 @@ const Workspace = (props: WorkspaceProps) => {
     selectionPath,
     selectionMaskDataUrl, // Destructure
     onSelectionChange,
-    onSelectionBrushStrokeEnd, // Destructure
-    onSelectiveBlurStrokeEnd, // Destructure NEW prop
+    onSelectionBrushStrokeEnd,
+    onSelectiveBlurStrokeEnd, // Destructure UPDATED prop
     handleColorPick,
     imageNaturalDimensions,
     selectedShapeType, // Destructure selectedShapeType
@@ -769,7 +769,7 @@ const Workspace = (props: WorkspaceProps) => {
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />
       <EffectsFilters effects={effects} />
-      {currentState.selectiveBlurMask && imageNaturalDimensions && currentState.selectiveBlurAmount > 0 && ( // NEW: Render selective blur filter definition
+      {currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0 && ( // NEW: Render selective blur filter definition
         <SelectiveBlurFilter
           maskDataUrl={currentState.selectiveBlurMask}
           blurAmount={currentState.selectiveBlurAmount}

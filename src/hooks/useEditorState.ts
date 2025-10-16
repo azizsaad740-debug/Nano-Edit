@@ -59,6 +59,7 @@ export interface EditState {
   crop: Crop | undefined;
   selectiveBlurMask: string | null; // NEW: Data URL of the blur mask (grayscale)
   selectiveBlurAmount: number; // NEW: Max blur amount (0-100)
+  selectiveBlurStrength: number; // NEW: Max blur strength (0-100)
 }
 
 export interface Point {
@@ -175,12 +176,7 @@ const initialEditState: EditState = {
   crop: undefined,
   selectiveBlurMask: null, // ADDED
   selectiveBlurAmount: 0,  // ADDED
-};
-
-const initialHistoryItem: HistoryItem = {
-  name: "Initial State",
-  state: initialEditState,
-  layers: [], // Layers will be managed by useLayers
+  selectiveBlurStrength: 50, // NEW: Initialize to 50%
 };
 
 const initialBrushState: Omit<BrushState, 'color'> = { // Removed color from initial state
@@ -201,6 +197,24 @@ const initialGradientToolState: GradientToolState = {
   radius: 50,
   feather: 0,
   inverted: false,
+};
+
+// Define initial layer structure for history
+const initialLayerState: Layer[] = [
+  {
+    id: uuidv4(),
+    type: "image",
+    name: "Background",
+    visible: true,
+    opacity: 100,
+    blendMode: 'normal',
+  },
+];
+
+const initialHistoryItem: HistoryItem = {
+  name: "Initial State",
+  state: initialEditState,
+  layers: initialLayerState,
 };
 
 /* ---------- Hook implementation ---------- */
@@ -319,7 +333,7 @@ export const useEditorState = () => {
     }
     // Clear selective blur mask if switching away from blur brush
     if (tool !== 'blurBrush' && currentState.selectiveBlurMask) {
-      recordHistory("Clear Blur Mask", { ...currentState, selectiveBlurMask: null, selectiveBlurAmount: 0 }, layers);
+      recordHistory("Clear Blur Mask", { ...currentState, selectiveBlurMask: null, selectiveBlurAmount: 0, selectiveBlurStrength: 50 }, layers);
     }
     
     _setActiveTool(tool);
@@ -350,7 +364,7 @@ export const useEditorState = () => {
 
   const loadImageData = useCallback((dataUrl: string, successMsg: string, initialLayers: Layer[]) => {
     setImage(dataUrl);
-    const newHistoryItem = { ...initialHistoryItem, layers: initialLayers };
+    const newHistoryItem = { ...initialHistoryItem, name: "Load Image", layers: initialLayers };
     setHistory([newHistoryItem]);
     setCurrentHistoryIndex(0);
     setLayers(initialLayers);
@@ -888,7 +902,7 @@ export const useEditorState = () => {
   }, [foregroundColor, backgroundColor]);
 
   /* ---------- Selective Blur Functions ---------- */
-  const handleSelectiveBlurStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => {
+  const handleSelectiveBlurStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
     if (!imgRef.current || !dimensions) return;
 
     const imageDimensions = dimensions;
@@ -914,8 +928,6 @@ export const useEditorState = () => {
     await Promise.all([basePromise, strokePromise]);
 
     // Apply new stroke (grayscale mask)
-    // 'add' means drawing the gray intensity mask (source-over)
-    // 'subtract' means drawing black (destination-out) to remove blur
     tempCtx.globalCompositeOperation = operation === 'add' ? 'source-over' : 'destination-out';
     tempCtx.drawImage(strokeImg, 0, 0);
     tempCtx.globalCompositeOperation = 'source-over'; 
@@ -925,11 +937,20 @@ export const useEditorState = () => {
     const newState: EditState = {
       ...currentState,
       selectiveBlurMask: combinedDataUrl,
-      selectiveBlurAmount: blurAmount,
+      selectiveBlurAmount: currentState.selectiveBlurStrength, // Use the dedicated strength value
     };
 
     recordHistory("Apply Blur Brush Stroke", newState, layers);
   }, [currentState, dimensions, imgRef, recordHistory, layers]);
+
+  const handleSelectiveBlurStrengthChange = useCallback((value: number) => {
+    updateCurrentState({ selectiveBlurStrength: value });
+  }, [updateCurrentState]);
+
+  const handleSelectiveBlurStrengthCommit = useCallback((value: number) => {
+    const newState = { ...currentState, selectiveBlurStrength: value, selectiveBlurAmount: value };
+    recordHistory("Set Max Blur Strength", newState, layers);
+  }, [currentState, recordHistory, layers]);
 
 
   /* ---------- Selection Brush Functions ---------- */
@@ -1241,6 +1262,8 @@ export const useEditorState = () => {
     convertSelectionPathToMask, // Exposed convert selection path to mask handler
     // Selective Blur
     handleSelectiveBlurStroke, // NEW export
+    handleSelectiveBlurStrengthChange, // NEW export
+    handleSelectiveBlurStrengthCommit, // NEW export
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,
