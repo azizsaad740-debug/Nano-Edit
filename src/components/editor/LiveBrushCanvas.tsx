@@ -7,14 +7,15 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string, layerId: string) => void;
-  activeTool: "brush" | "eraser" | "selectionBrush"; // Added selectionBrush
+  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush"; // Added blurBrush
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
   layers: Layer[];
-  isSelectionBrush: boolean; // New prop
-  onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
-  foregroundColor: string; // New prop
-  backgroundColor: string; // New prop
+  isSelectionBrush: boolean;
+  onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
+  onBlurBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => void; // NEW prop
+  foregroundColor: string;
+  backgroundColor: string;
 }
 
 export const LiveBrushCanvas = ({
@@ -25,10 +26,11 @@ export const LiveBrushCanvas = ({
   selectedLayerId,
   onAddDrawingLayer,
   layers,
-  isSelectionBrush, // Destructure
-  onSelectionBrushStrokeEnd, // Destructure
-  foregroundColor, // Destructure
-  backgroundColor, // Destructure
+  isSelectionBrush,
+  onSelectionBrushStrokeEnd,
+  onBlurBrushStrokeEnd, // Destructure
+  foregroundColor,
+  backgroundColor,
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
@@ -36,6 +38,8 @@ export const LiveBrushCanvas = ({
   const pathPointsRef = React.useRef<Array<{ x: number; y: number; pressure?: number }>>([]);
   const animationFrameIdRef = React.useRef<number | null>(null);
   const activeDrawingLayerIdRef = React.useRef<string | null>(null);
+
+  const isBlurBrush = activeTool === 'blurBrush'; // NEW flag
 
   const getCoords = React.useCallback((e: MouseEvent): { x: number; y: number; pressure?: number } | null => {
     if (!imageRef.current) return null;
@@ -50,27 +54,42 @@ export const LiveBrushCanvas = ({
   }, [imageRef]);
 
   const applyBrushSettings = React.useCallback((ctx: CanvasRenderingContext2D, operation: 'add' | 'subtract' = 'add') => {
-    ctx.lineWidth = brushState.size; // Set base line width here
+    ctx.lineWidth = brushState.size;
     ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
     ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
 
     const maxBlur = brushState.size * 0.75;
     ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
 
-    if (isSelectionBrush) {
-      ctx.globalCompositeOperation = 'source-over'; // Always draw visibly (white/black) for the mask
-      ctx.strokeStyle = operation === 'add' ? 'white' : 'black';
-      ctx.fillStyle = operation === 'add' ? 'white' : 'black';
-      ctx.shadowColor = operation === 'add' ? 'white' : 'black';
-      ctx.globalAlpha = 1.0; // Full opacity for the mask itself
+    if (isSelectionBrush || isBlurBrush) { // Handle selection and blur brushes (mask drawing)
+      ctx.globalCompositeOperation = 'source-over'; 
+      
+      // Grayscale value based on opacity (0-255). White = max effect.
+      const grayValue = Math.round(255 * (brushState.opacity / 100));
+      const color = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+      
+      // Determine if we are adding (drawing gray) or subtracting (drawing black)
+      const isAdding = foregroundColor === brushState.color; 
+
+      if (isBlurBrush) {
+        // For blur brush, we draw the intensity mask.
+        // If adding blur, draw gray based on opacity. If subtracting, draw black (0 blur).
+        ctx.strokeStyle = isAdding ? color : 'black';
+        ctx.fillStyle = isAdding ? color : 'black';
+        ctx.shadowColor = isAdding ? color : 'black';
+        ctx.globalAlpha = 1.0; // Full opacity for the mask itself
+      } else { // Selection brush
+        ctx.strokeStyle = operation === 'add' ? 'white' : 'black';
+        ctx.fillStyle = operation === 'add' ? 'white' : 'black';
+        ctx.shadowColor = operation === 'add' ? 'white' : 'black';
+        ctx.globalAlpha = 1.0;
+      }
     } else if (activeTool === 'eraser') {
-      // For eraser, we want to draw an opaque shape on the offscreen canvas
-      // which will then be used with 'destination-out' in handleDrawEnd.
-      ctx.globalCompositeOperation = 'source-over'; // Draw opaque shape
-      ctx.strokeStyle = 'rgba(0,0,0,1)'; // Color doesn't strictly matter, but opaque is key
+      ctx.globalCompositeOperation = 'source-over'; 
+      ctx.strokeStyle = 'rgba(0,0,0,1)'; 
       ctx.fillStyle = 'rgba(0,0,0,1)';
       ctx.shadowColor = 'rgba(0,0,0,1)';
-      ctx.globalAlpha = 1.0; // Full opacity for the shape itself
+      ctx.globalAlpha = 1.0; 
     } else { // brush tool
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = brushState.color;
@@ -78,7 +97,7 @@ export const LiveBrushCanvas = ({
       ctx.shadowColor = brushState.color;
       ctx.globalAlpha = brushState.opacity / 100;
     }
-  }, [brushState, activeTool, isSelectionBrush]);
+  }, [brushState, activeTool, isSelectionBrush, isBlurBrush, foregroundColor]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
     if (points.length < 1) return;
@@ -98,12 +117,10 @@ export const LiveBrushCanvas = ({
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
-    if (isSelectionBrush) {
-      // No live drawing on this canvas for selection brush.
-      // Visual feedback comes from SelectionMaskOverlay.
+    if (isSelectionBrush || isBlurBrush) {
+      // No live drawing on this canvas for mask brushes.
     } else {
       // For regular brush/eraser, draw live preview
-      // Note: For eraser, this will draw an opaque black line as per applyBrushSettings
       applyBrushSettings(ctx, foregroundColor === brushState.color ? 'add' : 'subtract');
       drawPath(ctx, pathPointsRef.current);
     }
@@ -111,14 +128,13 @@ export const LiveBrushCanvas = ({
     if (isDrawingRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
     }
-  }, [drawPath, foregroundColor, brushState.color, isSelectionBrush, applyBrushSettings]);
+  }, [drawPath, foregroundColor, brushState.color, isSelectionBrush, isBlurBrush, applyBrushSettings]);
 
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
     if (!coords || !contextRef.current) return;
 
-    if (!isSelectionBrush) {
-      // Determine which layer to draw on for regular brush/eraser
+    if (!isSelectionBrush && !isBlurBrush) { // Only check for drawing layer if not a mask brush
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
       if (selectedLayer && selectedLayer.type === 'drawing') {
         activeDrawingLayerIdRef.current = selectedLayerId;
@@ -130,7 +146,7 @@ export const LiveBrushCanvas = ({
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush]);
+  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush, isBlurBrush]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -153,19 +169,17 @@ export const LiveBrushCanvas = ({
     const offscreenCtx = offscreenCanvas.getContext('2d');
 
     if (offscreenCtx) {
-      const operation = foregroundColor === brushState.color ? 'add' : 'subtract'; // Determine operation for final render
+      const operation = foregroundColor === brushState.color ? 'add' : 'subtract'; 
       
-      // Apply settings for the offscreen canvas (this will draw an opaque shape for eraser)
       applyBrushSettings(offscreenCtx, operation);
-      
-      // Draw the path
       drawPath(offscreenCtx, pathPointsRef.current);
 
       if (isSelectionBrush && onSelectionBrushStrokeEnd) {
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
+      } else if (isBlurBrush && onBlurBrushStrokeEnd) { // NEW: Handle blur brush end
+        const blurOperation = foregroundColor === brushState.color ? 'add' : 'subtract';
+        onBlurBrushStrokeEnd(offscreenCanvas.toDataURL(), blurOperation, brushState.size); // Use brush size as blur amount
       } else if (activeTool !== 'selectionBrush' && activeDrawingLayerIdRef.current) {
-        // Now, in onDrawEnd, we need to apply the composite operation to the layer's canvas
-        // based on the activeTool.
         onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
       }
     } else {
@@ -174,8 +188,8 @@ export const LiveBrushCanvas = ({
 
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
-    activeDrawingLayerIdRef.current = null; // Reset active drawing layer
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, onSelectionBrushStrokeEnd, activeTool, foregroundColor, brushState.color]);
+    activeDrawingLayerIdRef.current = null; 
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onBlurBrushStrokeEnd, activeTool, foregroundColor, brushState.color, brushState.size]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -206,10 +220,10 @@ export const LiveBrushCanvas = ({
   }, [startDrawing, draw, endDrawing, imageRef]);
   
   React.useEffect(() => {
-    if (contextRef.current && !isSelectionBrush) { // Only apply live settings for non-selection brush
+    if (contextRef.current && !isSelectionBrush && !isBlurBrush) { // Only apply live settings for non-mask brushes
       applyBrushSettings(contextRef.current, foregroundColor === brushState.color ? 'add' : 'subtract');
     }
-  }, [brushState, activeTool, applyBrushSettings, isSelectionBrush, foregroundColor]);
+  }, [brushState, activeTool, applyBrushSettings, isSelectionBrush, isBlurBrush, foregroundColor]);
 
   return (
     <canvas

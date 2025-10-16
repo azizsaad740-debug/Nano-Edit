@@ -17,6 +17,7 @@ import {
   Hand, // Import Hand icon
   Palette, // Import Palette icon for Gradient
   Paintbrush, // New icon for selection brush
+  Droplet, // Icon for Blur Brush
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -31,7 +32,7 @@ import { ColorTool } from "./ColorTool"; // Import ColorTool
 import { Slider } from "@/components/ui/slider"; // Import Slider
 import { Label } from "@/components/ui/label"; // Import Label
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush"; // Added 'selectionBrush' tool
+type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush"; // Added 'blurBrush' tool
 
 interface ToolsPanelProps {
   activeTool: Tool | null;
@@ -53,6 +54,7 @@ const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: stri
   { name: "Brush", icon: Brush, tool: "brush", shortcut: "B" },
   { name: "Eraser", icon: Eraser, tool: "eraser", shortcut: "E" },
   { name: "Selection Brush", icon: Paintbrush, tool: "selectionBrush", shortcut: "S" }, // New Selection Brush tool
+  { name: "Blur Brush", icon: Droplet, tool: "blurBrush", shortcut: "U" }, // NEW Blur Brush tool
   { name: "Text", icon: Type, tool: "text", shortcut: "T" },
   { name: "Shape", icon: Square, tool: "shape", shortcut: "P" },
   { name: "Gradient", icon: Palette, tool: "gradient", shortcut: "G" }, // New Gradient tool
@@ -90,6 +92,7 @@ export const ToolsPanel = ({
   };
 
   const isSelectionBrushActive = activeTool === 'selectionBrush';
+  const isBlurBrushActive = activeTool === 'blurBrush'; // NEW
 
   return (
     <aside className="h-full border-r bg-muted/40 p-2 flex flex-col">
@@ -155,10 +158,14 @@ export const ToolsPanel = ({
             onBackgroundColorChange={onBackgroundColorChange}
             onSwapColors={onSwapColors}
           />
-          {isSelectionBrushActive && (
+          {(isSelectionBrushActive || isBlurBrushActive) && (
             <div className="text-xs text-muted-foreground text-center mt-1">
-              Foreground: Add to selection <br />
-              Background: Subtract from selection
+              {isSelectionBrushActive && (
+                <>Foreground: Add to selection <br /> Background: Subtract from selection</>
+              )}
+              {isBlurBrushActive && (
+                <>Foreground: Add Blur <br /> Background: Remove Blur</>
+              )}
             </div>
           )}
         </div>

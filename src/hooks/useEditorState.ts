@@ -57,6 +57,8 @@ export interface EditState {
     color: string;
   };
   crop: Crop | undefined;
+  selectiveBlurMask: string | null; // NEW: Data URL of the blur mask (grayscale)
+  selectiveBlurAmount: number; // NEW: Max blur amount (0-100)
 }
 
 export interface Point {
@@ -77,15 +79,6 @@ export interface Layer {
   // Drawing layer specific properties
   dataUrl?: string;
   maskDataUrl?: string; // New: Mask for drawing layers
-  // Smart object properties
-  smartObjectData?: {
-    layers: Layer[];
-    width: number;
-    height: number;
-  };
-  // Group layer properties
-  children?: Layer[]; // For 'group' type
-  expanded?: boolean; // For 'group' type
   // Common transform properties for movable layers (x, y, width, height, rotation)
   x?: number; // percentage from left
   y?: number; // percentage from top
@@ -121,6 +114,15 @@ export interface Layer {
   gradientRadius?: number; // 0-100 for radial
   gradientFeather?: number; // 0-100
   gradientInverted?: boolean;
+  // Smart object properties
+  smartObjectData?: {
+    layers: Layer[];
+    width: number;
+    height: number;
+  };
+  // Group layer properties
+  children?: Layer[]; // For 'group' type
+  expanded?: boolean; // For 'group' type
 }
 
 export interface HistoryItem {
@@ -150,7 +152,7 @@ export interface GradientToolState {
   inverted: boolean;
 }
 
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush"; // Added 'selectionBrush' tool
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush"; // ADDED blurBrush
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -171,6 +173,8 @@ const initialEditState: EditState = {
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
   frame: { type: 'none', width: 0, color: '#000000' },
   crop: undefined,
+  selectiveBlurMask: null, // ADDED
+  selectiveBlurAmount: 0,  // ADDED
 };
 
 const initialHistoryItem: HistoryItem = {
@@ -313,8 +317,10 @@ export const useEditorState = () => {
     if (tool !== 'crop' && activeTool === 'crop') {
       setPendingCrop(undefined);
     }
-    // Clear shape/gradient drawing states if switching away from them
-    // These are managed in Workspace, but good to have a fallback here.
+    // Clear selective blur mask if switching away from blur brush
+    if (tool !== 'blurBrush' && currentState.selectiveBlurMask) {
+      recordHistory("Clear Blur Mask", { ...currentState, selectiveBlurMask: null, selectiveBlurAmount: 0 }, layers);
+    }
     
     _setActiveTool(tool);
   };
@@ -881,6 +887,51 @@ export const useEditorState = () => {
     showSuccess("Colors swapped!");
   }, [foregroundColor, backgroundColor]);
 
+  /* ---------- Selective Blur Functions ---------- */
+  const handleSelectiveBlurStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => {
+    if (!imgRef.current || !dimensions) return;
+
+    const imageDimensions = dimensions;
+    
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageDimensions.width;
+    tempCanvas.height = imageDimensions.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
+
+    const baseDataUrl = currentState.selectiveBlurMask;
+    const strokeImg = new Image();
+
+    const basePromise = baseDataUrl ? new Promise((res, rej) => { 
+      const baseImg = new Image();
+      baseImg.onload = () => { tempCtx.drawImage(baseImg, 0, 0); res(null); };
+      baseImg.onerror = rej;
+      baseImg.src = baseDataUrl; 
+    }) : Promise.resolve();
+    
+    const strokePromise = new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
+
+    await Promise.all([basePromise, strokePromise]);
+
+    // Apply new stroke (grayscale mask)
+    // 'add' means drawing the gray intensity mask (source-over)
+    // 'subtract' means drawing black (destination-out) to remove blur
+    tempCtx.globalCompositeOperation = operation === 'add' ? 'source-over' : 'destination-out';
+    tempCtx.drawImage(strokeImg, 0, 0);
+    tempCtx.globalCompositeOperation = 'source-over'; 
+
+    const combinedDataUrl = tempCanvas.toDataURL();
+    
+    const newState: EditState = {
+      ...currentState,
+      selectiveBlurMask: combinedDataUrl,
+      selectiveBlurAmount: blurAmount,
+    };
+
+    recordHistory("Apply Blur Brush Stroke", newState, layers);
+  }, [currentState, dimensions, imgRef, recordHistory, layers]);
+
+
   /* ---------- Selection Brush Functions ---------- */
   const handleSelectionBrushStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
     if (!imgRef.current) return;
@@ -1022,6 +1073,7 @@ export const useEditorState = () => {
   useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
   useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image }); // Added shortcut for gradient tool
   useHotkeys("s", () => setActiveTool("selectionBrush"), { enabled: !!image }); // Shortcut for selection brush
+  useHotkeys("u", () => setActiveTool("blurBrush"), { enabled: !!image }); // NEW Shortcut for blur brush
   useHotkeys("x", handleSwapColors, { enabled: true, preventDefault: true }); // Shortcut to swap foreground/background colors
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
@@ -1147,7 +1199,7 @@ export const useEditorState = () => {
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
-    addGradientLayer, // Added addGradientLayer
+    addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -1187,6 +1239,8 @@ export const useEditorState = () => {
     clearSelectionMask, // Exposed clear selection mask handler
     applyMaskToSelectionPath, // Exposed apply mask to selection path handler
     convertSelectionPathToMask, // Exposed convert selection path to mask handler
+    // Selective Blur
+    handleSelectiveBlurStroke, // NEW export
     // Shape tool
     selectedShapeType,
     setSelectedShapeType,

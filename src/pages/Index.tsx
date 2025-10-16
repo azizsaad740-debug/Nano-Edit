@@ -135,6 +135,8 @@ const Index = () => {
     clearSelectionMask, // New
     applyMaskToSelectionPath, // New
     convertSelectionPathToMask, // New
+    // Selective Blur
+    handleSelectiveBlurStroke, // NEW destructuring
     // shape tool
     selectedShapeType,
     setSelectedShapeType,
@@ -440,6 +442,7 @@ const Index = () => {
                 onSampleSelect={handleUrlImageLoad}
                 onUrlSelect={handleUrlImageLoad}
                 onImageLoad={handleImageLoad}
+                currentState={currentState} // Pass currentState
                 adjustments={adjustments}
                 effects={effects}
                 grading={grading}
@@ -471,6 +474,7 @@ const Index = () => {
                 selectionMaskDataUrl={selectionMaskDataUrl} // New
                 onSelectionChange={setSelectionPath}
                 onSelectionBrushStrokeEnd={handleSelectionBrushStroke} // New
+                onSelectiveBlurStrokeEnd={handleSelectiveBlurStroke} // NEW prop
                 handleColorPick={handleColorPick}
                 imageNaturalDimensions={dimensions}
                 selectedShapeType={selectedShapeType}

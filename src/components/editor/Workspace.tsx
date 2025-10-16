@@ -25,6 +25,7 @@ import GroupLayer from "./GroupLayer"; // Import GroupLayer
 import GradientLayer from "./GradientLayer"; // Import GradientLayer
 import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import GradientPreviewCanvas
 import { SelectionMaskOverlay } from "./SelectionMaskOverlay"; // Import SelectionMaskOverlay
+import { SelectiveBlurFilter } from "./SelectiveBlurFilter"; // NEW Import
 
 interface WorkspaceProps {
   image: string | null;
@@ -32,6 +33,7 @@ interface WorkspaceProps {
   onSampleSelect: (url: string) => void;
   onUrlSelect: (url: string) => void;
   onImageLoad: () => void;
+  currentState: EditState; // ADDED currentState prop
   adjustments: EditState['adjustments'];
   effects: EditState['effects'];
   grading: EditState['grading'];
@@ -48,7 +50,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | null; // Added 'selectionBrush'
+  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | null; // ADDED blurBrush
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -68,11 +70,12 @@ interface WorkspaceProps {
   selectionMaskDataUrl: string | null; // New prop
   onSelectionChange: (path: Point[]) => void;
   onSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
+  onSelectiveBlurStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract', blurAmount: number) => void; // NEW prop
   handleColorPick: (color: string) => void;
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | null) => void; // Added setActiveTool
+  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | null) => void; // Added setActiveTool
   foregroundColor: string; // New prop
   backgroundColor: string; // New prop
 }
@@ -171,6 +174,7 @@ const Workspace = (props: WorkspaceProps) => {
     onSampleSelect,
     onUrlSelect,
     onImageLoad,
+    currentState, // Destructure currentState
     adjustments,
     effects,
     grading,
@@ -202,6 +206,7 @@ const Workspace = (props: WorkspaceProps) => {
     selectionMaskDataUrl, // Destructure
     onSelectionChange,
     onSelectionBrushStrokeEnd, // Destructure
+    onSelectiveBlurStrokeEnd, // Destructure NEW prop
     handleColorPick,
     imageNaturalDimensions,
     selectedShapeType, // Destructure selectedShapeType
@@ -278,9 +283,8 @@ const Workspace = (props: WorkspaceProps) => {
       setGradientCurrentCoords({ x: e.clientX, y: e.clientY });
       e.preventDefault();
       return;
-    } else if ((activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush')) {
+    } else if ((activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush')) {
       // LiveBrushCanvas handles its own pointer events, so we don't need to do anything here
-      // except prevent default if we want to stop other interactions.
       e.preventDefault();
       return;
     }
@@ -466,7 +470,7 @@ const Workspace = (props: WorkspaceProps) => {
     }
 
     // If a drawing tool is active, don't deselect layers on click
-    if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient' || activeTool === 'selectionBrush') {
+    if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') {
       return;
     }
 
@@ -597,12 +601,15 @@ const Workspace = (props: WorkspaceProps) => {
   const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
   const hasAdvancedEffects = effects.blur > 0 || effects.hueShift !== 0 || effects.sharpen > 0 || effects.clarity > 0;
   
+  const blurFilterUrl = (currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0) ? ' url(#selective-blur-filter)' : ''; // NEW: Blur filter URL
+  
   const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter });
   const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
   const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
   
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}` };
+  // Apply all filters, including the new blur filter
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${blurFilterUrl}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
@@ -659,6 +666,7 @@ const Workspace = (props: WorkspaceProps) => {
         case 'move': return moveToolCursor;
         case 'gradient': return gradientCursor;
         case 'selectionBrush': return selectionBrushCursor;
+        case 'blurBrush': return dynamicBrushCursor; // Use dynamic brush cursor for blur brush
         default: return 'default';
       }
     }
@@ -742,7 +750,7 @@ const Workspace = (props: WorkspaceProps) => {
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
         // Apply cursor-none only when mouse is over image and tool is active
-        (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && isMouseOverImage && 'cursor-none',
+        (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') && isMouseOverImage && 'cursor-none',
       )}
       style={{ 
         cursor: getCursorStyle()
@@ -761,6 +769,13 @@ const Workspace = (props: WorkspaceProps) => {
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />
       <EffectsFilters effects={effects} />
+      {currentState.selectiveBlurMask && imageNaturalDimensions && currentState.selectiveBlurAmount > 0 && ( // NEW: Render selective blur filter definition
+        <SelectiveBlurFilter
+          maskDataUrl={currentState.selectiveBlurMask}
+          blurAmount={currentState.selectiveBlurAmount}
+          imageNaturalDimensions={imageNaturalDimensions}
+        />
+      )}
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 flex flex-col items-center justify-center pointer-events-none z-10 rounded-lg">
           <UploadCloud className="h-16 w-16 text-primary" />
@@ -801,8 +816,8 @@ const Workspace = (props: WorkspaceProps) => {
                         ref={imageContainerRef} 
                         className="relative" 
                         style={containerStyle}
-                        onMouseEnter={() => setIsMouseOverImage(true)} // Track mouse over image
-                        onMouseLeave={() => setIsMouseOverImage(false)} // Track mouse leave image
+                        onMouseEnter={() => setIsMouseOverImage(true)} 
+                        onMouseLeave={() => setIsMouseOverImage(false)} 
                       >
                         <img
                           ref={imgRef}
@@ -830,25 +845,8 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
 
-                        {!isPreviewingOriginal && effects.vignette > 0 && (
-                          <div
-                            className="absolute inset-0 pointer-events-none rounded-lg"
-                            style={{
-                              boxShadow: `inset 0 0 ${effects.vignette * 2.5}px rgba(0,0,0,${effects.vignette / 100})`,
-                            }}
-                          />
-                        )}
-                        {!isPreviewingOriginal && effects.noise > 0 && (
-                          <div
-                            className="absolute inset-0 pointer-events-none rounded-lg mix-blend-overlay"
-                            style={{
-                              opacity: effects.noise / 100,
-                              backgroundImage: "url(\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIz۰۰IiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJub2lzZSI+PGZlVHVyYmVsZW5jZSB0eXBlPSJmcmFjdGFsTm9pc2UiIGJhc2VGcmVxdWVuY3k9IjAuODUiIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWx0ZXI9InVybCgjbm9pc2UpIi8+PC9zdmc+\")",
-                            }}
-                          />
-                        )}
-                        
-                        {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush') && (
+                        {/* Check for brush tools */}
+                        {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') && (
                           <LiveBrushCanvas
                             brushState={brushState}
                             imageRef={imgRef}
@@ -859,6 +857,7 @@ const Workspace = (props: WorkspaceProps) => {
                             layers={layers}
                             isSelectionBrush={activeTool === 'selectionBrush'}
                             onSelectionBrushStrokeEnd={onSelectionBrushStrokeEnd}
+                            onBlurBrushStrokeEnd={onSelectiveBlurStrokeEnd}
                             foregroundColor={foregroundColor}
                             backgroundColor={backgroundColor}
                           />
