@@ -16,6 +16,7 @@ import {
   ClipboardPaste,
   Maximize, // Import Maximize icon for fullscreen
   Minimize, // Import Minimize icon for fullscreen
+  LogOut, // Import LogOut icon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -32,6 +33,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useSession } from "@/integrations/supabase/session-provider";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { showSuccess, showError } from "@/utils/toast";
 
 interface HeaderProps {
   onReset: () => void;
@@ -77,11 +82,38 @@ const Header = ({
   onToggleFullscreen, // Destructure new prop
   isFullscreen, // Destructure new prop
 }: HeaderProps) => {
+  const { user, isGuest, setIsGuest } = useSession();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      localStorage.removeItem('nanoedit-is-guest');
+      showSuccess("Logged out of guest session.");
+      navigate('/login', { replace: true });
+      return;
+    }
+    
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Logout error:", error);
+      showError("Failed to log out.");
+    } else {
+      showSuccess("Logged out successfully.");
+      navigate('/login', { replace: true });
+    }
+  };
+
   return (
     <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b shrink-0">
       <div className="flex items-center gap-2">
         <ImageIcon className="h-6 w-6 text-primary" />
         <h1 className="text-lg font-semibold">NanoEdit</h1>
+        {(user || isGuest) && (
+          <span className="text-xs text-muted-foreground ml-2">
+            {isGuest ? "(Guest Mode)" : `(User: ${user?.email || 'Authenticated'})`}
+          </span>
+        )}
       </div>
       <div className="flex items-center gap-2">
         {children}
@@ -214,6 +246,19 @@ const Header = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        
+        {(user || isGuest) && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="icon" onClick={handleLogout}>
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Logout</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </header>
   );
