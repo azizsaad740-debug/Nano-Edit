@@ -722,7 +722,7 @@ export const useLayers = ({
 
     // Apply the correct composite operation for the new stroke
     if (activeTool === 'eraser') { // Use the activeTool prop directly
-      tempCtx.globalCompositeOperation = 'destination-out'; // Cut out from existing content
+      tempCtx.globalCompositeOperation = 'destination-out'; // <-- FIX: Use destination-out for erasing
     } else {
       tempCtx.globalCompositeOperation = 'source-over'; // Draw over existing content
     }

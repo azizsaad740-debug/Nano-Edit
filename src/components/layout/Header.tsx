@@ -17,6 +17,7 @@ import {
   Maximize, // Import Maximize icon for fullscreen
   Minimize, // Import Minimize icon for fullscreen
   LogOut, // Import LogOut icon
+  Cloud, // Import Cloud icon for sync
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";
@@ -59,6 +60,7 @@ interface HeaderProps {
   onOpenProject: () => void;
   onToggleFullscreen: () => void; // New prop for fullscreen
   isFullscreen: boolean; // New prop to indicate fullscreen state
+  onSyncProject: () => void; // New prop for sync
 }
 
 const Header = ({
@@ -81,6 +83,7 @@ const Header = ({
   onOpenProject,
   onToggleFullscreen, // Destructure new prop
   isFullscreen, // Destructure new prop
+  onSyncProject, // Destructure new prop
 }: HeaderProps) => {
   const { user, isGuest, setIsGuest } = useSession();
   const navigate = useNavigate();
@@ -225,6 +228,17 @@ const Header = ({
           </TooltipTrigger>
           <TooltipContent>
             <p>{isFullscreen ? "Exit Fullscreen" : "Fullscreen"}</p>
+          </TooltipContent>
+        </Tooltip>
+        
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="outline" size="icon" onClick={onSyncProject} disabled={!hasImage}>
+              <Cloud className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Sync Project to Google Drive (Stub)</p>
           </TooltipContent>
         </Tooltip>
 

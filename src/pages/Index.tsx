@@ -33,6 +33,7 @@ import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
+import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast"; // Import toast utilities
 
 const Index = () => {
   const {
@@ -190,6 +191,22 @@ const Index = () => {
       });
     }
   }, []);
+
+  const handleSyncProject = useCallback(() => {
+    if (!image) {
+      showError("No project loaded to sync.");
+      return;
+    }
+    const toastId = showLoading("Connecting to Google Drive...");
+    
+    // --- STUB IMPLEMENTATION ---
+    // In a real app, this would initiate the OAuth flow and then upload the project file.
+    setTimeout(() => {
+      dismissToast(toastId);
+      showSuccess("Project sync initiated (Stub). You would need to implement the Google Drive API integration for full functionality.");
+    }, 1500);
+    // --- END STUB ---
+  }, [image]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -350,13 +367,14 @@ const Index = () => {
         canRedo={canRedo}
         setOpenSettings={setOpenSettings}
         setOpenImport={setOpenImport}
-        onGenerateClick={() => setOpenGenerateImage(true)}
-        onNewProjectClick={() => setOpenNewProject(true)}
+        onGenerateClick={onGenerateClick}
+        onNewProjectClick={onNewProjectClick}
         onNewFromClipboard={handleNewFromClipboard}
         onSaveProject={handleSaveProject}
         onOpenProject={handleOpenProjectClick}
         onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
+        onSyncProject={handleSyncProject}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {(activeTool === "lasso" && hasSelection) || (activeTool === "selectionBrush" && hasSelectionMask) || (hasSelection && !hasSelectionMask && activeTool !== 'selectionBrush') ? (
