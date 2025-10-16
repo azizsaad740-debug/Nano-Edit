@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
-import EditorControls from "@/components/layout/EditorControls";
+import EditorControls from "@/components/editor/EditorControls";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
@@ -367,8 +367,8 @@ const Index = () => {
         canRedo={canRedo}
         setOpenSettings={setOpenSettings}
         setOpenImport={setOpenImport}
-        onGenerateClick={onGenerateClick}
-        onNewProjectClick={onNewProjectClick}
+        onGenerateClick={() => setOpenGenerateImage(true)}
+        onNewProjectClick={() => setOpenNewProject(true)}
         onNewFromClipboard={handleNewFromClipboard}
         onSaveProject={handleSaveProject}
         onOpenProject={handleOpenProjectClick}
