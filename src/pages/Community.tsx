@@ -5,7 +5,7 @@ import { fetchCommunityTemplates } from "@/utils/templateApi";
 import type { CommunityTemplate } from "../types/template";
 import { TemplateCard } from "../components/community/TemplateCard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LayoutGrid, Link, ExternalLink, Google } from "lucide-react";
+import { LayoutGrid, Link, ExternalLink, Chrome } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -82,7 +82,7 @@ const Community = () => {
                 disabled={!user}
                 className="mt-3 md:mt-0 shrink-0"
               >
-                <Google className="h-4 w-4 mr-2" />
+                <Chrome className="h-4 w-4 mr-2" />
                 {user ? "Connect Account (Stub)" : "Log in to Connect"}
               </Button>
             </div>
