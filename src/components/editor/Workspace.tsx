@@ -23,6 +23,7 @@ import { GradientLayer } from "./GradientLayer";
 import { GradientPreviewCanvas } from "./GradientPreviewCanvas";
 import { SelectionMaskOverlay } from "./SelectionMaskOverlay";
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
+import { cn } from "@/lib/utils";
 
 interface WorkspaceProps {
   image: string | null;
@@ -359,10 +360,9 @@ const Workspace = (props: WorkspaceProps) => {
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => onFileSelect(event.target.files?.[0]);
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
   const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(false); };
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(false); 
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(false); 
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(false); 
     onFileSelect(e.dataTransfer.files?.[0]);
   };
 
@@ -373,7 +373,7 @@ const Workspace = (props: WorkspaceProps) => {
   const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
   const hasAdvancedEffects = effects.blur > 0 || effects.hueShift !== 0 || effects.sharpen > 0 || effects.clarity > 0;
 
-  // Simplified filter string - only apply filters when not previewing original image
+  // Simplified filter string - only apply filters when not previewing original
   const imageFilterStyle = isPreviewingOriginal ? {} : { 
     filter: `${getFilterString({ adjustments, effects, grading, selectedFilter, hslAdjustments: currentState.hslAdjustments })}${isCurveSet ? 'url(#curves-filter)' : ''}${areAllChannelsVisible ? '' : 'url(#channel-filter)'}${hasAdvancedEffects ? 'url(#advanced-effects-filter)' : ''}`
   };
