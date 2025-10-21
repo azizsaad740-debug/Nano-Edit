@@ -34,6 +34,45 @@ export const SmartObjectWorkspace = ({
   activeTool, // Destructure activeTool
 }: SmartObjectWorkspaceProps) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const [scaleFactor, setScaleFactor] = React.useState(1);
+
+  // --- SCALING LOGIC ---
+  const calculateScale = React.useCallback(() => {
+    const container = containerRef.current?.parentElement; // Measure the parent div (the flex-1 container)
+    if (!container || width === 0 || height === 0) return;
+
+    // Use clientWidth/Height of the parent container to determine available space
+    const availableWidth = container.clientWidth;
+    const availableHeight = container.clientHeight;
+
+    const scaleX = availableWidth / width;
+    const scaleY = availableHeight / height;
+    
+    // We want to fit the content, and never upscale beyond 1x
+    const newScale = Math.min(scaleX, scaleY, 1); 
+    
+    if (newScale !== scaleFactor) {
+      setScaleFactor(newScale);
+    }
+  }, [width, height, scaleFactor]);
+
+  React.useEffect(() => {
+    calculateScale();
+    window.addEventListener('resize', calculateScale);
+    
+    // Use a MutationObserver to detect size changes in the parent container 
+    // (e.g., when ResizablePanel is dragged)
+    const observer = new MutationObserver(calculateScale);
+    if (containerRef.current?.parentElement) {
+        observer.observe(containerRef.current.parentElement, { attributes: true, childList: true, subtree: true });
+    }
+
+    return () => {
+      window.removeEventListener('resize', calculateScale);
+      observer.disconnect();
+    };
+  }, [calculateScale]);
+  // --- END SCALING LOGIC ---
 
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     // Deselect if clicking on the workspace background
@@ -43,24 +82,22 @@ export const SmartObjectWorkspace = ({
   };
 
   const backgroundStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
+    width: `${width}px`,
+    height: `${height}px`,
     aspectRatio: width / height,
-    maxWidth: '100%',
-    maxHeight: '100%',
-  };
-
-  if (mainImage) {
-    backgroundStyle.backgroundImage = `url(${mainImage})`;
-    backgroundStyle.backgroundSize = 'contain';
-    backgroundStyle.backgroundRepeat = 'no-repeat';
-    backgroundStyle.backgroundPosition = 'center';
-  } else {
+    
+    // Apply scaling to the outer container to center it correctly
+    transform: `scale(${scaleFactor})`,
+    transformOrigin: 'center center',
+    
     // Checkerboard effect for transparency if no main image
-    backgroundStyle.backgroundImage = 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)';
-    backgroundStyle.backgroundSize = '20px 20px';
-    backgroundStyle.backgroundPosition = '0 0, 0 10px, 10px -10px, -10px 0px';
-  }
+    backgroundImage: mainImage 
+      ? `url(${mainImage})` 
+      : 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)',
+    backgroundSize: mainImage ? 'contain' : '20px 20px',
+    backgroundRepeat: mainImage ? 'no-repeat' : 'repeat',
+    backgroundPosition: mainImage ? 'center' : '0 0, 0 10px, 10px -10px, -10px 0px',
+  };
 
   const parentDimensions = { width, height }; // Dimensions of this smart object's canvas
 
@@ -109,7 +146,7 @@ export const SmartObjectWorkspace = ({
     <div
       ref={containerRef}
       className={cn(
-        "relative overflow-hidden border rounded-md bg-muted flex-1",
+        "relative overflow-hidden border rounded-md bg-muted",
       )}
       style={backgroundStyle}
       onClick={handleClick}
@@ -119,8 +156,6 @@ export const SmartObjectWorkspace = ({
         style={{
           width: `${width}px`,
           height: `${height}px`,
-          transformOrigin: 'top left',
-          transform: `scale(var(--scale-factor, 1))`, // Will be scaled by parent to fit
         }}
       >
         {renderWorkspaceLayers(layers)}
