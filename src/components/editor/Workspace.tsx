@@ -603,7 +603,7 @@ const Workspace = (props: WorkspaceProps) => {
   
   const blurFilterUrl = (currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0) ? ' url(#selective-blur-filter)' : ''; // NEW: Blur filter URL
   
-  const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter });
+  const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter, hslAdjustments: currentState.hslAdjustments });
   const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
   const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
@@ -824,7 +824,7 @@ const Workspace = (props: WorkspaceProps) => {
                           src={image}
                           alt="Uploaded preview"
                           className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                          style={imageStyle}
+                          style={imageFilterStyle}
                           onLoad={onImageLoad}
                         />
                         
@@ -857,7 +857,7 @@ const Workspace = (props: WorkspaceProps) => {
                             layers={layers}
                             isSelectionBrush={activeTool === 'selectionBrush'}
                             onSelectionBrushStrokeEnd={onSelectionBrushStrokeEnd}
-                            onBlurBrushStrokeEnd={onSelectiveBlurStrokeEnd}
+                            onSelectiveBlurStrokeEnd={onSelectiveBlurStrokeEnd}
                             foregroundColor={foregroundColor}
                             backgroundColor={backgroundColor}
                           />

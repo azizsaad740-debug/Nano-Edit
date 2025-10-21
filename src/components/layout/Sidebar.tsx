@@ -59,6 +59,9 @@ interface SidebarProps {
   onMergeLayerDown: () => void; // Renamed from mergeLayerDown
   onRasterizeLayer: () => void; // Renamed from rasterizeLayer
   onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Added this line
+  toggleLayerVisibility: (id: string) => void; // ADDED
+  renameLayer: (id: string, newName: string) => void; // ADDED
+  deleteLayer: (id: string) => void; // ADDED
   // Selection props
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;

@@ -4,10 +4,10 @@ type FilterState = Pick<EditState, 'adjustments' | 'effects' | 'grading' | 'sele
 
 export const getFilterString = (state: FilterState): string => {
   const { 
-    adjustments, 
-    grading, 
     selectedFilter, 
-    // Provide a default if hslAdjustments is missing from the state object
+    // Provide safe defaults for nested objects
+    adjustments = { brightness: 100, contrast: 100, saturation: 100 },
+    grading = { grayscale: 0, sepia: 0, invert: 0 },
     hslAdjustments = { hue: 0, saturation: 100, luminance: 0 } 
   } = state;
   
@@ -15,8 +15,6 @@ export const getFilterString = (state: FilterState): string => {
   const saturationValue = hslAdjustments.saturation / 100;
   
   // Normalize luminance (0% = 1.0, -100% = 0.0, 100% = 2.0)
-  // This is a simplification, as canvas filters don't have a direct luminance control.
-  // We approximate luminance change using brightness.
   const brightnessAdjustment = 1 + (hslAdjustments.luminance / 100);
 
   const filters = [
