@@ -13,7 +13,7 @@ interface LiveBrushCanvasProps {
   layers: Layer[];
   isSelectionBrush: boolean;
   onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  onBlurBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // UPDATED: Removed blurAmount
+  onSelectiveBlurStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // Renamed from onBlurBrushStrokeEnd
   foregroundColor: string;
   backgroundColor: string;
 }
@@ -28,7 +28,7 @@ export const LiveBrushCanvas = ({
   layers,
   isSelectionBrush,
   onSelectionBrushStrokeEnd,
-  onBlurBrushStrokeEnd, // Destructure
+  onSelectiveBlurStrokeEnd, // Destructure using the correct name
   foregroundColor,
   backgroundColor,
 }: LiveBrushCanvasProps) => {
@@ -176,9 +176,9 @@ export const LiveBrushCanvas = ({
 
       if (isSelectionBrush && onSelectionBrushStrokeEnd) {
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
-      } else if (isBlurBrush && onBlurBrushStrokeEnd) { // NEW: Handle blur brush end
+      } else if (isBlurBrush && onSelectiveBlurStrokeEnd) { // Use the correct name here
         const blurOperation = foregroundColor === brushState.color ? 'add' : 'subtract';
-        onBlurBrushStrokeEnd(offscreenCanvas.toDataURL(), blurOperation); // UPDATED: Removed blurAmount
+        onSelectiveBlurStrokeEnd(offscreenCanvas.toDataURL(), blurOperation); 
       } else if (activeTool !== 'selectionBrush' && activeDrawingLayerIdRef.current) {
         onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
       }
@@ -189,7 +189,7 @@ export const LiveBrushCanvas = ({
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
     activeDrawingLayerIdRef.current = null; 
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onBlurBrushStrokeEnd, activeTool, foregroundColor, brushState.color]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, activeTool, foregroundColor, brushState.color]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
