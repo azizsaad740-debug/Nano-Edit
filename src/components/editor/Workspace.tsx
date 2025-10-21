@@ -358,8 +358,8 @@ const Workspace = (props: WorkspaceProps) => {
   const triggerFileInput = () => fileInputRef.current?.click();
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => onFileSelect(event.target.files?.[0]);
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault();
-  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(true); };
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => { e.preventDefault(); setIsDragging(false); };
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
