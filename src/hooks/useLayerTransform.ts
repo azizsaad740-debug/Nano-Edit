@@ -141,66 +141,64 @@ export const useLayerTransform = ({
       }
       const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.initialHeight + (change * 0.5)));
       onUpdate(layer.id, { fontSize: newFontSize });
-    } else if (type === "smart-object" && smartObjectData) {
-      const currentAspect = (smartObjectData.width || 1) / (smartObjectData.height || 1);
-
-      switch (resizeStartInfo.current.handle) {
-        case "top-left":
-          newWidth = resizeStartInfo.current.initialWidth - dxPercent;
-          newHeight = newWidth / currentAspect;
-          newX = resizeStartInfo.current.initialX + dxPercent;
-          newY = resizeStartInfo.current.initialY + (resizeStartInfo.current.initialHeight - newHeight);
-          break;
-        case "top-right":
-          newWidth = resizeStartInfo.current.initialWidth + dxPercent;
-          newHeight = newWidth / currentAspect;
-          newY = resizeStartInfo.current.initialY + (resizeStartInfo.current.initialHeight - newHeight);
-          break;
-        case "bottom-left":
-          newWidth = resizeStartInfo.current.initialWidth - dxPercent;
-          newHeight = newWidth / currentAspect;
-          newX = resizeStartInfo.current.initialX + dxPercent;
-          break;
-        case "bottom-right":
-          newWidth = resizeStartInfo.current.initialWidth + dxPercent;
-          newHeight = newWidth / currentAspect;
-          break;
+    } else if (type === "smart-object" || type === "vector-shape" || type === "group" || type === "gradient") {
+      // For smart objects, vector shapes, groups, and gradients, resize changes width/height directly, maintaining aspect ratio.
+      
+      let currentAspect = resizeStartInfo.current.initialWidth / resizeStartInfo.current.initialHeight;
+      
+      // If it's a smart object, use its internal dimensions for aspect ratio if available
+      if (type === "smart-object" && smartObjectData) {
+        currentAspect = (smartObjectData.width || 1) / (smartObjectData.height || 1);
       }
 
-      newWidth = Math.max(0.1, newWidth);
-      newHeight = Math.max(0.1, newHeight);
-
-      onUpdate(layer.id, {
-        width: newWidth,
-        height: newHeight,
-        x: newX,
-        y: newY,
-      });
-    } else if (type === "vector-shape" || type === "group" || type === "gradient") { // Added 'group' and 'gradient' type
-      // For vector shapes, groups, and gradients, resize changes width/height directly
-      const currentAspect = resizeStartInfo.current.initialWidth / resizeStartInfo.current.initialHeight;
+      let initialWidth = resizeStartInfo.current.initialWidth;
+      let initialHeight = resizeStartInfo.current.initialHeight;
 
       switch (resizeStartInfo.current.handle) {
-        case "top-left":
-          newWidth = resizeStartInfo.current.initialWidth - dxPercent;
+        case "top-left": {
+          newWidth = initialWidth - dxPercent;
           newHeight = newWidth / currentAspect;
-          newX = resizeStartInfo.current.initialX + dxPercent;
-          newY = resizeStartInfo.current.initialY + (resizeStartInfo.current.initialHeight - newHeight);
+          
+          const dW = newWidth - initialWidth;
+          const dH = newHeight - initialHeight;
+          
+          newX = resizeStartInfo.current.initialX - dW / 2;
+          newY = resizeStartInfo.current.initialY - dH / 2;
           break;
-        case "top-right":
-          newWidth = resizeStartInfo.current.initialWidth + dxPercent;
+        }
+        case "top-right": {
+          newWidth = initialWidth + dxPercent;
           newHeight = newWidth / currentAspect;
-          newY = resizeStartInfo.current.initialY + (resizeStartInfo.current.initialHeight - newHeight);
+          
+          const dW = newWidth - initialWidth;
+          const dH = newHeight - initialHeight;
+          
+          newX = resizeStartInfo.current.initialX + dW / 2;
+          newY = resizeStartInfo.current.initialY - dH / 2;
           break;
-        case "bottom-left":
-          newWidth = resizeStartInfo.current.initialWidth - dxPercent;
+        }
+        case "bottom-left": {
+          newWidth = initialWidth - dxPercent;
           newHeight = newWidth / currentAspect;
-          newX = resizeStartInfo.current.initialX + dxPercent;
+          
+          const dW = newWidth - initialWidth;
+          const dH = newHeight - initialHeight;
+          
+          newX = resizeStartInfo.current.initialX - dW / 2;
+          newY = resizeStartInfo.current.initialY + dH / 2;
           break;
-        case "bottom-right":
-          newWidth = resizeStartInfo.current.initialWidth + dxPercent;
+        }
+        case "bottom-right": {
+          newWidth = initialWidth + dxPercent;
           newHeight = newWidth / currentAspect;
+          
+          const dW = newWidth - initialWidth;
+          const dH = newHeight - initialHeight;
+          
+          newX = resizeStartInfo.current.initialX + dW / 2;
+          newY = resizeStartInfo.current.initialY + dH / 2;
           break;
+        }
       }
 
       newWidth = Math.max(0.1, newWidth);
