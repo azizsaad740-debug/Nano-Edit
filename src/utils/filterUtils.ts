@@ -3,7 +3,13 @@ import type { EditState } from '@/hooks/useEditorState';
 type FilterState = Pick<EditState, 'adjustments' | 'effects' | 'grading' | 'selectedFilter' | 'hslAdjustments'>;
 
 export const getFilterString = (state: FilterState): string => {
-  const { adjustments, grading, selectedFilter, hslAdjustments } = state;
+  const { 
+    adjustments, 
+    grading, 
+    selectedFilter, 
+    // Provide a default if hslAdjustments is missing from the state object
+    hslAdjustments = { hue: 0, saturation: 100, luminance: 0 } 
+  } = state;
   
   // Normalize saturation (100% = 1.0)
   const saturationValue = hslAdjustments.saturation / 100;
