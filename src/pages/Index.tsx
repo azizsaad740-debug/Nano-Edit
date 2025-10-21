@@ -154,6 +154,8 @@ const Index = () => {
     handleSwapColors,
     // Template loading utility
     loadTemplateData,
+    // Layer Masking
+    applySelectionAsMask, // NEW destructuring
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -288,6 +290,8 @@ const Index = () => {
 
   const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength } = currentState;
 
+  const hasActiveSelection = !!selectionPath || !!selectionMaskDataUrl;
+
   const sidebarProps = {
     hasImage: !!image,
     adjustments,
@@ -310,10 +314,9 @@ const Index = () => {
     rotation: transforms.rotation,
     onRotationChange: handleRotationChange,
     onRotationCommit: handleRotationCommit,
-    // FIX: Adding missing frame props
-    onFramePresetChange: handleFramePresetChange,
-    onFramePropertyChange: handleFramePropertyChange,
-    onFramePropertyCommit: handleFramePropertyCommit,
+    handleFramePresetChange,
+    handleFramePropertyChange,
+    handleFramePropertyCommit,
     frame,
     onAspectChange: setAspect,
     aspect,
@@ -378,10 +381,11 @@ const Index = () => {
     selectiveBlurStrength, // NEW prop
     onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange, // NEW prop
     onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit, // NEW prop
+    // Layer Masking
+    hasActiveSelection, // NEW prop
+    onApplySelectionAsMask: applySelectionAsMask, // NEW prop
   };
 
-  const hasSelection = selectionPath && selectionPath.length > 0;
-  const hasSelectionMask = selectionMaskDataUrl !== null;
   
   const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
 
@@ -409,18 +413,18 @@ const Index = () => {
         onSyncProject={handleSyncProject}
       >
         <div className="flex-1 flex items-center justify-center px-4">
-          {(activeTool === "lasso" && hasSelection) || (activeTool === "selectionBrush" && hasSelectionMask) || (hasSelection && !hasSelectionMask && activeTool !== 'selectionBrush') ? (
+          {(activeTool === "lasso" && hasActiveSelection) || (activeTool === "selectionBrush" && hasActiveSelection) || (hasActiveSelection && activeTool !== 'selectionBrush') ? (
             <div className="flex items-center gap-2">
               {activeTool === 'selectionBrush' ? (
-                <Button size="sm" onClick={applyMaskToSelectionPath} disabled={!hasSelectionMask}>
+                <Button size="sm" onClick={applyMaskToSelectionPath} disabled={!selectionMaskDataUrl}>
                   Apply Selection
                 </Button>
               ) : (
-                <Button size="sm" onClick={convertSelectionPathToMask} disabled={!hasSelection}>
+                <Button size="sm" onClick={convertSelectionPathToMask} disabled={!selectionPath}>
                   Refine Selection
                 </Button>
               )}
-              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasSelection && !hasSelectionMask}>
+              <Button variant="secondary" size="sm" onClick={() => setOpenGenerative(true)} disabled={!hasActiveSelection}>
                 Generative Fill
               </Button>
               <Button variant="outline" size="sm" onClick={clearSelectionMask}>

@@ -1137,6 +1137,55 @@ export const useEditorState = () => {
     }
   }, [dimensions]);
 
+  const applySelectionAsMask = useCallback(async () => {
+    if (!selectedLayerId) {
+      showError("Please select a layer to apply the mask to.");
+      return;
+    }
+    const selectedLayer = layers.find(l => l.id === selectedLayerId);
+    if (!selectedLayer || selectedLayer.type === 'image') {
+      showError("Cannot apply mask to the background layer.");
+      return;
+    }
+    if (!selectionPath && !selectionMaskDataUrl) {
+      showError("No active selection found.");
+      return;
+    }
+    if (!dimensions) {
+      showError("Image dimensions are required.");
+      return;
+    }
+
+    const toastId = showLoading("Applying selection as layer mask...");
+    
+    let finalMaskDataUrl = selectionMaskDataUrl;
+
+    // If we only have a polygonal path, convert it to a mask data URL first
+    if (!finalMaskDataUrl && selectionPath && selectionPath.length > 1) {
+      try {
+        finalMaskDataUrl = await polygonToMaskDataUrl(selectionPath, dimensions.width, dimensions.height);
+      } catch (error) {
+        dismissToast(toastId);
+        showError("Failed to generate mask from selection path.");
+        return;
+      }
+    }
+
+    if (finalMaskDataUrl) {
+      const updatedLayers = layers.map(l => 
+        l.id === selectedLayerId ? { ...l, maskDataUrl: finalMaskDataUrl } : l
+      );
+      recordHistory(`Apply Mask to Layer "${selectedLayer.name}"`, currentState, updatedLayers);
+      clearSelectionMask();
+      dismissToast(toastId);
+      showSuccess(`Selection applied as mask to layer "${selectedLayer.name}".`);
+    } else {
+      dismissToast(toastId);
+      showError("Failed to create mask data.");
+    }
+  }, [selectedLayerId, layers, selectionPath, selectionMaskDataUrl, dimensions, recordHistory, currentState, clearSelectionMask]);
+
+
   /* ---------- Keyboard shortcuts ---------- */
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -1363,5 +1412,7 @@ export const useEditorState = () => {
     handleSwapColors,
     // Template loading
     loadTemplateData,
+    // Layer Masking
+    applySelectionAsMask, // NEW export
   };
 };

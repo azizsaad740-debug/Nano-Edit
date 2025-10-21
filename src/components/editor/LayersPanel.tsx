@@ -73,7 +73,9 @@ interface LayersPanelProps {
   // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
-  // Removed updateLayersState as it's internal to useLayers
+  // Layer Masking
+  hasActiveSelection: boolean; // New prop
+  onApplySelectionAsMask: () => void; // New prop
 }
 
 export const LayersPanel = ({
@@ -106,6 +108,8 @@ export const LayersPanel = ({
   setBrushState,
   groupLayers,
   toggleGroupExpanded,
+  hasActiveSelection, // Destructure new prop
+  onApplySelectionAsMask, // Destructure new prop
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -214,20 +218,25 @@ export const LayersPanel = ({
   const renderLayerItems = (layersToRender: Layer[], depth: number) => {
     return layersToRender.map((layer) => (
       <React.Fragment key={layer.id}>
-        <LayerItem
-          layer={layer}
-          isEditing={editingId === layer.id}
-          tempName={tempName}
-          setTempName={setTempName}
-          startRename={startRename}
-          confirmRename={confirmRename}
-          cancelRename={cancelRename}
-          onToggleVisibility={onToggleVisibility}
-          isSelected={selectedLayerIds.includes(layer.id)}
-          onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey, e.shiftKey)}
-          onToggleGroupExpanded={toggleGroupExpanded}
-          depth={depth}
-        />
+        <SortableContext
+          items={[layer.id]}
+          strategy={verticalListSortingStrategy}
+        >
+          <LayerItem
+            layer={layer}
+            isEditing={editingId === layer.id}
+            tempName={tempName}
+            setTempName={setTempName}
+            startRename={startRename}
+            confirmRename={confirmRename}
+            cancelRename={cancelRename}
+            onToggleVisibility={onToggleVisibility}
+            isSelected={selectedLayerIds.includes(layer.id)}
+            onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey, e.shiftKey)}
+            onToggleGroupExpanded={toggleGroupExpanded}
+            depth={depth}
+          />
+        </SortableContext>
         {layer.type === 'group' && layer.expanded && layer.children && (
           <SortableContext
             items={layer.children.map(c => c.id)}
@@ -329,6 +338,8 @@ export const LayersPanel = ({
               onOpenSmartObject={onOpenSmartObject}
               selectedShapeType={selectedShapeType}
               groupLayers={() => groupLayers(selectedLayerIds)} // Pass groupLayers
+              hasActiveSelection={hasActiveSelection} // Pass new prop
+              onApplySelectionAsMask={onApplySelectionAsMask} // Pass new prop
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

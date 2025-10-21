@@ -55,8 +55,8 @@ interface SidebarProps {
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
-  duplicateLayer: () => void;
-  mergeLayerDown: () => void;
+  onDuplicateLayer: () => void;
+  onMergeLayerDown: () => void;
   rasterizeLayer: () => void;
   onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Added this line
   // Selection props
@@ -100,6 +100,9 @@ interface SidebarProps {
   selectiveBlurStrength: number; // NEW prop
   onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
   onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
+  // Layer Masking
+  hasActiveSelection: boolean; // NEW prop (Fix for Error 2)
+  onApplySelectionAsMask: () => void; // NEW prop (Fix for Error 2)
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -173,6 +176,8 @@ const Sidebar = (props: SidebarProps) => {
                 setBrushState={props.setBrushState}
                 groupLayers={props.groupLayers} // Pass groupLayers
                 toggleGroupExpanded={props.toggleGroupExpanded} // Pass toggleGroupExpanded
+                hasActiveSelection={props.hasActiveSelection} {/* Fix for Error 2 */}
+                onApplySelectionAsMask={props.onApplySelectionAsMask} {/* Fix for Error 2 */}
               />
             )}
           </div>
