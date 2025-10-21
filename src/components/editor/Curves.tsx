@@ -4,6 +4,8 @@ import { RotateCcw } from "lucide-react";
 import type { Point, EditState } from '@/hooks/useEditorState';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 type Channel = keyof EditState['curves'];
 
@@ -21,6 +23,7 @@ const GRAPH_SIZE = SIZE - PADDING * 2;
 const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
   const [activeChannel, setActiveChannel] = useState<Channel>('all');
   const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [intensity, setIntensity] = useState(100); // 0 to 200
   const svgRef = useRef<SVGSVGElement>(null);
   const [histogramData, setHistogramData] = useState<number[]>(new Array(256).fill(0));
 
@@ -56,16 +59,37 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
   const getSVGCoords = (e: React.MouseEvent | MouseEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const svg = svgRef.current;
-    const pt = svg.createSVGPoint();
-    pt.x = e.clientX;
-    pt.y = e.clientY;
-    const svgP = pt.matrixTransform(svg.getScreenCTM()?.inverse());
-    return { x: svgP.x, y: svgP.y };
+    const rect = svg.getBoundingClientRect();
+    
+    // Calculate coordinates relative to the SVG viewBox (0 to SIZE)
+    const x = (e.clientX - rect.left) * (SIZE / rect.width);
+    const y = (e.clientY - rect.top) * (SIZE / rect.height);
+    
+    return { x, y };
   };
 
-  const handleMouseDown = (e: React.MouseEvent, index: number) => {
+  const handleMouseDown = (e: React.MouseEvent | MouseEvent, index: number | null) => {
     e.stopPropagation();
-    setDraggingIndex(index);
+    
+    if (index !== null) {
+      setDraggingIndex(index);
+    } else {
+      // Add new point if clicking inside the graph area
+      const { x, y } = getSVGCoords(e);
+      if (x > PADDING && x < SIZE - PADDING && y > PADDING && y < SIZE - PADDING) {
+        // Convert SVG coordinates back to 0-255 range for storage
+        const newX = Math.round(((x - PADDING) / GRAPH_SIZE) * 255);
+        const newY = Math.round(255 - ((y - PADDING) / GRAPH_SIZE) * 255);
+        
+        const newPoint: Point = { x: newX, y: newY };
+        
+        const newPoints = [...points, newPoint].sort((a, b) => a.x - b.x);
+        const newIndex = newPoints.findIndex(p => p.x === newX && p.y === newY);
+        
+        onChange(activeChannel, newPoints);
+        setDraggingIndex(newIndex);
+      }
+    }
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
@@ -76,19 +100,27 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
     const newPoints = [...points];
     const point = newPoints[draggingIndex];
 
-    const newX = Math.max(PADDING, Math.min(x, SIZE - PADDING));
-    const newY = Math.max(PADDING, Math.min(y, SIZE - PADDING));
+    // Convert SVG coordinates to 0-255 range
+    let newX = Math.round(((x - PADDING) / GRAPH_SIZE) * 255);
+    let newY = Math.round(255 - ((y - PADDING) / GRAPH_SIZE) * 255);
 
-    // Prevent crossing over adjacent points
-    const prevPointX = draggingIndex > 0 ? newPoints[draggingIndex - 1].x : -Infinity;
-    const nextPointX = draggingIndex < newPoints.length - 1 ? newPoints[draggingIndex + 1].x : Infinity;
+    // Clamp values to 0-255 range
+    newX = Math.max(0, Math.min(255, newX));
+    newY = Math.max(0, Math.min(255, newY));
 
-    point.x = Math.max(prevPointX + 1, Math.min(newX, nextPointX - 1));
-    point.y = newY;
-
-    // Don't allow moving the start/end points horizontally
-    if (draggingIndex === 0) point.x = PADDING;
-    if (draggingIndex === points.length - 1) point.x = SIZE - PADDING;
+    // Prevent crossing over adjacent points (only for intermediate points)
+    if (draggingIndex > 0 && draggingIndex < points.length - 1) {
+      const prevPointX = newPoints[draggingIndex - 1].x;
+      const nextPointX = newPoints[draggingIndex + 1].x;
+      
+      point.x = Math.max(prevPointX + 1, Math.min(newX, nextPointX - 1));
+      point.y = newY;
+    } else {
+      // Start/End points can only move vertically
+      point.y = newY;
+      if (draggingIndex === 0) point.x = 0;
+      if (draggingIndex === points.length - 1) point.x = 255;
+    }
 
     onChange(activeChannel, newPoints);
   }, [draggingIndex, points, onChange, activeChannel]);
@@ -113,11 +145,43 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
 
   const handleReset = () => {
     const newPoints = [
-      { x: PADDING, y: SIZE - PADDING },
-      { x: SIZE - PADDING, y: PADDING },
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
     ];
     onChange(activeChannel, newPoints);
     onCommit(activeChannel, newPoints);
+    setIntensity(100);
+  };
+
+  const handleIntensityChange = (newIntensity: number) => {
+    setIntensity(newIntensity);
+    
+    // Apply intensity scaling to intermediate points
+    
+    // Find the default diagonal points for reference
+    const defaultPoints = [
+      { x: 0, y: 0 },
+      { x: 255, y: 255 },
+    ];
+    
+    const scaledPoints = points.map((p, i) => {
+      if (i === 0 || i === points.length - 1) return p;
+      
+      // Calculate deviation from the default diagonal (y=x)
+      const defaultY = p.x;
+      const deviation = p.y - defaultY;
+      
+      // Scale the deviation based on intensity (100% = no change, 0% = flat line, 200% = double deviation)
+      const scaleFactor = newIntensity / 100;
+      const newDeviation = deviation * scaleFactor;
+      
+      let newY = defaultY + newDeviation;
+      newY = Math.max(0, Math.min(255, Math.round(newY)));
+      
+      return { ...p, y: newY };
+    });
+    
+    onChange(activeChannel, scaledPoints);
   };
 
   const svgPoints = points.map(p => ({
@@ -137,7 +201,7 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="w-full">
         <div className="flex items-center justify-between">
           <TabsList className="grid grid-cols-4 w-48 h-8">
@@ -152,7 +216,12 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
           </Button>
         </div>
         <TabsContent value={activeChannel}>
-          <svg ref={svgRef} viewBox={`0 0 ${SIZE} ${SIZE}`} className="w-full h-auto bg-muted/50 rounded-md cursor-crosshair">
+          <svg 
+            ref={svgRef} 
+            viewBox={`0 0 ${SIZE} ${SIZE}`} 
+            className="w-full h-auto bg-muted/50 rounded-md cursor-crosshair"
+            onMouseDown={(e) => handleMouseDown(e.nativeEvent, null)}
+          >
             {/* Histogram Background */}
             <g transform={`translate(${PADDING}, ${PADDING})`}>
               {histogramData.map((value, i) => (
@@ -190,12 +259,34 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
                 stroke={channelColors[activeChannel]}
                 strokeWidth="2"
                 className="cursor-pointer"
-                onMouseDown={(e) => handleMouseDown(e, i)}
+                onMouseDown={(e) => handleMouseDown(e.nativeEvent, i)}
               />
             ))}
           </svg>
         </TabsContent>
       </Tabs>
+      
+      <div className="grid gap-2 pt-2 border-t">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="curve-intensity">Curve Intensity</Label>
+          <div className="flex items-center gap-2">
+            <span className="w-8 text-right text-sm text-muted-foreground">{intensity}%</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleIntensityChange(100)}>
+              <RotateCcw className="h-3 w-3" />
+              <span className="sr-only">Reset Intensity</span>
+            </Button>
+          </div>
+        </div>
+        <Slider
+          id="curve-intensity"
+          min={0}
+          max={200}
+          step={1}
+          value={[intensity]}
+          onValueChange={([value]) => handleIntensityChange(value)}
+          onValueCommit={([value]) => onCommit(activeChannel, points)}
+        />
+      </div>
     </div>
   );
 };

@@ -34,6 +34,7 @@ import ColorGrading from "@/components/editor/ColorGrading";
 import Info from "@/components/editor/Info";
 import Presets from "@/components/editor/Presets";
 import Effects from "@/components/editor/Effects";
+import HslAdjustments from "@/components/editor/HslAdjustments"; // NEW Import
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
 import type { Point, EditState } from "@/hooks/useEditorState";
@@ -66,6 +67,9 @@ interface EditorControlsProps {
   };
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
+  hslAdjustments: EditState['hslAdjustments']; // NEW prop
+  onHslAdjustmentChange: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
+  onHslAdjustmentCommit: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
   curves: EditState['curves'];
   onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
   onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
@@ -106,6 +110,9 @@ const EditorControls = (props: EditorControlsProps) => {
     grading,
     onGradingChange,
     onGradingCommit,
+    hslAdjustments, // NEW prop
+    onHslAdjustmentChange, // NEW prop
+    onHslAdjustmentCommit, // NEW prop
     curves,
     onCurvesChange,
     onCurvesCommit,
@@ -226,6 +233,16 @@ const EditorControls = (props: EditorControlsProps) => {
                 onChange={onCurvesChange}
                 onCommit={onCurvesCommit}
                 imgRef={imgRef}
+              />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="hsl-adjustments">
+            <AccordionTrigger>HSL Adjustments</AccordionTrigger>
+            <AccordionContent>
+              <HslAdjustments
+                hslAdjustments={hslAdjustments}
+                onAdjustmentChange={onHslAdjustmentChange}
+                onAdjustmentCommit={onHslAdjustmentCommit}
               />
             </AccordionContent>
           </AccordionItem>

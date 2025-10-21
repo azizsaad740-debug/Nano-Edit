@@ -36,6 +36,11 @@ export interface EditState {
     sepia: number;
     invert: number;
   };
+  hslAdjustments: { // ADDED HSL ADJUSTMENTS
+    hue: number;
+    saturation: number;
+    luminance: number;
+  };
   channels: {
     r: boolean;
     g: boolean;
@@ -170,6 +175,7 @@ const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0, sharpen: 0, clarity: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
+  hslAdjustments: { hue: 0, saturation: 100, luminance: 0 }, // INITIALIZED
   channels: { r: true, g: true, b: true },
   curves: initialCurvesState,
   selectedFilter: "",
@@ -771,6 +777,16 @@ export const useEditorState = () => {
     recordHistory(name, { ...currentState, grading: newGrad }, layers);
   }, [currentState, recordHistory, layers]);
 
+  const handleHslAdjustmentChange = useCallback((key: keyof EditState['hslAdjustments'], value: number) => {
+    updateCurrentState({ hslAdjustments: { ...currentState.hslAdjustments, [key]: value } });
+  }, [currentState.hslAdjustments, updateCurrentState]);
+
+  const handleHslAdjustmentCommit = useCallback((key: keyof EditState['hslAdjustments'], value: number) => {
+    const newHsl = { ...currentState.hslAdjustments, [key]: value };
+    const name = `Adjust HSL ${key.charAt(0).toUpperCase() + key.slice(1)}`;
+    recordHistory(name, { ...currentState, hslAdjustments: newHsl }, layers);
+  }, [currentState, recordHistory, layers]);
+
   const handleChannelChange = useCallback((channel: 'r' | 'g' | 'b', value: boolean) => {
     const newChannels = { ...currentState.channels, [channel]: value };
     const name = `Toggle ${channel.toUpperCase()} Channel`;
@@ -1321,6 +1337,8 @@ export const useEditorState = () => {
     handleEffectCommit,
     handleGradingChange,
     handleGradingCommit,
+    handleHslAdjustmentChange,
+    handleHslAdjustmentCommit,
     handleChannelChange,
     handleCurvesChange,
     handleCurvesCommit,

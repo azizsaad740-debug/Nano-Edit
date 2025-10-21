@@ -63,6 +63,8 @@ const Index = () => {
     handleEffectCommit,
     handleGradingChange,
     handleGradingCommit,
+    handleHslAdjustmentChange, // NEW destructuring
+    handleHslAdjustmentCommit, // NEW destructuring
     handleChannelChange,
     handleCurvesChange,
     handleCurvesCommit,
@@ -288,7 +290,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad]);
 
-  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength } = currentState;
+  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength, hslAdjustments } = currentState;
 
   const hasActiveSelection = !!selectionPath || !!selectionMaskDataUrl;
 
@@ -303,6 +305,9 @@ const Index = () => {
     grading,
     onGradingChange: handleGradingChange,
     onGradingCommit: handleGradingCommit,
+    hslAdjustments, // NEW prop
+    onHslAdjustmentChange: handleHslAdjustmentChange, // NEW prop
+    onHslAdjustmentCommit: handleHslAdjustmentCommit, // NEW prop
     channels,
     onChannelChange: handleChannelChange,
     curves,
@@ -314,9 +319,10 @@ const Index = () => {
     rotation: transforms.rotation,
     onRotationChange: handleRotationChange,
     onRotationCommit: handleRotationCommit,
-    handleFramePresetChange,
-    handleFramePropertyChange,
-    handleFramePropertyCommit,
+    // FIX: Renaming keys to match SidebarProps interface
+    onFramePresetChange: handleFramePresetChange,
+    onFramePropertyChange: handleFramePropertyChange,
+    onFramePropertyCommit: handleFramePropertyCommit,
     frame,
     onAspectChange: setAspect,
     aspect,
@@ -340,9 +346,10 @@ const Index = () => {
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    duplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
-    mergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
-    rasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
+    // FIX: Renaming keys to match SidebarProps interface
+    onDuplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
+    onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
+    onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
     onReorder: reorderLayers,
     // selection
     selectedLayerId,

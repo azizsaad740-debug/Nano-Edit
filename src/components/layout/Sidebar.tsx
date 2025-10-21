@@ -22,6 +22,9 @@ interface SidebarProps {
   grading: EditState['grading'];
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
+  hslAdjustments: EditState['hslAdjustments']; // NEW prop
+  onHslAdjustmentChange: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
+  onHslAdjustmentCommit: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   curves: EditState['curves'];
@@ -52,12 +55,9 @@ interface SidebarProps {
   addDrawingLayer: () => string;
   addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   addGradientLayer: () => void; // Added addGradientLayer
-  toggleLayerVisibility: (id: string) => void;
-  renameLayer: (id: string, newName: string) => void;
-  deleteLayer: (id: string) => void;
-  onDuplicateLayer: () => void;
-  onMergeLayerDown: () => void;
-  rasterizeLayer: () => void;
+  onDuplicateLayer: () => void; // Renamed from duplicateLayer
+  onMergeLayerDown: () => void; // Renamed from mergeLayerDown
+  onRasterizeLayer: () => void; // Renamed from rasterizeLayer
   onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Added this line
   // Selection props
   selectedLayerId: string | null;
@@ -101,8 +101,8 @@ interface SidebarProps {
   onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
   onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
   // Layer Masking
-  hasActiveSelection: boolean; // NEW prop (Fix for Error 2)
-  onApplySelectionAsMask: () => void; // NEW prop (Fix for Error 2)
+  hasActiveSelection: boolean; // NEW prop
+  onApplySelectionAsMask: () => void; // NEW prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -155,9 +155,9 @@ const Sidebar = (props: SidebarProps) => {
                 onAddDrawingLayer={props.addDrawingLayer}
                 onAddShapeLayer={props.addShapeLayer}
                 onAddGradientLayer={props.addGradientLayer} // Passed addGradientLayer
-                onDuplicateLayer={props.duplicateLayer}
-                onMergeLayerDown={props.mergeLayerDown}
-                onRasterizeLayer={props.rasterizeLayer}
+                onDuplicateLayer={props.onDuplicateLayer} 
+                onMergeLayerDown={props.onMergeLayerDown} 
+                onRasterizeLayer={props.onRasterizeLayer}
                 onReorder={props.onReorder}
                 selectedLayerId={props.selectedLayerId}
                 onSelectLayer={props.onSelectLayer}
@@ -176,8 +176,8 @@ const Sidebar = (props: SidebarProps) => {
                 setBrushState={props.setBrushState}
                 groupLayers={props.groupLayers} // Pass groupLayers
                 toggleGroupExpanded={props.toggleGroupExpanded} // Pass toggleGroupExpanded
-                hasActiveSelection={props.hasActiveSelection} {/* Fix for Error 2 */}
-                onApplySelectionAsMask={props.onApplySelectionAsMask} {/* Fix for Error 2 */}
+                hasActiveSelection={props.hasActiveSelection} 
+                onApplySelectionAsMask={props.onApplySelectionAsMask} 
               />
             )}
           </div>
