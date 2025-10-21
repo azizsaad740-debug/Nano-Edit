@@ -356,8 +356,8 @@ const Index = () => {
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
     // smart objects
-    createSmartObject,
-    openSmartObjectEditor,
+    onCreateSmartObject: createSmartObject, // ADDED
+    onOpenSmartObject: openSmartObjectEditor, // ADDED
     // Shape tool
     selectedShapeType,
     // Tool state
