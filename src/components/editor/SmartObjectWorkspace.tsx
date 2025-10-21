@@ -81,6 +81,11 @@ export const SmartObjectWorkspace = ({
     }
   };
 
+  const handleLayerClick = (e: React.MouseEvent<HTMLDivElement>, layerId: string) => {
+    e.stopPropagation();
+    onSelectLayer(layerId);
+  };
+
   const backgroundStyle: React.CSSProperties = {
     width: `${width}px`,
     height: `${height}px`,
@@ -115,6 +120,22 @@ export const SmartObjectWorkspace = ({
         activeTool: activeTool,
       };
 
+      // Wrap movable layers to capture clicks for selection
+      const MovableLayerWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+        if (layer.type === 'text' || layer.type === 'smart-object' || layer.type === 'vector-shape' || layer.type === 'gradient' || layer.type === 'group') {
+          return (
+            <div 
+              onClick={(e) => handleLayerClick(e, layer.id)}
+              // Ensure the wrapper doesn't interfere with the layer's own drag/resize handlers
+              style={{ pointerEvents: 'none' }} 
+            >
+              {children}
+            </div>
+          );
+        }
+        return <>{children}</>;
+      };
+
       if (layer.type === 'text') {
         return <TextLayer {...layerProps} />;
       }
@@ -144,21 +165,25 @@ export const SmartObjectWorkspace = ({
 
   return (
     <div
-      ref={containerRef}
-      className={cn(
-        "relative overflow-hidden border rounded-md bg-muted",
-      )}
-      style={backgroundStyle}
+      className="flex-1 flex items-center justify-center overflow-hidden"
       onClick={handleClick}
     >
       <div
-        className="relative"
-        style={{
-          width: `${width}px`,
-          height: `${height}px`,
-        }}
+        ref={containerRef}
+        className={cn(
+          "relative overflow-hidden border rounded-md bg-muted",
+        )}
+        style={backgroundStyle}
       >
-        {renderWorkspaceLayers(layers)}
+        <div
+          className="relative"
+          style={{
+            width: `${width}px`,
+            height: `${height}px`,
+          }}
+        >
+          {renderWorkspaceLayers(layers)}
+        </div>
       </div>
     </div>
   );
