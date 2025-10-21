@@ -10,6 +10,7 @@ import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
+import GradientLayer from "./GradientLayer"; // Import GradientLayer
 
 interface GroupLayerProps {
   layer: Layer;
@@ -20,6 +21,7 @@ interface GroupLayerProps {
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
   renderChildren: (layers: Layer[]) => React.ReactNode; // Function to recursively render children
+  globalSelectedLayerId: string | null; // New prop to track global selection
 }
 
 const GroupLayer = ({
@@ -31,6 +33,7 @@ const GroupLayer = ({
   parentDimensions,
   activeTool,
   renderChildren,
+  globalSelectedLayerId, // Destructure new prop
 }: GroupLayerProps) => {
   const {
     layerRef,
@@ -112,7 +115,7 @@ const GroupLayer = ({
               onCommit: (id: string) => {
                 onCommit(layer.id); // Commit the group layer when a child is committed
               },
-              isSelected: isSelected && child.id === layer.id, // Only selected if group is selected AND child is the primary selected
+              isSelected: globalSelectedLayerId === child.id, // Use globalSelectedLayerId for highlighting
               activeTool: activeTool,
             };
 
@@ -130,9 +133,12 @@ const GroupLayer = ({
             if (child.type === 'vector-shape') {
               return <VectorShapeLayer {...childProps} />;
             }
+            if (child.type === 'gradient') {
+              return <GradientLayer {...childProps} imageNaturalDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} />;
+            }
             // If a group contains another group, render it recursively
             if (child.type === 'group') {
-              return <GroupLayer {...childProps} parentDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} renderChildren={renderChildren} />;
+              return <GroupLayer {...childProps} parentDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} renderChildren={renderChildren} globalSelectedLayerId={globalSelectedLayerId} />;
             }
             return null;
           })}

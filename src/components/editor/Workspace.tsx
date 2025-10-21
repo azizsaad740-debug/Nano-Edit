@@ -736,6 +736,7 @@ const Workspace = (props: WorkspaceProps) => {
             parentDimensions={imageNaturalDimensions}
             activeTool={activeTool}
             renderChildren={renderWorkspaceLayers} // Pass recursive renderer
+            globalSelectedLayerId={selectedLayerId} // Pass global selected ID
           />
         );
       }

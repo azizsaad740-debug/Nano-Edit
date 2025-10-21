@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
 import GroupLayer from "./GroupLayer"; // Import GroupLayer
+import GradientLayer from "./GradientLayer"; // Import GradientLayer
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -89,8 +90,16 @@ export const SmartObjectWorkspace = ({
       if (layer.type === 'vector-shape') {
         return <VectorShapeLayer {...layerProps} />;
       }
+      if (layer.type === 'gradient') {
+        return <GradientLayer {...layerProps} imageNaturalDimensions={parentDimensions} />;
+      }
       if (layer.type === 'group') {
-        return <GroupLayer {...layerProps} parentDimensions={parentDimensions} renderChildren={renderWorkspaceLayers} />;
+        return <GroupLayer 
+          {...layerProps} 
+          parentDimensions={parentDimensions} 
+          renderChildren={renderWorkspaceLayers} 
+          globalSelectedLayerId={selectedLayerId} 
+        />;
       }
       return null;
     });
