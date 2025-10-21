@@ -1,7 +1,7 @@
 import EditorControls from "@/components/layout/EditorControls";
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Layer, EditState, Point, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point, ActiveTool, BrushState, GradientToolState, HslAdjustment } from "@/hooks/useEditorState";
 import { LayersPanel } from "@/components/editor/LayersPanel";
 import { PropertiesPanel } from "@/components/layout/PropertiesPanel"; // Import the new PropertiesPanel
 import {
@@ -10,6 +10,8 @@ import {
   ResizableHandle,
 } from "@/components/ui/resizable";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
+
+type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface SidebarProps {
   hasImage: boolean;
@@ -23,8 +25,8 @@ interface SidebarProps {
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
   hslAdjustments: EditState['hslAdjustments']; // NEW prop
-  onHslAdjustmentChange: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
-  onHslAdjustmentCommit: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
+  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
+  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   curves: EditState['curves'];

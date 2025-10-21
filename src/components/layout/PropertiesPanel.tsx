@@ -11,8 +11,10 @@ import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions"; // Import GradientToolOptions
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions"; // NEW Import
-import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool, BrushState, GradientToolState, HslAdjustment, EditState } from "@/hooks/useEditorState";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
+
+type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | undefined;

@@ -7,6 +7,7 @@ import { DrawingLayer } from "./DrawingLayer";
 import { cn } from "@/lib/utils";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
+import GroupLayer from "./GroupLayer"; // Import GroupLayer
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -62,6 +63,39 @@ export const SmartObjectWorkspace = ({
 
   const parentDimensions = { width, height }; // Dimensions of this smart object's canvas
 
+  const renderWorkspaceLayers = (layersToRender: Layer[]) => {
+    return layersToRender.map((layer) => {
+      if (!layer.visible) return null;
+      
+      const layerProps = {
+        key: layer.id,
+        layer: layer,
+        containerRef: containerRef,
+        onUpdate: onLayerUpdate,
+        onCommit: onLayerCommit,
+        isSelected: layer.id === selectedLayerId,
+        activeTool: activeTool,
+      };
+
+      if (layer.type === 'text') {
+        return <TextLayer {...layerProps} />;
+      }
+      if (layer.type === 'drawing' && layer.dataUrl) {
+        return <DrawingLayer key={layer.id} layer={layer} />;
+      }
+      if (layer.type === 'smart-object') {
+        return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} />;
+      }
+      if (layer.type === 'vector-shape') {
+        return <VectorShapeLayer {...layerProps} />;
+      }
+      if (layer.type === 'group') {
+        return <GroupLayer {...layerProps} parentDimensions={parentDimensions} renderChildren={renderWorkspaceLayers} />;
+      }
+      return null;
+    });
+  };
+
   return (
     <div
       ref={containerRef}
@@ -80,58 +114,7 @@ export const SmartObjectWorkspace = ({
           transform: `scale(var(--scale-factor, 1))`, // Will be scaled by parent to fit
         }}
       >
-        {layers.map((layer) => {
-          if (!layer.visible) return null;
-          if (layer.type === 'text') {
-            return (
-              <TextLayer
-                key={layer.id}
-                layer={layer}
-                containerRef={containerRef}
-                onUpdate={onLayerUpdate}
-                onCommit={onLayerCommit}
-                isSelected={layer.id === selectedLayerId}
-                activeTool={activeTool} // Pass activeTool
-              />
-            );
-          }
-          if (layer.type === 'drawing' && layer.dataUrl) {
-            return (
-              <DrawingLayer
-                key={layer.id}
-                layer={layer}
-              />
-            );
-          }
-          if (layer.type === 'smart-object') {
-            return (
-              <SmartObjectLayer
-                key={layer.id}
-                layer={layer}
-                containerRef={containerRef}
-                onUpdate={onLayerUpdate}
-                onCommit={onLayerCommit}
-                isSelected={layer.id === selectedLayerId}
-                parentDimensions={parentDimensions}
-                activeTool={activeTool} // Pass activeTool
-              />
-            );
-          }
-          if (layer.type === 'vector-shape') {
-            return (
-              <VectorShapeLayer
-                key={layer.id}
-                layer={layer}
-                containerRef={containerRef}
-                onUpdate={onLayerUpdate}
-                onCommit={onLayerCommit}
-                isSelected={layer.id === selectedLayerId}
-                activeTool={activeTool} // Pass activeTool
-              />
-            );
-          }
-          return null;
-        })}
+        {renderWorkspaceLayers(layers)}
       </div>
     </div>
   );

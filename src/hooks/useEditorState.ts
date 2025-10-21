@@ -17,6 +17,12 @@ import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import the new util
 import type { TemplateData } from "../types/template"; // Import TemplateData
 import { useSettings } from "./useSettings"; // NEW import
 
+export interface HslAdjustment {
+  hue: number;
+  saturation: number;
+  luminance: number;
+}
+
 export interface EditState {
   adjustments: {
     brightness: number;
@@ -36,10 +42,16 @@ export interface EditState {
     sepia: number;
     invert: number;
   };
-  hslAdjustments: { // ADDED HSL ADJUSTMENTS
-    hue: number;
-    saturation: number;
-    luminance: number;
+  hslAdjustments: {
+    global: HslAdjustment;
+    red: HslAdjustment;
+    orange: HslAdjustment;
+    yellow: HslAdjustment;
+    green: HslAdjustment;
+    aqua: HslAdjustment;
+    blue: HslAdjustment;
+    purple: HslAdjustment;
+    magenta: HslAdjustment;
   };
   channels: {
     r: boolean;
@@ -171,11 +183,23 @@ const initialCurvesState = {
   b: [...defaultCurve],
 };
 
+const initialHslAdjustment: HslAdjustment = { hue: 0, saturation: 100, luminance: 0 };
+
 const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0, sharpen: 0, clarity: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
-  hslAdjustments: { hue: 0, saturation: 100, luminance: 0 }, // INITIALIZED
+  hslAdjustments: {
+    global: { ...initialHslAdjustment },
+    red: { ...initialHslAdjustment },
+    orange: { ...initialHslAdjustment },
+    yellow: { ...initialHslAdjustment },
+    green: { ...initialHslAdjustment },
+    aqua: { ...initialHslAdjustment },
+    blue: { ...initialHslAdjustment },
+    purple: { ...initialHslAdjustment },
+    magenta: { ...initialHslAdjustment },
+  },
   channels: { r: true, g: true, b: true },
   curves: initialCurvesState,
   selectedFilter: "",
@@ -372,8 +396,11 @@ export const useEditorState = () => {
     }
   }, []);
 
-  const loadImageData = useCallback((dataUrl: string, successMsg: string, initialLayers: Layer[]) => {
+  const loadImageData = useCallback((dataUrl: string, successMsg: string, initialLayers: Layer[], initialDimensions?: { width: number; height: number }) => {
     setImage(dataUrl);
+    if (initialDimensions) {
+      setDimensions(initialDimensions); // Set dimensions immediately if provided
+    }
     const newHistoryItem = { ...initialHistoryItem, name: "Load Image", layers: initialLayers };
     setHistory([newHistoryItem]);
     setCurrentHistoryIndex(0);
@@ -395,6 +422,10 @@ export const useEditorState = () => {
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/png');
+      
+      // FIX: Set dimensions immediately
+      setDimensions({ width, height });
+
       loadImageData(dataUrl, "New project created.", [{
         id: uuidv4(),
         type: "image",
@@ -402,7 +433,7 @@ export const useEditorState = () => {
         visible: true,
         opacity: 100,
         blendMode: 'normal',
-      }]);
+      }], { width, height });
       setFileInfo({ name: "Untitled-1.png", size: 0 });
       setExifData(null);
     } else {
@@ -411,16 +442,23 @@ export const useEditorState = () => {
   }, [loadImageData]);
 
   const handleGeneratedImageLoad = useCallback((dataUrl: string) => {
-    loadImageData(dataUrl, "New image generated successfully.", [{
-      id: uuidv4(),
-      type: "image",
-      name: "Background",
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-    }]);
-    setFileInfo({ name: "generated-image.png", size: 0 });
-    setExifData(null);
+    // We need to load the image first to get dimensions before calling loadImageData
+    const img = new Image();
+    img.onload = () => {
+      const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+      setDimensions(initialDimensions); // Set dimensions immediately
+      loadImageData(dataUrl, "New image generated successfully.", [{
+        id: uuidv4(),
+        type: "image",
+        name: "Background",
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+      }], initialDimensions);
+      setFileInfo({ name: "generated-image.png", size: 0 });
+      setExifData(null);
+    };
+    img.src = dataUrl;
   }, [loadImageData]);
 
   const handleFileSelect = useCallback((file: File | undefined) => {
@@ -506,7 +544,9 @@ export const useEditorState = () => {
           }
 
           dismissToast(toastId);
-          loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers);
+          // FIX: Set dimensions immediately
+          setDimensions({ width: psd.width, height: psd.height });
+          loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers, { width: psd.width, height: psd.height });
           setFileInfo({ name: file.name, size: file.size });
           setExifData(null);
         } catch (e) {
@@ -535,6 +575,7 @@ export const useEditorState = () => {
         tempImg.onload = () => {
           const width = tempImg.naturalWidth;
           const height = tempImg.naturalHeight;
+          const initialDimensions = { width, height };
           
           const newLayer: Layer = {
             id: uuidv4(),
@@ -547,10 +588,12 @@ export const useEditorState = () => {
           };
           
           dismissToast(toastId);
+          // FIX: Set dimensions immediately
+          setDimensions(initialDimensions);
           loadImageData(dataUrl, `${file.name} imported. Vector objects flattened to raster layers.`, [
             { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal' },
             newLayer
-          ]);
+          ], initialDimensions);
           setFileInfo({ name: file.name, size: file.size });
           setExifData(null);
           showError(`Warning: ${file.name} was imported as a flattened image. Full vector editing is not supported.`);
@@ -582,15 +625,23 @@ export const useEditorState = () => {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      dismissToast(toastId);
-      loadImageData(reader.result as string, "Image uploaded successfully.", [{
-        id: uuidv4(),
-        type: "image",
-        name: "Background",
-        visible: true,
-        opacity: 100,
-        blendMode: 'normal',
-      }]);
+      const dataUrl = reader.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+        dismissToast(toastId);
+        // FIX: Set dimensions immediately
+        setDimensions(initialDimensions);
+        loadImageData(dataUrl, "Image uploaded successfully.", [{
+          id: uuidv4(),
+          type: "image",
+          name: "Background",
+          visible: true,
+          opacity: 100,
+          blendMode: 'normal',
+        }], initialDimensions);
+      };
+      img.src = dataUrl;
     };
     reader.onerror = () => {
       dismissToast(toastId);
@@ -619,15 +670,23 @@ export const useEditorState = () => {
 
       const reader = new FileReader();
       reader.onloadend = () => {
-        dismissToast(toastId);
-        loadImageData(reader.result as string, "Image loaded successfully.", [{
-          id: uuidv4(),
-          type: "image",
-          name: "Background",
-          visible: true,
-          opacity: 100,
-          blendMode: 'normal',
-        }]);
+        const dataUrl = reader.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+          dismissToast(toastId);
+          // FIX: Set dimensions immediately
+          setDimensions(initialDimensions);
+          loadImageData(dataUrl, "Image loaded successfully.", [{
+            id: uuidv4(),
+            type: "image",
+            name: "Background",
+            visible: true,
+            opacity: 100,
+            blendMode: 'normal',
+          }], initialDimensions);
+        };
+        img.src = dataUrl;
       };
       reader.onerror = () => {
         dismissToast(toastId);
@@ -684,10 +743,8 @@ export const useEditorState = () => {
     const dataUrl = canvas.toDataURL('image/png');
 
     // 2. Reset history and set base image (transparent canvas)
-    setImage(dataUrl);
+    // FIX: Set dimensions immediately
     setDimensions(templateDimensions);
-    setFileInfo({ name: "Template.png", size: 0 });
-    setExifData(null);
     
     // 3. Apply template layers and edit state
     const newState = { ...initialEditState, ...editState };
@@ -703,8 +760,11 @@ export const useEditorState = () => {
     
     // 4. Set aspect ratio if available
     setAspect(templateDimensions.width / templateDimensions.height);
+    
+    // 5. Load image data (which now uses the pre-set dimensions)
+    loadImageData(dataUrl, "Template loaded successfully.", templateLayers, templateDimensions);
 
-  }, [setLayers, setSelectedLayerId, setDimensions, setAspect]);
+  }, [setLayers, setSelectedLayerId, setDimensions, setAspect, loadImageData]);
 
   /* ---------- Project Save/Load ---------- */
   const handleSaveProject = useCallback(() => {
@@ -737,8 +797,20 @@ export const useEditorState = () => {
       _setSelectionPath(null); // Clear selection path on project load
       setSelectionMaskDataUrl(null); // Clear mask on project load
       
-      dismissToast(toastId);
-      showSuccess("Project opened successfully.");
+      // FIX: Load image to get dimensions before setting state
+      const img = new Image();
+      img.onload = () => {
+        const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+        setDimensions(initialDimensions);
+        dismissToast(toastId);
+        showSuccess("Project opened successfully.");
+      };
+      img.onerror = () => {
+        dismissToast(toastId);
+        showError("Failed to load image data from project file.");
+      };
+      img.src = projectData.sourceImage || '';
+
     } catch (error: any) {
       dismissToast(toastId);
       console.error("Failed to load project:", error);
@@ -777,13 +849,20 @@ export const useEditorState = () => {
     recordHistory(name, { ...currentState, grading: newGrad }, layers);
   }, [currentState, recordHistory, layers]);
 
-  const handleHslAdjustmentChange = useCallback((key: keyof EditState['hslAdjustments'], value: number) => {
-    updateCurrentState({ hslAdjustments: { ...currentState.hslAdjustments, [key]: value } });
+  const handleHslAdjustmentChange = useCallback((color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => {
+    const newHsl = { 
+      ...currentState.hslAdjustments, 
+      [color]: { ...currentState.hslAdjustments[color], [key]: value } 
+    };
+    updateCurrentState({ hslAdjustments: newHsl });
   }, [currentState.hslAdjustments, updateCurrentState]);
 
-  const handleHslAdjustmentCommit = useCallback((key: keyof EditState['hslAdjustments'], value: number) => {
-    const newHsl = { ...currentState.hslAdjustments, [key]: value };
-    const name = `Adjust HSL ${key.charAt(0).toUpperCase() + key.slice(1)}`;
+  const handleHslAdjustmentCommit = useCallback((color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => {
+    const newHsl = { 
+      ...currentState.hslAdjustments, 
+      [color]: { ...currentState.hslAdjustments[color], [key]: value } 
+    };
+    const name = `Adjust HSL ${color.charAt(0).toUpperCase() + color.slice(1)} ${key.charAt(0).toUpperCase() + key.slice(1)}`;
     recordHistory(name, { ...currentState, hslAdjustments: newHsl }, layers);
   }, [currentState, recordHistory, layers]);
 

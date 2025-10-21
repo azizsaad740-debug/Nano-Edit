@@ -319,11 +319,6 @@ const Index = () => {
     rotation: transforms.rotation,
     onRotationChange: handleRotationChange,
     onRotationCommit: handleRotationCommit,
-    // FIX: Renaming keys to match SidebarProps interface
-    onFramePresetChange: handleFramePresetChange,
-    onFramePropertyChange: handleFramePropertyChange,
-    onFramePropertyCommit: handleFramePropertyCommit,
-    frame,
     onAspectChange: setAspect,
     aspect,
     history,
@@ -361,8 +356,8 @@ const Index = () => {
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
     // smart objects
-    onCreateSmartObject: createSmartObject,
-    onOpenSmartObject: openSmartObjectEditor,
+    createSmartObject,
+    openSmartObjectEditor,
     // Shape tool
     selectedShapeType,
     // Tool state
@@ -391,6 +386,11 @@ const Index = () => {
     // Layer Masking
     hasActiveSelection, // NEW prop
     onApplySelectionAsMask: applySelectionAsMask, // NEW prop
+    // --- MISSING FRAME PROPS ---
+    frame,
+    onFramePresetChange: handleFramePresetChange,
+    onFramePropertyChange: handleFramePropertyChange,
+    onFramePropertyCommit: handleFramePropertyCommit,
   };
 
   
@@ -575,6 +575,16 @@ const Index = () => {
           onSave={saveSmartObjectChanges}
           mainImage={image}
           activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          brushState={brushState}
+          setBrushState={setBrushState}
+          foregroundColor={foregroundColor}
+          onForegroundColorChange={handleForegroundColorChange}
+          backgroundColor={backgroundColor}
+          onBackgroundColorChange={handleBackgroundColorChange}
+          onSwapColors={handleSwapColors}
+          selectedShapeType={selectedShapeType}
+          setSelectedShapeType={setSelectedShapeType}
         />
       )}
       <input

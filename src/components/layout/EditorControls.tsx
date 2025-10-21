@@ -37,9 +37,11 @@ import Effects from "@/components/editor/Effects";
 import HslAdjustments from "@/components/editor/HslAdjustments"; // NEW Import
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Point, EditState } from "@/hooks/useEditorState";
+import type { Point, EditState, HslAdjustment } from "@/hooks/useEditorState";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
+
+type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface EditorControlsProps {
   hasImage: boolean;
@@ -68,8 +70,8 @@ interface EditorControlsProps {
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
   hslAdjustments: EditState['hslAdjustments']; // NEW prop
-  onHslAdjustmentChange: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
-  onHslAdjustmentCommit: (adjustment: keyof EditState['hslAdjustments'], value: number) => void; // NEW prop
+  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
+  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
   curves: EditState['curves'];
   onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
   onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
