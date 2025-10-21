@@ -15,6 +15,7 @@ import { useLayers } from "./useLayers";
 import { maskToPolygon } from "@/utils/maskToPolygon";
 import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import the new utility
 import type { TemplateData } from "../types/template"; // Import TemplateData
+import { useSettings } from "./useSettings"; // NEW import
 
 export interface EditState {
   adjustments: {
@@ -220,6 +221,8 @@ const initialHistoryItem: HistoryItem = {
 
 /* ---------- Hook implementation ---------- */
 export const useEditorState = () => {
+  const { geminiApiKey, stabilityApiKey } = useSettings(); // NEW: Destructure keys
+  
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
@@ -898,13 +901,14 @@ export const useEditorState = () => {
   }, [history, setLayers]);
 
   /* ---------- Export / Copy ---------- */
-  const handleDownload = useCallback((options: { format: string; quality: number; width: number; height: number }) => {
+  const handleDownload = useCallback((options: { format: string; quality: number; width: number; height: number; upscale: 1 | 2 | 4 }) => {
     if (!imgRef.current) return;
     downloadImage(
       { image: imgRef.current, layers: layers, ...currentState },
-      options
+      options,
+      stabilityApiKey // Pass stability API key
     );
-  }, [currentState, layers]);
+  }, [currentState, layers, stabilityApiKey]);
 
   const handleCopy = useCallback(() => {
     if (!imgRef.current) return;

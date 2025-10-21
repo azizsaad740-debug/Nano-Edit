@@ -1,8 +1,9 @@
 import { type Crop } from 'react-image-crop';
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { EditState, Layer } from '@/hooks/useEditorState';
 import { getFilterString } from './filterUtils';
 import { rasterizeLayerToCanvas } from './layerUtils'; // Import the utility
+import { upscaleImageApi } from "./stabilityApi"; // NEW import
 
 interface ImageOptions extends EditState {
   image: HTMLImageElement;
@@ -114,32 +115,85 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   return canvas;
 };
 
-export const downloadImage = async (options: ImageOptions, exportOptions: { format: string; quality: number; width: number; height: number }) => {
+export const downloadImage = async (
+  options: ImageOptions, 
+  exportOptions: { 
+    format: string; 
+    quality: number; 
+    width: number; 
+    height: number; 
+    upscale: 1 | 2 | 4;
+  },
+  stabilityApiKey: string
+) => {
   const sourceCanvas = await getEditedImageCanvas(options);
   if (!sourceCanvas) return;
 
-  const { format, quality, width, height } = exportOptions;
+  const { format, quality, width, height, upscale } = exportOptions;
   let finalCanvas = sourceCanvas;
+  let finalDataUrl = sourceCanvas.toDataURL('image/png');
+  const toastId = showLoading("Preparing image for download...");
 
-  if (width > 0 && height > 0 && (width !== sourceCanvas.width || height !== sourceCanvas.height)) {
-    const resizedCanvas = document.createElement('canvas');
-    resizedCanvas.width = width;
-    resizedCanvas.height = height;
-    const ctx = resizedCanvas.getContext('2d');
-    if (ctx) {
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(sourceCanvas, 0, 0, width, height);
-      finalCanvas = resizedCanvas;
+  try {
+    if (upscale > 1) {
+      dismissToast(toastId);
+      const upscaleToastId = showLoading(`Upscaling image by ${upscale}x using Stability AI...`);
+      
+      // Fix: Only call upscaleImageApi if upscale is 2 or 4
+      if (upscale === 2 || upscale === 4) {
+        finalDataUrl = await upscaleImageApi(finalDataUrl, stabilityApiKey, upscale);
+      } else {
+        // Should not happen based on ExportOptions, but safe guard
+        dismissToast(upscaleToastId);
+        throw new Error("Invalid upscale factor.");
+      }
+      
+      const upscaledImg = new Image();
+      await new Promise((resolve, reject) => {
+        upscaledImg.onload = resolve;
+        upscaledImg.onerror = reject;
+        upscaledImg.src = finalDataUrl;
+      });
+      
+      const upscaledCanvas = document.createElement('canvas');
+      upscaledCanvas.width = upscaledImg.naturalWidth;
+      upscaledCanvas.height = upscaledImg.naturalHeight;
+      upscaledCanvas.getContext('2d')?.drawImage(upscaledImg, 0, 0);
+      finalCanvas = upscaledCanvas;
+      
+      dismissToast(upscaleToastId);
+      showSuccess(`Upscale to ${upscale}x complete.`);
     }
-  }
 
-  const mimeType = `image/${format}`;
-  const fileExtension = format;
-  const link = document.createElement('a');
-  link.download = `edited-image.${fileExtension}`;
-  link.href = finalCanvas.toDataURL(mimeType, quality);
-  link.click();
-  showSuccess("Image downloaded successfully.");
+    // Handle final resizing if manual dimensions were set (only possible if upscale was 1)
+    if (upscale === 1 && width > 0 && height > 0 && (width !== finalCanvas.width || height !== finalCanvas.height)) {
+      const resizedCanvas = document.createElement('canvas');
+      resizedCanvas.width = width;
+      resizedCanvas.height = height;
+      const ctx = resizedCanvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(finalCanvas, 0, 0, width, height);
+        finalCanvas = resizedCanvas;
+      }
+    }
+    
+    // Final download step
+    const mimeType = `image/${format}`;
+    const fileExtension = format;
+    const link = document.createElement('a');
+    link.download = `edited-image.${fileExtension}`;
+    link.href = finalCanvas.toDataURL(mimeType, quality);
+    link.click();
+    
+    if (upscale === 1) dismissToast(toastId);
+    showSuccess("Image downloaded successfully.");
+    
+  } catch (error) {
+    console.error("Export failed:", error);
+    dismissToast(toastId);
+    showError("Export failed. Check API key or console for details.");
+  }
 };
 
 export const copyImageToClipboard = async (options: ImageOptions) => {

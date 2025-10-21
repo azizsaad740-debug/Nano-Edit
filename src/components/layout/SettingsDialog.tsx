@@ -23,15 +23,20 @@ export const SettingsDialog = ({
   open,
   onOpenChange,
 }: SettingsDialogProps) => {
-  const { apiKey, saveApiKey } = useSettings();
-  const [tempKey, setTempKey] = React.useState(apiKey);
+  const { geminiApiKey, stabilityApiKey, saveApiKey } = useSettings();
+  const [tempGeminiKey, setTempGeminiKey] = React.useState(geminiApiKey);
+  const [tempStabilityKey, setTempStabilityKey] = React.useState(stabilityApiKey);
 
   React.useEffect(() => {
-    if (open) setTempKey(apiKey);
-  }, [open, apiKey]);
+    if (open) {
+      setTempGeminiKey(geminiApiKey);
+      setTempStabilityKey(stabilityApiKey);
+    }
+  }, [open, geminiApiKey, stabilityApiKey]);
 
   const handleSave = () => {
-    saveApiKey(tempKey.trim());
+    saveApiKey(tempGeminiKey.trim(), 'gemini');
+    saveApiKey(tempStabilityKey.trim(), 'stability');
     onOpenChange(false);
   };
 
@@ -41,20 +46,40 @@ export const SettingsDialog = ({
         <DialogHeader>
           <DialogTitle>AI Settings</DialogTitle>
           <DialogDescription>
-            Enter your Nano Banana API key to enable generative fill features.
+            Configure API keys for generative features (Gemini) and image enhancement (Stability AI).
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="api-key" className="text-right">
-              API Key
-            </Label>
-            <Input
-              id="api-key"
-              className="col-span-3"
-              value={tempKey}
-              onChange={(e) => setTempKey(e.target.value)}
-            />
+        <div className="grid gap-6 py-4">
+          <div className="grid gap-2">
+            <h4 className="font-semibold">Gemini / Generative Fill API</h4>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="gemini-api-key" className="text-right">
+                API Key
+              </Label>
+              <Input
+                id="gemini-api-key"
+                className="col-span-3"
+                value={tempGeminiKey}
+                onChange={(e) => setTempGeminiKey(e.target.value)}
+                placeholder="Nano Banana API Key"
+              />
+            </div>
+          </div>
+          
+          <div className="grid gap-2">
+            <h4 className="font-semibold">Stability AI / Upscale API</h4>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="stability-api-key" className="text-right">
+                API Key
+              </Label>
+              <Input
+                id="stability-api-key"
+                className="col-span-3"
+                value={tempStabilityKey}
+                onChange={(e) => setTempStabilityKey(e.target.value)}
+                placeholder="Stability AI API Key (starts with sk-)"
+              />
+            </div>
           </div>
         </div>
         <DialogFooter>

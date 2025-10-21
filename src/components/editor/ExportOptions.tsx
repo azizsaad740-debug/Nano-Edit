@@ -28,6 +28,7 @@ interface ExportOptionsProps {
     quality: number;
     width: number;
     height: number;
+    upscale: 1 | 2 | 4;
   }) => void;
   dimensions: { width: number; height: number } | null;
 }
@@ -43,15 +44,23 @@ export const ExportOptions = ({
   const [width, setWidth] = useState(dimensions?.width || 0);
   const [height, setHeight] = useState(dimensions?.height || 0);
   const [keepAspectRatio, setKeepAspectRatio] = useState(true);
+  const [upscale, setUpscale] = useState<1 | 2 | 4>(1);
 
   useEffect(() => {
     if (open && dimensions) {
-      setWidth(dimensions.width);
-      setHeight(dimensions.height);
+      const factor = upscale;
+      setWidth(dimensions.width * factor);
+      setHeight(dimensions.height * factor);
     }
-  }, [open, dimensions]);
+  }, [open, dimensions, upscale]);
+
+  const handleUpscaleChange = (v: string) => {
+    const newUpscale = parseInt(v, 10) as 1 | 2 | 4;
+    setUpscale(newUpscale);
+  };
 
   const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (upscale > 1) return;
     const newWidth = parseInt(e.target.value, 10) || 0;
     setWidth(newWidth);
     if (keepAspectRatio && dimensions && dimensions.height > 0) {
@@ -61,6 +70,7 @@ export const ExportOptions = ({
   };
 
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (upscale > 1) return;
     const newHeight = parseInt(e.target.value, 10) || 0;
     setHeight(newHeight);
     if (keepAspectRatio && dimensions && dimensions.width > 0) {
@@ -75,9 +85,12 @@ export const ExportOptions = ({
       quality: quality / 100,
       width,
       height,
+      upscale,
     });
     onOpenChange(false);
   };
+
+  const isManualResizeDisabled = upscale > 1;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,6 +103,23 @@ export const ExportOptions = ({
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
+          {/* Upscale Option */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="upscale" className="text-right">
+              AI Upscale
+            </Label>
+            <Select value={String(upscale)} onValueChange={handleUpscaleChange}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select upscale factor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">None (1x)</SelectItem>
+                <SelectItem value="2">Creative Upscale (2x)</SelectItem>
+                <SelectItem value="4">Creative Upscale (4x)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Format */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="format" className="text-right">
@@ -131,9 +161,21 @@ export const ExportOptions = ({
           <div className="grid grid-cols-4 items-center gap-4">
             <Label className="text-right">Dimensions</Label>
             <div className="col-span-3 grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              <Input type="number" value={width} onChange={handleWidthChange} />
+              <Input 
+                type="number" 
+                value={width} 
+                onChange={handleWidthChange} 
+                disabled={isManualResizeDisabled}
+                className={isManualResizeDisabled ? "bg-muted" : ""}
+              />
               <span className="text-muted-foreground">×</span>
-              <Input type="number" value={height} onChange={handleHeightChange} />
+              <Input 
+                type="number" 
+                value={height} 
+                onChange={handleHeightChange} 
+                disabled={isManualResizeDisabled}
+                className={isManualResizeDisabled ? "bg-muted" : ""}
+              />
             </div>
           </div>
 
@@ -145,16 +187,17 @@ export const ExportOptions = ({
                 id="keep-aspect"
                 checked={keepAspectRatio}
                 onCheckedChange={(c) => setKeepAspectRatio(Boolean(c))}
+                disabled={isManualResizeDisabled}
               />
-              <Label htmlFor="keep-aspect" className="text-sm font-medium">
-                Keep aspect ratio
+              <Label htmlFor="keep-aspect" className="text-sm font-medium text-muted-foreground">
+                Keep aspect ratio (Disabled when upscaling)
               </Label>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button onClick={handleExport}>Download</Button>
+          <Button onClick={handleExport} disabled={!dimensions}>Download</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

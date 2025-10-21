@@ -158,7 +158,7 @@ const Index = () => {
 
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
-  const { apiKey } = useSettings();
+  const { geminiApiKey } = useSettings(); // FIXED: Destructure geminiApiKey
 
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
@@ -310,6 +310,7 @@ const Index = () => {
     rotation: transforms.rotation,
     onRotationChange: handleRotationChange,
     onRotationCommit: handleRotationCommit,
+    // FIX: Adding missing frame props
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
@@ -537,7 +538,7 @@ const Index = () => {
         open={openGenerative}
         onOpenChange={setOpenGenerative}
         onApply={applyGenerativeResult}
-        apiKey={apiKey}
+        apiKey={geminiApiKey}
         originalImage={image}
         selectionPath={selectionPath}
         selectionMaskDataUrl={selectionMaskDataUrl} // Pass new prop
@@ -547,7 +548,7 @@ const Index = () => {
         open={openGenerateImage}
         onOpenChange={setOpenGenerateImage}
         onGenerate={handleGeneratedImageLoad}
-        apiKey={apiKey}
+        apiKey={geminiApiKey}
         imageNaturalDimensions={dimensions}
       />
       <ImportPresetsDialog open={openImport} onOpenChange={setOpenImport} />
