@@ -25,8 +25,6 @@ interface PropertiesPanelProps {
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
-  onLayerOpacityChange: (opacity: number) => void;
-  onLayerOpacityCommit: () => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   gradientPresets: GradientPreset[];
   onSaveGradientPreset: (name: string, state: GradientToolState) => void;
@@ -48,8 +46,6 @@ export const PropertiesPanel = ({
   setGradientToolState,
   onLayerUpdate,
   onLayerCommit,
-  onLayerOpacityChange,
-  onLayerOpacityCommit,
   onLayerPropertyCommit,
   gradientPresets,
   onSaveGradientPreset,
@@ -112,9 +108,6 @@ export const PropertiesPanel = ({
                 <AccordionContent>
                   <LayerProperties
                     selectedLayer={selectedLayer}
-                    onOpacityChange={onLayerOpacityChange}
-                    onOpacityCommit={onLayerOpacityCommit}
-                    onLayerPropertyCommit={(updates, name) => onLayerPropertyCommit(selectedLayer.id, updates, name)}
                   />
                 </AccordionContent>
               </AccordionItem>

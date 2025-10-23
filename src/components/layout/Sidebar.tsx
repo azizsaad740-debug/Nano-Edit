@@ -134,8 +134,6 @@ const Sidebar = (props: SidebarProps) => {
                 setGradientToolState={props.setGradientToolState}
                 onLayerUpdate={props.onLayerUpdate}
                 onLayerCommit={props.onLayerCommit}
-                onLayerOpacityChange={props.onLayerOpacityChange}
-                onLayerOpacityCommit={props.onLayerOpacityCommit}
                 onLayerPropertyCommit={props.onLayerPropertyCommit}
                 gradientPresets={props.gradientPresets}
                 onSaveGradientPreset={props.onSaveGradientPreset}

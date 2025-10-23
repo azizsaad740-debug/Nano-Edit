@@ -33,6 +33,7 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { PropertiesPanel } from "@/components/layout/PropertiesPanel";
 import { useHotkeys } from "react-hotkeys-hook";
+import { LayerControls } from "./LayerControls"; // Import LayerControls
 
 interface SmartObjectEditorProps {
   smartObject: Layer;
@@ -478,8 +479,6 @@ export const SmartObjectEditor = ({
                     setGradientToolState={dummySetGradientToolState}
                     onLayerUpdate={handleLayerUpdate}
                     onLayerCommit={handleLayerCommit}
-                    onLayerOpacityChange={handleLayerOpacityChange}
-                    onLayerOpacityCommit={handleLayerOpacityCommit}
                     onLayerPropertyCommit={handleLayerPropertyCommit}
                     gradientPresets={dummyPresets}
                     onSaveGradientPreset={dummyOnSaveGradientPreset}
@@ -500,6 +499,13 @@ export const SmartObjectEditor = ({
                     <CardTitle className="text-base">Layers</CardTitle>
                   </CardHeader>
                   <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
+                    {/* NEW: Layer Controls for nested layers */}
+                    <LayerControls
+                      selectedLayer={selectedLayer}
+                      onLayerPropertyCommit={(updates, name) => selectedLayerId && handleLayerPropertyCommit(selectedLayerId, updates, name)}
+                      onLayerOpacityChange={handleLayerOpacityChange}
+                      onLayerOpacityCommit={handleLayerOpacityCommit}
+                    />
                     <ScrollArea className="flex-1 pr-3">
                       <DndContext
                         sensors={sensors}
