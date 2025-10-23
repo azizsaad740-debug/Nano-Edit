@@ -31,6 +31,7 @@ import type { Layer, EditState, ActiveTool, BrushState } from "@/hooks/useEditor
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
+import { LayerControls } from "./LayerControls"; // NEW Import
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "./BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
@@ -286,7 +287,16 @@ export const LayersPanel = ({
             <TabsTrigger value="channels">Channels</TabsTrigger>
           </TabsList>
           <TabsContent value="layers" className="flex-1 flex flex-col mt-2 overflow-hidden">
-            <ScrollArea className="flex-1 pr-3">
+            
+            {/* NEW Layer Controls Section */}
+            <LayerControls
+              selectedLayer={selectedLayer}
+              onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
+              onLayerOpacityChange={onLayerOpacityChange}
+              onLayerOpacityCommit={onLayerOpacityCommit}
+            />
+            
+            <ScrollArea className="flex-1 pr-3 pt-2">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
