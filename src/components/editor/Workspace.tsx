@@ -804,6 +804,7 @@ const Workspace = (props: WorkspaceProps) => {
                           className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
                           style={imageStyle}
                           onLoad={onImageLoad}
+                          crossOrigin="anonymous"
                         />
                         
                         {renderWorkspaceLayers(layers)} {/* Render layers first */}
