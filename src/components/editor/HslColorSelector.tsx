@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { EditState } from "@/hooks/useEditorState";
 import { Globe } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -24,30 +25,34 @@ const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
 
 export const HslColorSelector = ({ selectedColor, onSelect }: HslColorSelectorProps) => {
   return (
-    <div className="flex gap-2 justify-between">
-      {colorOptions.map(({ key, color }) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onSelect(key)}
-          className={cn(
-            "w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center shrink-0",
-            selectedColor === key
-              ? "border-primary ring-2 ring-primary/50"
-              : "border-transparent hover:border-muted-foreground/50"
-          )}
-          style={{ 
-            backgroundColor: key === 'global' ? 'transparent' : color,
-            borderColor: selectedColor === key ? 'hsl(var(--primary))' : 'hsl(var(--border))',
-          }}
-        >
-          {key === 'global' ? (
-            <Globe className={cn("h-4 w-4", selectedColor === key ? "text-primary" : "text-muted-foreground")} />
-          ) : (
-            <div className={cn("w-3 h-3 rounded-full", selectedColor === key ? "bg-background" : "bg-transparent")} />
-          )}
-        </button>
-      ))}
-    </div>
+    <ScrollArea className="w-full whitespace-nowrap">
+      <div className="flex space-x-2 pb-2">
+        {colorOptions.map(({ key, name, color }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => onSelect(key)}
+            className={cn(
+              "flex flex-col items-center justify-center p-1.5 rounded-md transition-all shrink-0 w-14 h-14 text-xs font-medium",
+              selectedColor === key
+                ? "bg-accent text-accent-foreground ring-2 ring-primary/50"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+            )}
+          >
+            <div
+              className={cn(
+                "w-6 h-6 rounded-full mb-1 flex items-center justify-center",
+                key === 'global' ? 'border border-muted-foreground' : 'border-none'
+              )}
+              style={{ backgroundColor: key === 'global' ? 'transparent' : color }}
+            >
+              {key === 'global' && <Globe className="h-4 w-4 text-muted-foreground" />}
+            </div>
+            {name}
+          </button>
+        ))}
+      </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 };

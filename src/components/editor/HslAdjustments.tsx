@@ -32,73 +32,82 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
     </div>
   );
 
+  const renderSliderControl = (
+    key: keyof HslAdjustment,
+    label: string,
+    min: number,
+    max: number,
+    step: number,
+    trackClassName: string,
+    unit: string = ''
+  ) => (
+    <div className="grid gap-1">
+      <div className="flex items-center justify-between">
+        <Label htmlFor={key} className="text-sm">{label}</Label>
+        <div className="flex items-center gap-2">
+          <span className="w-10 text-right text-sm text-muted-foreground">{currentAdjustment[key]}{unit}</span>
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset(key)}>
+            <RotateCcw className="h-3 w-3" />
+            <span className="sr-only">Reset {label}</span>
+          </Button>
+        </div>
+      </div>
+      <SliderTrack className={trackClassName}>
+        <Slider
+          id={key}
+          min={min}
+          max={max}
+          step={step}
+          value={[currentAdjustment[key]]}
+          onValueChange={([value]) => onAdjustmentChange(selectedColor, key, value)}
+          onValueCommit={([value]) => onAdjustmentCommit(selectedColor, key, value)}
+          className={cn(
+            "absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full",
+            // Apply custom thumb styling using CSS selector, replacing thumbClassName
+            "[&>span:last-child]:h-5 [&>span:last-child]:w-5 [&>span:last-child]:border-2 [&>span:last-child]:border-background [&>span:last-child]:bg-white [&>span:last-child]:shadow-md"
+          )}
+        />
+      </SliderTrack>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <HslColorSelector selectedColor={selectedColor} onSelect={setSelectedColor} />
 
       <div className="space-y-4 pt-2">
         {/* Hue Slider */}
-        <div className="grid gap-1">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="hue" className="text-sm">Hue</Label>
-            <span className="text-sm text-muted-foreground">{currentAdjustment.hue}°</span>
-          </div>
-          <SliderTrack className="bg-gradient-to-r from-red-500 via-purple-500 to-red-500 rounded-full">
-            <Slider
-              id="hue"
-              min={-180}
-              max={180}
-              step={1}
-              value={[currentAdjustment.hue]}
-              onValueChange={([value]) => onAdjustmentChange(selectedColor, "hue", value)}
-              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "hue", value)}
-              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
-              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
-            />
-          </SliderTrack>
-        </div>
+        {renderSliderControl(
+          "hue",
+          "Hue",
+          -180,
+          180,
+          1,
+          "bg-gradient-to-r from-red-500 via-purple-500 to-red-500 rounded-full",
+          "°"
+        )}
 
         {/* Saturation Slider */}
-        <div className="grid gap-1">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="saturation" className="text-sm">Saturation</Label>
-            <span className="text-sm text-muted-foreground">{currentAdjustment.saturation}%</span>
-          </div>
-          <SliderTrack className="bg-muted-foreground/30">
-            <Slider
-              id="saturation"
-              min={0}
-              max={200}
-              step={1}
-              value={[currentAdjustment.saturation]}
-              onValueChange={([value]) => onAdjustmentChange(selectedColor, "saturation", value)}
-              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "saturation", value)}
-              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
-              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
-            />
-          </SliderTrack>
-        </div>
+        {renderSliderControl(
+          "saturation",
+          "Saturation",
+          0,
+          200,
+          1,
+          "bg-muted-foreground/30",
+          "%"
+        )}
 
         {/* Luminance Slider */}
-        <div className="grid gap-1">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="luminance" className="text-sm">Luminance</Label>
-            <span className="text-sm text-muted-foreground">{currentAdjustment.luminance}%</span>
-          </div>
-          <SliderTrack className="bg-muted-foreground/30">
-            <Slider
-              id="luminance"
-              min={-100}
-              max={100}
-              step={1}
-              value={[currentAdjustment.luminance]}
-              onValueChange={([value]) => onAdjustmentChange(selectedColor, "luminance", value)}
-              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "luminance", value)}
-              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
-              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
-            />
-          </SliderTrack>
-        </div>
+        {renderSliderControl(
+          "luminance",
+          "Luminance",
+          -100,
+          100,
+          1,
+          "bg-muted-foreground/30",
+          "%"
+        )}
       </div>
       
       <p className="text-xs text-muted-foreground pt-2">
