@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, AlignJustify, MoreHorizontal, ChevronDown, ChevronUp, Minus, Plus, CornerDownLeft, List, ListOrdered, Square, ArrowRight, ArrowLeft } from "lucide-react";
+import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, AlignJustify, MoreHorizontal, ChevronDown, ChevronUp, Minus, Plus, CornerDownLeft, List, ListOrdered, Square, ArrowRight, ArrowLeft, Type, ArrowDownUp } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
