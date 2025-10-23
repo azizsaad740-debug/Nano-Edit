@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { EditState } from "@/hooks/useEditorState";
-import { Globe, Circle } from "lucide-react";
+import { Globe } from "lucide-react";
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -24,25 +24,28 @@ const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
 
 export const HslColorSelector = ({ selectedColor, onSelect }: HslColorSelectorProps) => {
   return (
-    <div className="flex flex-wrap gap-2 justify-start">
-      {colorOptions.map(({ key, name, color }) => (
+    <div className="flex gap-2 justify-between">
+      {colorOptions.map(({ key, color }) => (
         <button
           key={key}
           type="button"
           onClick={() => onSelect(key)}
           className={cn(
-            "flex items-center justify-center h-8 px-3 rounded-full text-xs font-medium transition-colors border",
+            "w-7 h-7 rounded-full border-2 transition-all flex items-center justify-center shrink-0",
             selectedColor === key
-              ? "bg-primary text-primary-foreground border-primary"
-              : "bg-background text-muted-foreground hover:bg-muted border-border"
+              ? "border-primary ring-2 ring-primary/50"
+              : "border-transparent hover:border-muted-foreground/50"
           )}
+          style={{ 
+            backgroundColor: key === 'global' ? 'transparent' : color,
+            borderColor: selectedColor === key ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+          }}
         >
           {key === 'global' ? (
-            <Globe className="h-3 w-3 mr-1" />
+            <Globe className={cn("h-4 w-4", selectedColor === key ? "text-primary" : "text-muted-foreground")} />
           ) : (
-            <Circle className="h-3 w-3 mr-1" style={{ fill: color, stroke: color }} />
+            <div className={cn("w-3 h-3 rounded-full", selectedColor === key ? "bg-background" : "bg-transparent")} />
           )}
-          {name}
         </button>
       ))}
     </div>

@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 import type { EditState, HslAdjustment } from "@/hooks/useEditorState";
 import { HslColorSelector } from "./HslColorSelector";
 import React from "react";
+import { cn } from "@/lib/utils";
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -25,73 +26,78 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
     onAdjustmentCommit(selectedColor, key, defaultValue);
   };
 
+  const SliderTrack = ({ children, className, style }: { children: React.ReactNode, className?: string, style?: React.CSSProperties }) => (
+    <div className={cn("relative h-2 w-full", className)} style={style}>
+      {children}
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <HslColorSelector selectedColor={selectedColor} onSelect={setSelectedColor} />
 
       <div className="space-y-4 pt-2">
-        <div className="grid gap-2">
+        {/* Hue Slider */}
+        <div className="grid gap-1">
           <div className="flex items-center justify-between">
-            <Label htmlFor="hue">Hue</Label>
-            <div className="flex items-center gap-2">
-              <span className="w-8 text-right text-sm text-muted-foreground">{currentAdjustment.hue}°</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("hue")}>
-                <RotateCcw className="h-3 w-3" />
-                <span className="sr-only">Reset Hue</span>
-              </Button>
-            </div>
+            <Label htmlFor="hue" className="text-sm">Hue</Label>
+            <span className="text-sm text-muted-foreground">{currentAdjustment.hue}°</span>
           </div>
-          <Slider
-            id="hue"
-            min={-180}
-            max={180}
-            step={1}
-            value={[currentAdjustment.hue]}
-            onValueChange={([value]) => onAdjustmentChange(selectedColor, "hue", value)}
-            onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "hue", value)}
-          />
+          <SliderTrack className="bg-gradient-to-r from-red-500 via-purple-500 to-red-500 rounded-full">
+            <Slider
+              id="hue"
+              min={-180}
+              max={180}
+              step={1}
+              value={[currentAdjustment.hue]}
+              onValueChange={([value]) => onAdjustmentChange(selectedColor, "hue", value)}
+              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "hue", value)}
+              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
+              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
+            />
+          </SliderTrack>
         </div>
-        <div className="grid gap-2">
+
+        {/* Saturation Slider */}
+        <div className="grid gap-1">
           <div className="flex items-center justify-between">
-            <Label htmlFor="saturation">Saturation</Label>
-            <div className="flex items-center gap-2">
-              <span className="w-8 text-right text-sm text-muted-foreground">{currentAdjustment.saturation}%</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("saturation")}>
-                <RotateCcw className="h-3 w-3" />
-                <span className="sr-only">Reset Saturation</span>
-              </Button>
-            </div>
+            <Label htmlFor="saturation" className="text-sm">Saturation</Label>
+            <span className="text-sm text-muted-foreground">{currentAdjustment.saturation}%</span>
           </div>
-          <Slider
-            id="saturation"
-            min={0}
-            max={200}
-            step={1}
-            value={[currentAdjustment.saturation]}
-            onValueChange={([value]) => onAdjustmentChange(selectedColor, "saturation", value)}
-            onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "saturation", value)}
-          />
+          <SliderTrack className="bg-muted-foreground/30">
+            <Slider
+              id="saturation"
+              min={0}
+              max={200}
+              step={1}
+              value={[currentAdjustment.saturation]}
+              onValueChange={([value]) => onAdjustmentChange(selectedColor, "saturation", value)}
+              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "saturation", value)}
+              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
+              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
+            />
+          </SliderTrack>
         </div>
-        <div className="grid gap-2">
+
+        {/* Luminance Slider */}
+        <div className="grid gap-1">
           <div className="flex items-center justify-between">
-            <Label htmlFor="luminance">Luminance</Label>
-            <div className="flex items-center gap-2">
-              <span className="w-8 text-right text-sm text-muted-foreground">{currentAdjustment.luminance}%</span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleReset("luminance")}>
-                <RotateCcw className="h-3 w-3" />
-                <span className="sr-only">Reset Luminance</span>
-              </Button>
-            </div>
+            <Label htmlFor="luminance" className="text-sm">Luminance</Label>
+            <span className="text-sm text-muted-foreground">{currentAdjustment.luminance}%</span>
           </div>
-          <Slider
-            id="luminance"
-            min={-100}
-            max={100}
-            step={1}
-            value={[currentAdjustment.luminance]}
-            onValueChange={([value]) => onAdjustmentChange(selectedColor, "luminance", value)}
-            onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "luminance", value)}
-          />
+          <SliderTrack className="bg-muted-foreground/30">
+            <Slider
+              id="luminance"
+              min={-100}
+              max={100}
+              step={1}
+              value={[currentAdjustment.luminance]}
+              onValueChange={([value]) => onAdjustmentChange(selectedColor, "luminance", value)}
+              onValueCommit={([value]) => onAdjustmentCommit(selectedColor, "luminance", value)}
+              className="absolute inset-0 [&>span:first-child]:bg-transparent [&>span:first-child]:h-full"
+              thumbClassName="h-5 w-5 border-2 border-background bg-white shadow-md"
+            />
+          </SliderTrack>
         </div>
       </div>
       
