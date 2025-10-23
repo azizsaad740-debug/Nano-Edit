@@ -85,7 +85,7 @@ const Login = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse">
-          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent rounded-full border-b-transparent animate-spin"></div>
+          <div className="w-16 h-16 border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent rounded-full border-b-transparent animate-spin"></div>
         </div>
       </div>
     );
@@ -139,7 +139,7 @@ const Login = () => {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
+                    className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-all duration-200"
                     required
                   />
                   <button
@@ -159,7 +159,7 @@ const Login = () => {
               >
                 {isLoginLoading ? (
                   <div className="flex items-center justify-center">
-                    <div className="w-4 h-4 border-2 border-t-transparent border-r-transparent border-b-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-t-transparent border-r-transparent border-b-transparent border-l-transparent rounded-full border-b-transparent animate-spin"></div>
                     <span className="ml-2">Signing in...</span>
                   </div>
                 ) : 'Sign In'}
@@ -180,20 +180,17 @@ const Login = () => {
             <div className="space-y-4">
               <Button
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center bg-white border border-border hover:bg-accent transition-all duration-200 py-3 rounded-lg font-medium text-foreground"
+                className="w-full flex items-center justify-center bg-white border border-border hover:bg-accent transition-all duration-200 py-3 rounded-lg font-medium"
                 disabled={isLoginLoading}
               >
                 <Chrome className="w-5 h-5 mr-3" />
                 <span>Continue with Google</span>
-                <ArrowRight className="w-4 h-4 ml-auto" />
+                <ArrowRight className="w-4 h-4" />
               </Button>
-            </div>
 
-            {/* Guest Option */}
-            <div className="space-y-4">
               <Button
                 onClick={handleGuestLogin}
-                className="w-full flex items-center justify-center bg-muted border-border hover:bg-muted/80 transition-all duration-200 py-3 rounded-lg font-medium text-foreground"
+                className="w-full flex items-center justify-center bg-muted border border-border hover:bg-muted/80 transition-all duration-200 py-3 rounded-lg font-medium"
                 disabled={isLoginLoading}
               >
                 <UserIcon className="w-5 h-5 mr-3" />
