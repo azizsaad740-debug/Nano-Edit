@@ -91,8 +91,8 @@ const Signup = () => {
       <div className="w-full max-w-md">
         {/* Logo/Brand Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <UserPlus className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4 overflow-hidden">
+            <img src="/Icon.png" alt="NanoEdit Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Join NanoEdit
