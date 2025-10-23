@@ -1,5 +1,3 @@
-# Welcome to your Dyad app
-
 ✨ NanoEdit – A Free, Open-Source Alternative to Adobe Photoshop (Early Stage)
 
 Dive into the future of creative editing with NanoEdit—an experimental, community-driven image editor built with React, TypeScript, and Dyad.js. This project aims to provide a lightweight, privacy-respecting alternative to commercial tools like Adobe Photoshop, with a special focus on generative AI-powered fill and intelligent content-aware editing.
@@ -13,3 +11,4 @@ This project is in its early experimental stages—expect rapid iteration, frequ
 🔗 Built with: React • TypeScript • Dyad.js • Web APIs 📜 License: MIT
 
 Help build the next generation of ethical, accessible, and AI-enhanced image editing—right in your browser! 🌟
+
