@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Lock, LockOpen, Square, Move, Crop, Brush, Pencil, Search } from "lucide-react";
+import { Lock, LockOpen, Square, Move, Crop, Brush, Pencil, Search, Type } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
 
