@@ -35,6 +35,7 @@ import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast"; // Import toast utilities
 import type { TemplateData } from "../types/template"; // FIXED: Relative path
+import { downloadSelectionAsImage } from "@/utils/imageUtils"; // Import new utility
 
 const Index = () => {
   const {
@@ -243,6 +244,15 @@ const Index = () => {
     // --- END STUB ---
   }, [image]);
 
+  const handleExportSelection = useCallback(() => {
+    if (!imgRef.current || !dimensions || !selectionMaskDataUrl) {
+      showError("No active selection or image loaded.");
+      return;
+    }
+    const fileName = fileInfo?.name.replace(/\.[^/.]+$/, "") || 'selection';
+    downloadSelectionAsImage(imgRef.current, selectionMaskDataUrl, dimensions, `${fileName}-selection.png`);
+  }, [imgRef, dimensions, selectionMaskDataUrl, fileInfo]);
+
   useEffect(() => {
     const onFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -444,6 +454,9 @@ const Index = () => {
               </Button>
               <Button variant="outline" size="sm" onClick={clearSelectionMask}>
                 Clear Selection
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleExportSelection} disabled={!selectionMaskDataUrl}>
+                Export Selection
               </Button>
             </div>
           ) : null}

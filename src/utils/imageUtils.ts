@@ -216,3 +216,97 @@ export const copyImageToClipboard = async (options: ImageOptions) => {
     }
   }, 'image/png');
 };
+
+// New function to download the selected area of the image
+export const downloadSelectionAsImage = async (
+  imageElement: HTMLImageElement,
+  selectionMaskDataUrl: string,
+  dimensions: { width: number; height: number },
+  fileName: string = 'selection.png'
+) => {
+  const toastId = showLoading("Exporting selection...");
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error("Failed to get canvas context.");
+
+    // 1. Draw the full image (including all layers) onto a temporary canvas
+    // Since we only have the imageElement here, we need to draw the fully edited image first.
+    // For simplicity and speed, we will only export the base image clipped by the mask.
+    // If the user wants layers included, they should use the full export after cropping.
+    
+    // Draw the base image
+    ctx.drawImage(imageElement, 0, 0, dimensions.width, dimensions.height);
+
+    // 2. Load the mask
+    const maskImage = new Image();
+    await new Promise((resolve, reject) => {
+      maskImage.onload = resolve;
+      maskImage.onerror = reject;
+      maskImage.src = selectionMaskDataUrl;
+    });
+
+    // 3. Apply the mask using destination-in
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.drawImage(maskImage, 0, 0, dimensions.width, dimensions.height);
+    
+    // 4. Find the bounding box of the selected area
+    const imageData = ctx.getImageData(0, 0, dimensions.width, dimensions.height);
+    const data = imageData.data;
+    
+    let minX = dimensions.width, minY = dimensions.height, maxX = 0, maxY = 0;
+    let foundPixel = false;
+
+    for (let y = 0; y < dimensions.height; y++) {
+      for (let x = 0; x < dimensions.width; x++) {
+        const i = (y * dimensions.width + x) * 4;
+        if (data[i + 3] > 0) { // Check alpha channel
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+          foundPixel = true;
+        }
+      }
+    }
+
+    if (!foundPixel) {
+      dismissToast(toastId);
+      showError("Selection is empty.");
+      return;
+    }
+
+    const croppedWidth = maxX - minX + 1;
+    const croppedHeight = maxY - minY + 1;
+
+    const croppedCanvas = document.createElement('canvas');
+    croppedCanvas.width = croppedWidth;
+    croppedCanvas.height = croppedHeight;
+    const croppedCtx = croppedCanvas.getContext('2d');
+    
+    if (croppedCtx) {
+        croppedCtx.putImageData(
+            ctx.getImageData(minX, minY, croppedWidth, croppedHeight),
+            0, 0
+        );
+    } else {
+        throw new Error("Failed to create cropped canvas context.");
+    }
+
+    // 5. Download the cropped image
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = croppedCanvas.toDataURL('image/png');
+    link.click();
+
+    dismissToast(toastId);
+    showSuccess("Selection exported successfully.");
+
+  } catch (error) {
+    console.error("Export selection failed:", error);
+    dismissToast(toastId);
+    showError("Export selection failed.");
+  }
+};
