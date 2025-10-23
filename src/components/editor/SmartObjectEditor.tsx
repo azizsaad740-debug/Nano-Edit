@@ -22,7 +22,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
-import { LayerProperties } from "./LayerProperties";
 import TextProperties from "./TextProperties";
 import ShapeProperties from "./ShapeProperties";
 import GradientProperties from "./GradientProperties";

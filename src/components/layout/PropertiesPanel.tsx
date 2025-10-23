@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "@/components/editor/BrushOptions";
-import { LayerProperties } from "@/components/editor/LayerProperties";
 import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
@@ -102,15 +101,7 @@ export const PropertiesPanel = ({
               onDeleteGradientPreset={onDeleteGradientPreset}
             />
           ) : selectedLayer ? (
-            <Accordion type="multiple" className="w-full" defaultValue={['properties']}>
-              <AccordionItem value="properties">
-                <AccordionTrigger>General Properties</AccordionTrigger>
-                <AccordionContent>
-                  <LayerProperties
-                    selectedLayer={selectedLayer}
-                  />
-                </AccordionContent>
-              </AccordionItem>
+            <Accordion type="multiple" className="w-full" defaultValue={['text', 'shape', 'gradient']}>
               {selectedLayer.type === 'text' && (
                 <AccordionItem value="text">
                   <AccordionTrigger>Text Properties</AccordionTrigger>
