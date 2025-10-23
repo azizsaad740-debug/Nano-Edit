@@ -78,6 +78,7 @@ interface WorkspaceProps {
   setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | null) => void; // Added setActiveTool
   foregroundColor: string; // New prop
   backgroundColor: string; // New prop
+  onDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // NEW: Prop for drawing layer commit
 }
 
 // New component for drawing shape preview
@@ -214,6 +215,7 @@ const Workspace = (props: WorkspaceProps) => {
     setActiveTool, // Destructure setActiveTool
     foregroundColor, // Destructure foregroundColor
     backgroundColor, // Destructure backgroundColor
+    onDrawingStrokeEnd, // NEW: Destructure onDrawingStrokeEnd
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
@@ -285,7 +287,8 @@ const Workspace = (props: WorkspaceProps) => {
       return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush')) {
       // LiveBrushCanvas handles its own pointer events, so we don't need to do anything here
-      e.preventDefault();
+      // Prevent default context menu on right click for mask tools
+      if (e.button === 2) e.preventDefault();
       return;
     }
 
@@ -568,32 +571,6 @@ const Workspace = (props: WorkspaceProps) => {
     }
   };
 
-  const handleDrawEnd = useCallback((strokeDataUrl: string, layerId: string) => {
-    const layer = layers.find(l => l.id === layerId);
-    const baseDataUrl = layer?.dataUrl;
-
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx || !imageNaturalDimensions) return;
-
-    tempCanvas.width = imageNaturalDimensions.width;
-    tempCanvas.height = imageNaturalDimensions.height;
-
-    const baseImg = new Image();
-    const strokeImg = new Image();
-
-    const basePromise = baseDataUrl ? new Promise(res => { baseImg.onload = res; baseImg.src = baseDataUrl; }) : Promise.resolve();
-    const strokePromise = new Promise(res => { strokeImg.onload = res; strokeImg.src = strokeDataUrl; });
-
-    Promise.all([basePromise, strokePromise]).then(() => {
-      if (baseDataUrl) tempCtx.drawImage(baseImg, 0, 0);
-      tempCtx.drawImage(strokeImg, 0, 0);
-      const combinedDataUrl = tempCanvas.toDataURL();
-      onLayerUpdate(layerId, { dataUrl: combinedDataUrl });
-      onLayerCommit(layerId);
-    });
-  }, [layers, onLayerUpdate, onLayerCommit, imageNaturalDimensions]);
-
   const backgroundLayer = layers.find(l => l.type === 'image');
   const isBackgroundVisible = backgroundLayer?.visible ?? true;
 
@@ -825,7 +802,7 @@ const Workspace = (props: WorkspaceProps) => {
                           src={image}
                           alt="Uploaded preview"
                           className="object-contain max-w-full max-h-[calc(100vh-12rem)] rounded-lg shadow-lg"
-                          style={imageFilterStyle}
+                          style={imageStyle}
                           onLoad={onImageLoad}
                         />
                         
@@ -851,7 +828,7 @@ const Workspace = (props: WorkspaceProps) => {
                           <LiveBrushCanvas
                             brushState={brushState}
                             imageRef={imgRef}
-                            onDrawEnd={handleDrawEnd}
+                            onDrawEnd={onDrawingStrokeEnd} // Use the dedicated drawing stroke end handler
                             activeTool={activeTool}
                             selectedLayerId={selectedLayerId}
                             onAddDrawingLayer={onAddDrawingLayer}

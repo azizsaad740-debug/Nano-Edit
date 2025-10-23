@@ -158,6 +158,8 @@ const Index = () => {
     loadTemplateData,
     // Layer Masking
     applySelectionAsMask, // NEW destructuring
+    // Drawing stroke end handler from useLayers
+    handleDrawingStrokeEnd, // NEW destructuring
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -523,6 +525,7 @@ const Index = () => {
                 setActiveTool={setActiveTool}
                 foregroundColor={foregroundColor}
                 backgroundColor={backgroundColor}
+                onDrawingStrokeEnd={handleDrawingStrokeEnd} // NEW: Pass the dedicated drawing stroke handler
               />
             </div>
           </ResizablePanel>
@@ -553,7 +556,7 @@ const Index = () => {
         originalImage={image}
         selectionPath={selectionPath}
         selectionMaskDataUrl={selectionMaskDataUrl} // Pass new prop
-        imageNaturalDimensions={dimensions} // Pass new prop
+        imageNaturalDimensions={dimensions}
       />
       <GenerateImageDialog
         open={openGenerateImage}
