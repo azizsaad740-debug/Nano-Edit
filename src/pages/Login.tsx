@@ -12,7 +12,7 @@ import { LogIn, User as UserIcon, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome, G
 import { showSuccess, showError } from '@/utils/toast';
 
 const Login = () => {
-  const { user, isLoading, isGuest } = useSession();
+  const { user, isLoading, isGuest, setIsGuest } = useSession();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -20,10 +20,10 @@ const Login = () => {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (user || isGuest) {
       navigate('/', { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, isGuest, navigate]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +76,8 @@ const Login = () => {
   };
 
   const handleGuestLogin = () => {
-    // In a real app, you might want to set a guest session
-    // For now, we'll just navigate to the main page
+    setIsGuest(true);
+    showSuccess("Continuing as guest.");
     navigate('/', { replace: true });
   };
 
@@ -135,7 +135,7 @@ const Login = () => {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-5 w-5 text-muted-foreground" />
                   <input
-                    type={showPassword ? "password" : "text"}
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
