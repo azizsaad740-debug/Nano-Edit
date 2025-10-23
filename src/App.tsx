@@ -7,6 +7,9 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Community from "./pages/Community"; // Import Community page
+import Signup from "./pages/Signup"; // Import Signup page
+import Terms from "./pages/Terms"; // Import Terms page
+import Privacy from "./pages/Privacy"; // Import Privacy page
 import { SessionProvider, useSession } from "./integrations/supabase/session-provider";
 import React from "react";
 
@@ -34,6 +37,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
+    <Route path="/signup" element={<Signup />} />
+    <Route path="/terms" element={<Terms />} />
+    <Route path="/privacy" element={<Privacy />} />
     <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
     <Route path="/community" element={<ProtectedRoute><Community /></ProtectedRoute>} />
     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
