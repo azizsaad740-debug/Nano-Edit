@@ -180,7 +180,7 @@ const Login = () => {
             <div className="space-y-4">
               <Button
                 onClick={handleGoogleLogin}
-                className="w-full flex items-center justify-center bg-white border border-border hover:bg-accent transition-all duration-200 py-3 rounded-lg font-medium"
+                className="w-full flex items-center justify-center bg-white border border-border hover:bg-accent transition-all duration-200 py-3 rounded-lg font-medium text-foreground"
                 disabled={isLoginLoading}
               >
                 <Chrome className="w-5 h-5 mr-3" />
@@ -190,7 +190,7 @@ const Login = () => {
 
               <Button
                 onClick={handleGuestLogin}
-                className="w-full flex items-center justify-center bg-muted border border-border hover:bg-muted/80 transition-all duration-200 py-3 rounded-lg font-medium"
+                className="w-full flex items-center justify-center bg-muted border-border hover:bg-muted/80 transition-all duration-200 py-3 rounded-lg font-medium text-foreground"
                 disabled={isLoginLoading}
               >
                 <UserIcon className="w-5 h-5 mr-3" />
