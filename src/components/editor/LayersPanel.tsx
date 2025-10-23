@@ -77,6 +77,8 @@ interface LayersPanelProps {
   // Layer Masking
   hasActiveSelection: boolean; // New prop
   onApplySelectionAsMask: () => void; // New prop
+  onRemoveLayerMask: (id: string) => void; // NEW prop
+  onInvertLayerMask: (id: string) => void; // NEW prop
 }
 
 export const LayersPanel = ({
@@ -111,6 +113,8 @@ export const LayersPanel = ({
   toggleGroupExpanded,
   hasActiveSelection, // Destructure new prop
   onApplySelectionAsMask, // Destructure new prop
+  onRemoveLayerMask, // Destructure new prop
+  onInvertLayerMask, // Destructure new prop
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -236,6 +240,7 @@ export const LayersPanel = ({
             onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey, e.shiftKey)}
             onToggleGroupExpanded={toggleGroupExpanded}
             depth={depth}
+            onRemoveMask={onRemoveLayerMask} // Pass the new prop
           />
         </SortableContext>
         {layer.type === 'group' && layer.expanded && layer.children && (
@@ -327,6 +332,7 @@ export const LayersPanel = ({
                       onSelect={() => {}}
                       onToggleGroupExpanded={() => {}}
                       depth={0}
+                      onRemoveMask={() => {}} // Dummy function for DragOverlay
                     />
                   ) : null}
                 </DragOverlay>
@@ -350,6 +356,7 @@ export const LayersPanel = ({
               groupLayers={() => groupLayers(selectedLayerIds)} // Pass groupLayers
               hasActiveSelection={hasActiveSelection} // Pass new prop
               onApplySelectionAsMask={onApplySelectionAsMask} // Pass new prop
+              onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)} // NEW: Pass handler
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

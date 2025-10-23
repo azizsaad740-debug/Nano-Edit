@@ -6,6 +6,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import type { Layer, EditState, Point, GradientToolState, ActiveTool } from "./useEditorState"; // Import ActiveTool
+import { invertMaskDataUrl } from "@/utils/maskUtils";
 
 export interface HistoryItem {
   name: string;
@@ -738,6 +739,52 @@ export const useLayers = ({
     commitLayerChange(layerId);
   }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]);
 
+  const removeLayerMask = useCallback((id: string) => {
+    const layer = layers.find(l => l.id === id);
+    if (!layer || !layer.maskDataUrl) {
+      showError("Layer does not have a mask.");
+      return;
+    }
+    
+    const updatedLayers = layers.map(l => 
+      l.id === id ? { ...l, maskDataUrl: undefined } : l
+    );
+    updateLayersState(updatedLayers, `Remove Mask from Layer "${layer.name}"`);
+    showSuccess(`Mask removed from layer "${layer.name}".`);
+  }, [layers, updateLayersState]);
+
+  const invertLayerMask = useCallback(async (id: string) => {
+    const layer = layers.find(l => l.id === id);
+    if (!layer || !layer.maskDataUrl) {
+      showError("Layer does not have a mask to invert.");
+      return;
+    }
+    if (!imageNaturalDimensions) {
+      showError("Cannot invert mask without image dimensions.");
+      return;
+    }
+
+    const toastId = showLoading("Inverting layer mask...");
+    try {
+      const invertedMaskDataUrl = await invertMaskDataUrl(
+        layer.maskDataUrl,
+        imageNaturalDimensions.width,
+        imageNaturalDimensions.height
+      );
+
+      const updatedLayers = layers.map(l => 
+        l.id === id ? { ...l, maskDataUrl: invertedMaskDataUrl } : l
+      );
+      updateLayersState(updatedLayers, `Invert Mask on Layer "${layer.name}"`);
+      dismissToast(toastId);
+      showSuccess(`Mask inverted on layer "${layer.name}".`);
+    } catch (error) {
+      console.error("Failed to invert mask:", error);
+      dismissToast(toastId);
+      showError("Failed to invert mask.");
+    }
+  }, [layers, updateLayersState, imageNaturalDimensions]);
+
 
   return {
     layers,
@@ -770,5 +817,7 @@ export const useLayers = ({
     groupLayers,
     toggleGroupExpanded,
     handleDrawingStrokeEnd,
+    removeLayerMask,
+    invertLayerMask,
   };
 };

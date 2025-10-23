@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack } from "lucide-react"; // Changed Mask to SquareStack
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp } from "lucide-react"; // Added ArrowDownUp icon
 import type { Layer } from "@/hooks/useEditorState";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -24,6 +24,7 @@ interface LayerActionsProps {
   groupLayers: () => void; // New prop for grouping layers
   hasActiveSelection: boolean; // New prop to check for active selection
   onApplySelectionAsMask: () => void; // New prop for applying selection as mask
+  onInvertLayerMask: () => void; // NEW prop
 }
 
 export const LayerActions = ({
@@ -44,6 +45,7 @@ export const LayerActions = ({
   groupLayers, // Destructure groupLayers
   hasActiveSelection, // Destructure new prop
   onApplySelectionAsMask, // Destructure new prop
+  onInvertLayerMask, // Destructure new prop
 }: LayerActionsProps) => {
   const hasMultipleSelection = selectedLayerIds.length > 1;
   const isAnyLayerSelected = selectedLayerIds.length > 0;
@@ -60,6 +62,7 @@ export const LayerActions = ({
   const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient'; // Added gradient
   const isSmartObject = selectedLayer?.type === 'smart-object';
   const isMaskable = selectedLayer && selectedLayer.type !== 'image';
+  const hasMask = selectedLayer?.maskDataUrl; // Check if selected layer has a mask
 
   return (
     <div className="mt-4 space-y-2 border-t pt-4">
@@ -212,6 +215,22 @@ export const LayerActions = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>Apply Selection as Mask</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={onInvertLayerMask}
+                disabled={!hasMask}
+              >
+                <ArrowDownUp className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Invert Layer Mask</p>
             </TooltipContent>
           </Tooltip>
 

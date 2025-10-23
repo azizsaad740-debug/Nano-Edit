@@ -108,6 +108,8 @@ interface SidebarProps {
   // Layer Masking
   hasActiveSelection: boolean; // NEW prop
   onApplySelectionAsMask: () => void; // NEW prop
+  onRemoveLayerMask: (id: string) => void; // NEW prop
+  onInvertLayerMask: (id: string) => void; // NEW prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -183,6 +185,8 @@ const Sidebar = (props: SidebarProps) => {
                 toggleGroupExpanded={props.toggleGroupExpanded} // Pass toggleGroupExpanded
                 hasActiveSelection={props.hasActiveSelection} 
                 onApplySelectionAsMask={props.onApplySelectionAsMask} 
+                onRemoveLayerMask={props.onRemoveLayerMask} // NEW prop
+                onInvertLayerMask={props.onInvertLayerMask} // NEW prop
               />
             )}
           </div>

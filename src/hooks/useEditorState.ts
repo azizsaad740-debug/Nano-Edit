@@ -338,6 +338,8 @@ export const useEditorState = () => {
     groupLayers, // Added groupLayers
     toggleGroupExpanded, // Added toggleGroupExpanded
     handleDrawingStrokeEnd, // Destructure the new drawing stroke handler
+    removeLayerMask, // Destructure the new mask removal handler
+    invertLayerMask, // NEW: Destructure invertLayerMask
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
@@ -549,6 +551,7 @@ export const useEditorState = () => {
           loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers, { width: psd.width, height: psd.height });
           setFileInfo({ name: file.name, size: file.size });
           setExifData(null);
+          showError(`Warning: ${file.name} was imported as a flattened image. Full vector editing is not supported.`);
         } catch (e) {
           console.error("Failed to parse PSD:", e);
           dismissToast(toastId);
@@ -1474,6 +1477,8 @@ export const useEditorState = () => {
     groupLayers,
     toggleGroupExpanded,
     handleDrawingStrokeEnd, // EXPOSED: The new drawing stroke handler
+    removeLayerMask, // EXPOSED: The new mask removal handler
+    invertLayerMask, // EXPOSED: The new mask inversion handler
     // Tool state
     activeTool,
     setActiveTool,

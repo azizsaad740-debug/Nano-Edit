@@ -158,6 +158,8 @@ const Index = () => {
     loadTemplateData,
     // Layer Masking
     applySelectionAsMask, // NEW destructuring
+    removeLayerMask, // NEW destructuring
+    invertLayerMask, // NEW destructuring
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd, // NEW destructuring
   } = useEditorState();
@@ -388,6 +390,10 @@ const Index = () => {
     // Layer Masking
     hasActiveSelection, // NEW prop
     onApplySelectionAsMask: applySelectionAsMask, // NEW prop
+    onRemoveLayerMask: removeLayerMask, // NEW prop
+    onInvertLayerMask: invertLayerMask, // NEW prop
+    // Drawing stroke end handler from useLayers
+    handleDrawingStrokeEnd, // NEW destructuring
     // --- MISSING FRAME PROPS ---
     frame,
     onFramePresetChange: handleFramePresetChange,

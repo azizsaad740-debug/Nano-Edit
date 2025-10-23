@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette } from "lucide-react"; // Added Folder, FolderOpen, ChevronRight, ChevronDown icons and Palette
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X } from "lucide-react"; // Added SquareStack and X icons
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ interface LayerItemProps {
   onSelect: (e: React.MouseEvent) => void;
   onToggleGroupExpanded?: (id: string) => void; // New prop for toggling group expansion
   depth?: number; // New prop for indentation
+  onRemoveMask: (id: string) => void; // NEW prop for mask removal
 }
 
 const LayerItem = ({
@@ -37,9 +38,11 @@ const LayerItem = ({
   onSelect,
   onToggleGroupExpanded,
   depth = 0,
+  onRemoveMask, // Destructure new prop
 }: LayerItemProps) => {
   const isBackground = layer.type === "image";
   const isGroup = layer.type === "group";
+  const hasMask = !!layer.maskDataUrl;
 
   const {
     attributes,
@@ -87,7 +90,7 @@ const LayerItem = ({
       style={style}
       onClick={onSelect}
       className={cn(
-        "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer",
+        "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer group",
         isBackground ? "bg-muted/50" : "bg-background",
         isDragging && "shadow-lg z-10 relative",
         isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring"
@@ -146,10 +149,28 @@ const LayerItem = ({
           </span>
         )}
       </div>
+      
+      {/* Mask Indicator and Controls */}
+      {hasMask && (
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="relative flex items-center justify-center h-6 w-6 rounded-sm border border-muted-foreground/50 bg-background/50">
+            <SquareStack className="h-3 w-3 text-muted-foreground" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute -top-2 -right-2 h-4 w-4 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-destructive hover:bg-destructive/80"
+              onClick={(e) => handleIconClick(e, () => onRemoveMask(layer.id))}
+            >
+              <X className="h-3 w-3 text-destructive-foreground" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       <Button
         variant="ghost"
         size="icon"
-        className="h-8 w-8 shrink-0"
+        className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => handleIconClick(e, () => startRename(layer))}
         disabled={isBackground}
       >
