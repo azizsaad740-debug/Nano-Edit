@@ -96,8 +96,8 @@ const Login = () => {
       <div className="w-full max-w-md">
         {/* Logo/Brand Section */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-4 overflow-hidden">
+            <img src="/Icon.png" alt="NanoEdit Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Welcome Back
@@ -105,7 +105,7 @@ const Login = () => {
           <p className="text-muted-foreground">
             Sign in to continue to your creative workspace
           </p>
-        </div>
+        </div >
 
         <Card className="shadow-2xl border-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <CardHeader className="space-y-1 pb-4">
