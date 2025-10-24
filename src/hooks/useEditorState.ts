@@ -116,6 +116,7 @@ export interface Layer {
   fontStyle?: "normal" | "italic";
   textAlign?: "left" | "center" | "right";
   letterSpacing?: number; // pixels
+  lineHeight?: number; // multiplier (e.g., 1.2)
   textShadow?: { color: string; blur: number; offsetX: number; offsetY: number };
   stroke?: { color: string; width: number };
   backgroundColor?: string;
@@ -646,13 +647,13 @@ export const useEditorState = (
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      const img = new Image();
-      img.onload = () => {
-        const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
-        processImageFile(dataUrl, initialDimensions);
-      };
-      img.src = dataUrl;
+        const dataUrl = reader.result as string;
+        const img = new Image();
+        img.onload = () => {
+          const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
+          processImageFile(dataUrl, initialDimensions);
+        };
+        img.src = dataUrl;
     };
     reader.onerror = () => {
       dismissToast(toastId);

@@ -132,14 +132,17 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
       </div>
 
       <div className="grid grid-cols-2 gap-2">
-        {/* Leading (Unsupported - Placeholder) */}
-        <SelectControl 
+        {/* Leading (Line Height) */}
+        <TextControl 
           icon={ChevronUp} 
-          value="Metrics" 
-          onChange={() => {}}
-          options={['Metrics', 'Optical']}
-          placeholder="Metrics"
-          disabled
+          value={layer.lineHeight || 1.2} 
+          onChange={(v: number) => onUpdate({ lineHeight: v })}
+          onCommit={onCommit}
+          unit="x"
+          min={0.5}
+          max={3.0}
+          step={0.1}
+          placeholder="1.2"
         />
         {/* Tracking (Letter Spacing) */}
         <TextControl 

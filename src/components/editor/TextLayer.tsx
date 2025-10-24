@@ -42,7 +42,9 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
 
   const handleBlur = () => {
     if (editableRef.current) {
-      onUpdate(layer.id, { content: editableRef.current.innerText });
+      // Normalize line breaks and trim content
+      const newContent = editableRef.current.innerText.replace(/\n\s*\n/g, '\n').trim();
+      onUpdate(layer.id, { content: newContent });
     }
     setIsEditing(false);
     onCommit(layer.id);
@@ -75,10 +77,12 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     fontFamily: layer.fontFamily || 'Roboto',
     fontWeight: layer.fontWeight || 'normal',
     fontStyle: layer.fontStyle || 'normal',
+    lineHeight: layer.lineHeight || 1.2, // Use lineHeight multiplier
     userSelect: isEditing ? "text" : "none",
-    whiteSpace: "nowrap",
+    whiteSpace: "pre-wrap", // Allow wrapping and preserve whitespace/newlines
     opacity: (layer.opacity ?? 100) / 100,
     letterSpacing: layer.letterSpacing ? `${layer.letterSpacing}px` : undefined,
+    textAlign: layer.textAlign || 'center', // Apply text alignment
   };
 
   if (layer.textShadow) {

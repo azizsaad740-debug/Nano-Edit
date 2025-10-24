@@ -46,7 +46,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       content = '', x = 50, y = 50, fontSize = 48, color = '#000000',
       fontFamily = 'Roboto', fontWeight = 'normal', fontStyle = 'normal',
       textAlign = 'center', rotation = 0, textShadow, stroke,
-      backgroundColor, padding = 0,
+      backgroundColor, padding = 0, lineHeight = 1.2, // Use lineHeight
     } = layer;
 
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize}px ${fontFamily}`;
@@ -54,6 +54,10 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.textAlign = textAlign;
     // ctx.letterSpacing is not supported by Canvas API for rendering
 
+    const lines = content.split('\n');
+    const lineSpacing = fontSize * lineHeight;
+    const totalTextHeight = lines.length * lineSpacing;
+    
     const posX = (x / 100) * imageDimensions.width;
     const posY = (y / 100) * imageDimensions.height;
 
@@ -61,18 +65,22 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.translate(posX, posY);
     ctx.rotate(rotation * Math.PI / 180);
 
-    const metrics = ctx.measureText(content);
-    const textHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+    // Calculate text block metrics (approximation)
+    const textWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+    const textAscent = fontSize * 0.8; // Approximation for ascent
+    
+    // Adjust vertical start position to center the entire block around posY
+    const startY = -totalTextHeight / 2 + textAscent; 
 
     if (backgroundColor) {
       ctx.fillStyle = backgroundColor;
       let bgX = -padding;
-      if (textAlign === 'center') bgX = -metrics.width / 2 - padding;
-      else if (textAlign === 'right') bgX = -metrics.width - padding;
+      if (textAlign === 'center') bgX = -textWidth / 2 - padding;
+      else if (textAlign === 'right') bgX = -textWidth - padding;
 
-      const bgY = -metrics.actualBoundingBoxAscent - padding;
-      const bgWidth = metrics.width + padding * 2;
-      const bgHeight = textHeight + padding * 2;
+      const bgY = -totalTextHeight / 2 - padding;
+      const bgWidth = textWidth + padding * 2;
+      const bgHeight = totalTextHeight + padding * 2;
       ctx.fillRect(bgX, bgY, bgWidth, bgHeight);
       ctx.fillStyle = color;
     }
@@ -84,12 +92,17 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       ctx.shadowOffsetY = textShadow.offsetY;
     }
 
-    if (stroke && stroke.width > 0) {
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.width;
-      ctx.strokeText(content, 0, 0);
-    }
-    ctx.fillText(content, 0, 0);
+    lines.forEach((line, index) => {
+      const currentY = startY + index * lineSpacing;
+      
+      if (stroke && stroke.width > 0) {
+        ctx.strokeStyle = stroke.color;
+        ctx.lineWidth = stroke.width;
+        ctx.strokeText(line, 0, currentY);
+      }
+      ctx.fillText(line, 0, currentY);
+    });
+    
     ctx.restore();
   } else if (layer.type === 'vector-shape') {
     const {
