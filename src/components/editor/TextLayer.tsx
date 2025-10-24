@@ -69,7 +69,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     }
   };
 
-  const style = {
+  const style: React.CSSProperties = {
     color: layer.color,
     fontSize: `${layer.fontSize}px`,
     fontFamily: layer.fontFamily || 'Roboto',
@@ -78,7 +78,8 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "nowrap",
     opacity: (layer.opacity ?? 100) / 100,
-  } as React.CSSProperties;
+    letterSpacing: layer.letterSpacing ? `${layer.letterSpacing}px` : undefined,
+  };
 
   if (layer.textShadow) {
     const { offsetX, offsetY, blur, color } = layer.textShadow;
@@ -89,6 +90,8 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     const { width, color } = layer.stroke;
     style.WebkitTextStroke = `${width}px ${color}`;
     style.WebkitTextFillColor = layer.color;
+  } else {
+    style.WebkitTextFillColor = undefined;
   }
 
   const wrapperStyle: React.CSSProperties = {};
