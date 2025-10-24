@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp } from "lucide-react"; // Added ArrowDownUp icon
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft } from "lucide-react"; // Added CornerUpLeft icon
 import type { Layer } from "@/hooks/useEditorState";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -25,6 +25,7 @@ interface LayerActionsProps {
   hasActiveSelection: boolean; // New prop to check for active selection
   onApplySelectionAsMask: () => void; // New prop for applying selection as mask
   onInvertLayerMask: () => void; // NEW prop
+  onToggleClippingMask: () => void; // NEW prop
 }
 
 export const LayerActions = ({
@@ -46,6 +47,7 @@ export const LayerActions = ({
   hasActiveSelection, // Destructure new prop
   onApplySelectionAsMask, // Destructure new prop
   onInvertLayerMask, // Destructure new prop
+  onToggleClippingMask, // Destructure new prop
 }: LayerActionsProps) => {
   const hasMultipleSelection = selectedLayerIds.length > 1;
   const isAnyLayerSelected = selectedLayerIds.length > 0;
@@ -63,6 +65,10 @@ export const LayerActions = ({
   const isSmartObject = selectedLayer?.type === 'smart-object';
   const isMaskable = selectedLayer && selectedLayer.type !== 'image';
   const hasMask = selectedLayer?.maskDataUrl; // Check if selected layer has a mask
+  
+  const selectedLayerIndex = layers.findIndex(l => l.id === selectedLayer?.id);
+  const isClippingMaskable = selectedLayer && selectedLayer.type !== 'image' && selectedLayerIndex > 0;
+  const isClipped = selectedLayer?.isClippingMask;
 
   return (
     <div className="mt-4 space-y-2 border-t pt-4">
@@ -231,6 +237,22 @@ export const LayerActions = ({
             </TooltipTrigger>
             <TooltipContent>
               <p>Invert Layer Mask</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                variant={isClipped ? "secondary" : "outline"}
+                onClick={onToggleClippingMask}
+                disabled={!isClippingMaskable}
+              >
+                <CornerUpLeft className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isClipped ? "Remove Clipping Mask" : "Create Clipping Mask"}</p>
             </TooltipContent>
           </Tooltip>
 

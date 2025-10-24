@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, AlignJustify, MoreHorizontal, ChevronDown, ChevronUp, Minus, Plus, CornerDownLeft, List, ListOrdered, Square, ArrowRight, ArrowLeft, Type, ArrowDownUp } from "lucide-react";
+import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, AlignJustify, MoreHorizontal, ChevronDown, ChevronUp, Minus, Plus, CornerDownLeft, List, ListOrdered, Square, ArrowRight, ArrowLeft, Type, ArrowDownUp, Settings } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import { cn } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -23,9 +23,12 @@ interface TextPropertiesProps {
   layer: Layer;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
+  systemFonts: string[]; // NEW prop
+  customFonts: string[]; // NEW prop
+  onOpenFontManager: () => void; // NEW prop
 }
 
-const fonts = [
+const defaultFonts = [
   "Roboto", "Open Sans", "Lato", "Montserrat", "Playfair Display", "Lobster", "Pacifico"
 ];
 
@@ -69,10 +72,12 @@ const SelectControl = ({ icon: Icon, value, onChange, options, placeholder = 'Au
   </div>
 );
 
-const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
+const TextProperties = ({ layer, onUpdate, onCommit, systemFonts, customFonts, onOpenFontManager }: TextPropertiesProps) => {
   if (!layer || layer.type !== 'text') {
     return <p className="text-sm text-muted-foreground">Select a text layer to edit its properties.</p>;
   }
+
+  const availableFonts = [...new Set([...defaultFonts, ...systemFonts, ...customFonts])].sort();
 
   const handleUpdate = (updates: Partial<Layer>) => {
     onUpdate(layer.id, updates);
@@ -143,7 +148,13 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
           <AccordionTrigger className="font-semibold">Character</AccordionTrigger>
           <AccordionContent className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="font-family">Font Family</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="font-family">Font Family</Label>
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onOpenFontManager}>
+                  <Settings className="h-3 w-3" />
+                  <span className="sr-only">Manage Fonts</span>
+                </Button>
+              </div>
               <Select 
                 value={layer.fontFamily} 
                 onValueChange={(value) => {
@@ -155,7 +166,7 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
                   <SelectValue placeholder="Select a font" />
                 </SelectTrigger>
                 <SelectContent>
-                  {fonts.map(font => (
+                  {availableFonts.map(font => (
                     <SelectItem key={font} value={font} style={{ fontFamily: font }}>
                       {font}
                     </SelectItem>
@@ -239,8 +250,6 @@ const TextProperties = ({ layer, onUpdate, onCommit }: TextPropertiesProps) => {
                 onChange={() => {}}
                 onCommit={() => {}}
                 unit="pt"
-                min={-100}
-                max={100}
                 placeholder="0"
               />
               {/* Color (Supported) */}

@@ -94,6 +94,7 @@ export interface Layer {
   visible: boolean;
   opacity?: number;
   blendMode?: string;
+  isClippingMask?: boolean; // NEW: Clipping mask flag
   // Text layer specific properties
   content?: string;
   // Drawing layer specific properties
@@ -274,6 +275,10 @@ export const useEditorState = () => {
   // New color states
   const [foregroundColor, setForegroundColor] = useState<string>("#000000");
   const [backgroundColor, setBackgroundColor] = useState<string>("#FFFFFF");
+  
+  // Font states
+  const [systemFonts, setSystemFonts] = useState<string[]>([]); // NEW
+  const [customFonts, setCustomFonts] = useState<string[]>([]); // NEW
 
   const currentState = history[currentHistoryIndex].state;
   const currentLayers = history[currentHistoryIndex].layers; // Get layers from history
@@ -340,6 +345,7 @@ export const useEditorState = () => {
     handleDrawingStrokeEnd, // Destructure the new drawing stroke handler
     removeLayerMask, // Destructure the new mask removal handler
     invertLayerMask, // NEW: Destructure invertLayerMask
+    toggleClippingMask, // NEW: Destructure toggleClippingMask
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
@@ -468,7 +474,7 @@ export const useEditorState = () => {
     const toastId = showLoading("Uploading file...");
     const fileNameLower = file.name.toLowerCase();
 
-    if (fileNameLower.endsWith('.psd')) {
+    if (fileNameLower.endsWith('.psd') || fileNameLower.endsWith('.psb')) {
       const reader = new FileReader();
       reader.onloadend = () => {
         try {
@@ -548,14 +554,14 @@ export const useEditorState = () => {
           dismissToast(toastId);
           // FIX: Set dimensions immediately
           setDimensions({ width: psd.width, height: psd.height });
-          loadImageData(compositeImageUrl, "PSD file imported with layers.", importedLayers, { width: psd.width, height: psd.height });
+          loadImageData(compositeImageUrl, "PSD/PSB file imported with layers.", importedLayers, { width: psd.width, height: psd.height });
           setFileInfo({ name: file.name, size: file.size });
           setExifData(null);
           showError(`Warning: ${file.name} was imported as a flattened image. Full vector editing is not supported.`);
         } catch (e) {
           console.error("Failed to parse PSD:", e);
           dismissToast(toastId);
-          showError("Could not read the PSD file. It may be corrupt or an unsupported version.");
+          showError("Could not read the PSD/PSB file. It may be corrupt or an unsupported version.");
         }
       };
       reader.onerror = () => {
@@ -566,7 +572,7 @@ export const useEditorState = () => {
       return;
     }
     
-    if (fileNameLower.endsWith('.ai') || fileNameLower.endsWith('.cdr')) {
+    if (fileNameLower.endsWith('.ai') || fileNameLower.endsWith('.cdr') || fileNameLower.endsWith('.pdf')) {
       // --- STUB: Complex Vector Import ---
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -618,7 +624,7 @@ export const useEditorState = () => {
 
     if (!file.type.startsWith("image/")) {
       dismissToast(toastId);
-      showError("Invalid file type. Please upload an image, .psd, .ai, or .cdr file.");
+      showError("Invalid file type. Please upload an image, .psd, .psb, .pdf, .ai, or .cdr file.");
       return;
     }
     setDimensions(null);
@@ -1479,6 +1485,7 @@ export const useEditorState = () => {
     handleDrawingStrokeEnd, // EXPOSED: The new drawing stroke handler
     removeLayerMask, // EXPOSED: The new mask removal handler
     invertLayerMask, // EXPOSED: The new mask inversion handler
+    toggleClippingMask, // EXPOSED: The new clipping mask handler
     // Tool state
     activeTool,
     setActiveTool,
@@ -1516,5 +1523,10 @@ export const useEditorState = () => {
     loadTemplateData,
     // Layer Masking
     applySelectionAsMask, // NEW export
+    // Fonts
+    systemFonts,
+    setSystemFonts,
+    customFonts,
+    setCustomFonts,
   };
 };

@@ -68,21 +68,101 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
 
   // Draw other layers on top using the rasterize utility
   ctx.filter = 'none'; // Reset filter for layers
-  for (const layer of layers) {
-    if (layer.type === 'image') continue; // Skip background image, already drawn
-    if (!layer.visible) continue;
+  
+  // We need to track the rasterized canvas of the previous layer if the current layer is a clipping mask.
+  let previousLayerCanvas: HTMLCanvasElement | null = null;
 
-    try {
-      const layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
-      if (layerCanvas) {
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
+    
+    // Skip background image, already drawn
+    if (layer.type === 'image') {
+        previousLayerCanvas = null;
+        continue;
+    }
+    if (!layer.visible) {
+        previousLayerCanvas = null;
+        continue;
+    }
+
+    const layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
+    if (!layerCanvas) {
+        previousLayerCanvas = null;
+        continue;
+    }
+
+    // Check if this layer is a clipping mask
+    if (layer.isClippingMask && i > 0) {
+        const baseLayer = layers[i - 1];
+        
+        let maskCanvas: HTMLCanvasElement | null = null;
+        
+        if (baseLayer.type === 'image') {
+            // If clipping to the background image, create a canvas of the background image content 
+            // with all effects applied (filters, transforms, crop).
+            const bgCanvas = document.createElement('canvas');
+            bgCanvas.width = canvas.width;
+            bgCanvas.height = canvas.height;
+            const bgCtx = bgCanvas.getContext('2d');
+            if (bgCtx) {
+                bgCtx.filter = getFilterString(options);
+                bgCtx.save();
+                bgCtx.translate(canvas.width / 2, canvas.height / 2);
+                bgCtx.rotate(transforms.rotation * Math.PI / 180);
+                bgCtx.scale(transforms.scaleX, transforms.scaleY);
+                bgCtx.drawImage(
+                    image,
+                    pixelCrop.x,
+                    pixelCrop.y,
+                    pixelCrop.width,
+                    pixelCrop.height,
+                    -pixelCrop.width / 2,
+                    -pixelCrop.height / 2,
+                    pixelCrop.width,
+                    pixelCrop.height
+                );
+                bgCtx.restore();
+                maskCanvas = bgCanvas;
+            }
+        } else if (previousLayerCanvas) {
+            // Clipping to the previous layer (which should be baseLayer)
+            maskCanvas = previousLayerCanvas;
+        } else {
+            // Fallback: rasterize the base layer
+            maskCanvas = await rasterizeLayerToCanvas(baseLayer, { width: canvas.width, height: canvas.height });
+        }
+        
+        if (maskCanvas) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            if (tempCtx) {
+                // 1. Draw the clipped layer (Layer A)
+                tempCtx.drawImage(layerCanvas, 0, 0);
+                
+                // 2. Use the base layer (Layer B) as the clipping shape (destination-in)
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(maskCanvas, 0, 0);
+                
+                // 3. Draw the result onto the main canvas
+                ctx.globalAlpha = (layer.opacity ?? 100) / 100;
+                ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+                ctx.drawImage(tempCanvas, 0, 0);
+            }
+        }
+        
+    } else {
+        // Normal drawing
         ctx.globalAlpha = (layer.opacity ?? 100) / 100;
         ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
         ctx.drawImage(layerCanvas, 0, 0);
-      }
-    } catch (e) {
-      console.error(`Failed to rasterize layer ${layer.name} for export:`, e);
     }
+    
+    // Update previousLayerCanvas for the next iteration
+    previousLayerCanvas = layerCanvas;
   }
+  
   ctx.globalAlpha = 1.0; // Reset global alpha
 
   if (options.effects.vignette > 0) {
@@ -126,10 +206,21 @@ export const downloadImage = async (
   },
   stabilityApiKey: string
 ) => {
+  const { format, quality, width, height, upscale } = exportOptions;
+  const isVectorExport = format === 'svg' || format === 'pdf';
+  
+  if (isVectorExport) {
+    // --- VECTOR EXPORT STUB ---
+    showError(`Vector export to ${format.toUpperCase()} is a stub. Exporting a rasterized PNG instead.`);
+    exportOptions.format = 'png';
+    exportOptions.upscale = 1;
+    exportOptions.quality = 1.0;
+    // Fall through to raster export
+  }
+
   const sourceCanvas = await getEditedImageCanvas(options);
   if (!sourceCanvas) return;
 
-  const { format, quality, width, height, upscale } = exportOptions;
   let finalCanvas = sourceCanvas;
   let finalDataUrl = sourceCanvas.toDataURL('image/png');
   const toastId = showLoading("Preparing image for download...");
@@ -179,8 +270,8 @@ export const downloadImage = async (
     }
     
     // Final download step
-    const mimeType = `image/${format}`;
-    const fileExtension = format;
+    const mimeType = `image/${exportOptions.format}`;
+    const fileExtension = exportOptions.format;
     const link = document.createElement('a');
     link.download = `edited-image.${fileExtension}`;
     link.href = finalCanvas.toDataURL(mimeType, quality);

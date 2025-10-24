@@ -34,6 +34,10 @@ interface PropertiesPanelProps {
   selectiveBlurStrength: number; // NEW prop
   onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
   onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
+  // Fonts
+  systemFonts: string[]; // NEW prop
+  customFonts: string[]; // NEW prop
+  onOpenFontManager: () => void; // NEW prop
 }
 
 export const PropertiesPanel = ({
@@ -54,6 +58,9 @@ export const PropertiesPanel = ({
   selectiveBlurStrength, // Destructure NEW props
   onSelectiveBlurStrengthChange,
   onSelectiveBlurStrengthCommit,
+  systemFonts, // Destructure NEW props
+  customFonts,
+  onOpenFontManager,
 }: PropertiesPanelProps) => {
   const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush';
   const isBlurBrushTool = activeTool === 'blurBrush';
@@ -110,6 +117,9 @@ export const PropertiesPanel = ({
                       layer={selectedLayer}
                       onUpdate={onLayerUpdate}
                       onCommit={onLayerCommit}
+                      systemFonts={systemFonts}
+                      customFonts={customFonts}
+                      onOpenFontManager={onOpenFontManager}
                     />
                   </AccordionContent>
                 </AccordionItem>

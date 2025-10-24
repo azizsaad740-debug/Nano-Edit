@@ -110,6 +110,11 @@ interface SidebarProps {
   onApplySelectionAsMask: () => void; // NEW prop
   onRemoveLayerMask: (id: string) => void; // NEW prop
   onInvertLayerMask: (id: string) => void; // NEW prop
+  onToggleClippingMask: () => void; // NEW prop
+  // Fonts
+  systemFonts: string[]; // NEW prop
+  customFonts: string[]; // NEW prop
+  onOpenFontManager: () => void; // NEW prop
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -143,6 +148,9 @@ const Sidebar = (props: SidebarProps) => {
                 selectiveBlurStrength={props.selectiveBlurStrength} // NEW prop
                 onSelectiveBlurStrengthChange={props.onSelectiveBlurStrengthChange} // NEW prop
                 onSelectiveBlurStrengthCommit={props.onSelectiveBlurStrengthCommit} // NEW prop
+                systemFonts={props.systemFonts} // NEW prop
+                customFonts={props.customFonts} // NEW prop
+                onOpenFontManager={props.onOpenFontManager} // NEW prop
               />
             )}
           </div>
@@ -185,6 +193,7 @@ const Sidebar = (props: SidebarProps) => {
                 onApplySelectionAsMask={props.onApplySelectionAsMask} 
                 onRemoveLayerMask={props.onRemoveLayerMask} // NEW prop
                 onInvertLayerMask={props.onInvertLayerMask} // NEW prop
+                onToggleClippingMask={props.onToggleClippingMask} // NEW prop
               />
             )}
           </div>

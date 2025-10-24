@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X } from "lucide-react"; // Added SquareStack and X icons
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X, CornerUpLeft } from "lucide-react"; // Added CornerUpLeft icon
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ const LayerItem = ({
   const isBackground = layer.type === "image";
   const isGroup = layer.type === "group";
   const hasMask = !!layer.maskDataUrl;
+  const isClippingMask = !!layer.isClippingMask;
 
   const {
     attributes,
@@ -93,7 +94,9 @@ const LayerItem = ({
         "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer group",
         isBackground ? "bg-muted/50" : "bg-background",
         isDragging && "shadow-lg z-10 relative",
-        isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring"
+        isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring",
+        isClippingMask && "border-l-4 border-l-primary/50", // Visual indicator for clipping mask
+        isClippingMask && depth > 0 && "ml-4" // Indent clipped layer if nested
       )}
     >
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -126,6 +129,10 @@ const LayerItem = ({
           {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
         {getLayerIcon()}
+        {/* Clipping Mask Indicator */}
+        {isClippingMask && (
+          <CornerUpLeft className="h-3 w-3 text-primary shrink-0" title="Clipping Mask" />
+        )}
         {isEditing ? (
           <Input
             className="h-8"

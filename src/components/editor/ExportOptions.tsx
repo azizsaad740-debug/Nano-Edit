@@ -39,12 +39,15 @@ export const ExportOptions = ({
   onExport,
   dimensions,
 }: ExportOptionsProps) => {
-  const [format, setFormat] = useState<"png" | "jpeg" | "webp">("png");
+  const [format, setFormat] = useState<"png" | "jpeg" | "webp" | "svg" | "pdf">("png");
   const [quality, setQuality] = useState(90);
   const [width, setWidth] = useState(dimensions?.width || 0);
   const [height, setHeight] = useState(dimensions?.height || 0);
   const [keepAspectRatio, setKeepAspectRatio] = useState(true);
   const [upscale, setUpscale] = useState<1 | 2 | 4>(1);
+
+  const isVector = format === "svg" || format === "pdf";
+  const isRaster = format === "jpeg" || format === "webp" || format === "png";
 
   useEffect(() => {
     if (open && dimensions) {
@@ -60,7 +63,7 @@ export const ExportOptions = ({
   };
 
   const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (upscale > 1) return;
+    if (upscale > 1 || isVector) return;
     const newWidth = parseInt(e.target.value, 10) || 0;
     setWidth(newWidth);
     if (keepAspectRatio && dimensions && dimensions.height > 0) {
@@ -70,7 +73,7 @@ export const ExportOptions = ({
   };
 
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (upscale > 1) return;
+    if (upscale > 1 || isVector) return;
     const newHeight = parseInt(e.target.value, 10) || 0;
     setHeight(newHeight);
     if (keepAspectRatio && dimensions && dimensions.width > 0) {
@@ -90,7 +93,7 @@ export const ExportOptions = ({
     onOpenChange(false);
   };
 
-  const isManualResizeDisabled = upscale > 1;
+  const isManualResizeDisabled = upscale > 1 || isVector;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -103,23 +106,6 @@ export const ExportOptions = ({
         </DialogHeader>
 
         <div className="grid gap-6 py-4">
-          {/* Upscale Option */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="upscale" className="text-right">
-              AI Upscale
-            </Label>
-            <Select value={String(upscale)} onValueChange={handleUpscaleChange}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select upscale factor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">None (1x)</SelectItem>
-                <SelectItem value="2">Creative Upscale (2x)</SelectItem>
-                <SelectItem value="4">Creative Upscale (4x)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Format */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="format" className="text-right">
@@ -133,6 +119,25 @@ export const ExportOptions = ({
                 <SelectItem value="png">PNG</SelectItem>
                 <SelectItem value="jpeg">JPEG</SelectItem>
                 <SelectItem value="webp">WEBP</SelectItem>
+                <SelectItem value="svg">SVG (Vector - Stub)</SelectItem>
+                <SelectItem value="pdf">PDF (Vector - Stub)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Upscale Option */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="upscale" className="text-right">
+              AI Upscale
+            </Label>
+            <Select value={String(upscale)} onValueChange={handleUpscaleChange} disabled={isVector}>
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Select upscale factor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">None (1x)</SelectItem>
+                <SelectItem value="2">Creative Upscale (2x)</SelectItem>
+                <SelectItem value="4">Creative Upscale (4x)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -190,10 +195,16 @@ export const ExportOptions = ({
                 disabled={isManualResizeDisabled}
               />
               <Label htmlFor="keep-aspect" className="text-sm font-medium text-muted-foreground">
-                Keep aspect ratio (Disabled when upscaling)
+                Keep aspect ratio (Disabled when upscaling or vector export)
               </Label>
             </div>
           </div>
+          
+          {isVector && (
+            <p className="text-sm text-orange-500">
+              Vector export (SVG/PDF) is currently a stub. Complex layers (drawing, smart objects) will be rasterized.
+            </p>
+          )}
         </div>
 
         <DialogFooter>

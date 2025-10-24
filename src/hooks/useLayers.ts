@@ -253,6 +253,7 @@ export const useLayers = ({
       ...layerToDuplicate,
       id: uuidv4(),
       name: `${layerToDuplicate.name} Copy`,
+      isClippingMask: false, // Duplicates should not inherit clipping mask status automatically
     };
 
     const updated = [
@@ -289,6 +290,7 @@ export const useLayers = ({
         opacity: layerToRasterize.opacity,
         blendMode: layerToRasterize.blendMode,
         dataUrl: dataUrl,
+        isClippingMask: layerToRasterize.isClippingMask, // Preserve clipping mask status
       };
 
       const updatedLayers = layers.map(l => l.id === id ? newLayer : l);
@@ -351,6 +353,7 @@ export const useLayers = ({
         dataUrl: mergedDataUrl,
         opacity: 100,
         blendMode: 'normal',
+        isClippingMask: bottomLayer.isClippingMask, // Preserve clipping mask status
       };
 
       const updatedLayers = layers
@@ -615,7 +618,7 @@ export const useLayers = ({
       const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
       const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
       let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
-      let layerHeight_px = (layer.height ?? 10) / 100 * imageNaturalDimensions.height;
+      let layerHeight_px = (layer.height / 100) * imageNaturalDimensions.height;
 
       if (layer.type === 'text') {
         const fontSize = layer.fontSize || 48;
@@ -672,6 +675,7 @@ export const useLayers = ({
           ...layer,
           x: (relativeX_px / groupWidth_px) * 100,
           y: (relativeY_px / groupHeight_px) * 100,
+          isClippingMask: false, // Reset clipping mask status when moving into a group
         };
       }),
     };
@@ -785,6 +789,25 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, imageNaturalDimensions]);
 
+  const toggleClippingMask = useCallback((id: string) => {
+    const layerIndex = layers.findIndex(l => l.id === id);
+    const layer = layers[layerIndex];
+
+    if (!layer || layer.type === 'image') {
+      showError("The background layer cannot be a clipping mask.");
+      return;
+    }
+    if (layerIndex === 0) {
+      showError("Cannot clip mask to the layer below (it's the background).");
+      return;
+    }
+
+    const updated = layers.map(l => 
+      l.id === id ? { ...l, isClippingMask: !l.isClippingMask } : l
+    );
+    updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
+  }, [layers, updateLayersState]);
+
 
   return {
     layers,
@@ -819,5 +842,6 @@ export const useLayers = ({
     handleDrawingStrokeEnd,
     removeLayerMask,
     invertLayerMask,
+    toggleClippingMask,
   };
 };

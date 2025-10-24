@@ -27,13 +27,13 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer, EditState, ActiveTool, BrushState } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState";
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
 import { LayerControls } from "./LayerControls"; // NEW Import
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BrushOptions } from "./BrushOptions";
+import { BrushOptions } from "../editor/BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,7 @@ interface LayersPanelProps {
   onApplySelectionAsMask: () => void; // New prop
   onRemoveLayerMask: (id: string) => void; // NEW prop
   onInvertLayerMask: (id: string) => void; // NEW prop
+  onToggleClippingMask: () => void; // NEW prop
 }
 
 export const LayersPanel = ({
@@ -115,6 +116,7 @@ export const LayersPanel = ({
   onApplySelectionAsMask, // Destructure new prop
   onRemoveLayerMask, // Destructure new prop
   onInvertLayerMask, // Destructure new prop
+  onToggleClippingMask, // Destructure new prop
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -357,6 +359,7 @@ export const LayersPanel = ({
               hasActiveSelection={hasActiveSelection} // Pass new prop
               onApplySelectionAsMask={onApplySelectionAsMask} // Pass new prop
               onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)} // NEW: Pass handler
+              onToggleClippingMask={onToggleClippingMask} // NEW: Pass handler
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

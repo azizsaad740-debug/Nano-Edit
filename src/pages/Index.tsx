@@ -36,6 +36,8 @@ import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPreset
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast"; // Import toast utilities
 import type { TemplateData } from "../types/template"; // FIXED: Relative path
 import { downloadSelectionAsImage } from "@/utils/imageUtils"; // Import new utility
+import { FontManagerDialog } from "@/components/editor/FontManagerDialog"; // NEW import
+import { CustomFontLoader } from "@/components/editor/CustomFontLoader"; // NEW import
 
 const Index = () => {
   const {
@@ -161,8 +163,15 @@ const Index = () => {
     applySelectionAsMask, // NEW destructuring
     removeLayerMask, // NEW destructuring
     invertLayerMask, // NEW destructuring
+    // Clipping Mask
+    toggleClippingMask, // NEW destructuring
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd, // NEW destructuring
+    // Fonts
+    systemFonts, // NEW destructuring
+    setSystemFonts, // NEW destructuring
+    customFonts, // NEW destructuring
+    setCustomFonts, // NEW destructuring
   } = useEditorState();
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -175,6 +184,7 @@ const Index = () => {
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openNewProject, setOpenNewProject] = useState(false);
+  const [openFontManager, setOpenFontManager] = useState(false); // NEW state
   const [isFullscreen, setIsFullscreen] = useState(false);
   const openProjectInputRef = useRef<HTMLInputElement>(null);
 
@@ -402,6 +412,7 @@ const Index = () => {
     onApplySelectionAsMask: applySelectionAsMask, // NEW prop
     onRemoveLayerMask: removeLayerMask, // NEW prop
     onInvertLayerMask: invertLayerMask, // NEW prop
+    onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId), // NEW prop
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd, // NEW destructuring
     // --- MISSING FRAME PROPS ---
@@ -409,6 +420,10 @@ const Index = () => {
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
+    // Fonts
+    systemFonts, // NEW prop
+    customFonts, // NEW prop
+    onOpenFontManager: () => setOpenFontManager(true), // NEW prop
   };
 
   
@@ -416,6 +431,7 @@ const Index = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
+      <CustomFontLoader customFonts={customFonts} />
       <Header
         onReset={handleReset}
         onDownloadClick={() => setIsExporting(true)}
@@ -589,6 +605,14 @@ const Index = () => {
         open={openNewProject}
         onOpenChange={setOpenNewProject}
         onNewProject={handleNewProject}
+      />
+      <FontManagerDialog
+        open={openFontManager}
+        onOpenChange={setOpenFontManager}
+        systemFonts={systemFonts}
+        setSystemFonts={setSystemFonts}
+        customFonts={customFonts}
+        setCustomFonts={setCustomFonts}
       />
       {isSmartObjectEditorOpen && smartObjectToEdit && (
         <SmartObjectEditor
