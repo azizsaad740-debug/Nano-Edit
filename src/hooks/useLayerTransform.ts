@@ -30,6 +30,7 @@ export const useLayerTransform = ({
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
   const [isRotating, setIsRotating] = React.useState(false);
+  const [isDraggingPoint, setIsDraggingPoint] = React.useState<number | null>(null); // Index of the point being dragged
 
   const dragStartPos = React.useRef({ x: 0, y: 0, initialX: 0, initialY: 0 });
   const resizeStartInfo = React.useRef({
@@ -42,8 +43,10 @@ export const useLayerTransform = ({
     handle: "",
   });
   const rotateStartInfo = React.useRef({ angle: 0, rotation: 0 });
+  const pointDragStartInfo = React.useRef<{ x: number; y: number; initialPoints: Layer['points'] }>({ x: 0, y: 0, initialPoints: [] });
 
-  // --- Dragging Logic ---
+
+  // --- Dragging Logic (Layer) ---
   const handleDragMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation(); // Always stop propagation for clicks on layers
     // Only allow dragging if 'move' tool is active OR 'gradient' tool is active OR the layer is already selected
@@ -80,6 +83,56 @@ export const useLayerTransform = ({
       onCommit(layer.id);
     }
   }, [isDragging, layer.id, onCommit]);
+
+  // --- Dragging Logic (Point) ---
+  const handlePointDragMouseDown = (e: React.MouseEvent<HTMLDivElement>, index: number) => {
+    e.stopPropagation();
+    if (type !== 'vector-shape' || !layer.points) return;
+
+    setIsDraggingPoint(index);
+    pointDragStartInfo.current = {
+      x: e.clientX,
+      y: e.clientY,
+      initialPoints: layer.points,
+    };
+  };
+
+  const handlePointDragMouseMove = React.useCallback((e: MouseEvent) => {
+    if (isDraggingPoint === null || !layerRef.current || type !== 'vector-shape' || !layer.points) return;
+
+    const layerRect = layerRef.current.getBoundingClientRect();
+    const dx = e.clientX - pointDragStartInfo.current.x;
+    const dy = e.clientY - pointDragStartInfo.current.y;
+
+    // Calculate movement relative to the layer's current size (which is defined by layer.width/height in %)
+    // We need to convert pixel movement (dx, dy) into percentage movement relative to the layer's bounding box (0-100)
+    const dxPercent = (dx / layerRect.width) * 100;
+    const dyPercent = (dy / layerRect.height) * 100;
+
+    const newPoints = pointDragStartInfo.current.initialPoints.map((p, i) => {
+      if (i === isDraggingPoint) {
+        // Clamp point coordinates to 0-100% relative to the layer's bounding box
+        let newX = p.x + dxPercent;
+        let newY = p.y + dyPercent;
+        
+        newX = Math.max(0, Math.min(100, newX));
+        newY = Math.max(0, Math.min(100, newY));
+
+        return { x: newX, y: newY };
+      }
+      return p;
+    });
+
+    onUpdate(layer.id, { points: newPoints });
+  }, [isDraggingPoint, layer.id, layer.points, onUpdate, type]);
+
+  const handlePointDragMouseUp = React.useCallback(() => {
+    if (isDraggingPoint !== null) {
+      setIsDraggingPoint(null);
+      onCommit(layer.id);
+    }
+  }, [isDraggingPoint, layer.id, onCommit]);
+
 
   // --- Resizing Logic ---
   const handleResizeMouseDown = (
@@ -255,12 +308,14 @@ export const useLayerTransform = ({
       if (isDragging) handleDragMouseMove(e);
       if (isResizing) handleResizeMouseMove(e);
       if (isRotating) handleRotateMouseMove(e);
+      if (isDraggingPoint !== null) handlePointDragMouseMove(e);
     };
 
     const handleGlobalMouseUp = () => {
       if (isDragging) handleDragMouseUp();
       if (isResizing) handleResizeMouseUp();
       if (isRotating) handleRotateMouseUp();
+      if (isDraggingPoint !== null) handlePointDragMouseUp();
     };
 
     document.addEventListener("mousemove", handleGlobalMouseMove);
@@ -274,6 +329,7 @@ export const useLayerTransform = ({
     isDragging, handleDragMouseMove, handleDragMouseUp,
     isResizing, handleResizeMouseMove, handleResizeMouseUp,
     isRotating, handleRotateMouseMove, handleRotateMouseUp,
+    isDraggingPoint, handlePointDragMouseMove, handlePointDragMouseUp,
   ]);
 
   return {
@@ -281,8 +337,10 @@ export const useLayerTransform = ({
     handleDragMouseDown,
     handleResizeMouseDown,
     handleRotateMouseDown,
+    handlePointDragMouseDown, // Expose point drag handler
     isDragging,
     isResizing,
     isRotating,
+    isDraggingPoint,
   };
 };

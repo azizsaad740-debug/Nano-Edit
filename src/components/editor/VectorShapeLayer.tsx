@@ -22,6 +22,8 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     handleDragMouseDown,
     handleResizeMouseDown,
     handleRotateMouseDown,
+    handlePointDragMouseDown, // Destructure new handler
+    isDraggingPoint,
   } = useLayerTransform({
     layer,
     containerRef,
@@ -43,6 +45,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
   const currentHeight = height ?? defaultHeight;
 
   const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
+  const isPointEditable = isSelected && (shapeType === 'polygon' || shapeType === 'triangle');
 
   const style: React.CSSProperties = {
     left: `${x ?? 50}%`,
@@ -52,7 +55,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     transform: `translate(-50%, -50%) rotateZ(${rotation || 0}deg)`,
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
-    cursor: isMovable ? "grab" : "default",
+    cursor: isMovable && !isPointEditable ? "grab" : "default",
   };
 
   const svgProps = {
@@ -70,8 +73,9 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
       case "circle":
         return <circle cx="50%" cy="50%" r="50%" />;
       case "triangle":
-        const trianglePoints = points || [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}];
-        const svgPoints = trianglePoints.map(p => `${p.x}% ${p.y}%`).join(" ");
+      case "polygon":
+        const polygonPoints = points || [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}];
+        const svgPoints = polygonPoints.map(p => `${p.x}% ${p.y}%`).join(" ");
         return <polygon points={svgPoints} />;
       default:
         return null;
@@ -95,7 +99,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
           {renderShape()}
         </svg>
 
-        {isSelected && (
+        {isSelected && !isPointEditable && (
           <>
             <ResizeHandle position="top-left" onMouseDown={handleResizeMouseDown} />
             <ResizeHandle position="top-right" onMouseDown={handleResizeMouseDown} />
@@ -107,6 +111,25 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
             >
               <RotateCw className="w-4 h-4 text-primary bg-background rounded-full p-0.5" />
             </div>
+          </>
+        )}
+
+        {isPointEditable && points && (
+          <>
+            {points.map((point, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "absolute w-3 h-3 bg-primary border-2 border-background rounded-full -m-1.5 cursor-move",
+                  isDraggingPoint === index && "ring-2 ring-primary/50"
+                )}
+                style={{
+                  left: `${point.x}%`,
+                  top: `${point.y}%`,
+                }}
+                onMouseDown={(e) => handlePointDragMouseDown(e, index)}
+              />
+            ))}
           </>
         )}
       </div>

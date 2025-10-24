@@ -13,6 +13,9 @@ import {
 } from "@/components/ui/select";
 import type { Layer } from "@/hooks/useEditorState";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Edit, Plus, Trash2 } from "lucide-react";
+import { showError } from "@/utils/toast";
 
 interface ShapePropertiesProps {
   layer: Layer;
@@ -43,10 +46,60 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
     } else if (newShapeType === 'circle') {
       updates.points = undefined;
       updates.borderRadius = undefined;
+    } else if (newShapeType === 'polygon') {
+      updates.points = layer.points || [{x: 20, y: 20}, {x: 80, y: 20}, {x: 80, y: 80}, {x: 20, y: 80}]; // Default square polygon
+      updates.borderRadius = 0;
     }
     handleUpdate(updates);
     handleCommit();
   };
+
+  const convertToPolygon = () => {
+    if (layer.shapeType === 'rect') {
+      handleUpdate({ 
+        shapeType: 'polygon', 
+        points: [
+          {x: 0, y: 0}, 
+          {x: 100, y: 0}, 
+          {x: 100, y: 100}, 
+          {x: 0, y: 100}
+        ],
+        borderRadius: 0,
+      });
+      handleCommit();
+    } else if (layer.shapeType === 'circle') {
+      showError("Converting a circle to a polygon requires many points. Please use a rectangle as a starting point.");
+    }
+  };
+
+  const addPoint = () => {
+    if (layer.shapeType !== 'polygon' && layer.shapeType !== 'triangle') return;
+    const points = layer.points || [];
+    if (points.length < 2) return;
+
+    // Add a point roughly in the middle of the last segment
+    const last = points[points.length - 1];
+    const first = points[0];
+    const newPoint = { x: (last.x + first.x) / 2, y: (last.y + first.y) / 2 };
+    
+    const newPoints = [...points, newPoint];
+    handleUpdate({ points: newPoints, shapeType: 'polygon' });
+    handleCommit();
+  };
+
+  const removeLastPoint = () => {
+    if (layer.shapeType !== 'polygon' && layer.shapeType !== 'triangle') return;
+    const points = layer.points || [];
+    if (points.length <= 3) {
+      showError("A polygon must have at least 3 points.");
+      return;
+    }
+    const newPoints = points.slice(0, -1);
+    handleUpdate({ points: newPoints });
+    handleCommit();
+  };
+
+  const isPolygon = layer.shapeType === 'polygon' || layer.shapeType === 'triangle';
 
   return (
     <div className="space-y-4">
@@ -63,6 +116,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
             <SelectItem value="rect">Rectangle</SelectItem>
             <SelectItem value="circle">Circle</SelectItem>
             <SelectItem value="triangle">Triangle</SelectItem>
+            <SelectItem value="polygon">Polygon</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -112,7 +166,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="border-radius">Corner Radius</Label>
-            <span className="text-sm text-muted-foreground">{layer.borderRadius}%</span>
+            <span className="text-sm text-muted-foreground">{layer.borderRadius}px</span>
           </div>
           <Slider
             id="border-radius"
@@ -125,8 +179,31 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
           />
         </div>
       )}
+      
+      <Accordion type="multiple" className="w-full pt-2 border-t" defaultValue={['dimensions']}>
+        <AccordionItem value="path-editing">
+          <AccordionTrigger>Path Editing</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            {!isPolygon ? (
+              <Button variant="outline" className="w-full" onClick={convertToPolygon}>
+                <Edit className="h-4 w-4 mr-2" /> Convert to Polygon for Point Editing
+              </Button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Drag the points in the workspace to edit the path.</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="outline" onClick={addPoint}>
+                    <Plus className="h-4 w-4 mr-2" /> Add Point
+                  </Button>
+                  <Button variant="outline" onClick={removeLastPoint} disabled={(layer.points?.length || 0) <= 3}>
+                    <Trash2 className="h-4 w-4 mr-2" /> Remove Last Point
+                  </Button>
+                </div>
+              </div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-      <Accordion type="multiple" className="w-full pt-2 border-t">
         <AccordionItem value="dimensions">
           <AccordionTrigger>Dimensions & Position</AccordionTrigger>
           <AccordionContent className="space-y-4">
