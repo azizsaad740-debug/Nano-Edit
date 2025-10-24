@@ -24,9 +24,9 @@ interface TextCharacterPanelProps {
 }
 
 // Helper component for icon buttons with text/value inputs
-const TextControl = ({ icon: Icon, value, onChange, onCommit, unit = 'pt', min = 0, max = 100, step = 1, placeholder = '0' }: any) => (
+const TextControl = ({ icon: Icon, value, onChange, onCommit, unit = 'pt', min = 0, max = 100, step = 1, placeholder = '0', disabled = false }: any) => (
   <div className="flex items-center border rounded-md h-8">
-    <Button variant="ghost" size="icon" className="h-full w-8 p-1 shrink-0">
+    <Button variant="ghost" size="icon" className="h-full w-8 p-1 shrink-0" disabled={disabled}>
       <Icon className="h-4 w-4" />
     </Button>
     <Input
@@ -39,18 +39,19 @@ const TextControl = ({ icon: Icon, value, onChange, onCommit, unit = 'pt', min =
       step={step}
       placeholder={placeholder}
       className="h-full flex-1 border-y-0 border-x border-input rounded-none text-xs text-center p-0"
+      disabled={disabled}
     />
     <span className="text-xs text-muted-foreground px-1.5 shrink-0">{unit}</span>
   </div>
 );
 
 // Helper component for icon buttons with select inputs
-const SelectControl = ({ icon: Icon, value, onChange, options, placeholder = 'Auto' }: any) => (
+const SelectControl = ({ icon: Icon, value, onChange, options, placeholder = 'Auto', disabled = false }: any) => (
   <div className="flex items-center border rounded-md h-8">
-    <Button variant="ghost" size="icon" className="h-full w-8 p-1 shrink-0">
+    <Button variant="ghost" size="icon" className="h-full w-8 p-1 shrink-0" disabled={disabled}>
       <Icon className="h-4 w-4" />
     </Button>
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="h-full flex-1 border-y-0 border-x border-input rounded-none text-xs p-1">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
@@ -108,7 +109,7 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
       </div>
       
       <div className="grid grid-cols-2 gap-2">
-        {/* Removed Font Weight SelectControl */}
+        {/* Font Size */}
         <TextControl 
           icon={Type} 
           value={layer.fontSize} 
@@ -138,16 +139,18 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
           onChange={() => {}}
           options={['Metrics', 'Optical']}
           placeholder="Metrics"
+          disabled
         />
-        {/* Tracking (Unsupported - Placeholder) */}
+        {/* Tracking (Letter Spacing) */}
         <TextControl 
           icon={ArrowLeft} 
-          value={0} 
-          onChange={() => {}}
-          onCommit={() => {}}
-          unit="0"
-          min={-100}
-          max={100}
+          value={layer.letterSpacing || 0} 
+          onChange={(v: number) => onUpdate({ letterSpacing: v })}
+          onCommit={onCommit}
+          unit="px"
+          min={-10}
+          max={50}
+          step={0.5}
           placeholder="0"
         />
       </div>
@@ -163,6 +166,7 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
           min={1}
           max={500}
           placeholder="100"
+          disabled
         />
         {/* Vertical Scale (Unsupported - Placeholder) */}
         <TextControl 
@@ -174,6 +178,7 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
           min={1}
           max={500}
           placeholder="100"
+          disabled
         />
       </div>
 
@@ -186,6 +191,7 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
           onCommit={() => {}}
           unit="pt"
           placeholder="0"
+          disabled
         />
         {/* Color (Supported) */}
         <div className="flex items-center border rounded-md h-8">

@@ -99,21 +99,6 @@ const TextProperties = ({ layer, onUpdate, onCommit, systemFonts, customFonts, o
           <AccordionContent className="space-y-4">
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="letter-spacing">Letter Spacing (Tracking)</Label>
-                <span className="text-sm text-muted-foreground">{layer.letterSpacing}px</span>
-              </div>
-              <Slider
-                id="letter-spacing"
-                min={-5}
-                max={20}
-                step={0.5}
-                value={[layer.letterSpacing || 0]}
-                onValueChange={([v]) => handleUpdate({ letterSpacing: v })}
-                onValueCommit={handleCommit}
-              />
-            </div>
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between">
                 <Label htmlFor="rotation">Rotation</Label>
                 <span className="text-sm text-muted-foreground">{layer.rotation}°</span>
               </div>
