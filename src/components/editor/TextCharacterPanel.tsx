@@ -108,13 +108,7 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
       </div>
       
       <div className="grid grid-cols-2 gap-2">
-        <SelectControl 
-          icon={ChevronDown} 
-          value={layer.fontWeight} 
-          onChange={(v: string) => onUpdate({ fontWeight: v as 'normal' | 'bold' })}
-          options={['Regular', 'Bold']}
-          placeholder="Regular"
-        />
+        {/* Removed Font Weight SelectControl */}
         <TextControl 
           icon={Type} 
           value={layer.fontSize} 
@@ -124,6 +118,15 @@ export const TextCharacterPanel = ({ layer, onUpdate, onCommit, availableFonts, 
           min={8}
           max={256}
           placeholder="48"
+        />
+        {/* Placeholder for another control to fill the gap */}
+        <SelectControl 
+          icon={ChevronDown} 
+          value="Regular" 
+          onChange={() => {}}
+          options={['Regular', 'Bold']}
+          placeholder="Regular"
+          disabled
         />
       </div>
 
