@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { UploadCloud, Search, Check } from "lucide-react";
+import { UploadCloud, Search, Check, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface FontManagerDialogProps {
@@ -22,7 +22,8 @@ interface FontManagerDialogProps {
   systemFonts: string[];
   setSystemFonts: (fonts: string[]) => void;
   customFonts: string[];
-  setCustomFonts: (fonts: string[]) => void;
+  addCustomFont: (fontName: string) => void;
+  removeCustomFont: (fontName: string) => void;
 }
 
 // List of common web-safe fonts to include if system scan fails
@@ -36,7 +37,8 @@ export const FontManagerDialog = ({
   systemFonts,
   setSystemFonts,
   customFonts,
-  setCustomFonts,
+  addCustomFont,
+  removeCustomFont,
 }: FontManagerDialogProps) => {
   const [isScanning, setIsScanning] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -82,12 +84,8 @@ export const FontManagerDialog = ({
     
     // --- STUB: In a real app, you would read the file and inject @font-face CSS ---
     
-    if (!customFonts.includes(fontName)) {
-        setCustomFonts([...customFonts, fontName]);
-        showSuccess(`Custom font "${fontName}" added (Stub).`);
-    } else {
-        showError(`Font "${fontName}" is already listed.`);
-    }
+    addCustomFont(fontName);
+    
     // Clear input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -120,10 +118,17 @@ export const FontManagerDialog = ({
             />
             <div className="flex flex-wrap gap-2 pt-2">
                 {customFonts.map(font => (
-                    <span key={font} className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full flex items-center">
-                        {font}
-                        {/* Add remove button if needed */}
-                    </span>
+                    <div key={font} className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full flex items-center group">
+                        <span className="mr-1">{font}</span>
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-4 w-4 p-0 opacity-70 hover:opacity-100"
+                            onClick={() => removeCustomFont(font)}
+                        >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                    </div>
                 ))}
             </div>
           </div>

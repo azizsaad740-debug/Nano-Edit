@@ -40,6 +40,7 @@ import { downloadSelectionAsImage } from "@/utils/imageUtils";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
 import { useProjectManager } from "@/hooks/useProjectManager";
+import { useFontManager } from "@/hooks/useFontManager"; // NEW Import
 
 const Index = () => {
   const {
@@ -55,10 +56,7 @@ const Index = () => {
   const { geminiApiKey } = useSettings();
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
-
-  // Global Font State (managed outside per-project state)
-  const [systemFonts, setSystemFonts] = useState<string[]>([]);
-  const [customFonts, setCustomFonts] = useState<string[]>([]);
+  const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager(); // NEW Hook
 
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
@@ -157,8 +155,8 @@ const Index = () => {
     handleDownload,
     handleCopy,
     setAspect,
-    applyPreset, // <-- FIX 5
-    recordHistory, // <-- FIX 6, 7, 8
+    applyPreset,
+    recordHistory,
     layers,
     selectedLayerId,
     setSelectedLayer,
@@ -527,17 +525,17 @@ const Index = () => {
       
       // 2. Record history change for color mode
       if (updates.colorMode) {
-        recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers); // FIX 6
+        recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
       } else {
         // If only dimensions changed, record history for resize
-        recordHistory(`Resize Canvas to ${updates.width}x${updates.height}`, currentState, layers); // FIX 7
+        recordHistory(`Resize Canvas to ${updates.width}x${updates.height}`, currentState, layers);
       }
       
       // 3. Show success message
       showSuccess(`Project resized to ${updates.width}x${updates.height}.`);
     } else if (updates.colorMode) {
       // Only color mode change
-      recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers); // FIX 8
+      recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
     }
   };
 
@@ -768,7 +766,8 @@ const Index = () => {
         systemFonts={systemFonts}
         setSystemFonts={setSystemFonts}
         customFonts={customFonts}
-        setCustomFonts={setCustomFonts}
+        addCustomFont={addCustomFont}
+        removeCustomFont={removeCustomFont}
       />
       {isSmartObjectEditorOpen && smartObjectToEdit && (
         <SmartObjectEditor
