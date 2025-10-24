@@ -54,7 +54,7 @@ export const FontManagerDialog = ({
     try {
       // @ts-ignore - Use experimental API
       const fonts = await window.queryLocalFonts();
-      const uniqueFontNames = Array.from(new Set(fonts.map((f: any) => f.family))).sort();
+      const uniqueFontNames = Array.from(new Set(fonts.map((f: any) => f.family))).sort() as string[];
       setSystemFonts(uniqueFontNames);
       showSuccess(`${uniqueFontNames.length} system fonts found.`);
     } catch (error) {

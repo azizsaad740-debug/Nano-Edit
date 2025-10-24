@@ -131,7 +131,9 @@ const LayerItem = ({
         {getLayerIcon()}
         {/* Clipping Mask Indicator */}
         {isClippingMask && (
-          <CornerUpLeft className="h-3 w-3 text-primary shrink-0" title="Clipping Mask" />
+          <div title="Clipping Mask">
+            <CornerUpLeft className="h-3 w-3 text-primary shrink-0" />
+          </div>
         )}
         {isEditing ? (
           <Input

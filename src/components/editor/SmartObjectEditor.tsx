@@ -104,6 +104,9 @@ export const SmartObjectEditor = ({
   const dummySelectiveBlurStrength = 50;
   const dummyOnSelectiveBlurStrengthChange = () => {};
   const dummyOnSelectiveBlurStrengthCommit = () => {};
+  const dummySystemFonts: string[] = []; // Dummy font props
+  const dummyCustomFonts: string[] = []; // Dummy font props
+  const dummyOnOpenFontManager = () => {}; // Dummy font props
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -191,6 +194,9 @@ export const SmartObjectEditor = ({
                     selectiveBlurStrength={dummySelectiveBlurStrength}
                     onSelectiveBlurStrengthChange={dummyOnSelectiveBlurStrengthChange}
                     onSelectiveBlurStrengthCommit={dummyOnSelectiveBlurStrengthCommit}
+                    systemFonts={dummySystemFonts} // Passed dummy prop
+                    customFonts={dummyCustomFonts} // Passed dummy prop
+                    onOpenFontManager={dummyOnOpenFontManager} // Passed dummy prop
                   />
                 </div>
               </ResizablePanel>

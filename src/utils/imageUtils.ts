@@ -206,16 +206,42 @@ export const downloadImage = async (
   },
   stabilityApiKey: string
 ) => {
-  const { format, quality, width, height, upscale } = exportOptions;
-  const isVectorExport = format === 'svg' || format === 'pdf';
+  let { format, quality, width, height, upscale } = exportOptions;
   
-  if (isVectorExport) {
-    // --- VECTOR EXPORT STUB ---
-    showError(`Vector export to ${format.toUpperCase()} is a stub. Exporting a rasterized PNG instead.`);
-    exportOptions.format = 'png';
-    exportOptions.upscale = 1;
-    exportOptions.quality = 1.0;
-    // Fall through to raster export
+  // Normalize format and handle stubs
+  let mimeType: string;
+  let fileExtension: string;
+  
+  switch (format.toLowerCase()) {
+    case 'jpeg':
+    case 'jpg':
+      mimeType = 'image/jpeg';
+      fileExtension = 'jpg';
+      break;
+    case 'webp':
+      mimeType = 'image/webp';
+      fileExtension = 'webp';
+      break;
+    case 'png':
+      mimeType = 'image/png';
+      fileExtension = 'png';
+      break;
+    case 'svg':
+    case 'pdf':
+    case 'tiff':
+    case 'gif':
+      // Stub: Fallback to PNG/JPEG for unsupported formats
+      showError(`Export to ${format.toUpperCase()} is a stub. Exporting as PNG instead.`);
+      mimeType = 'image/png';
+      fileExtension = 'png';
+      format = 'png';
+      upscale = 1; // Disable upscale for stub fallback
+      quality = 1.0;
+      break;
+    default:
+      mimeType = 'image/png';
+      fileExtension = 'png';
+      format = 'png';
   }
 
   const sourceCanvas = await getEditedImageCanvas(options);
@@ -270,8 +296,6 @@ export const downloadImage = async (
     }
     
     // Final download step
-    const mimeType = `image/${exportOptions.format}`;
-    const fileExtension = exportOptions.format;
     const link = document.createElement('a');
     link.download = `edited-image.${fileExtension}`;
     link.href = finalCanvas.toDataURL(mimeType, quality);

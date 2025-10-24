@@ -33,13 +33,15 @@ interface ExportOptionsProps {
   dimensions: { width: number; height: number } | null;
 }
 
+type ExportFormat = "png" | "jpeg" | "jpg" | "webp" | "svg" | "pdf" | "tiff" | "gif";
+
 export const ExportOptions = ({
   open,
   onOpenChange,
   onExport,
   dimensions,
 }: ExportOptionsProps) => {
-  const [format, setFormat] = useState<"png" | "jpeg" | "webp" | "svg" | "pdf">("png");
+  const [format, setFormat] = useState<ExportFormat>("png");
   const [quality, setQuality] = useState(90);
   const [width, setWidth] = useState(dimensions?.width || 0);
   const [height, setHeight] = useState(dimensions?.height || 0);
@@ -47,7 +49,8 @@ export const ExportOptions = ({
   const [upscale, setUpscale] = useState<1 | 2 | 4>(1);
 
   const isVector = format === "svg" || format === "pdf";
-  const isRaster = format === "jpeg" || format === "webp" || format === "png";
+  const isLossy = format === "jpeg" || format === "jpg" || format === "webp";
+  const isManualResizeDisabled = upscale > 1 || isVector;
 
   useEffect(() => {
     if (open && dimensions) {
@@ -63,7 +66,7 @@ export const ExportOptions = ({
   };
 
   const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (upscale > 1 || isVector) return;
+    if (isManualResizeDisabled) return;
     const newWidth = parseInt(e.target.value, 10) || 0;
     setWidth(newWidth);
     if (keepAspectRatio && dimensions && dimensions.height > 0) {
@@ -73,7 +76,7 @@ export const ExportOptions = ({
   };
 
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (upscale > 1 || isVector) return;
+    if (isManualResizeDisabled) return;
     const newHeight = parseInt(e.target.value, 10) || 0;
     setHeight(newHeight);
     if (keepAspectRatio && dimensions && dimensions.width > 0) {
@@ -93,8 +96,6 @@ export const ExportOptions = ({
     onOpenChange(false);
   };
 
-  const isManualResizeDisabled = upscale > 1 || isVector;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -111,16 +112,19 @@ export const ExportOptions = ({
             <Label htmlFor="format" className="text-right">
               Format
             </Label>
-            <Select value={format} onValueChange={(v) => setFormat(v as any)}>
+            <Select value={format} onValueChange={(v) => setFormat(v as ExportFormat)}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="png">PNG</SelectItem>
-                <SelectItem value="jpeg">JPEG</SelectItem>
-                <SelectItem value="webp">WEBP</SelectItem>
+                <SelectItem value="png">PNG (Lossless)</SelectItem>
+                <SelectItem value="jpeg">JPEG (Lossy)</SelectItem>
+                <SelectItem value="jpg">JPG (Lossy)</SelectItem>
+                <SelectItem value="webp">WEBP (Lossy/Lossless)</SelectItem>
                 <SelectItem value="svg">SVG (Vector - Stub)</SelectItem>
                 <SelectItem value="pdf">PDF (Vector - Stub)</SelectItem>
+                <SelectItem value="tiff">TIFF (Stub)</SelectItem>
+                <SelectItem value="gif">GIF (Stub)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -142,8 +146,8 @@ export const ExportOptions = ({
             </Select>
           </div>
 
-          {/* Quality (only for JPEG/WEBP) */}
-          {(format === "jpeg" || format === "webp") && (
+          {/* Quality (only for lossy formats) */}
+          {isLossy && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="quality" className="text-right">
                 Quality
@@ -200,9 +204,9 @@ export const ExportOptions = ({
             </div>
           </div>
           
-          {isVector && (
+          {(isVector || format === 'tiff' || format === 'gif') && (
             <p className="text-sm text-orange-500">
-              Vector export (SVG/PDF) is currently a stub. Complex layers (drawing, smart objects) will be rasterized.
+              {format.toUpperCase()} export is currently a stub. Complex layers (drawing, smart objects) will be rasterized.
             </p>
           )}
         </div>
