@@ -34,8 +34,8 @@ const Community = () => {
 
   const handleSelectTemplate = (template: CommunityTemplate) => {
     try {
-      // Store template data in session storage for the editor to pick up
-      sessionStorage.setItem('nanoedit-template-data', JSON.stringify(template.data));
+      // Store the full template object in session storage for the editor to pick up
+      sessionStorage.setItem('nanoedit-template-data', JSON.stringify(template));
       showSuccess(`Template "${template.name}" loaded. Redirecting to editor...`);
       navigate('/', { replace: true });
     } catch (error) {

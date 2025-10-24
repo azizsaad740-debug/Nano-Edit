@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import type { Layer, EditState, Point, GradientToolState, ActiveTool } from "./useEditorState"; // Import ActiveTool
+import type { Layer, EditState, Point, GradientToolState, ActiveTool } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
 
 export interface HistoryItem {
@@ -21,9 +21,10 @@ export interface UseLayersProps {
   imgRef: React.RefObject<HTMLImageElement>;
   imageNaturalDimensions: { width: number; height: number } | null;
   gradientToolState: GradientToolState;
-  activeTool: ActiveTool | null; // Added activeTool prop
+  activeTool: ActiveTool | null;
   layers: Layer[];
-  setLayers: (newLayers: Layer[], historyName?: string) => void;
+  // Allow function updates for setLayers to resolve TS2345 errors
+  setLayers: (newLayersOrUpdater: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => void;
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
 }
@@ -35,7 +36,7 @@ export const useLayers = ({
   imgRef,
   imageNaturalDimensions,
   gradientToolState,
-  activeTool, // Destructure activeTool
+  activeTool,
   layers,
   setLayers,
   selectedLayerId,
@@ -52,6 +53,7 @@ export const useLayers = ({
   );
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
+    // TS2345 fix: setLayers now accepts a function updater
     setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
   }, [setLayers]);
 
@@ -121,7 +123,13 @@ export const useLayers = ({
       const canvas = document.createElement('canvas');
       canvas.width = imageNaturalDimensions.width;
       canvas.height = imageNaturalDimensions.height;
-      const dataUrl = canvas.toDataURL();
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        showError("Failed to create canvas context for transparent background.");
+        return;
+      }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const transparentDataUrl = canvas.toDataURL();
 
       const newBgLayer: Layer = {
         id: uuidv4(),
@@ -130,7 +138,7 @@ export const useLayers = ({
         visible: true,
         opacity: 100,
         blendMode: 'normal',
-        dataUrl: dataUrl,
+        dataUrl: transparentDataUrl,
         x: 50,
         y: 50,
         width: 100,
@@ -163,7 +171,7 @@ export const useLayers = ({
       ...layerToDuplicate,
       id: uuidv4(),
       name: `${layerToDuplicate.name} Copy`,
-      isClippingMask: false, // Duplicates should not inherit clipping mask status automatically
+      isClippingMask: false,
       isLocked: false,
     };
 
@@ -201,7 +209,7 @@ export const useLayers = ({
         opacity: layerToRasterize.opacity,
         blendMode: layerToRasterize.blendMode,
         dataUrl: dataUrl,
-        isClippingMask: layerToRasterize.isClippingMask, // Preserve clipping mask status
+        isClippingMask: layerToRasterize.isClippingMask,
         isLocked: false,
         x: layerToRasterize.x,
         y: layerToRasterize.y,
@@ -270,7 +278,7 @@ export const useLayers = ({
         dataUrl: mergedDataUrl,
         opacity: 100,
         blendMode: 'normal',
-        isClippingMask: bottomLayer.isClippingMask, // Preserve clipping mask status
+        isClippingMask: bottomLayer.isClippingMask,
         isLocked: false,
         x: bottomLayer.x,
         y: bottomLayer.y,
@@ -313,7 +321,8 @@ export const useLayers = ({
         return { layer, container: currentLayers, index: i, parentGroups };
       }
       if (layer.type === 'group' && layer.children) {
-        const found = findLayerLocation(id, layer.children, layer, [...parentGroups, layer]);
+        // TS2554 fix: Removed extraneous 'layer' argument
+        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
         if (found) return found;
       }
     }
@@ -466,7 +475,7 @@ export const useLayers = ({
         y: newY_percent,
         width: newWidth_percent,
         height: newHeight_percent,
-        isClippingMask: false, // Reset clipping mask status
+        isClippingMask: false,
         isLocked: false,
       };
     });
@@ -541,6 +550,7 @@ export const useLayers = ({
   }, [layers, updateLayersState, smartObjectEditingId, closeSmartObjectEditor]);
 
   const moveSelectedLayer = useCallback((id: string, dx: number, dy: number) => {
+    // TS2345 fix: setLayers now accepts a function updater
     setLayers(prevLayers => {
       const updatedLayers = prevLayers.map(layer => {
         if (layer.id === id && (layer.x !== undefined && layer.y !== undefined)) {
@@ -641,7 +651,7 @@ export const useLayers = ({
           ...layer,
           x: (relativeX_px / groupWidth_px) * 100,
           y: (relativeY_px / groupHeight_px) * 100,
-          isClippingMask: false, // Reset clipping mask status when moving into a group
+          isClippingMask: false,
           isLocked: false,
         };
       }),
@@ -657,6 +667,7 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const toggleGroupExpanded = useCallback((id: string) => {
+    // TS2345 fix: setLayers now accepts a function updater
     setLayers(prevLayers => prevLayers.map(layer => {
       if (layer.id === id && layer.type === 'group') {
         return { ...layer, expanded: !layer.expanded };
@@ -693,17 +704,17 @@ export const useLayers = ({
     }
 
     // Apply the correct composite operation for the new stroke
-    if (activeTool === 'eraser') { // Use the activeTool prop directly
-      tempCtx.globalCompositeOperation = 'destination-out'; // <-- FIX: Use destination-out for erasing
+    if (activeTool === 'eraser') {
+      tempCtx.globalCompositeOperation = 'destination-out';
     } else {
-      tempCtx.globalCompositeOperation = 'source-over'; // Draw over existing content
+      tempCtx.globalCompositeOperation = 'source-over';
     }
     
     tempCtx.drawImage(strokeImg, 0, 0); // Draw the new stroke
     
     // Reset composite operation to default for subsequent operations if any
     tempCtx.globalCompositeOperation = 'source-over'; 
-    tempCtx.globalAlpha = 1.0; // Reset global alpha
+    tempCtx.globalAlpha = 1.0;
 
     const combinedDataUrl = tempCanvas.toDataURL();
     updateLayer(layerId, { dataUrl: combinedDataUrl });
@@ -775,7 +786,7 @@ export const useLayers = ({
     updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
   }, [layers, updateLayersState]);
 
-  const addTextLayer = useCallback((foregroundColor: string, coords?: { x: number; y: number }) => {
+  const addTextLayer = useCallback((coords: { x: number; y: number } | undefined, foregroundColor: string) => {
     const newLayer: Layer = {
       id: uuidv4(),
       type: "text",
@@ -805,7 +816,7 @@ export const useLayers = ({
   const addDrawingLayer = useCallback(() => {
     if (!imageNaturalDimensions) {
       showError("Cannot add drawing layer without image dimensions.");
-      return ""; // Return empty string or throw error
+      return "";
     }
 
     const canvas = document.createElement('canvas');
@@ -818,7 +829,7 @@ export const useLayers = ({
     }
     // Fill with transparent black
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const transparentDataUrl = canvas.toDataURL(); // This will be a transparent PNG
+    const transparentDataUrl = canvas.toDataURL();
 
     const newLayer: Layer = {
       id: uuidv4(),
@@ -827,7 +838,7 @@ export const useLayers = ({
       visible: true,
       opacity: 100,
       blendMode: 'normal',
-      dataUrl: transparentDataUrl, // Initialize with transparent image
+      dataUrl: transparentDataUrl,
       isLocked: false,
       x: 50,
       y: 50,
@@ -856,17 +867,17 @@ export const useLayers = ({
       visible: true,
       x: coords.x,
       y: coords.y,
-      width: initialWidth, // Default width in percentage
-      height: initialHeight, // Default height in percentage
+      width: initialWidth,
+      height: initialHeight,
       rotation: 0,
       opacity: 100,
       blendMode: 'normal',
       shapeType: shapeType,
-      fillColor: foregroundColor, // Default blue fill
-      strokeColor: backgroundColor, // Default white stroke
+      fillColor: foregroundColor,
+      strokeColor: backgroundColor,
       strokeWidth: 2,
-      borderRadius: 0, // Default for rect
-      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined, // Default points for triangle
+      borderRadius: 0,
+      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
       isLocked: false,
     };
     const updated = [...layers, newLayer];
