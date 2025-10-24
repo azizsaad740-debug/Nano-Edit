@@ -26,11 +26,6 @@ interface FontManagerDialogProps {
   removeCustomFont: (fontName: string) => void;
 }
 
-// List of common web-safe fonts to include if system scan fails
-const WEBSAFE_FONTS = [
-  "Arial", "Verdana", "Tahoma", "Trebuchet MS", "Georgia", "Times New Roman", "Courier New", "Lucida Console"
-];
-
 export const FontManagerDialog = ({
   open,
   onOpenChange,
@@ -45,8 +40,7 @@ export const FontManagerDialog = ({
 
   const handleScanSystemFonts = async () => {
     if (!('queryLocalFonts' in window)) {
-      showError("System font scanning is not supported by your browser (requires experimental API access). Showing web-safe fonts instead.");
-      setSystemFonts(WEBSAFE_FONTS);
+      showError("System font scanning is not supported by your browser (requires experimental API access).");
       return;
     }
 
@@ -61,8 +55,7 @@ export const FontManagerDialog = ({
       showSuccess(`${uniqueFontNames.length} system fonts found.`);
     } catch (error) {
       console.error("Failed to scan system fonts:", error);
-      showError("Permission denied or scanning failed. Showing web-safe fonts.");
-      setSystemFonts(WEBSAFE_FONTS);
+      showError("Permission denied or scanning failed.");
     } finally {
       dismissToast(toastId);
       setIsScanning(false);
