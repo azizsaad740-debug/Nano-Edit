@@ -13,9 +13,9 @@ import { readPsd } from "ag-psd";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import { useLayers } from "./useLayers";
 import { maskToPolygon } from "@/utils/maskToPolygon";
-import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import the new utility
-import type { TemplateData } from "../types/template"; // Import TemplateData
-import { useSettings } from "./useSettings"; // NEW import
+import { polygonToMaskDataUrl } from "@/utils/maskUtils";
+import type { TemplateData } from "../types/template";
+import { useSettings } from "./useSettings";
 
 export interface HslAdjustment {
   hue: number;
@@ -79,7 +79,7 @@ export interface EditState {
   selectiveBlurMask: string | null;
   selectiveBlurAmount: number;
   selectiveBlurStrength: number;
-  colorMode: 'RGB' | 'CMYK' | 'Grayscale'; // NEW: Color mode setting
+  colorMode: 'RGB' | 'CMYK' | 'Grayscale';
 }
 
 export interface Point {
@@ -90,18 +90,18 @@ export interface Point {
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group" | "gradient"; // Added 'group' and 'gradient' type
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group" | "gradient";
   name: string;
   visible: boolean;
   opacity?: number;
   blendMode?: string;
-  isClippingMask?: boolean; // NEW: Clipping mask flag
-  isLocked?: boolean; // NEW: Layer lock flag
+  isClippingMask?: boolean;
+  isLocked?: boolean;
   // Text layer specific properties
   content?: string;
   // Drawing layer specific properties
   dataUrl?: string;
-  maskDataUrl?: string; // New: Mask for drawing layers
+  maskDataUrl?: string;
   // Common transform properties for movable layers (x, y, width, height, rotation)
   x?: number; // percentage from left
   y?: number; // percentage from top
@@ -175,7 +175,7 @@ export interface GradientToolState {
   inverted: boolean;
 }
 
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush"; // ADDED blurBrush
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush";
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
@@ -212,7 +212,7 @@ export const initialEditState: EditState = {
   selectiveBlurMask: null,
   selectiveBlurAmount: 0,
   selectiveBlurStrength: 50,
-  colorMode: 'RGB', // NEW: Default color mode
+  colorMode: 'RGB',
 };
 
 export const initialBrushState: Omit<BrushState, 'color'> = {
@@ -244,7 +244,7 @@ export const initialLayerState: Layer[] = [
     visible: true,
     opacity: 100,
     blendMode: 'normal',
-    isLocked: true, // Lock background by default
+    isLocked: true,
   },
 ];
 
@@ -270,8 +270,14 @@ export const useEditorState = (
     gradientToolState: GradientToolState;
     brushStateInternal: Omit<BrushState, 'color'>;
     selectedShapeType: Layer['shapeType'] | null;
+    // ADDED MISSING PROPERTIES from Project interface (TS2353 fix)
+    image: string | null;
+    dimensions: { width: number; height: number } | null;
+    fileInfo: { name: string; size: number } | null;
+    exifData: any | null;
+    activeTool: ActiveTool | null;
   },
-  onProjectUpdate: (updates: Partial<Omit<typeof initialProject, 'history' | 'layers'>>) => void,
+  onProjectUpdate: (updates: Partial<typeof initialProject>) => void, // <-- FIX 1, 2, 3: Removed Omit<'history' | 'layers'>
   onHistoryUpdate: (history: HistoryItem[], currentHistoryIndex: number, layers: Layer[]) => void,
   onLayerUpdate: (layers: Layer[], historyName?: string) => void,
   image: string | null,
@@ -296,6 +302,8 @@ export const useEditorState = (
     gradientToolState,
     brushStateInternal,
     selectedShapeType,
+    // Destructure activeTool (TS2552 fix)
+    activeTool,
   } = initialProject;
 
   const currentState = history[currentHistoryIndex].state;
@@ -351,7 +359,7 @@ export const useEditorState = (
     removeLayerMask,
     invertLayerMask,
     toggleClippingMask,
-    toggleLayerLock, // NEW: Layer lock toggle
+    toggleLayerLock,
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
@@ -359,9 +367,18 @@ export const useEditorState = (
     imgRef,
     imageNaturalDimensions: dimensions,
     gradientToolState,
-    activeTool: null, // Active tool is managed outside useLayers
+    activeTool: activeTool,
     layers,
-    setLayers: (newLayers, historyName) => onLayerUpdate(newLayers, historyName),
+    // Handle function updater pattern (TS2345 fix)
+    setLayers: (newLayersOrUpdater, historyName) => {
+      let newLayers: Layer[];
+      if (typeof newLayersOrUpdater === 'function') {
+        newLayers = newLayersOrUpdater(layers);
+      } else {
+        newLayers = newLayersOrUpdater;
+      }
+      onLayerUpdate(newLayers, historyName);
+    },
     selectedLayerId,
     setSelectedLayerId: (id) => onProjectUpdate({ selectedLayerId: id }),
   });
@@ -560,7 +577,7 @@ export const useEditorState = (
           
           // Add a transparent background layer if importing into a new project
           const finalLayers = importInSameProject ? importedLayers : [
-            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal', isLocked: true },
+            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal', isLocked: true } as Layer,
             ...importedLayers
           ];
 
@@ -749,7 +766,7 @@ export const useEditorState = (
   }, [handleFileSelect]);
 
   const loadTemplateData = useCallback((templateData: TemplateData) => {
-    const { editState, layers: templateLayers, dimensions: templateDimensions } = templateData;
+    const { data: { editState, layers: templateLayers, dimensions: templateDimensions }, name } = templateData;
     
     const canvas = document.createElement('canvas');
     canvas.width = templateDimensions.width;
@@ -803,13 +820,14 @@ export const useEditorState = (
           history: projectData.history,
           currentHistoryIndex: projectData.currentHistoryIndex,
           fileInfo: projectData.fileInfo,
-          exifData: null,
+          exifData: null, // EXIF data is not saved in .nanoedit files
           selectedLayerId: null,
           pendingCrop: undefined,
           selectionPath: null,
           selectionMaskDataUrl: null,
           layers: projectData.history[projectData.currentHistoryIndex].layers,
           aspect: initialDimensions.width / initialDimensions.height,
+          activeTool: null,
         });
         dismissToast(toastId);
         showSuccess("Project opened successfully.");
@@ -1458,7 +1476,7 @@ export const useEditorState = (
     removeLayerMask,
     invertLayerMask,
     toggleClippingMask,
-    toggleLayerLock, // NEW: Layer lock toggle
+    toggleLayerLock,
     // Tool state
     activeTool: initialProject.activeTool,
     setActiveTool,
@@ -1496,11 +1514,16 @@ export const useEditorState = (
     loadTemplateData,
     // Layer Masking
     applySelectionAsMask,
+    // Presets & History
+    applyPreset, // <-- FIX 5: Ensure applyPreset is exposed
+    recordHistory, // <-- FIX 6, 7, 8: Expose recordHistory
     // Fonts
     // These are global and managed in Index.tsx, not per-project state
     systemFonts: [],
     setSystemFonts: () => {},
     customFonts: [],
     setCustomFonts: () => {},
+    // Expose loadImageData for Index.tsx template loading logic
+    loadImageData,
   };
 };

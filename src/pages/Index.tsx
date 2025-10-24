@@ -28,18 +28,18 @@ import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
-import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog"; // NEW import
+import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
-import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast"; // Import toast utilities
-import type { TemplateData } from "../types/template"; // FIXED: Relative path
-import { downloadSelectionAsImage } from "@/utils/imageUtils"; // Import new utility
-import { FontManagerDialog } from "@/components/editor/FontManagerDialog"; // NEW import
-import { CustomFontLoader } from "@/components/editor/CustomFontLoader"; // NEW import
-import { useProjectManager } from "@/hooks/useProjectManager"; // NEW import
+import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
+import type { TemplateData } from "../types/template";
+import { downloadSelectionAsImage } from "@/utils/imageUtils";
+import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
+import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
+import { useProjectManager } from "@/hooks/useProjectManager";
 
 const Index = () => {
   const {
@@ -66,7 +66,7 @@ const Index = () => {
   const [openGenerateImage, setOpenGenerateImage] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openNewProject, setOpenNewProject] = useState(false);
-  const [openProjectSettings, setOpenProjectSettings] = useState(false); // NEW state
+  const [openProjectSettings, setOpenProjectSettings] = useState(false);
   const [openFontManager, setOpenFontManager] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const openProjectInputRef = useRef<HTMLInputElement>(null);
@@ -85,13 +85,18 @@ const Index = () => {
     if (historyName) {
       const newState = activeProject?.history[activeProject.currentHistoryIndex].state;
       if (newState) {
-        handleHistoryUpdate(activeProject.history, activeProject.currentHistoryIndex, layers);
-        activeProject.recordHistory(historyName, newState, layers);
+        // This path is used by useLayers when committing a change (e.g., rename, delete, reorder)
+        // We need to ensure the history is updated correctly.
+        const newHistory = activeProject.history.slice(0, activeProject.currentHistoryIndex + 1);
+        const newHistoryIndex = newHistory.length;
+        const newHistoryItem = { name: historyName, state: newState, layers: layers };
+        updateActiveProject({ history: [...newHistory, newHistoryItem], currentHistoryIndex: newHistoryIndex, layers });
       }
     } else {
+      // This path is used by useLayers for temporary updates (e.g., dragging)
       updateActiveProject({ layers });
     }
-  }, [activeProject, updateActiveProject, handleHistoryUpdate]);
+  }, [activeProject, updateActiveProject]);
 
   const editorState = useEditorState(
     activeProject || projects[0], // Fallback to first project if activeProject is null (shouldn't happen)
@@ -152,11 +157,8 @@ const Index = () => {
     handleDownload,
     handleCopy,
     setAspect,
-    isPreviewingOriginal,
-    setIsPreviewingOriginal,
-    isExporting,
-    setIsExporting,
-    applyPreset,
+    applyPreset, // <-- FIX 5
+    recordHistory, // <-- FIX 6, 7, 8
     layers,
     selectedLayerId,
     setSelectedLayer,
@@ -214,9 +216,14 @@ const Index = () => {
     removeLayerMask,
     invertLayerMask,
     toggleClippingMask,
-    toggleLayerLock, // NEW
+    toggleLayerLock,
     handleDrawingStrokeEnd,
+    loadImageData, // Expose loadImageData
   } = editorState;
+
+  // Local state for UI elements
+  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // --- Template Loading Effect ---
   useEffect(() => {
@@ -226,40 +233,43 @@ const Index = () => {
       try {
         const templateData: TemplateData = JSON.parse(templateDataString);
         
-        // Create a new tab for the template
+        // Create a new project object based on the template data
         const newProject = createNewTab(templateData.name || "Template");
         
         // Apply template data to the new project's state
-        const newState = { ...newProject.history[0].state, ...templateData.editState };
-        const newHistoryItem = { name: "Load Template", state: newState, layers: templateData.layers };
+        const newState = { ...newProject.history[0].state, ...templateData.data.editState };
+        const newHistoryItem = { name: "Load Template", state: newState, layers: templateData.data.layers };
         
+        // Update the newly created project in the manager
         updateActiveProject({
           id: newProject.id,
           image: null, // Will be set by loadImageData
-          dimensions: templateData.dimensions,
+          dimensions: templateData.data.dimensions,
           fileInfo: { name: templateData.name || "Template", size: 0 },
           exifData: null,
           history: [newHistoryItem],
           currentHistoryIndex: 0,
-          layers: templateData.layers,
+          layers: templateData.data.layers,
           selectedLayerId: null,
-          aspect: templateData.dimensions.width / templateData.dimensions.height,
+          aspect: templateData.data.dimensions.width / templateData.data.dimensions.height,
+          activeTool: null,
         });
         
         // Load image data (which uses the pre-set dimensions)
         const canvas = document.createElement('canvas');
-        canvas.width = templateData.dimensions.width;
-        canvas.height = templateData.dimensions.height;
+        canvas.width = templateData.data.dimensions.width;
+        canvas.height = templateData.data.dimensions.height;
         const dataUrl = canvas.toDataURL('image/png');
         
-        editorState.loadImageData(dataUrl, "Template loaded successfully.", templateData.layers, templateData.dimensions);
+        // Use the exposed loadImageData function
+        loadImageData(dataUrl, "Template loaded successfully.", templateData.data.layers, templateData.data.dimensions);
 
       } catch (error) {
         console.error("Failed to parse template data:", error);
         showError("Failed to load template data from storage.");
       }
     }
-  }, [createNewTab, updateActiveProject, editorState]);
+  }, [createNewTab, updateActiveProject, loadImageData]);
   // --- End Template Loading Effect ---
 
   const handleOpenProjectClick = (importInSameProject: boolean) => {
@@ -490,7 +500,7 @@ const Index = () => {
     onRemoveLayerMask: removeLayerMask,
     onInvertLayerMask: invertLayerMask,
     onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId),
-    onToggleLayerLock: (id: string) => toggleLayerLock(id), // NEW
+    onToggleLayerLock: (id: string) => toggleLayerLock(id),
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd,
     // --- MISSING FRAME PROPS ---
@@ -517,14 +527,17 @@ const Index = () => {
       
       // 2. Record history change for color mode
       if (updates.colorMode) {
-        editorState.recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
+        recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers); // FIX 6
+      } else {
+        // If only dimensions changed, record history for resize
+        recordHistory(`Resize Canvas to ${updates.width}x${updates.height}`, currentState, layers); // FIX 7
       }
       
       // 3. Show success message
       showSuccess(`Project resized to ${updates.width}x${updates.height}.`);
     } else if (updates.colorMode) {
       // Only color mode change
-      editorState.recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
+      recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers); // FIX 8
     }
   };
 
@@ -551,7 +564,7 @@ const Index = () => {
         onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
         onSyncProject={handleSyncProject}
-        setOpenProjectSettings={setOpenProjectSettings} // NEW prop
+        setOpenProjectSettings={setOpenProjectSettings}
         // Multi-project props
         projects={projects}
         activeProjectId={activeProjectId}

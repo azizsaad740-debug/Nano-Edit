@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { EditState, Layer, HistoryItem, GradientToolState, BrushState } from "./useEditorState";
+import type { EditState, Layer, HistoryItem, GradientToolState, BrushState, ActiveTool } from "./useEditorState";
 import { initialEditState, initialLayerState, initialHistoryItem, initialBrushState, initialGradientToolState } from "./useEditorState"; // Import initial states
 
 export interface Project {
@@ -26,6 +26,7 @@ export interface Project {
   gradientToolState: GradientToolState;
   brushStateInternal: Omit<BrushState, 'color'>;
   selectedShapeType: Layer['shapeType'] | null;
+  activeTool: ActiveTool | null; // NEW: Active tool state
 }
 
 const createNewProject = (name: string = "Untitled"): Project => ({
@@ -48,6 +49,7 @@ const createNewProject = (name: string = "Untitled"): Project => ({
   gradientToolState: initialGradientToolState,
   brushStateInternal: initialBrushState,
   selectedShapeType: 'rect',
+  activeTool: null, // NEW: Default active tool
 });
 
 export const useProjectManager = () => {

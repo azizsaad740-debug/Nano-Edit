@@ -111,6 +111,7 @@ interface SidebarProps {
   onRemoveLayerMask: (id: string) => void; // NEW prop
   onInvertLayerMask: (id: string) => void; // NEW prop
   onToggleClippingMask: () => void; // NEW prop
+  onToggleLayerLock: (id: string) => void; // NEW prop
   // Fonts
   systemFonts: string[]; // NEW prop
   customFonts: string[]; // NEW prop
@@ -194,6 +195,7 @@ const Sidebar = (props: SidebarProps) => {
                 onRemoveLayerMask={props.onRemoveLayerMask} // NEW prop
                 onInvertLayerMask={props.onInvertLayerMask} // NEW prop
                 onToggleClippingMask={props.onToggleClippingMask} // NEW prop
+                onToggleLayerLock={props.onToggleLayerLock} // ADDED missing prop
               />
             )}
           </div>
