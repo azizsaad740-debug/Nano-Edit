@@ -28,6 +28,7 @@ import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
+import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog"; // NEW import
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
@@ -38,11 +39,74 @@ import type { TemplateData } from "../types/template"; // FIXED: Relative path
 import { downloadSelectionAsImage } from "@/utils/imageUtils"; // Import new utility
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog"; // NEW import
 import { CustomFontLoader } from "@/components/editor/CustomFontLoader"; // NEW import
+import { useProjectManager } from "@/hooks/useProjectManager"; // NEW import
 
 const Index = () => {
   const {
-    image,
+    projects,
+    activeProjectId,
+    activeProject,
+    setActiveProjectId,
+    updateActiveProject,
+    createNewTab,
+    closeProject,
+  } = useProjectManager();
+
+  const { geminiApiKey } = useSettings();
+  const { presets, savePreset, deletePreset } = usePresets();
+  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
+
+  // Global Font State (managed outside per-project state)
+  const [systemFonts, setSystemFonts] = useState<string[]>([]);
+  const [customFonts, setCustomFonts] = useState<string[]>([]);
+
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [openSettings, setOpenSettings] = useState(false);
+  const [openGenerative, setOpenGenerative] = useState(false);
+  const [openGenerateImage, setOpenGenerateImage] = useState(false);
+  const [openImport, setOpenImport] = useState(false);
+  const [openNewProject, setOpenNewProject] = useState(false);
+  const [openProjectSettings, setOpenProjectSettings] = useState(false); // NEW state
+  const [openFontManager, setOpenFontManager] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const openProjectInputRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // --- Project State Management ---
+  const handleProjectUpdate = useCallback((updates: Partial<typeof activeProject>) => {
+    updateActiveProject(updates);
+  }, [updateActiveProject]);
+
+  const handleHistoryUpdate = useCallback((history, currentHistoryIndex, layers) => {
+    updateActiveProject({ history, currentHistoryIndex, layers });
+  }, [updateActiveProject]);
+
+  const handleLayerUpdate = useCallback((layers, historyName) => {
+    if (historyName) {
+      const newState = activeProject?.history[activeProject.currentHistoryIndex].state;
+      if (newState) {
+        handleHistoryUpdate(activeProject.history, activeProject.currentHistoryIndex, layers);
+        activeProject.recordHistory(historyName, newState, layers);
+      }
+    } else {
+      updateActiveProject({ layers });
+    }
+  }, [activeProject, updateActiveProject, handleHistoryUpdate]);
+
+  const editorState = useEditorState(
+    activeProject || projects[0], // Fallback to first project if activeProject is null (shouldn't happen)
+    handleProjectUpdate,
+    handleHistoryUpdate,
+    handleLayerUpdate,
+    activeProject?.image || null,
+    activeProject?.dimensions || null,
+    activeProject?.fileInfo || null,
+    activeProject?.exifData || null,
     imgRef,
+  );
+
+  const {
+    image,
     dimensions,
     fileInfo,
     exifData,
@@ -52,7 +116,6 @@ const Index = () => {
     aspect,
     canUndo,
     canRedo,
-    handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
     handleGeneratedImageLoad,
@@ -66,8 +129,8 @@ const Index = () => {
     handleEffectCommit,
     handleGradingChange,
     handleGradingCommit,
-    handleHslAdjustmentChange, // NEW destructuring
-    handleHslAdjustmentCommit, // NEW destructuring
+    handleHslAdjustmentChange,
+    handleHslAdjustmentCommit,
     handleChannelChange,
     handleCurvesChange,
     handleCurvesCommit,
@@ -94,7 +157,6 @@ const Index = () => {
     isExporting,
     setIsExporting,
     applyPreset,
-    // layer utilities
     layers,
     selectedLayerId,
     setSelectedLayer,
@@ -114,79 +176,47 @@ const Index = () => {
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
     reorderLayers,
-    // smart object utilities
     createSmartObject,
     openSmartObjectEditor,
     closeSmartObjectEditor,
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
-    // tool state
     activeTool,
     setActiveTool,
-    // brush state
     brushState,
     setBrushState,
     handleColorPick,
-    // gradient tool state
     gradientToolState,
     setGradientToolState,
-    // generative
     applyGenerativeResult,
-    // selection
     selectionPath,
     setSelectionPath,
-    selectionMaskDataUrl, // New
-    handleSelectionBrushStroke, // New
-    clearSelectionMask, // New
-    applyMaskToSelectionPath, // New
-    convertSelectionPathToMask, // New
-    // Selective Blur
-    handleSelectiveBlurStroke, // NEW destructuring
-    handleSelectiveBlurStrengthChange, // NEW destructuring
-    handleSelectiveBlurStrengthCommit, // NEW destructuring
-    // shape tool
+    selectionMaskDataUrl,
+    handleSelectionBrushStroke,
+    clearSelectionMask,
+    applyMaskToSelectionPath,
+    convertSelectionPathToMask,
+    handleSelectiveBlurStroke,
+    handleSelectiveBlurStrengthChange,
+    handleSelectiveBlurStrengthCommit,
     selectedShapeType,
     setSelectedShapeType,
-    // grouping
     groupLayers,
     toggleGroupExpanded,
-    // Foreground/Background Colors
     foregroundColor,
     handleForegroundColorChange,
     backgroundColor,
     handleBackgroundColorChange,
     handleSwapColors,
-    // Template loading utility
     loadTemplateData,
-    // Layer Masking
-    applySelectionAsMask, // NEW destructuring
-    removeLayerMask, // NEW destructuring
-    invertLayerMask, // NEW destructuring
-    // Clipping Mask
-    toggleClippingMask, // NEW destructuring
-    // Drawing stroke end handler from useLayers
-    handleDrawingStrokeEnd, // NEW destructuring
-    // Fonts
-    systemFonts, // NEW destructuring
-    setSystemFonts, // NEW destructuring
-    customFonts, // NEW destructuring
-    setCustomFonts, // NEW destructuring
-  } = useEditorState();
-
-  const { presets, savePreset, deletePreset } = usePresets();
-  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
-  const { geminiApiKey } = useSettings(); // FIXED: Destructure geminiApiKey
-
-  const [isSavingPreset, setIsSavingPreset] = useState(false);
-  const [openSettings, setOpenSettings] = useState(false);
-  const [openGenerative, setOpenGenerative] = useState(false);
-  const [openGenerateImage, setOpenGenerateImage] = useState(false);
-  const [openImport, setOpenImport] = useState(false);
-  const [openNewProject, setOpenNewProject] = useState(false);
-  const [openFontManager, setOpenFontManager] = useState(false); // NEW state
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const openProjectInputRef = useRef<HTMLInputElement>(null);
+    applySelectionAsMask,
+    removeLayerMask,
+    invertLayerMask,
+    toggleClippingMask,
+    toggleLayerLock, // NEW
+    handleDrawingStrokeEnd,
+  } = editorState;
 
   // --- Template Loading Effect ---
   useEffect(() => {
@@ -196,26 +226,69 @@ const Index = () => {
       try {
         const templateData: TemplateData = JSON.parse(templateDataString);
         
-        // Load the template data into the editor state
-        loadTemplateData(templateData);
+        // Create a new tab for the template
+        const newProject = createNewTab(templateData.name || "Template");
         
-        showSuccess("Template loaded successfully.");
+        // Apply template data to the new project's state
+        const newState = { ...newProject.history[0].state, ...templateData.editState };
+        const newHistoryItem = { name: "Load Template", state: newState, layers: templateData.layers };
+        
+        updateActiveProject({
+          id: newProject.id,
+          image: null, // Will be set by loadImageData
+          dimensions: templateData.dimensions,
+          fileInfo: { name: templateData.name || "Template", size: 0 },
+          exifData: null,
+          history: [newHistoryItem],
+          currentHistoryIndex: 0,
+          layers: templateData.layers,
+          selectedLayerId: null,
+          aspect: templateData.dimensions.width / templateData.dimensions.height,
+        });
+        
+        // Load image data (which uses the pre-set dimensions)
+        const canvas = document.createElement('canvas');
+        canvas.width = templateData.dimensions.width;
+        canvas.height = templateData.dimensions.height;
+        const dataUrl = canvas.toDataURL('image/png');
+        
+        editorState.loadImageData(dataUrl, "Template loaded successfully.", templateData.layers, templateData.dimensions);
+
       } catch (error) {
         console.error("Failed to parse template data:", error);
         showError("Failed to load template data from storage.");
       }
     }
-  }, []);
+  }, [createNewTab, updateActiveProject, editorState]);
   // --- End Template Loading Effect ---
 
-  const handleOpenProjectClick = () => {
+  const handleOpenProjectClick = (importInSameProject: boolean) => {
     openProjectInputRef.current?.click();
+    openProjectInputRef.current?.setAttribute('data-import-mode', importInSameProject ? 'same' : 'new');
   };
 
   const handleProjectFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    const importMode = event.target.getAttribute('data-import-mode') === 'same';
+    
     if (file) {
-      handleLoadProject(file);
+      if (file.name.endsWith('.nanoedit')) {
+        if (importMode && image) {
+          showError("Cannot import a .nanoedit project into an existing project. Please open it in a new tab.");
+          return;
+        }
+        handleLoadProject(file);
+      } else {
+        if (!importMode) {
+          // Open in new tab
+          const newProject = createNewTab(file.name);
+          setActiveProjectId(newProject.id);
+          handleFileSelect(file, false);
+        } else {
+          // Import in same project
+          handleFileSelect(file, true);
+        }
+      }
     }
     if (event.target) {
       event.target.value = "";
@@ -246,7 +319,6 @@ const Index = () => {
     const toastId = showLoading("Connecting to Google Drive...");
     
     // --- STUB IMPLEMENTATION ---
-    // In a real app, this would initiate the OAuth flow and then upload the project file.
     setTimeout(() => {
       dismissToast(toastId);
       showSuccess("Project sync initiated (Stub). You would need to implement the Google Drive API integration for full functionality.");
@@ -289,7 +361,10 @@ const Index = () => {
         if (items[i].type.indexOf("image") !== -1) {
           const file = items[i].getAsFile();
           if (file) {
-            handleFileSelect(file);
+            // Paste image in new tab
+            const newProject = createNewTab("Pasted Image");
+            setActiveProjectId(newProject.id);
+            handleFileSelect(file, false);
             event.preventDefault();
             return;
           }
@@ -300,7 +375,10 @@ const Index = () => {
       if (pastedText) {
         try {
           new URL(pastedText);
-          handleUrlImageLoad(pastedText);
+          // Paste URL in new tab
+          const newProject = createNewTab("Pasted URL");
+          setActiveProjectId(newProject.id);
+          handleUrlImageLoad(pastedText, false);
           event.preventDefault();
         } catch (_) {
           // Not a valid URL
@@ -312,9 +390,9 @@ const Index = () => {
     return () => {
       document.removeEventListener("paste", handlePaste);
     };
-  }, [handleFileSelect, handleUrlImageLoad]);
+  }, [handleFileSelect, handleUrlImageLoad, createNewTab, setActiveProjectId]);
 
-  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength, hslAdjustments } = currentState;
+  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength, hslAdjustments, colorMode } = currentState;
 
   const hasActiveSelection = !!selectionPath || !!selectionMaskDataUrl;
 
@@ -329,9 +407,9 @@ const Index = () => {
     grading,
     onGradingChange: handleGradingChange,
     onGradingCommit: handleGradingCommit,
-    hslAdjustments, // NEW prop
-    onHslAdjustmentChange: handleHslAdjustmentChange, // NEW prop
-    onHslAdjustmentCommit: handleHslAdjustmentCommit, // NEW prop
+    hslAdjustments,
+    onHslAdjustmentChange: handleHslAdjustmentChange,
+    onHslAdjustmentCommit: handleHslAdjustmentCommit,
     channels,
     onChannelChange: handleChannelChange,
     curves,
@@ -358,14 +436,13 @@ const Index = () => {
     onDeletePreset: deletePreset,
     // layers
     layers,
-    addTextLayer,
+    addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
-    addShapeLayer,
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    // FIX: Renaming keys to match SidebarProps interface
     onDuplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
@@ -380,8 +457,8 @@ const Index = () => {
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
     // smart objects
-    onCreateSmartObject: createSmartObject, // ADDED
-    onOpenSmartObject: openSmartObjectEditor, // ADDED
+    onCreateSmartObject: createSmartObject,
+    onOpenSmartObject: openSmartObjectEditor,
     // Shape tool
     selectedShapeType,
     // Tool state
@@ -404,30 +481,52 @@ const Index = () => {
     foregroundColor,
     setForegroundColor: handleForegroundColorChange,
     // Selective Blur Props
-    selectiveBlurStrength, // NEW prop
-    onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange, // NEW prop
-    onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit, // NEW prop
+    selectiveBlurStrength,
+    onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange,
+    onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit,
     // Layer Masking
-    hasActiveSelection, // NEW prop
-    onApplySelectionAsMask: applySelectionAsMask, // NEW prop
-    onRemoveLayerMask: removeLayerMask, // NEW prop
-    onInvertLayerMask: invertLayerMask, // NEW prop
-    onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId), // NEW prop
+    hasActiveSelection,
+    onApplySelectionAsMask: applySelectionAsMask,
+    onRemoveLayerMask: removeLayerMask,
+    onInvertLayerMask: invertLayerMask,
+    onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId),
+    onToggleLayerLock: (id: string) => toggleLayerLock(id), // NEW
     // Drawing stroke end handler from useLayers
-    handleDrawingStrokeEnd, // NEW destructuring
+    handleDrawingStrokeEnd,
     // --- MISSING FRAME PROPS ---
     frame,
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
     // Fonts
-    systemFonts, // NEW prop
-    customFonts, // NEW prop
-    onOpenFontManager: () => setOpenFontManager(true), // NEW prop
+    systemFonts,
+    customFonts,
+    onOpenFontManager: () => setOpenFontManager(true),
   };
 
   
   const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
+
+  const handleProjectSettingsUpdate = (updates: { width?: number; height?: number; colorMode?: 'RGB' | 'CMYK' | 'Grayscale' }) => {
+    if (updates.width && updates.height) {
+      // This is a canvas resize, which requires a history commit and dimension update
+      const newDimensions = { width: updates.width, height: updates.height };
+      
+      // 1. Update dimensions in project state
+      updateActiveProject({ dimensions: newDimensions });
+      
+      // 2. Record history change for color mode
+      if (updates.colorMode) {
+        editorState.recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
+      }
+      
+      // 3. Show success message
+      showSuccess(`Project resized to ${updates.width}x${updates.height}.`);
+    } else if (updates.colorMode) {
+      // Only color mode change
+      editorState.recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
+    }
+  };
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
@@ -446,12 +545,19 @@ const Index = () => {
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}
         onNewProjectClick={() => setOpenNewProject(true)}
-        onNewFromClipboard={handleNewFromClipboard}
+        onNewFromClipboard={(importInSameProject) => handleNewFromClipboard(importInSameProject)}
         onSaveProject={handleSaveProject}
-        onOpenProject={handleOpenProjectClick}
+        onOpenProject={(importInSameProject) => handleOpenProjectClick(importInSameProject)}
         onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
         onSyncProject={handleSyncProject}
+        setOpenProjectSettings={setOpenProjectSettings} // NEW prop
+        // Multi-project props
+        projects={projects}
+        activeProjectId={activeProjectId}
+        setActiveProjectId={setActiveProjectId}
+        createNewTab={createNewTab}
+        closeProject={closeProject}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {(activeTool === "lasso" && hasActiveSelection) || (activeTool === "selectionBrush" && hasActiveSelection) || (hasActiveSelection && activeTool !== 'selectionBrush') ? (
@@ -516,11 +622,33 @@ const Index = () => {
             <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
               <Workspace
                 image={image}
-                onFileSelect={handleFileSelect}
-                onSampleSelect={handleUrlImageLoad}
-                onUrlSelect={handleUrlImageLoad}
-                onImageLoad={handleImageLoad}
-                currentState={currentState} // Pass currentState
+                onFileSelect={(file) => {
+                  const newProject = createNewTab(file?.name || "New Image");
+                  setActiveProjectId(newProject.id);
+                  handleFileSelect(file, false);
+                }}
+                onSampleSelect={(url) => {
+                  const newProject = createNewTab("Sample Image");
+                  setActiveProjectId(newProject.id);
+                  handleUrlImageLoad(url, false);
+                }}
+                onUrlSelect={(url) => {
+                  const newProject = createNewTab("URL Image");
+                  setActiveProjectId(newProject.id);
+                  handleUrlImageLoad(url, false);
+                }}
+                onImageLoad={() => {
+                  if (imgRef.current && activeProject) {
+                    const { naturalWidth, naturalHeight } = imgRef.current;
+                    if (naturalWidth > 0 && naturalHeight > 0) {
+                      updateActiveProject({ 
+                        dimensions: { width: naturalWidth, height: naturalHeight },
+                        aspect: naturalWidth / naturalHeight,
+                      });
+                    }
+                  }
+                }}
+                currentState={currentState}
                 adjustments={adjustments}
                 effects={effects}
                 grading={grading}
@@ -549,10 +677,10 @@ const Index = () => {
                 brushState={brushState}
                 gradientToolState={gradientToolState}
                 selectionPath={selectionPath}
-                selectionMaskDataUrl={selectionMaskDataUrl} // New
+                selectionMaskDataUrl={selectionMaskDataUrl}
                 onSelectionChange={setSelectionPath}
-                onSelectionBrushStrokeEnd={handleSelectionBrushStroke} // New
-                onSelectiveBlurStrokeEnd={handleSelectiveBlurStroke} // NEW prop
+                onSelectionBrushStrokeEnd={handleSelectionBrushStroke}
+                onSelectiveBlurStrokeEnd={handleSelectiveBlurStroke}
                 handleColorPick={handleColorPick}
                 imageNaturalDimensions={dimensions}
                 selectedShapeType={selectedShapeType}
@@ -560,7 +688,7 @@ const Index = () => {
                 setActiveTool={setActiveTool}
                 foregroundColor={foregroundColor}
                 backgroundColor={backgroundColor}
-                onDrawingStrokeEnd={handleDrawingStrokeEnd} // NEW: Pass the dedicated drawing stroke handler
+                onDrawingStrokeEnd={handleDrawingStrokeEnd}
               />
             </div>
           </ResizablePanel>
@@ -590,13 +718,17 @@ const Index = () => {
         apiKey={geminiApiKey}
         originalImage={image}
         selectionPath={selectionPath}
-        selectionMaskDataUrl={selectionMaskDataUrl} // Pass new prop
+        selectionMaskDataUrl={selectionMaskDataUrl}
         imageNaturalDimensions={dimensions}
       />
       <GenerateImageDialog
         open={openGenerateImage}
         onOpenChange={setOpenGenerateImage}
-        onGenerate={handleGeneratedImageLoad}
+        onGenerate={(url) => {
+          const newProject = createNewTab("Generated Image");
+          setActiveProjectId(newProject.id);
+          handleGeneratedImageLoad(url);
+        }}
         apiKey={geminiApiKey}
         imageNaturalDimensions={dimensions}
       />
@@ -604,7 +736,18 @@ const Index = () => {
       <NewProjectDialog
         open={openNewProject}
         onOpenChange={setOpenNewProject}
-        onNewProject={handleNewProject}
+        onNewProject={(settings) => {
+          const newProject = createNewTab(settings.width + 'x' + settings.height);
+          setActiveProjectId(newProject.id);
+          handleNewProject(settings);
+        }}
+      />
+      <ProjectSettingsDialog
+        open={openProjectSettings}
+        onOpenChange={setOpenProjectSettings}
+        currentDimensions={dimensions}
+        currentColorMode={colorMode}
+        onUpdateSettings={handleProjectSettingsUpdate}
       />
       <FontManagerDialog
         open={openFontManager}
@@ -638,7 +781,7 @@ const Index = () => {
         ref={openProjectInputRef}
         onChange={handleProjectFileChange}
         className="hidden"
-        accept=".nanoedit"
+        accept="image/png, image/jpeg, image/webp, .psd, .psb, .pdf, .ai, .cdr, .nanoedit"
       />
     </div>
   );

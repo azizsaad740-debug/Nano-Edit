@@ -80,6 +80,7 @@ interface LayersPanelProps {
   onRemoveLayerMask: (id: string) => void; // NEW prop
   onInvertLayerMask: (id: string) => void; // NEW prop
   onToggleClippingMask: () => void; // NEW prop
+  onToggleLayerLock: (id: string) => void; // NEW prop
 }
 
 export const LayersPanel = ({
@@ -117,6 +118,7 @@ export const LayersPanel = ({
   onRemoveLayerMask, // Destructure new prop
   onInvertLayerMask, // Destructure new prop
   onToggleClippingMask, // Destructure new prop
+  onToggleLayerLock, // Destructure new prop
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -223,7 +225,8 @@ export const LayersPanel = ({
   };
 
   const renderLayerItems = (layersToRender: Layer[], depth: number) => {
-    return layersToRender.map((layer) => (
+    // Reverse the order for display (top layer in array is at the top of the panel)
+    return layersToRender.slice().reverse().map((layer) => (
       <React.Fragment key={layer.id}>
         <SortableContext
           items={[layer.id]}
@@ -243,6 +246,7 @@ export const LayersPanel = ({
             onToggleGroupExpanded={toggleGroupExpanded}
             depth={depth}
             onRemoveMask={onRemoveLayerMask} // Pass the new prop
+            onToggleLock={onToggleLayerLock} // Pass the new prop
           />
         </SortableContext>
         {layer.type === 'group' && layer.expanded && layer.children && (
@@ -250,6 +254,7 @@ export const LayersPanel = ({
             items={layer.children.map(c => c.id)}
             strategy={verticalListSortingStrategy}
           >
+            {/* Render children in reverse order too */}
             {renderLayerItems(layer.children, depth + 1)}
           </SortableContext>
         )}
@@ -335,6 +340,7 @@ export const LayersPanel = ({
                       onToggleGroupExpanded={() => {}}
                       depth={0}
                       onRemoveMask={() => {}} // Dummy function for DragOverlay
+                      onToggleLock={() => {}} // Dummy function for DragOverlay
                     />
                   ) : null}
                 </DragOverlay>

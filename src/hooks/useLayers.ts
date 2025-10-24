@@ -22,18 +22,11 @@ export interface UseLayersProps {
   imageNaturalDimensions: { width: number; height: number } | null;
   gradientToolState: GradientToolState;
   activeTool: ActiveTool | null; // Added activeTool prop
+  layers: Layer[];
+  setLayers: (newLayers: Layer[], historyName?: string) => void;
+  selectedLayerId: string | null;
+  setSelectedLayerId: (id: string | null) => void;
 }
-
-const initialLayers: Layer[] = [
-  {
-    id: uuidv4(),
-    type: "image",
-    name: "Background",
-    visible: true,
-    opacity: 100,
-    blendMode: 'normal',
-  },
-];
 
 export const useLayers = ({
   currentEditState,
@@ -43,147 +36,24 @@ export const useLayers = ({
   imageNaturalDimensions,
   gradientToolState,
   activeTool, // Destructure activeTool
+  layers,
+  setLayers,
+  selectedLayerId,
+  setSelectedLayerId,
 }: UseLayersProps) => {
-  const [layers, setLayers] = useState<Layer[]>(initialLayers);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
 
   const updateLayersState = useCallback(
     (newLayers: Layer[], historyName?: string) => {
-      setLayers(newLayers);
-      if (historyName) {
-        recordHistory(historyName, currentEditState, newLayers);
-      }
+      setLayers(newLayers, historyName);
     },
-    [currentEditState, recordHistory]
+    [setLayers]
   );
-
-  const addTextLayer = useCallback((coords?: { x: number; y: number }) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "text",
-      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
-      visible: true,
-      content: "New Text",
-      x: coords?.x ?? 50,
-      y: coords?.y ?? 50,
-      fontSize: 48,
-      color: "#FFFFFF",
-      fontFamily: "Roboto",
-      opacity: 100,
-      blendMode: 'normal',
-      fontWeight: "normal",
-      fontStyle: "normal",
-      textAlign: "center",
-      rotation: 0,
-      letterSpacing: 0,
-      padding: 10,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Text Layer");
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState]);
-
-  const addDrawingLayer = useCallback(() => {
-    if (!imageNaturalDimensions) {
-      showError("Cannot add drawing layer without image dimensions.");
-      return ""; // Return empty string or throw error
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.width = imageNaturalDimensions.width;
-    canvas.height = imageNaturalDimensions.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      showError("Failed to create canvas for new drawing layer.");
-      return "";
-    }
-    // Fill with transparent black
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const transparentDataUrl = canvas.toDataURL(); // This will be a transparent PNG
-
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "drawing",
-      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      dataUrl: transparentDataUrl, // Initialize with transparent image
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Drawing Layer");
-    setSelectedLayerId(newLayer.id);
-    return newLayer.id;
-  }, [layers, updateLayersState, imageNaturalDimensions]); // Add imageNaturalDimensions to dependencies
-
-  const addShapeLayer = useCallback((
-    coords: { x: number; y: number },
-    shapeType: Layer['shapeType'] = 'rect',
-    initialWidth?: number,
-    initialHeight?: number
-  ) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "vector-shape",
-      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
-      visible: true,
-      x: coords.x,
-      y: coords.y,
-      width: initialWidth ?? 10, // Default width in percentage
-      height: initialHeight ?? 10, // Default height in percentage
-      rotation: 0,
-      opacity: 100,
-      blendMode: 'normal',
-      shapeType: shapeType,
-      fillColor: "#3B82F6", // Default blue fill
-      strokeColor: "#FFFFFF", // Default white stroke
-      strokeWidth: 2,
-      borderRadius: 0, // Default for rect
-      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined, // Default points for triangle
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, `Add ${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} Layer`);
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState]);
-
-  const addGradientLayer = useCallback((options?: {
-    x: number; y: number; width: number; height: number; rotation: number;
-    gradientType: Layer['gradientType']; gradientColors: string[]; gradientStops: number[];
-    gradientAngle: number; gradientCenterX: number; gradientCenterY: number;
-    gradientRadius: number; gradientFeather: number; gradientInverted: boolean;
-  }) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "gradient",
-      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      x: options?.x ?? 50,
-      y: options?.y ?? 50,
-      width: options?.width ?? 100,
-      height: options?.height ?? 100,
-      rotation: options?.rotation ?? 0,
-      gradientType: options?.gradientType ?? gradientToolState.type,
-      gradientColors: options?.gradientColors ?? gradientToolState.colors,
-      gradientStops: options?.gradientStops ?? gradientToolState.stops,
-      gradientAngle: options?.gradientAngle ?? gradientToolState.angle,
-      gradientFeather: options?.gradientFeather ?? gradientToolState.feather,
-      gradientInverted: options?.gradientInverted ?? gradientToolState.inverted,
-      gradientCenterX: options?.gradientCenterX ?? gradientToolState.centerX,
-      gradientCenterY: options?.gradientCenterY ?? gradientToolState.centerY,
-      gradientRadius: options?.gradientRadius ?? gradientToolState.radius,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Gradient Layer");
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, gradientToolState]);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
-  }, []);
+  }, [setLayers]);
 
   const commitLayerChange = useCallback((id: string) => {
     const layer = layers.find((l) => l.id === id);
@@ -217,10 +87,21 @@ export const useLayers = ({
     updateLayersState(updated, "Toggle Layer Visibility");
   }, [layers, updateLayersState]);
 
+  const toggleLayerLock = useCallback((id: string) => {
+    const layer = layers.find(l => l.id === id);
+    if (!layer || layer.type === 'image') {
+      showError("The background layer cannot be locked/unlocked.");
+      return;
+    }
+    const updated = layers.map(l => l.id === id ? { ...l, isLocked: !l.isLocked } : l);
+    updateLayersState(updated, `Toggle Layer Lock on "${layer.name}"`);
+  }, [layers, updateLayersState]);
+
   const renameLayer = useCallback((id: string, newName: string) => {
     const layerToRename = layers.find(l => l.id === id);
-    if (layerToRename && layerToRename.type === 'image') {
-      showError("The background layer cannot be renamed.");
+    if (!layerToRename) return;
+    if (layerToRename.type === 'image' && layerToRename.name === 'Background') {
+      showError("The default background layer cannot be renamed.");
       return;
     }
     const updated = layers.map(l => l.id === id ? { ...l, name: newName } : l);
@@ -229,16 +110,45 @@ export const useLayers = ({
 
   const deleteLayer = useCallback((id: string) => {
     const layerToDelete = layers.find(l => l.id === id);
-    if (layerToDelete && layerToDelete.type === 'image') {
-      showError("The background layer cannot be deleted.");
+    if (!layerToDelete) return;
+
+    if (layerToDelete.type === 'image') {
+      if (!imageNaturalDimensions) {
+        showError("Cannot delete background without dimensions.");
+        return;
+      }
+      // If background is deleted, replace it with a transparent drawing layer
+      const canvas = document.createElement('canvas');
+      canvas.width = imageNaturalDimensions.width;
+      canvas.height = imageNaturalDimensions.height;
+      const dataUrl = canvas.toDataURL();
+
+      const newBgLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: "Background (Transparent)",
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+        isLocked: true,
+      };
+      const updated = layers.map(l => l.id === id ? newBgLayer : l);
+      updateLayersState(updated, "Delete Background (Replaced with Transparent)");
       return;
     }
+
     if (id === selectedLayerId) {
       setSelectedLayerId(null);
     }
     const updated = layers.filter(l => l.id !== id);
     updateLayersState(updated, "Delete Layer");
-  }, [layers, updateLayersState, selectedLayerId]);
+  }, [layers, updateLayersState, selectedLayerId, imageNaturalDimensions]);
 
   const duplicateLayer = useCallback((id: string) => {
     const layerIndex = layers.findIndex(l => l.id === id);
@@ -254,6 +164,7 @@ export const useLayers = ({
       id: uuidv4(),
       name: `${layerToDuplicate.name} Copy`,
       isClippingMask: false, // Duplicates should not inherit clipping mask status automatically
+      isLocked: false,
     };
 
     const updated = [
@@ -291,6 +202,12 @@ export const useLayers = ({
         blendMode: layerToRasterize.blendMode,
         dataUrl: dataUrl,
         isClippingMask: layerToRasterize.isClippingMask, // Preserve clipping mask status
+        isLocked: false,
+        x: layerToRasterize.x,
+        y: layerToRasterize.y,
+        width: layerToRasterize.width,
+        height: layerToRasterize.height,
+        rotation: layerToRasterize.rotation,
       };
 
       const updatedLayers = layers.map(l => l.id === id ? newLayer : l);
@@ -354,6 +271,12 @@ export const useLayers = ({
         opacity: 100,
         blendMode: 'normal',
         isClippingMask: bottomLayer.isClippingMask, // Preserve clipping mask status
+        isLocked: false,
+        x: bottomLayer.x,
+        y: bottomLayer.y,
+        width: bottomLayer.width,
+        height: bottomLayer.height,
+        rotation: bottomLayer.rotation,
       };
 
       const updatedLayers = layers
@@ -390,7 +313,7 @@ export const useLayers = ({
         return { layer, container: currentLayers, index: i, parentGroups };
       }
       if (layer.type === 'group' && layer.children) {
-        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
+        const found = findLayerLocation(id, layer.children, layer, [...parentGroups, layer]);
         if (found) return found;
       }
     }
@@ -460,62 +383,95 @@ export const useLayers = ({
       showError("Please select at least one layer to create a smart object.");
       return;
     }
+    if (!imageNaturalDimensions) {
+      showError("Cannot create smart object without image dimensions.");
+      return;
+    }
 
     const selectedLayers = layers.filter(layer => layerIds.includes(layer.id));
     
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    // 1. Calculate the bounding box in PIXELS relative to the main image canvas
+    let minX_px = Infinity, minY_px = Infinity, maxX_px = -Infinity, maxY_px = -Infinity;
     
     selectedLayers.forEach(layer => {
-      if (layer.type === 'text' && layer.x !== undefined && layer.y !== undefined) {
-        const fontSize = layer.fontSize || 16;
-        const textWidth = (layer.content?.length || 1) * fontSize * 0.6;
-        const textHeight = fontSize * 1.2;
-        
-        const x = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
-        const y = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
-        
-        minX = Math.min(minX, x - textWidth / 2);
-        minY = Math.min(minY, y - textHeight / 2);
-        maxX = Math.max(maxX, x + textWidth / 2);
-        maxY = Math.max(maxY, y + textHeight / 2);
+      // We need to estimate the layer's bounding box in pixels based on its percentage properties
+      const layerX_percent = layer.x ?? 50;
+      const layerY_percent = layer.y ?? 50;
+      let layerWidth_percent = layer.width ?? 10;
+      let layerHeight_percent = layer.height ?? 10;
+
+      // Convert percentages to pixels based on main image dimensions
+      const layerX_px = (layerX_percent / 100) * imageNaturalDimensions.width;
+      const layerY_px = (layerY_percent / 100) * imageNaturalDimensions.height;
+      let layerWidth_px = (layerWidth_percent / 100) * imageNaturalDimensions.width;
+      let layerHeight_px = (layerHeight_percent / 100) * imageNaturalDimensions.height;
+
+      // Special handling for layers that don't use width/height properties directly (like text/drawing)
+      if (layer.type === 'text') {
+        const fontSize = layer.fontSize || 48;
+        layerWidth_px = (layer.content?.length || 1) * fontSize * 0.6; // Rough estimate
+        layerHeight_px = fontSize * 1.2;
       } else if (layer.type === 'drawing' && imgRef.current) {
-        minX = Math.min(minX, 0);
-        minY = Math.min(minY, 0);
-        maxX = Math.max(maxX, imgRef.current.naturalWidth);
-        maxY = Math.max(maxY, imgRef.current.naturalHeight);
-      } else if (layer.type === 'vector-shape' && layer.x !== undefined && layer.y !== undefined && layer.width !== undefined && layer.height !== undefined) {
-        const shapeX = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
-        const shapeY = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
-        const shapeWidth = (layer.width / 100) * (imageNaturalDimensions?.width || 1000);
-        const shapeHeight = (layer.height / 100) * (imageNaturalDimensions?.height || 1000);
-
-        minX = Math.min(minX, shapeX - shapeWidth / 2);
-        minY = Math.min(minY, shapeY - shapeHeight / 2);
-        maxX = Math.max(maxX, shapeX + shapeWidth / 2);
-        maxY = Math.max(maxY, shapeY + shapeHeight / 2);
-      } else if (layer.type === 'gradient' && layer.x !== undefined && layer.y !== undefined && layer.width !== undefined && layer.height !== undefined) {
-        const gradientX = (layer.x / 100) * (imageNaturalDimensions?.width || 1000);
-        const gradientY = (layer.y / 100) * (imageNaturalDimensions?.height || 1000);
-        const gradientWidth = (layer.width / 100) * (imageNaturalDimensions?.width || 1000);
-        const gradientHeight = (layer.height / 100) * (imageNaturalDimensions?.height || 1000);
-
-        minX = Math.min(minX, gradientX - gradientWidth / 2);
-        minY = Math.min(minY, gradientY - gradientHeight / 2);
-        maxX = Math.max(maxX, gradientX + gradientWidth / 2);
-        maxY = Math.max(maxY, gradientY + gradientHeight / 2);
+        layerWidth_px = imgRef.current.naturalWidth;
+        layerHeight_px = imgRef.current.naturalHeight;
       }
+
+      // Calculate bounds
+      minX_px = Math.min(minX_px, layerX_px - layerWidth_px / 2);
+      minY_px = Math.min(minY_px, layerY_px - layerHeight_px / 2);
+      maxX_px = Math.max(maxX_px, layerX_px + layerWidth_px / 2);
+      maxY_px = Math.max(maxY_px, layerY_px + layerHeight_px / 2);
     });
     
-    if (minX === Infinity || maxX === -Infinity || minY === Infinity || maxY === -Infinity) {
-      minX = 0;
-      minY = 0;
-      maxX = imageNaturalDimensions?.width || 1000;
-      maxY = imageNaturalDimensions?.height || 1000;
-    }
+    // 2. Define Smart Object's internal canvas dimensions
+    const smartObjectWidth_px = maxX_px - minX_px;
+    const smartObjectHeight_px = maxY_px - minY_px;
     
-    const width = maxX - minX;
-    const height = maxY - minY;
-    
+    // 3. Recalculate children's positions relative to the new Smart Object canvas (0,0)
+    const nestedLayers: Layer[] = selectedLayers.map(layer => {
+      const layerX_percent = layer.x ?? 50;
+      const layerY_percent = layer.y ?? 50;
+      let layerWidth_percent = layer.width ?? 10;
+      let layerHeight_percent = layer.height ?? 10;
+
+      const layerX_px = (layerX_percent / 100) * imageNaturalDimensions.width;
+      const layerY_px = (layerY_percent / 100) * imageNaturalDimensions.height;
+      let layerWidth_px = (layerWidth_percent / 100) * imageNaturalDimensions.width;
+      let layerHeight_px = (layerHeight_percent / 100) * imageNaturalDimensions.height;
+
+      if (layer.type === 'text') {
+        const fontSize = layer.fontSize || 48;
+        layerWidth_px = (layer.content?.length || 1) * fontSize * 0.6;
+        layerHeight_px = fontSize * 1.2;
+      } else if (layer.type === 'drawing' && imgRef.current) {
+        layerWidth_px = imgRef.current.naturalWidth;
+        layerHeight_px = imgRef.current.naturalHeight;
+      }
+
+      // Calculate new center position relative to the Smart Object's top-left corner (minX_px, minY_px)
+      const relativeCenterX_px = layerX_px - minX_px;
+      const relativeCenterY_px = layerY_px - minY_px;
+
+      // Convert back to percentage relative to the Smart Object's internal dimensions
+      const newX_percent = (relativeCenterX_px / smartObjectWidth_px) * 100;
+      const newY_percent = (relativeCenterY_px / smartObjectHeight_px) * 100;
+      
+      // Recalculate width/height percentages relative to the Smart Object's internal dimensions
+      const newWidth_percent = (layerWidth_px / smartObjectWidth_px) * 100;
+      const newHeight_percent = (layerHeight_px / smartObjectHeight_px) * 100;
+
+      return {
+        ...layer,
+        x: newX_percent,
+        y: newY_percent,
+        width: newWidth_percent,
+        height: newHeight_percent,
+        isClippingMask: false, // Reset clipping mask status
+        isLocked: false,
+      };
+    });
+
+    // 4. Define the Smart Object layer itself (position and size relative to main image)
     const smartObjectLayer: Layer = {
       id: uuidv4(),
       type: "smart-object",
@@ -523,15 +479,19 @@ export const useLayers = ({
       visible: true,
       opacity: 100,
       blendMode: 'normal',
-      x: (minX / (imageNaturalDimensions?.width || 1000)) * 100,
-      y: (minY / (imageNaturalDimensions?.height || 1000)) * 100,
-      width: (width / (imageNaturalDimensions?.width || 1000)) * 100,
-      height: (height / (imageNaturalDimensions?.height || 1000)) * 100,
       rotation: 0,
+      isLocked: false,
+      
+      // Position and size relative to the main image canvas (in percentages)
+      x: ((minX_px + smartObjectWidth_px / 2) / imageNaturalDimensions.width) * 100,
+      y: ((minY_px + smartObjectHeight_px / 2) / imageNaturalDimensions.height) * 100,
+      width: (smartObjectWidth_px / imageNaturalDimensions.width) * 100,
+      height: (smartObjectHeight_px / imageNaturalDimensions.height) * 100,
+      
       smartObjectData: {
-        layers: selectedLayers,
-        width,
-        height
+        layers: nestedLayers,
+        width: smartObjectWidth_px,
+        height: smartObjectHeight_px
       }
     };
 
@@ -541,7 +501,7 @@ export const useLayers = ({
 
     updateLayersState(updatedLayers, "Create Smart Object");
     setSelectedLayerId(smartObjectLayer.id);
-  }, [layers, updateLayersState, imageNaturalDimensions, imgRef]);
+  }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const openSmartObjectEditor = useCallback((id: string) => {
     const layer = layers.find(l => l.id === id);
@@ -592,7 +552,7 @@ export const useLayers = ({
       });
       return updatedLayers;
     });
-  }, []);
+  }, [setLayers]);
 
   const groupLayers = useCallback((layerIds: string[]) => {
     if (layerIds.length < 2) {
@@ -615,10 +575,15 @@ export const useLayers = ({
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     nonBackgroundSelected.forEach(layer => {
-      const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
-      const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
-      let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
-      let layerHeight_px = (layer.height / 100) * imageNaturalDimensions.height;
+      const layerX_percent = layer.x ?? 50;
+      const layerY_percent = layer.y ?? 50;
+      let layerWidth_percent = layer.width ?? 10;
+      let layerHeight_percent = layer.height ?? 10;
+
+      const layerX_px = (layerX_percent / 100) * imageNaturalDimensions.width;
+      const layerY_px = (layerY_percent / 100) * imageNaturalDimensions.height;
+      let layerWidth_px = (layerWidth_percent / 100) * imageNaturalDimensions.width;
+      let layerHeight_px = (layerHeight_percent / 100) * imageNaturalDimensions.height;
 
       if (layer.type === 'text') {
         const fontSize = layer.fontSize || 48;
@@ -659,6 +624,7 @@ export const useLayers = ({
       opacity: 100,
       blendMode: 'normal',
       expanded: true,
+      isLocked: false,
       x: groupX_percent,
       y: groupY_percent,
       width: groupWidth_percent,
@@ -676,6 +642,7 @@ export const useLayers = ({
           x: (relativeX_px / groupWidth_px) * 100,
           y: (relativeY_px / groupHeight_px) * 100,
           isClippingMask: false, // Reset clipping mask status when moving into a group
+          isLocked: false,
         };
       }),
     };
@@ -687,7 +654,7 @@ export const useLayers = ({
     updateLayersState(updatedLayers, "Group Layers");
     setSelectedLayerId(newGroup.id);
     showSuccess("Layers grouped successfully.");
-  }, [layers, updateLayersState, imageNaturalDimensions, imgRef]);
+  }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const toggleGroupExpanded = useCallback((id: string) => {
     setLayers(prevLayers => prevLayers.map(layer => {
@@ -696,7 +663,7 @@ export const useLayers = ({
       }
       return layer;
     }));
-  }, []);
+  }, [setLayers]);
 
   const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
     const targetLayer = layers.find(l => l.id === layerId);
@@ -808,6 +775,134 @@ export const useLayers = ({
     updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
   }, [layers, updateLayersState]);
 
+  const addTextLayer = useCallback((foregroundColor: string, coords?: { x: number; y: number }) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "text",
+      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
+      visible: true,
+      content: "New Text",
+      x: coords?.x ?? 50,
+      y: coords?.y ?? 50,
+      fontSize: 48,
+      color: foregroundColor,
+      fontFamily: "Roboto",
+      opacity: 100,
+      blendMode: 'normal',
+      fontWeight: "normal",
+      fontStyle: "normal",
+      textAlign: "center",
+      rotation: 0,
+      letterSpacing: 0,
+      padding: 10,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Text Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addDrawingLayer = useCallback(() => {
+    if (!imageNaturalDimensions) {
+      showError("Cannot add drawing layer without image dimensions.");
+      return ""; // Return empty string or throw error
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = imageNaturalDimensions.width;
+    canvas.height = imageNaturalDimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      showError("Failed to create canvas for new drawing layer.");
+      return "";
+    }
+    // Fill with transparent black
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const transparentDataUrl = canvas.toDataURL(); // This will be a transparent PNG
+
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "drawing",
+      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      dataUrl: transparentDataUrl, // Initialize with transparent image
+      isLocked: false,
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Drawing Layer");
+    setSelectedLayerId(newLayer.id);
+    return newLayer.id;
+  }, [layers, updateLayersState, imageNaturalDimensions, setSelectedLayerId]);
+
+  const addShapeLayer = useCallback((
+    coords: { x: number; y: number },
+    shapeType: Layer['shapeType'] = 'rect',
+    initialWidth: number = 10,
+    initialHeight: number = 10,
+    foregroundColor: string,
+    backgroundColor: string,
+  ) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "vector-shape",
+      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      visible: true,
+      x: coords.x,
+      y: coords.y,
+      width: initialWidth, // Default width in percentage
+      height: initialHeight, // Default height in percentage
+      rotation: 0,
+      opacity: 100,
+      blendMode: 'normal',
+      shapeType: shapeType,
+      fillColor: foregroundColor, // Default blue fill
+      strokeColor: backgroundColor, // Default white stroke
+      strokeWidth: 2,
+      borderRadius: 0, // Default for rect
+      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined, // Default points for triangle
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, `Add ${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} Layer`);
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addGradientLayer = useCallback(() => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "gradient",
+      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      gradientType: gradientToolState.type,
+      gradientColors: gradientToolState.colors,
+      gradientStops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Gradient Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, gradientToolState, setSelectedLayerId]);
+
 
   return {
     layers,
@@ -843,5 +938,6 @@ export const useLayers = ({
     removeLayerMask,
     invertLayerMask,
     toggleClippingMask,
+    toggleLayerLock,
   };
 };

@@ -76,9 +76,10 @@ export interface EditState {
     color: string;
   };
   crop: Crop | undefined;
-  selectiveBlurMask: string | null; // NEW: Data URL of the blur mask (grayscale)
-  selectiveBlurAmount: number; // NEW: Max blur amount (0-100)
-  selectiveBlurStrength: number; // NEW: Max blur strength (0-100)
+  selectiveBlurMask: string | null;
+  selectiveBlurAmount: number;
+  selectiveBlurStrength: number;
+  colorMode: 'RGB' | 'CMYK' | 'Grayscale'; // NEW: Color mode setting
 }
 
 export interface Point {
@@ -95,6 +96,7 @@ export interface Layer {
   opacity?: number;
   blendMode?: string;
   isClippingMask?: boolean; // NEW: Clipping mask flag
+  isLocked?: boolean; // NEW: Layer lock flag
   // Text layer specific properties
   content?: string;
   // Drawing layer specific properties
@@ -177,16 +179,16 @@ export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedr
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
-const initialCurvesState = {
+export const initialCurvesState = {
   all: [...defaultCurve],
   r: [...defaultCurve],
   g: [...defaultCurve],
   b: [...defaultCurve],
 };
 
-const initialHslAdjustment: HslAdjustment = { hue: 0, saturation: 100, luminance: 0 };
+export const initialHslAdjustment: HslAdjustment = { hue: 0, saturation: 100, luminance: 0 };
 
-const initialEditState: EditState = {
+export const initialEditState: EditState = {
   adjustments: { brightness: 100, contrast: 100, saturation: 100 },
   effects: { blur: 0, hueShift: 0, vignette: 0, noise: 0, sharpen: 0, clarity: 0 },
   grading: { grayscale: 0, sepia: 0, invert: 0 },
@@ -207,20 +209,21 @@ const initialEditState: EditState = {
   transforms: { rotation: 0, scaleX: 1, scaleY: 1 },
   frame: { type: 'none', width: 0, color: '#000000' },
   crop: undefined,
-  selectiveBlurMask: null, // ADDED
-  selectiveBlurAmount: 0,  // ADDED
-  selectiveBlurStrength: 50, // NEW: Initialize to 50%
+  selectiveBlurMask: null,
+  selectiveBlurAmount: 0,
+  selectiveBlurStrength: 50,
+  colorMode: 'RGB', // NEW: Default color mode
 };
 
-const initialBrushState: Omit<BrushState, 'color'> = { // Removed color from initial state
+export const initialBrushState: Omit<BrushState, 'color'> = {
   size: 50,
   opacity: 100,
-  hardness: 50, // Default hardness (0-100)
-  smoothness: 0, // Default smoothness (0-100)
-  shape: 'circle', // Default brush shape
+  hardness: 50,
+  smoothness: 0,
+  shape: 'circle',
 };
 
-const initialGradientToolState: GradientToolState = {
+export const initialGradientToolState: GradientToolState = {
   type: "linear",
   colors: ["#FFFFFF", "#000000"],
     stops: [0, 1],
@@ -233,7 +236,7 @@ const initialGradientToolState: GradientToolState = {
 };
 
 // Define initial layer structure for history
-const initialLayerState: Layer[] = [
+export const initialLayerState: Layer[] = [
   {
     id: uuidv4(),
     type: "image",
@@ -241,56 +244,69 @@ const initialLayerState: Layer[] = [
     visible: true,
     opacity: 100,
     blendMode: 'normal',
+    isLocked: true, // Lock background by default
   },
 ];
 
-const initialHistoryItem: HistoryItem = {
+export const initialHistoryItem: HistoryItem = {
   name: "Initial State",
   state: initialEditState,
   layers: initialLayerState,
 };
 
 /* ---------- Hook implementation ---------- */
-export const useEditorState = () => {
-  const { geminiApiKey, stabilityApiKey } = useSettings(); // NEW: Destructure keys
+export const useEditorState = (
+  initialProject: {
+    history: HistoryItem[];
+    currentHistoryIndex: number;
+    layers: Layer[];
+    selectedLayerId: string | null;
+    aspect: number | undefined;
+    pendingCrop: Crop | undefined;
+    selectionPath: Point[] | null;
+    selectionMaskDataUrl: string | null;
+    foregroundColor: string;
+    backgroundColor: string;
+    gradientToolState: GradientToolState;
+    brushStateInternal: Omit<BrushState, 'color'>;
+    selectedShapeType: Layer['shapeType'] | null;
+  },
+  onProjectUpdate: (updates: Partial<Omit<typeof initialProject, 'history' | 'layers'>>) => void,
+  onHistoryUpdate: (history: HistoryItem[], currentHistoryIndex: number, layers: Layer[]) => void,
+  onLayerUpdate: (layers: Layer[], historyName?: string) => void,
+  image: string | null,
+  dimensions: { width: number; height: number } | null,
+  fileInfo: { name: string; size: number } | null,
+  exifData: any | null,
+  imgRef: React.RefObject<HTMLImageElement>,
+) => {
+  const { geminiApiKey, stabilityApiKey } = useSettings();
   
-  const [image, setImage] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
-  const [exifData, setExifData] = useState<any | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
-  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
-  const [aspect, setAspect] = useState<number | undefined>();
-  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [activeTool, _setActiveTool] = useState<ActiveTool | null>(null);
-  const [brushStateInternal, setBrushStateInternal] = useState<Omit<BrushState, 'color'>>(initialBrushState); // Renamed to avoid conflict
-  const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
-  const [pendingCrop, setPendingCrop] = useState<Crop | undefined>();
-  const [selectionPath, _setSelectionPath] = useState<Point[] | null>(null); // Renamed internal setter
-  const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null); // New state for selection mask
-  const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect'); // Default to rectangle
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  // New color states
-  const [foregroundColor, setForegroundColor] = useState<string>("#000000");
-  const [backgroundColor, setBackgroundColor] = useState<string>("#FFFFFF");
-  
-  // Font states
-  const [systemFonts, setSystemFonts] = useState<string[]>([]); // NEW
-  const [customFonts, setCustomFonts] = useState<string[]>([]); // NEW
+  const {
+    history,
+    currentHistoryIndex,
+    layers,
+    selectedLayerId,
+    aspect,
+    pendingCrop,
+    selectionPath,
+    selectionMaskDataUrl,
+    foregroundColor,
+    backgroundColor,
+    gradientToolState,
+    brushStateInternal,
+    selectedShapeType,
+  } = initialProject;
 
   const currentState = history[currentHistoryIndex].state;
-  const currentLayers = history[currentHistoryIndex].layers; // Get layers from history
 
   /* ---------- History helpers ---------- */
   const recordHistory = useCallback(
-    (name: string, state: EditState, layers: Layer[] = currentLayers) => {
+    (name: string, state: EditState, layers: Layer[] = initialProject.layers) => {
       const newHistory = history.slice(0, currentHistoryIndex + 1);
-      setHistory([...newHistory, { name, state, layers }]);
-      setCurrentHistoryIndex(newHistory.length);
+      onHistoryUpdate([...newHistory, { name, state, layers }], newHistory.length, layers);
     },
-    [history, currentHistoryIndex, currentLayers]
+    [history, currentHistoryIndex, onHistoryUpdate, initialProject.layers]
   );
 
   const updateCurrentState = useCallback(
@@ -298,29 +314,18 @@ export const useEditorState = () => {
       const newState = { ...currentState, ...updates };
       const newHistory = [...history];
       newHistory[currentHistoryIndex] = { ...newHistory[currentHistoryIndex], state: newState };
-      setHistory(newHistory);
+      onHistoryUpdate(newHistory, currentHistoryIndex, layers);
     },
-    [currentState, history, currentHistoryIndex]
-  );
-
-  const updateCurrentLayersInHistory = useCallback(
-    (layers: Layer[]) => {
-      const newHistory = [...history];
-      newHistory[currentHistoryIndex] = { ...newHistory[currentHistoryIndex], layers };
-      setHistory(newHistory);
-    },
-    [history, currentHistoryIndex]
+    [currentState, history, currentHistoryIndex, onHistoryUpdate, layers]
   );
 
   const {
-    layers,
     setLayers,
-    selectedLayerId,
     setSelectedLayerId,
     addTextLayer,
     addDrawingLayer,
     addShapeLayer,
-    addGradientLayer, // Added addGradientLayer
+    addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -340,45 +345,45 @@ export const useEditorState = () => {
     isSmartObjectEditorOpen,
     smartObjectEditingId,
     moveSelectedLayer,
-    groupLayers, // Added groupLayers
-    toggleGroupExpanded, // Added toggleGroupExpanded
-    handleDrawingStrokeEnd, // Destructure the new drawing stroke handler
-    removeLayerMask, // Destructure the new mask removal handler
-    invertLayerMask, // NEW: Destructure invertLayerMask
-    toggleClippingMask, // NEW: Destructure toggleClippingMask
+    groupLayers,
+    toggleGroupExpanded,
+    handleDrawingStrokeEnd,
+    removeLayerMask,
+    invertLayerMask,
+    toggleClippingMask,
+    toggleLayerLock, // NEW: Layer lock toggle
   } = useLayers({
     currentEditState: currentState,
     recordHistory: (name, state, layers) => recordHistory(name, state, layers),
     updateCurrentState,
     imgRef,
     imageNaturalDimensions: dimensions,
-    gradientToolState, // Pass gradientToolState to useLayers
-    activeTool, // Pass activeTool to useLayers
+    gradientToolState,
+    activeTool: null, // Active tool is managed outside useLayers
+    layers,
+    setLayers: (newLayers, historyName) => onLayerUpdate(newLayers, historyName),
+    selectedLayerId,
+    setSelectedLayerId: (id) => onProjectUpdate({ selectedLayerId: id }),
   });
 
   // Sync layers from useLayers back to history when they change
-  React.useEffect(() => {
-    if (layers !== currentLayers) {
-      updateCurrentLayersInHistory(layers);
-    }
-  }, [layers, currentLayers, updateCurrentLayersInHistory]);
+  // This is now handled by the setLayers callback passed to useLayers
 
   const setActiveTool = (tool: ActiveTool | null) => {
     // Clear selection states if switching away from selection tools
     if (tool !== 'lasso' && tool !== 'selectionBrush') {
-      _setSelectionPath(null); // Use the internal setter directly
-      setSelectionMaskDataUrl(null);
+      onProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
     }
     // Clear pending crop if switching away from crop tool
-    if (tool !== 'crop' && activeTool === 'crop') {
-      setPendingCrop(undefined);
+    if (tool !== 'crop' && initialProject.pendingCrop) {
+      onProjectUpdate({ pendingCrop: undefined });
     }
     // Clear selective blur mask if switching away from blur brush
     if (tool !== 'blurBrush' && currentState.selectiveBlurMask) {
       recordHistory("Clear Blur Mask", { ...currentState, selectiveBlurMask: null, selectiveBlurAmount: 0, selectiveBlurStrength: 50 }, layers);
     }
     
-    _setActiveTool(tool);
+    onProjectUpdate({ activeTool: tool });
   };
 
   /* ---------- Preset application ---------- */
@@ -395,30 +400,27 @@ export const useEditorState = () => {
   );
 
   /* ---------- Image loading ---------- */
-  const handleImageLoad = useCallback(() => {
-    if (imgRef.current) {
-      setDimensions({
-        width: imgRef.current.naturalWidth,
-        height: imgRef.current.naturalHeight,
-      });
-    }
-  }, []);
-
   const loadImageData = useCallback((dataUrl: string, successMsg: string, initialLayers: Layer[], initialDimensions?: { width: number; height: number }) => {
-    setImage(dataUrl);
-    if (initialDimensions) {
-      setDimensions(initialDimensions); // Set dimensions immediately if provided
-    }
-    const newHistoryItem = { ...initialHistoryItem, name: "Load Image", layers: initialLayers };
-    setHistory([newHistoryItem]);
-    setCurrentHistoryIndex(0);
-    setLayers(initialLayers);
-    setSelectedLayerId(initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null);
-    setPendingCrop(undefined);
-    _setSelectionPath(null); // Clear selection path on new image load
-    setSelectionMaskDataUrl(null); // Clear mask on new image load
+    const newHistoryItem: HistoryItem = { 
+      name: "Load Image", 
+      state: initialEditState, 
+      layers: initialLayers 
+    };
+    
+    onProjectUpdate({
+      image: dataUrl,
+      dimensions: initialDimensions,
+      history: [newHistoryItem],
+      currentHistoryIndex: 0,
+      layers: initialLayers,
+      selectedLayerId: initialLayers.length > 1 ? initialLayers[initialLayers.length - 1].id : null,
+      pendingCrop: undefined,
+      selectionPath: null,
+      selectionMaskDataUrl: null,
+      aspect: initialDimensions ? initialDimensions.width / initialDimensions.height : undefined,
+    });
     showSuccess(successMsg);
-  }, [setLayers, setSelectedLayerId]);
+  }, [onProjectUpdate]);
 
   const handleNewProject = useCallback((settings: NewProjectSettings) => {
     const { width, height, backgroundColor } = settings;
@@ -431,8 +433,7 @@ export const useEditorState = () => {
       ctx.fillRect(0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/png');
       
-      // FIX: Set dimensions immediately
-      setDimensions({ width, height });
+      const initialDimensions = { width, height };
 
       loadImageData(dataUrl, "New project created.", [{
         id: uuidv4(),
@@ -441,20 +442,19 @@ export const useEditorState = () => {
         visible: true,
         opacity: 100,
         blendMode: 'normal',
-      }], { width, height });
-      setFileInfo({ name: "Untitled-1.png", size: 0 });
-      setExifData(null);
+        isLocked: true,
+      }], initialDimensions);
+      onProjectUpdate({ fileInfo: { name: "Untitled-1.png", size: 0 }, exifData: null });
     } else {
       showError("Failed to create canvas for new project.");
     }
-  }, [loadImageData]);
+  }, [loadImageData, onProjectUpdate]);
 
   const handleGeneratedImageLoad = useCallback((dataUrl: string) => {
-    // We need to load the image first to get dimensions before calling loadImageData
     const img = new Image();
     img.onload = () => {
       const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
-      setDimensions(initialDimensions); // Set dimensions immediately
+      
       loadImageData(dataUrl, "New image generated successfully.", [{
         id: uuidv4(),
         type: "image",
@@ -462,17 +462,55 @@ export const useEditorState = () => {
         visible: true,
         opacity: 100,
         blendMode: 'normal',
+        isLocked: true,
       }], initialDimensions);
-      setFileInfo({ name: "generated-image.png", size: 0 });
-      setExifData(null);
+      onProjectUpdate({ fileInfo: { name: "generated-image.png", size: 0 }, exifData: null });
     };
     img.src = dataUrl;
-  }, [loadImageData]);
+  }, [loadImageData, onProjectUpdate]);
 
-  const handleFileSelect = useCallback((file: File | undefined) => {
+  const handleFileSelect = useCallback((file: File | undefined, importInSameProject: boolean = false) => {
     if (!file) return;
     const toastId = showLoading("Uploading file...");
     const fileNameLower = file.name.toLowerCase();
+
+    const processImageFile = (dataUrl: string, initialDimensions: { width: number; height: number }) => {
+      dismissToast(toastId);
+      
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: file.name,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: (initialDimensions.width / (dimensions?.width || initialDimensions.width)) * 100,
+        height: (initialDimensions.height / (dimensions?.height || initialDimensions.height)) * 100,
+        rotation: 0,
+      };
+
+      if (importInSameProject && image) {
+        const updatedLayers = [...layers, newLayer];
+        onLayerUpdate(updatedLayers, `Import Layer: ${file.name}`);
+        onProjectUpdate({ selectedLayerId: newLayer.id });
+        showSuccess(`File "${file.name}" imported as a new layer.`);
+      } else {
+        // New Project
+        loadImageData(dataUrl, "Image uploaded successfully.", [{
+          id: uuidv4(),
+          type: "image",
+          name: "Background",
+          visible: true,
+          opacity: 100,
+          blendMode: 'normal',
+          isLocked: true,
+        }], initialDimensions);
+        onProjectUpdate({ fileInfo: { name: file.name, size: file.size }, exifData: null });
+      }
+    };
 
     if (fileNameLower.endsWith('.psd') || fileNameLower.endsWith('.psb')) {
       const reader = new FileReader();
@@ -480,50 +518,14 @@ export const useEditorState = () => {
         try {
           const psd = readPsd(reader.result as ArrayBuffer);
           const compositeImageUrl = psd.canvas.toDataURL();
+          const initialDimensions = { width: psd.width, height: psd.height };
           
-          const importedLayers: Layer[] = [
-            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal' }
-          ];
+          const importedLayers: Layer[] = [];
 
-          // Process PSD layers and convert unsupported ones to flattened layers
-          const processPsdLayers = (psdLayers: any[], parentGroup: any = null) => {
-            psdLayers.forEach((psdLayer, index) => {
-              // Skip hidden layers
+          const processPsdLayers = (psdLayers: any[]) => {
+            psdLayers.forEach((psdLayer) => {
               if (psdLayer.hidden) return;
               
-              // Handle group layers
-              if (psdLayer.children) {
-                processPsdLayers(psdLayer.children, psdLayer);
-                return;
-              }
-              
-              // Skip adjustment layers and other unsupported types
-              if (psdLayer.adjustment || psdLayer.type === 'smartObject') {
-                // Convert to flattened layer
-                if (psdLayer.canvas) {
-                  const fullCanvas = document.createElement('canvas');
-                  fullCanvas.width = psd.width;
-                  fullCanvas.height = psd.height;
-                  const ctx = fullCanvas.getContext('2d');
-                  if (ctx) {
-                    ctx.drawImage(psdLayer.canvas, psdLayer.left ?? 0, psdLayer.top ?? 0);
-                    
-                    const newLayer: Layer = {
-                      id: uuidv4(),
-                      type: 'drawing',
-                      name: psdLayer.name || 'Flattened Layer',
-                      visible: !psdLayer.hidden,
-                      opacity: (psdLayer.opacity ?? 1) * 100,
-                      blendMode: psdLayer.blendMode || 'normal',
-                      dataUrl: fullCanvas.toDataURL(),
-                    };
-                    importedLayers.push(newLayer);
-                  }
-                }
-                return;
-              }
-              
-              // Handle regular layers
               if (psdLayer.canvas) {
                 const fullCanvas = document.createElement('canvas');
                 fullCanvas.width = psd.width;
@@ -535,11 +537,16 @@ export const useEditorState = () => {
                   const newLayer: Layer = {
                     id: uuidv4(),
                     type: 'drawing',
-                    name: psdLayer.name || 'Layer',
+                    name: psdLayer.name || 'Flattened Layer',
                     visible: !psdLayer.hidden,
                     opacity: (psdLayer.opacity ?? 1) * 100,
                     blendMode: psdLayer.blendMode || 'normal',
                     dataUrl: fullCanvas.toDataURL(),
+                    x: 50,
+                    y: 50,
+                    width: 100,
+                    height: 100,
+                    rotation: 0,
                   };
                   importedLayers.push(newLayer);
                 }
@@ -550,14 +557,24 @@ export const useEditorState = () => {
           if (psd.children) {
             processPsdLayers(psd.children);
           }
+          
+          // Add a transparent background layer if importing into a new project
+          const finalLayers = importInSameProject ? importedLayers : [
+            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal', isLocked: true },
+            ...importedLayers
+          ];
 
+          if (importInSameProject && image) {
+            const updatedLayers = [...layers, ...finalLayers];
+            onLayerUpdate(updatedLayers, `Import PSD Layers: ${file.name}`);
+            onProjectUpdate({ selectedLayerId: importedLayers[importedLayers.length - 1]?.id || null });
+            showSuccess(`PSD file imported as ${importedLayers.length} layers.`);
+          } else {
+            loadImageData(compositeImageUrl, "PSD/PSB file imported with layers.", finalLayers, initialDimensions);
+            onProjectUpdate({ fileInfo: { name: file.name, size: file.size }, exifData: null });
+          }
           dismissToast(toastId);
-          // FIX: Set dimensions immediately
-          setDimensions({ width: psd.width, height: psd.height });
-          loadImageData(compositeImageUrl, "PSD/PSB file imported with layers.", importedLayers, { width: psd.width, height: psd.height });
-          setFileInfo({ name: file.name, size: file.size });
-          setExifData(null);
-          showError(`Warning: ${file.name} was imported as a flattened image. Full vector editing is not supported.`);
+          showError(`Warning: ${file.name} was imported as flattened raster layers. Full vector editing is not supported.`);
         } catch (e) {
           console.error("Failed to parse PSD:", e);
           dismissToast(toastId);
@@ -576,35 +593,15 @@ export const useEditorState = () => {
       // --- STUB: Complex Vector Import ---
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Simulate parsing and flattening into a single raster layer
         const dataUrl = reader.result as string;
         
-        // We need dimensions to create the canvas, so we rely on the browser to load the image first
         const tempImg = new Image();
         tempImg.onload = () => {
           const width = tempImg.naturalWidth;
           const height = tempImg.naturalHeight;
           const initialDimensions = { width, height };
           
-          const newLayer: Layer = {
-            id: uuidv4(),
-            type: 'drawing',
-            name: `${file.name} (Flattened)`,
-            visible: true,
-            opacity: 100,
-            blendMode: 'normal',
-            dataUrl: dataUrl,
-          };
-          
-          dismissToast(toastId);
-          // FIX: Set dimensions immediately
-          setDimensions(initialDimensions);
-          loadImageData(dataUrl, `${file.name} imported. Vector objects flattened to raster layers.`, [
-            { id: uuidv4(), type: "image", name: "Background", visible: true, opacity: 100, blendMode: 'normal' },
-            newLayer
-          ], initialDimensions);
-          setFileInfo({ name: file.name, size: file.size });
-          setExifData(null);
+          processImageFile(dataUrl, initialDimensions);
           showError(`Warning: ${file.name} was imported as a flattened image. Full vector editing is not supported.`);
         };
         tempImg.onerror = () => {
@@ -627,10 +624,8 @@ export const useEditorState = () => {
       showError("Invalid file type. Please upload an image, .psd, .psb, .pdf, .ai, or .cdr file.");
       return;
     }
-    setDimensions(null);
-    setFileInfo({ name: file.name, size: file.size });
-    setExifData(null);
-    ExifReader.load(file).then(setExifData).catch(() => setExifData(null));
+    
+    ExifReader.load(file).then((data) => onProjectUpdate({ exifData: data })).catch(() => onProjectUpdate({ exifData: null }));
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -638,17 +633,7 @@ export const useEditorState = () => {
       const img = new Image();
       img.onload = () => {
         const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
-        dismissToast(toastId);
-        // FIX: Set dimensions immediately
-        setDimensions(initialDimensions);
-        loadImageData(dataUrl, "Image uploaded successfully.", [{
-          id: uuidv4(),
-          type: "image",
-          name: "Background",
-          visible: true,
-          opacity: 100,
-          blendMode: 'normal',
-        }], initialDimensions);
+        processImageFile(dataUrl, initialDimensions);
       };
       img.src = dataUrl;
     };
@@ -657,12 +642,11 @@ export const useEditorState = () => {
       showError("Failed to read the image file.");
     };
     reader.readAsDataURL(file);
-  }, [loadImageData]);
+  }, [loadImageData, onProjectUpdate, layers, image, dimensions, onLayerUpdate]);
 
-  const handleUrlImageLoad = useCallback(async (url: string) => {
+  const handleUrlImageLoad = useCallback(async (url: string, importInSameProject: boolean = false) => {
     const toastId = showLoading("Loading image from URL...");
     try {
-      setDimensions(null);
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Network error ${response.status}`);
       const blob = await response.blob();
@@ -673,9 +657,8 @@ export const useEditorState = () => {
       }
       const filename = url.split("/").pop()?.split("?")[0] || "image.jpg";
       const file = new File([blob], filename, { type: blob.type });
-      setFileInfo({ name: file.name, size: file.size });
-      setExifData(null);
-      ExifReader.load(file).then(setExifData).catch(() => setExifData(null));
+      
+      ExifReader.load(file).then((data) => onProjectUpdate({ exifData: data })).catch(() => onProjectUpdate({ exifData: null }));
 
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -684,16 +667,39 @@ export const useEditorState = () => {
         img.onload = () => {
           const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
           dismissToast(toastId);
-          // FIX: Set dimensions immediately
-          setDimensions(initialDimensions);
-          loadImageData(dataUrl, "Image loaded successfully.", [{
+
+          const newLayer: Layer = {
             id: uuidv4(),
-            type: "image",
-            name: "Background",
+            type: "drawing",
+            name: file.name,
             visible: true,
             opacity: 100,
             blendMode: 'normal',
-          }], initialDimensions);
+            dataUrl: dataUrl,
+            x: 50,
+            y: 50,
+            width: (initialDimensions.width / (dimensions?.width || initialDimensions.width)) * 100,
+            height: (initialDimensions.height / (dimensions?.height || initialDimensions.height)) * 100,
+            rotation: 0,
+          };
+
+          if (importInSameProject && image) {
+            const updatedLayers = [...layers, newLayer];
+            onLayerUpdate(updatedLayers, `Import Layer: ${file.name}`);
+            onProjectUpdate({ selectedLayerId: newLayer.id });
+            showSuccess(`Image from URL imported as a new layer.`);
+          } else {
+            loadImageData(dataUrl, "Image loaded successfully.", [{
+              id: uuidv4(),
+              type: "image",
+              name: "Background",
+              visible: true,
+              opacity: 100,
+              blendMode: 'normal',
+              isLocked: true,
+            }], initialDimensions);
+            onProjectUpdate({ fileInfo: { name: file.name, size: file.size }, exifData: null });
+          }
         };
         img.src = dataUrl;
       };
@@ -707,9 +713,9 @@ export const useEditorState = () => {
       console.error(e);
       showError("Could not load image. Check the URL and CORS policy.");
     }
-  }, [loadImageData]);
+  }, [loadImageData, onProjectUpdate, layers, image, dimensions, onLayerUpdate]);
 
-  const handleNewFromClipboard = useCallback(async () => {
+  const handleNewFromClipboard = useCallback(async (importInSameProject: boolean = false) => {
     const toastId = showLoading("Checking clipboard...");
     try {
       const clipboardItems = await navigator.clipboard.read();
@@ -726,7 +732,7 @@ export const useEditorState = () => {
       if (imageBlob) {
         dismissToast(toastId);
         const file = new File([imageBlob], "pasted-image.png", { type: imageBlob.type });
-        handleFileSelect(file);
+        handleFileSelect(file, importInSameProject);
       } else {
         dismissToast(toastId);
         showError("No image found on the clipboard.");
@@ -745,35 +751,28 @@ export const useEditorState = () => {
   const loadTemplateData = useCallback((templateData: TemplateData) => {
     const { editState, layers: templateLayers, dimensions: templateDimensions } = templateData;
     
-    // 1. Create a blank canvas based on template dimensions
     const canvas = document.createElement('canvas');
     canvas.width = templateDimensions.width;
     canvas.height = templateDimensions.height;
     const dataUrl = canvas.toDataURL('image/png');
 
-    // 2. Reset history and set base image (transparent canvas)
-    // FIX: Set dimensions immediately
-    setDimensions(templateDimensions);
-    
-    // 3. Apply template layers and edit state
     const newState = { ...initialEditState, ...editState };
     const newHistoryItem = { name: "Load Template", state: newState, layers: templateLayers };
     
-    setHistory([newHistoryItem]);
-    setCurrentHistoryIndex(0);
-    setLayers(templateLayers);
-    setSelectedLayerId(null);
-    setPendingCrop(undefined);
-    _setSelectionPath(null);
-    setSelectionMaskDataUrl(null);
-    
-    // 4. Set aspect ratio if available
-    setAspect(templateDimensions.width / templateDimensions.height);
-    
-    // 5. Load image data (which now uses the pre-set dimensions)
-    loadImageData(dataUrl, "Template loaded successfully.", templateLayers, templateDimensions);
-
-  }, [setLayers, setSelectedLayerId, setDimensions, setAspect, loadImageData]);
+    onProjectUpdate({
+      image: dataUrl,
+      dimensions: templateDimensions,
+      history: [newHistoryItem],
+      currentHistoryIndex: 0,
+      layers: templateLayers,
+      selectedLayerId: null,
+      pendingCrop: undefined,
+      selectionPath: null,
+      selectionMaskDataUrl: null,
+      aspect: templateDimensions.width / templateDimensions.height,
+    });
+    showSuccess("Template loaded successfully.");
+  }, [onProjectUpdate]);
 
   /* ---------- Project Save/Load ---------- */
   const handleSaveProject = useCallback(() => {
@@ -794,23 +793,24 @@ export const useEditorState = () => {
     try {
       const projectData = await loadProjectFromFile(file);
       
-      setImage(projectData.sourceImage);
-      setHistory(projectData.history);
-      setCurrentHistoryIndex(projectData.currentHistoryIndex);
-      setFileInfo(projectData.fileInfo);
-      
-      setExifData(null);
-      setSelectedLayerId(null);
-      setLayers(projectData.history[projectData.currentHistoryIndex].layers);
-      setPendingCrop(undefined);
-      _setSelectionPath(null); // Clear selection path on project load
-      setSelectionMaskDataUrl(null); // Clear mask on project load
-      
-      // FIX: Load image to get dimensions before setting state
       const img = new Image();
       img.onload = () => {
         const initialDimensions = { width: img.naturalWidth, height: img.naturalHeight };
-        setDimensions(initialDimensions);
+        
+        onProjectUpdate({
+          image: projectData.sourceImage,
+          dimensions: initialDimensions,
+          history: projectData.history,
+          currentHistoryIndex: projectData.currentHistoryIndex,
+          fileInfo: projectData.fileInfo,
+          exifData: null,
+          selectedLayerId: null,
+          pendingCrop: undefined,
+          selectionPath: null,
+          selectionMaskDataUrl: null,
+          layers: projectData.history[projectData.currentHistoryIndex].layers,
+          aspect: initialDimensions.width / initialDimensions.height,
+        });
         dismissToast(toastId);
         showSuccess("Project opened successfully.");
       };
@@ -825,7 +825,7 @@ export const useEditorState = () => {
       console.error("Failed to load project:", error);
       showError(error.message || "Could not open the project file.");
     }
-  }, [setSelectedLayerId, setLayers]);
+  }, [onProjectUpdate]);
 
   /* ---------- Adjustment handlers ---------- */
   const handleAdjustmentChange = useCallback((key: string, value: number) => {
@@ -958,29 +958,29 @@ export const useEditorState = () => {
   const applyCrop = useCallback(() => {
     if (!pendingCrop) return;
     recordHistory("Crop Image", { ...currentState, crop: pendingCrop }, layers);
-    setPendingCrop(undefined);
+    onProjectUpdate({ pendingCrop: undefined });
     setActiveTool(null);
-  }, [currentState, recordHistory, pendingCrop, layers]);
+  }, [currentState, recordHistory, pendingCrop, layers, onProjectUpdate]);
 
   const cancelCrop = useCallback(() => {
-    setPendingCrop(undefined);
+    onProjectUpdate({ pendingCrop: undefined });
     setActiveTool(null);
-  }, []);
+  }, [onProjectUpdate]);
 
   /* ---------- Undo / Redo / Reset ---------- */
   const handleUndo = useCallback(() => {
     if (currentHistoryIndex > 0) {
-      setCurrentHistoryIndex(currentHistoryIndex - 1);
-      setLayers(history[currentHistoryIndex - 1].layers);
+      const newIndex = currentHistoryIndex - 1;
+      onHistoryUpdate(history, newIndex, history[newIndex].layers);
     }
-  }, [currentHistoryIndex, history, setLayers]);
+  }, [currentHistoryIndex, history, onHistoryUpdate]);
 
   const handleRedo = useCallback(() => {
     if (currentHistoryIndex < history.length - 1) {
-      setCurrentHistoryIndex(currentHistoryIndex + 1);
-      setLayers(history[currentHistoryIndex + 1].layers);
+      const newIndex = currentHistoryIndex + 1;
+      onHistoryUpdate(history, newIndex, history[newIndex].layers);
     }
-  }, [currentHistoryIndex, history.length, history, setLayers]);
+  }, [currentHistoryIndex, history.length, history, onHistoryUpdate]);
 
   const handleReset = useCallback(() => {
     recordHistory("Reset All", initialEditState, [{
@@ -990,19 +990,21 @@ export const useEditorState = () => {
       visible: true,
       opacity: 100,
       blendMode: 'normal',
+      isLocked: true,
     }]);
-    setSelectedLayerId(null);
-    setPendingCrop(undefined);
-    _setSelectionPath(null); // Clear selection path on reset
-    setSelectionMaskDataUrl(null); // Clear mask on reset
-    setForegroundColor("#000000"); // Reset foreground color
-    setBackgroundColor("#FFFFFF"); // Reset background color
-  }, [recordHistory, setSelectedLayerId]);
+    onProjectUpdate({
+      selectedLayerId: null,
+      pendingCrop: undefined,
+      selectionPath: null,
+      selectionMaskDataUrl: null,
+      foregroundColor: "#000000",
+      backgroundColor: "#FFFFFF",
+    });
+  }, [recordHistory, onProjectUpdate]);
 
   const jumpToHistory = useCallback((index: number) => {
-    setCurrentHistoryIndex(index);
-    setLayers(history[index].layers);
-  }, [history, setLayers]);
+    onHistoryUpdate(history, index, history[index].layers);
+  }, [history, onHistoryUpdate]);
 
   /* ---------- Export / Copy ---------- */
   const handleDownload = useCallback((options: { format: string; quality: number; width: number; height: number; upscale: 1 | 2 | 4 }) => {
@@ -1010,7 +1012,7 @@ export const useEditorState = () => {
     downloadImage(
       { image: imgRef.current, layers: layers, ...currentState },
       options,
-      stabilityApiKey // Pass stability API key
+      stabilityApiKey
     );
   }, [currentState, layers, stabilityApiKey]);
 
@@ -1020,7 +1022,7 @@ export const useEditorState = () => {
   }, [currentState, layers]);
 
   /* ---------- Generative fill ---------- */
-  const applyGenerativeResult = useCallback(async (url: string, maskDataUrl: string | null) => { // Updated signature
+  const applyGenerativeResult = useCallback(async (url: string, maskDataUrl: string | null) => {
     if (!imgRef.current || !dimensions) {
       showError("Image dimensions are required for generative fill.");
       return;
@@ -1051,12 +1053,15 @@ export const useEditorState = () => {
         blendMode: 'normal',
         dataUrl: generatedImage.src, // The full generated image
         maskDataUrl: maskDataUrl, // The feathered mask provided by the dialog
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
       };
       const updatedLayers = [...layers, newLayer];
       recordHistory("Generative Fill", currentState, updatedLayers);
-      setSelectedLayerId(newLayer.id);
-      _setSelectionPath(null); // Clear the selection path
-      setSelectionMaskDataUrl(null); // Clear the selection mask overlay
+      onProjectUpdate({ selectedLayerId: newLayer.id, selectionPath: null, selectionMaskDataUrl: null });
       dismissToast(toastId);
       showSuccess("Generative fill applied as a new layer.");
     } catch (e: any) {
@@ -1064,31 +1069,30 @@ export const useEditorState = () => {
       dismissToast(toastId);
       showError(e.message || "Generation failed.");
     }
-  }, [imgRef, dimensions, layers, recordHistory, currentState, setSelectedLayerId]);
+  }, [imgRef, dimensions, layers, recordHistory, currentState, onProjectUpdate]);
 
   const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
-    setBrushStateInternal(prev => ({ ...prev, ...updates }));
-  }, []);
+    onProjectUpdate({ brushStateInternal: { ...brushStateInternal, ...updates } });
+  }, [brushStateInternal, onProjectUpdate]);
 
   const handleColorPick = useCallback((color: string) => {
-    setForegroundColor(color);
-    _setActiveTool('brush');
+    onProjectUpdate({ foregroundColor: color });
+    setActiveTool('brush');
     showSuccess(`Color picked: ${color}`);
-  }, []);
+  }, [onProjectUpdate]);
 
   const handleForegroundColorChange = useCallback((color: string) => {
-    setForegroundColor(color);
-  }, []);
+    onProjectUpdate({ foregroundColor: color });
+  }, [onProjectUpdate]);
 
   const handleBackgroundColorChange = useCallback((color: string) => {
-    setBackgroundColor(color);
-  }, []);
+    onProjectUpdate({ backgroundColor: color });
+  }, [onProjectUpdate]);
 
   const handleSwapColors = useCallback(() => {
-    setForegroundColor(backgroundColor);
-    setBackgroundColor(foregroundColor);
+    onProjectUpdate({ foregroundColor: backgroundColor, backgroundColor: foregroundColor });
     showSuccess("Colors swapped!");
-  }, [foregroundColor, backgroundColor]);
+  }, [foregroundColor, backgroundColor, onProjectUpdate]);
 
   /* ---------- Selective Blur Functions ---------- */
   const handleSelectiveBlurStroke = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
@@ -1120,13 +1124,13 @@ export const useEditorState = () => {
     tempCtx.globalCompositeOperation = operation === 'add' ? 'source-over' : 'destination-out';
     tempCtx.drawImage(strokeImg, 0, 0);
     tempCtx.globalCompositeOperation = 'source-over'; 
-
+    
     const combinedDataUrl = tempCanvas.toDataURL();
     
     const newState: EditState = {
       ...currentState,
       selectiveBlurMask: combinedDataUrl,
-      selectiveBlurAmount: currentState.selectiveBlurStrength, // Use the dedicated strength value
+      selectiveBlurAmount: currentState.selectiveBlurStrength,
     };
 
     recordHistory("Apply Blur Brush Stroke", newState, layers);
@@ -1168,14 +1172,13 @@ export const useEditorState = () => {
     tempCtx.drawImage(strokeImg, 0, 0);
     tempCtx.globalCompositeOperation = 'source-over'; // Reset
 
-    setSelectionMaskDataUrl(tempCanvas.toDataURL());
-  }, [imgRef, selectionMaskDataUrl]);
+    onProjectUpdate({ selectionMaskDataUrl: tempCanvas.toDataURL() });
+  }, [imgRef, selectionMaskDataUrl, onProjectUpdate]);
 
   const clearSelectionMask = useCallback(() => {
-    setSelectionMaskDataUrl(null);
-    _setSelectionPath(null); // Use the internal setter directly
+    onProjectUpdate({ selectionMaskDataUrl: null, selectionPath: null });
     showSuccess("Selection cleared.");
-  }, []);
+  }, [onProjectUpdate]);
 
   const applyMaskToSelectionPath = useCallback(async () => {
     if (!selectionMaskDataUrl || !imgRef.current || !dimensions) {
@@ -1189,11 +1192,10 @@ export const useEditorState = () => {
       const newSelectionPath = await maskToPolygon(selectionMaskDataUrl, dimensions.width, dimensions.height);
       
       if (newSelectionPath.length > 0) {
-        _setSelectionPath(newSelectionPath); // Use the internal setter directly
-        setSelectionMaskDataUrl(null); // Clear the mask overlay after applying
+        onProjectUpdate({ selectionPath: newSelectionPath, selectionMaskDataUrl: null });
         dismissToast(toastId);
         showSuccess("Selection applied.");
-        setActiveTool(null); // Deactivate tool after applying
+        setActiveTool(null);
       } else {
         dismissToast(toastId);
         showError("No area selected with the brush.");
@@ -1203,7 +1205,7 @@ export const useEditorState = () => {
       console.error("Failed to convert mask to polygon:", error);
       showError(error.message || "Failed to apply selection.");
     }
-  }, [selectionMaskDataUrl, imgRef, dimensions]);
+  }, [selectionMaskDataUrl, imgRef, dimensions, onProjectUpdate]);
 
   const convertSelectionPathToMask = useCallback(async () => {
     if (!selectionPath || selectionPath.length < 2 || !dimensions) {
@@ -1214,7 +1216,7 @@ export const useEditorState = () => {
     const toastId = showLoading("Preparing selection for refinement...");
     try {
       const maskData = await polygonToMaskDataUrl(selectionPath, dimensions.width, dimensions.height);
-      setSelectionMaskDataUrl(maskData);
+      onProjectUpdate({ selectionMaskDataUrl: maskData });
       setActiveTool('selectionBrush');
       dismissToast(toastId);
       showSuccess("Selection ready for brush refinement.");
@@ -1223,23 +1225,23 @@ export const useEditorState = () => {
       console.error("Failed to convert selection path to mask:", error);
       showError(error.message || "Failed to prepare selection for refinement.");
     }
-  }, [selectionPath, dimensions]);
+  }, [selectionPath, dimensions, onProjectUpdate]);
 
   // New: Handle setting selection path and generating mask for visual feedback
   const setSelectionPathAndGenerateMask = useCallback(async (path: Point[] | null) => {
-    _setSelectionPath(path); // Use the internal setter
+    onProjectUpdate({ selectionPath: path });
     if (path && path.length > 1 && dimensions) {
       try {
         const maskData = await polygonToMaskDataUrl(path, dimensions.width, dimensions.height);
-        setSelectionMaskDataUrl(maskData);
+        onProjectUpdate({ selectionMaskDataUrl: maskData });
       } catch (error) {
         console.error("Failed to generate mask from path:", error);
-        setSelectionMaskDataUrl(null);
+        onProjectUpdate({ selectionMaskDataUrl: null });
       }
     } else {
-      setSelectionMaskDataUrl(null);
+      onProjectUpdate({ selectionMaskDataUrl: null });
     }
-  }, [dimensions]);
+  }, [dimensions, onProjectUpdate]);
 
   const applySelectionAsMask = useCallback(async () => {
     if (!selectedLayerId) {
@@ -1279,7 +1281,7 @@ export const useEditorState = () => {
       const updatedLayers = layers.map(l => 
         l.id === selectedLayerId ? { ...l, maskDataUrl: finalMaskDataUrl } : l
       );
-      recordHistory(`Apply Mask to Layer "${selectedLayer.name}"`, currentState, updatedLayers);
+      onLayerUpdate(updatedLayers, `Apply Mask to Layer "${selectedLayer.name}"`);
       clearSelectionMask();
       dismissToast(toastId);
       showSuccess(`Selection applied as mask to layer "${selectedLayer.name}".`);
@@ -1287,37 +1289,10 @@ export const useEditorState = () => {
       dismissToast(toastId);
       showError("Failed to create mask data.");
     }
-  }, [selectedLayerId, layers, selectionPath, selectionMaskDataUrl, dimensions, recordHistory, currentState, clearSelectionMask]);
+  }, [selectedLayerId, layers, selectionPath, selectionMaskDataUrl, dimensions, onLayerUpdate, clearSelectionMask]);
 
 
   /* ---------- Keyboard shortcuts ---------- */
-  useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
-  useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
-  useHotkeys(
-    "ctrl+s, cmd+s",
-    (e) => {
-      e.preventDefault();
-      if (image) setIsExporting(true);
-    },
-    { enabled: !!image, preventDefault: true } // Ensure preventDefault is true
-  );
-  useHotkeys(
-    "ctrl+c, cmd+c", // Added Ctrl+C / Cmd+C for copy
-    (e) => {
-      e.preventDefault();
-      handleCopy();
-    },
-    { enabled: !!image, preventDefault: true }
-  );
-  useHotkeys(
-    "ctrl+v, cmd+v", // Added Ctrl+V / Cmd+V for paste
-    (e) => {
-      e.preventDefault();
-      // Paste logic is handled by a global event listener in Index.tsx
-      // This hotkey just ensures the default browser paste is prevented.
-    },
-    { enabled: true, preventDefault: true } // Always prevent default for paste
-  );
   useHotkeys("r", () => handleTransformChange("rotate-right"), { enabled: !!image, preventDefault: true });
   useHotkeys("shift+r", () => handleTransformChange("rotate-left"), { enabled: !!image, preventDefault: true });
   useHotkeys("h", () => handleTransformChange("flip-horizontal"), { enabled: !!image, preventDefault: true });
@@ -1330,20 +1305,23 @@ export const useEditorState = () => {
   useHotkeys("i", () => setActiveTool("eyedropper"), { enabled: !!image });
   useHotkeys("p", () => setActiveTool("shape"), { enabled: !!image });
   useHotkeys("m", () => setActiveTool("move"), { enabled: !!image });
-  useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image }); // Added shortcut for gradient tool
-  useHotkeys("s", () => setActiveTool("selectionBrush"), { enabled: !!image }); // Shortcut for selection brush
-  useHotkeys("u", () => setActiveTool("blurBrush"), { enabled: !!image }); // NEW Shortcut for blur brush
-  useHotkeys("x", handleSwapColors, { enabled: true, preventDefault: true }); // Shortcut to swap foreground/background colors
+  useHotkeys("g", () => setActiveTool("gradient"), { enabled: !!image });
+  useHotkeys("s", () => setActiveTool("selectionBrush"), { enabled: !!image });
+  useHotkeys("u", () => setActiveTool("blurBrush"), { enabled: !!image });
+  useHotkeys("x", handleSwapColors, { enabled: true, preventDefault: true });
   useHotkeys("escape", () => {
     if (activeTool === 'crop') cancelCrop();
     else if (activeTool === 'selectionBrush') clearSelectionMask();
     else setActiveTool(null);
-    if (selectionPath) _setSelectionPath(null); // Use the internal setter directly
-  }, { enabled: !!image, preventDefault: true }); // Ensure escape prevents default
+    if (selectionPath) onProjectUpdate({ selectionPath: null });
+  }, { enabled: !!image, preventDefault: true });
 
   // Keyboard movement for selected layers
   const handleKeyboardMove = useCallback((dx: number, dy: number, speedMultiplier: number) => {
     if (selectedLayerId && (activeTool === 'move' || activeTool === null)) {
+      const selectedLayer = layers.find(l => l.id === selectedLayerId);
+      if (selectedLayer?.isLocked) return;
+
       // Find the selected layer and its parent container to calculate movement relative to its parent
       const findLayerAndParent = (
         id: string,
@@ -1363,9 +1341,9 @@ export const useEditorState = () => {
         return { layer: undefined, parent: null, path: [] };
       };
 
-      const { layer: selectedLayer, parent: parentLayer } = findLayerAndParent(selectedLayerId, layers);
+      const { layer: layerToMove, parent: parentLayer } = findLayerAndParent(selectedLayerId, layers);
 
-      if (selectedLayer && (selectedLayer.x !== undefined && selectedLayer.y !== undefined)) {
+      if (layerToMove && (layerToMove.x !== undefined && layerToMove.y !== undefined)) {
         // Determine the effective dimensions of the parent container for percentage calculation
         let parentWidth = dimensions?.width || 1;
         let parentHeight = dimensions?.height || 1;
@@ -1376,8 +1354,8 @@ export const useEditorState = () => {
           parentHeight = (parentLayer.height / 100) * (dimensions?.height || 1);
         }
 
-        const newX = (selectedLayer.x ?? 0) + (dx * speedMultiplier / parentWidth) * 100;
-        const newY = (selectedLayer.y ?? 0) + (dy * speedMultiplier / parentHeight) * 100;
+        const newX = (layerToMove.x ?? 0) + (dx * speedMultiplier / parentWidth) * 100;
+        const newY = (layerToMove.y ?? 0) + (dy * speedMultiplier / parentHeight) * 100;
         
         updateLayer(selectedLayerId, { x: newX, y: newY });
       }
@@ -1411,7 +1389,6 @@ export const useEditorState = () => {
     aspect,
     canUndo,
     canRedo,
-    handleImageLoad,
     handleFileSelect,
     handleUrlImageLoad,
     handleGeneratedImageLoad,
@@ -1432,13 +1409,13 @@ export const useEditorState = () => {
     handleCurvesCommit,
     handleFilterChange,
     handleTransformChange,
-    handleRotationChange, // Exposed for continuous rotation
-    handleRotationCommit, // Exposed for continuous rotation commit
+    handleRotationChange,
+    handleRotationCommit,
     handleFramePresetChange,
     handleFramePropertyChange,
     handleFramePropertyCommit,
     pendingCrop,
-    setPendingCrop,
+    setPendingCrop: (crop) => onProjectUpdate({ pendingCrop: crop }),
     applyCrop,
     cancelCrop,
     handleReset,
@@ -1447,19 +1424,14 @@ export const useEditorState = () => {
     jumpToHistory,
     handleDownload,
     handleCopy,
-    setAspect,
-    isPreviewingOriginal,
-    setIsPreviewingOriginal,
-    isExporting,
-    setIsExporting,
-    applyPreset,
-    // Layer utilities from useLayers
+    setAspect: (aspect) => onProjectUpdate({ aspect }),
+    // Layer utilities
     layers,
     selectedLayerId,
-    setSelectedLayer: setSelectedLayerId,
-    addTextLayer,
+    setSelectedLayer: (id) => onProjectUpdate({ selectedLayerId: id }),
+    addTextLayer: (coords) => addTextLayer(coords, foregroundColor),
     addDrawingLayer,
-    addShapeLayer,
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer,
     toggleLayerVisibility,
     renameLayer,
@@ -1482,37 +1454,38 @@ export const useEditorState = () => {
     moveSelectedLayer,
     groupLayers,
     toggleGroupExpanded,
-    handleDrawingStrokeEnd, // EXPOSED: The new drawing stroke handler
-    removeLayerMask, // EXPOSED: The new mask removal handler
-    invertLayerMask, // EXPOSED: The new mask inversion handler
-    toggleClippingMask, // EXPOSED: The new clipping mask handler
+    handleDrawingStrokeEnd,
+    removeLayerMask,
+    invertLayerMask,
+    toggleClippingMask,
+    toggleLayerLock, // NEW: Layer lock toggle
     // Tool state
-    activeTool,
+    activeTool: initialProject.activeTool,
     setActiveTool,
     // Brush state
     brushState,
-    setBrushState, // Now takes Partial<Omit<BrushState, 'color'>>
+    setBrushState,
     handleColorPick,
     // Gradient tool state
     gradientToolState,
-    setGradientToolState,
+    setGradientToolState: (state) => onProjectUpdate({ gradientToolState: state }),
     // Generative
     applyGenerativeResult,
     // Selection
     selectionPath,
-    setSelectionPath: setSelectionPathAndGenerateMask, // Use the new function for lasso
-    selectionMaskDataUrl, // Exposed selection mask
-    handleSelectionBrushStroke, // Exposed selection brush stroke handler
-    clearSelectionMask, // Exposed clear selection mask handler
-    applyMaskToSelectionPath, // Exposed apply mask to selection path handler
-    convertSelectionPathToMask, // Exposed convert selection path to mask handler
+    setSelectionPath: setSelectionPathAndGenerateMask,
+    selectionMaskDataUrl,
+    handleSelectionBrushStroke,
+    clearSelectionMask,
+    applyMaskToSelectionPath,
+    convertSelectionPathToMask,
     // Selective Blur
-    handleSelectiveBlurStroke, // NEW export
-    handleSelectiveBlurStrengthChange, // NEW export
-    handleSelectiveBlurStrengthCommit, // NEW export
+    handleSelectiveBlurStroke,
+    handleSelectiveBlurStrengthChange,
+    handleSelectiveBlurStrengthCommit,
     // Shape tool
     selectedShapeType,
-    setSelectedShapeType,
+    setSelectedShapeType: (type) => onProjectUpdate({ selectedShapeType: type }),
     // Foreground/Background Colors
     foregroundColor,
     handleForegroundColorChange,
@@ -1522,11 +1495,12 @@ export const useEditorState = () => {
     // Template loading
     loadTemplateData,
     // Layer Masking
-    applySelectionAsMask, // NEW export
+    applySelectionAsMask,
     // Fonts
-    systemFonts,
-    setSystemFonts,
-    customFonts,
-    setCustomFonts,
+    // These are global and managed in Index.tsx, not per-project state
+    systemFonts: [],
+    setSystemFonts: () => {},
+    customFonts: [],
+    setCustomFonts: () => {},
   };
 };

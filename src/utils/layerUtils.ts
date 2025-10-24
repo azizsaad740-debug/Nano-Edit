@@ -222,26 +222,51 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     const smartCtx = smartCanvas.getContext('2d');
 
     if (smartCtx) {
-      for (const smartLayer of layer.smartObjectData.layers) {
+      // Render nested layers in reverse order (bottom layer in array first)
+      const reversedNestedLayers = layer.smartObjectData.layers.slice().reverse();
+      
+      for (const smartLayer of reversedNestedLayers) {
         if (!smartLayer.visible) continue;
 
         const nestedLayerCanvas = await rasterizeLayerToCanvas(smartLayer, { width: smartCanvas.width, height: smartCanvas.height });
         if (nestedLayerCanvas) {
           smartCtx.globalAlpha = (smartLayer.opacity ?? 100) / 100;
           smartCtx.globalCompositeOperation = (smartLayer.blendMode || 'source-over') as GlobalCompositeOperation;
-          smartCtx.drawImage(nestedLayerCanvas, 0, 0);
+          
+          // Clipping mask logic for nested layers
+          const clippedLayer = reversedNestedLayers.find(l => l.id === smartLayer.id);
+          const baseLayerIndex = reversedNestedLayers.findIndex(l => l.id === smartLayer.id) + 1;
+          const baseLayer = reversedNestedLayers[baseLayerIndex];
+
+          if (clippedLayer && clippedLayer.isClippingMask && baseLayer) {
+            const baseLayerCanvas = await rasterizeLayerToCanvas(baseLayer, { width: smartCanvas.width, height: smartCanvas.height });
+            if (baseLayerCanvas) {
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = smartCanvas.width;
+              tempCanvas.height = smartCanvas.height;
+              const tempCtx = tempCanvas.getContext('2d');
+              if (tempCtx) {
+                tempCtx.drawImage(nestedLayerCanvas, 0, 0);
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(baseLayerCanvas, 0, 0);
+                smartCtx.drawImage(tempCanvas, 0, 0);
+              }
+            }
+          } else {
+            smartCtx.drawImage(nestedLayerCanvas, 0, 0);
+          }
         }
       }
       
       ctx.save();
       
-      const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
-      const layerY = (layer.y ?? 0) / 100 * imageDimensions.height;
+      const layerX = (layer.x ?? 50) / 100 * imageDimensions.width;
+      const layerY = (layer.y ?? 50) / 100 * imageDimensions.height;
       const layerWidth = (layer.width ?? 100) / 100 * imageDimensions.width;
       const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
       const layerRotation = layer.rotation ?? 0;
 
-      ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
+      ctx.translate(layerX, layerY);
       ctx.rotate(layerRotation * Math.PI / 180);
       ctx.drawImage(smartCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
       
@@ -254,7 +279,10 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     const groupCtx = groupCanvas.getContext('2d');
 
     if (groupCtx) {
-      for (const childLayer of layer.children) {
+      // Render children in reverse order (bottom layer in array first)
+      const reversedChildren = layer.children.slice().reverse();
+      
+      for (const childLayer of reversedChildren) {
         if (!childLayer.visible) continue;
 
         const nestedLayerCanvas = await rasterizeLayerToCanvas(childLayer, imageDimensions);
@@ -262,19 +290,40 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
           groupCtx.globalAlpha = (childLayer.opacity ?? 100) / 100;
           groupCtx.globalCompositeOperation = (childLayer.blendMode || 'source-over') as GlobalCompositeOperation;
           
-          groupCtx.drawImage(nestedLayerCanvas, 0, 0);
+          // Clipping mask logic for nested layers
+          const clippedLayer = reversedChildren.find(l => l.id === childLayer.id);
+          const baseLayerIndex = reversedChildren.findIndex(l => l.id === childLayer.id) + 1;
+          const baseLayer = reversedChildren[baseLayerIndex];
+
+          if (clippedLayer && clippedLayer.isClippingMask && baseLayer) {
+            const baseLayerCanvas = await rasterizeLayerToCanvas(baseLayer, imageDimensions);
+            if (baseLayerCanvas) {
+              const tempCanvas = document.createElement('canvas');
+              tempCanvas.width = imageDimensions.width;
+              tempCanvas.height = imageDimensions.height;
+              const tempCtx = tempCanvas.getContext('2d');
+              if (tempCtx) {
+                tempCtx.drawImage(nestedLayerCanvas, 0, 0);
+                tempCtx.globalCompositeOperation = 'destination-in';
+                tempCtx.drawImage(baseLayerCanvas, 0, 0);
+                groupCtx.drawImage(tempCanvas, 0, 0);
+              }
+            }
+          } else {
+            groupCtx.drawImage(nestedLayerCanvas, 0, 0);
+          }
         }
       }
 
       ctx.save();
       
-      const layerX = (layer.x ?? 0) / 100 * imageDimensions.width;
-      const layerY = (layer.y ?? 0) / 100 * imageDimensions.height;
+      const layerX = (layer.x ?? 50) / 100 * imageDimensions.width;
+      const layerY = (layer.y ?? 50) / 100 * imageDimensions.height;
       const layerWidth = (layer.width ?? 100) / 100 * imageDimensions.width;
       const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
       const layerRotation = layer.rotation ?? 0;
 
-      ctx.translate(layerX + layerWidth / 2, layerY + layerHeight / 2);
+      ctx.translate(layerX, layerY);
       ctx.rotate(layerRotation * Math.PI / 180);
       ctx.drawImage(groupCanvas, -layerWidth / 2, -layerHeight / 2, layerWidth, layerHeight);
       

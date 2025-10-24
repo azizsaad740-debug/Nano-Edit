@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X, CornerUpLeft } from "lucide-react"; // Added CornerUpLeft icon
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X, CornerUpLeft, Lock, LockOpen } from "lucide-react"; // Added Lock/LockOpen icon
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ interface LayerItemProps {
   onToggleGroupExpanded?: (id: string) => void; // New prop for toggling group expansion
   depth?: number; // New prop for indentation
   onRemoveMask: (id: string) => void; // NEW prop for mask removal
+  onToggleLock: (id: string) => void; // NEW prop for layer lock
 }
 
 const LayerItem = ({
@@ -39,11 +40,13 @@ const LayerItem = ({
   onToggleGroupExpanded,
   depth = 0,
   onRemoveMask, // Destructure new prop
+  onToggleLock, // Destructure new prop
 }: LayerItemProps) => {
   const isBackground = layer.type === "image";
   const isGroup = layer.type === "group";
   const hasMask = !!layer.maskDataUrl;
   const isClippingMask = !!layer.isClippingMask;
+  const isLocked = !!layer.isLocked;
 
   const {
     attributes,
@@ -52,7 +55,7 @@ const LayerItem = ({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: layer.id, disabled: isBackground });
+  } = useSortable({ id: layer.id, disabled: isBackground || isLocked });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -105,7 +108,7 @@ const LayerItem = ({
           {...listeners}
           className={cn(
             "cursor-grab touch-none p-1",
-            isBackground && "cursor-not-allowed opacity-50"
+            (isBackground || isLocked) && "cursor-not-allowed opacity-50"
           )}
         >
           <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -151,7 +154,7 @@ const LayerItem = ({
           <span
             className="font-medium truncate"
             onDoubleClick={() => {
-              if (!isBackground) startRename(layer);
+              if (!isBackground && !isLocked) startRename(layer);
             }}
           >
             {layer.name}
@@ -159,6 +162,18 @@ const LayerItem = ({
         )}
       </div>
       
+      {/* Lock Indicator and Controls */}
+      {!isBackground && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => handleIconClick(e, () => onToggleLock(layer.id))}
+        >
+          {isLocked ? <Lock className="h-4 w-4 text-muted-foreground" /> : <LockOpen className="h-4 w-4 text-muted-foreground" />}
+        </Button>
+      )}
+
       {/* Mask Indicator and Controls */}
       {hasMask && (
         <div className="flex items-center gap-1 shrink-0">
@@ -181,7 +196,7 @@ const LayerItem = ({
         size="icon"
         className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
         onClick={(e) => handleIconClick(e, () => startRename(layer))}
-        disabled={isBackground}
+        disabled={isBackground || isLocked}
       >
         <Edit2 className="h-4 w-4" />
       </Button>

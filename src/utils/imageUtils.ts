@@ -17,6 +17,7 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     crop,
     transforms,
     frame,
+    colorMode, // NEW: Destructure colorMode
   } = options;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -44,106 +45,93 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  // Apply base image filters and transforms to the main image layer
-  const bgLayer = layers.find(l => l.type === 'image');
-  if (bgLayer && bgLayer.visible) {
-    ctx.filter = getFilterString(options);
-    ctx.save();
-    ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate(transforms.rotation * Math.PI / 180);
-    ctx.scale(transforms.scaleX, transforms.scaleY);
-    ctx.drawImage(
-      image,
-      pixelCrop.x,
-      pixelCrop.y,
-      pixelCrop.width,
-      pixelCrop.height,
-      -pixelCrop.width / 2,
-      -pixelCrop.height / 2,
-      pixelCrop.width,
-      pixelCrop.height
-    );
-    ctx.restore();
+  // Apply color mode filters to the entire canvas context
+  let colorModeFilter = '';
+  if (colorMode === 'Grayscale') {
+    colorModeFilter = ' grayscale(1)';
+  } else if (colorMode === 'CMYK') {
+    // Simple CMYK simulation: invert colors and apply a slight yellow tint
+    colorModeFilter = ' invert(1) hue-rotate(180deg) sepia(0.1) saturate(1.1)';
   }
+  ctx.filter = colorModeFilter;
 
-  // Draw other layers on top using the rasterize utility
-  ctx.filter = 'none'; // Reset filter for layers
+  // Draw layers in reverse order (bottom layer in array is drawn first)
+  const reversedLayers = layers.slice().reverse();
   
   // We need to track the rasterized canvas of the previous layer if the current layer is a clipping mask.
   let previousLayerCanvas: HTMLCanvasElement | null = null;
 
-  for (let i = 0; i < layers.length; i++) {
-    const layer = layers[i];
+  for (let i = 0; i < reversedLayers.length; i++) {
+    const layer = reversedLayers[i];
     
-    // Skip background image, already drawn
-    if (layer.type === 'image') {
-        previousLayerCanvas = null;
-        continue;
-    }
+    // Skip layers that are not visible
     if (!layer.visible) {
         previousLayerCanvas = null;
         continue;
     }
 
-    const layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
+    let layerCanvas: HTMLCanvasElement | null = null;
+    
+    if (layer.type === 'image') {
+        // Handle the main background image layer
+        ctx.filter = getFilterString(options) + colorModeFilter; // Apply filters + color mode
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate(transforms.rotation * Math.PI / 180);
+        ctx.scale(transforms.scaleX, transforms.scaleY);
+        ctx.drawImage(
+          image,
+          pixelCrop.x,
+          pixelCrop.y,
+          pixelCrop.width,
+          pixelCrop.height,
+          -pixelCrop.width / 2,
+          -pixelCrop.height / 2,
+          pixelCrop.width,
+          pixelCrop.height
+        );
+        ctx.restore();
+        ctx.filter = colorModeFilter; // Reset filter for subsequent layers
+        
+        // Create a canvas of the drawn background for clipping mask reference
+        const bgCanvas = document.createElement('canvas');
+        bgCanvas.width = canvas.width;
+        bgCanvas.height = canvas.height;
+        bgCanvas.getContext('2d')?.drawImage(canvas, 0, 0);
+        previousLayerCanvas = bgCanvas;
+        continue;
+    }
+
+    // Rasterize the current layer (text, drawing, smart-object, etc.)
+    layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
     if (!layerCanvas) {
         previousLayerCanvas = null;
         continue;
     }
 
-    // Check if this layer is a clipping mask
-    if (layer.isClippingMask && i > 0) {
-        const baseLayer = layers[i - 1];
+    // Check if the layer *above* this one (which is the one we just processed in the loop)
+    // was a clipping mask for *this* layer.
+    // Since we iterate in reverse, the clipping mask layer is the one *before* the clipped layer in the reversed array.
+    const clippedLayer = reversedLayers[i - 1];
+    
+    if (clippedLayer && clippedLayer.isClippingMask) {
+        // The layer we are currently drawing (layerCanvas) is the base layer (Layer B)
+        // The layer that is clipping (clippedLayer) is Layer A
         
-        let maskCanvas: HTMLCanvasElement | null = null;
+        const clippingLayerCanvas = previousLayerCanvas; // This is the rasterized Layer A
         
-        if (baseLayer.type === 'image') {
-            // If clipping to the background image, create a canvas of the background image content 
-            // with all effects applied (filters, transforms, crop).
-            const bgCanvas = document.createElement('canvas');
-            bgCanvas.width = canvas.width;
-            bgCanvas.height = canvas.height;
-            const bgCtx = bgCanvas.getContext('2d');
-            if (bgCtx) {
-                bgCtx.filter = getFilterString(options);
-                bgCtx.save();
-                bgCtx.translate(canvas.width / 2, canvas.height / 2);
-                bgCtx.rotate(transforms.rotation * Math.PI / 180);
-                bgCtx.scale(transforms.scaleX, transforms.scaleY);
-                bgCtx.drawImage(
-                    image,
-                    pixelCrop.x,
-                    pixelCrop.y,
-                    pixelCrop.width,
-                    pixelCrop.height,
-                    -pixelCrop.width / 2,
-                    -pixelCrop.height / 2,
-                    pixelCrop.width,
-                    pixelCrop.height
-                );
-                bgCtx.restore();
-                maskCanvas = bgCanvas;
-            }
-        } else if (previousLayerCanvas) {
-            // Clipping to the previous layer (which should be baseLayer)
-            maskCanvas = previousLayerCanvas;
-        } else {
-            // Fallback: rasterize the base layer
-            maskCanvas = await rasterizeLayerToCanvas(baseLayer, { width: canvas.width, height: canvas.height });
-        }
-        
-        if (maskCanvas) {
+        if (clippingLayerCanvas) {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
             const tempCtx = tempCanvas.getContext('2d');
             if (tempCtx) {
-                // 1. Draw the clipped layer (Layer A)
+                // 1. Draw the base layer (Layer B)
                 tempCtx.drawImage(layerCanvas, 0, 0);
                 
-                // 2. Use the base layer (Layer B) as the clipping shape (destination-in)
+                // 2. Use the clipping layer (Layer A) as the clipping shape (destination-in)
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(maskCanvas, 0, 0);
+                tempCtx.drawImage(clippingLayerCanvas, 0, 0);
                 
                 // 3. Draw the result onto the main canvas
                 ctx.globalAlpha = (layer.opacity ?? 100) / 100;
@@ -193,6 +181,27 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   }
 
   return canvas;
+};
+
+export const copyImageToClipboard = async (options: ImageOptions) => {
+  const canvas = await getEditedImageCanvas(options);
+  if (!canvas) return;
+
+  canvas.toBlob(async (blob) => {
+    if (blob) {
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+        showSuccess("Image copied to clipboard.");
+      } catch (err) {
+        console.error("Failed to copy image: ", err);
+        showError("Failed to copy image to clipboard.");
+      }
+    } else {
+      showError("Failed to create image blob.");
+    }
+  }, 'image/png');
 };
 
 export const downloadImage = async (
@@ -311,28 +320,6 @@ export const downloadImage = async (
   }
 };
 
-export const copyImageToClipboard = async (options: ImageOptions) => {
-  const canvas = await getEditedImageCanvas(options);
-  if (!canvas) return;
-
-  canvas.toBlob(async (blob) => {
-    if (blob) {
-      try {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob })
-        ]);
-        showSuccess("Image copied to clipboard.");
-      } catch (err) {
-        console.error("Failed to copy image: ", err);
-        showError("Failed to copy image to clipboard.");
-      }
-    } else {
-      showError("Failed to create image blob.");
-    }
-  }, 'image/png');
-};
-
-// New function to download the selected area of the image
 export const downloadSelectionAsImage = async (
   imageElement: HTMLImageElement,
   selectionMaskDataUrl: string,

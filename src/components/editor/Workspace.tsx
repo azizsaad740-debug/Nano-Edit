@@ -585,8 +585,17 @@ const Workspace = (props: WorkspaceProps) => {
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
   const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
   
-  // Apply all filters, including the new blur filter
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${blurFilterUrl}` };
+  // Apply color mode filters
+  let colorModeFilter = '';
+  if (currentState.colorMode === 'Grayscale') {
+    colorModeFilter = ' grayscale(1)';
+  } else if (currentState.colorMode === 'CMYK') {
+    // Simple CMYK simulation: invert colors and apply a slight yellow tint
+    colorModeFilter = ' invert(1) hue-rotate(180deg) sepia(0.1) saturate(1.1)';
+  }
+
+  // Apply all filters, including the new blur filter and color mode filter
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${blurFilterUrl}${colorModeFilter}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
@@ -651,6 +660,7 @@ const Workspace = (props: WorkspaceProps) => {
   }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
+    // Render layers in reverse order (bottom layer in array is rendered first)
     return layersToRender.map((layer) => {
       if (!layer.visible) return null;
 
@@ -718,7 +728,7 @@ const Workspace = (props: WorkspaceProps) => {
         );
       }
       return null;
-    });
+    }).slice().reverse(); // Render layers in reverse order of the array (bottom layer in array is rendered first)
   };
 
   return (
@@ -893,12 +903,12 @@ const Workspace = (props: WorkspaceProps) => {
                 ref={fileInputRef}
                 onChange={handleFileInputChange}
                 className="hidden"
-                accept="image/png, image/jpeg, image/webp, .psd, .psb, .pdf, .ai, .cdr"
+                accept="image/png, image/jpeg, image/webp, .psd, .psb, .pdf, .ai, .cdr, .nanoedit"
               />
             </CardContent>
           </Card>
-          <UrlUploader onUrlSelect={onUrlSelect} />
-          <SampleImages onSelect={onSampleSelect} />
+          <UrlUploader onUrlSelect={(url) => onUrlSelect(url)} />
+          <SampleImages onSelect={(url) => onSampleSelect(url)} />
         </div>
       )}
     </div>
