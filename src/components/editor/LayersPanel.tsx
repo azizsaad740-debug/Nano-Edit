@@ -35,9 +35,16 @@ import { LayerControls } from "./LayerControls"; // NEW Import
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "../editor/BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Plus } from "lucide-react";
+import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showError } from "@/utils/toast"; // Import showError
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -48,6 +55,7 @@ interface LayersPanelProps {
   onAddDrawingLayer: () => string;
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void; // Added this line
+  onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void; // NEW prop
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
@@ -92,6 +100,7 @@ export const LayersPanel = ({
   onAddDrawingLayer,
   onAddShapeLayer,
   onAddGradientLayer,
+  onAddAdjustmentLayer, // Destructure new prop
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
@@ -346,6 +355,52 @@ export const LayersPanel = ({
                 </DragOverlay>
               </DndContext>
             </ScrollArea>
+            <div className="mt-4 space-y-2 border-t pt-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="sm" className="w-full">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Layer
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-60">
+                  <DropdownMenuItem onClick={onAddDrawingLayer}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Empty Layer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onAddTextLayer}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Text Layer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddShapeLayer({ x: 50, y: 50 })}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Shape Layer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onAddGradientLayer}>
+                    <Layers className="h-4 w-4 mr-2" />
+                    Gradient Layer
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => onAddAdjustmentLayer('brightness')}>
+                    <Sun className="h-4 w-4 mr-2" />
+                    Brightness/Contrast Adjustment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddAdjustmentLayer('curves')}>
+                    <SlidersHorizontal className="h-4 w-4 mr-2" />
+                    Curves Adjustment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddAdjustmentLayer('hsl')}>
+                    <Palette className="h-4 w-4 mr-2" />
+                    HSL Adjustment
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onAddAdjustmentLayer('grading')}>
+                    <Zap className="h-4 w-4 mr-2" />
+                    Color Grading Adjustment
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <LayerActions
               layers={layers}
               selectedLayer={selectedLayer}

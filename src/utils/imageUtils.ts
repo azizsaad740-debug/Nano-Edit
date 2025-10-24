@@ -10,6 +10,50 @@ interface ImageOptions extends EditState {
   layers: Layer[];
 }
 
+/**
+ * Calculates the CSS filter string for a single adjustment layer.
+ * This is a simplified version of getFilterString, only using the adjustment layer's data.
+ */
+const getAdjustmentFilterString = (layer: Layer): string => {
+  if (!layer.adjustmentData) return '';
+  
+  const { type, adjustments, curves, hslAdjustments, grading } = layer.adjustmentData;
+  
+  let filters: string[] = [];
+
+  if (type === 'brightness' && adjustments) {
+    filters.push(`brightness(${adjustments.brightness}%)`);
+    filters.push(`contrast(${adjustments.contrast}%)`);
+    filters.push(`saturate(${adjustments.saturation}%)`);
+  }
+
+  if (type === 'grading' && grading) {
+    filters.push(`grayscale(${grading.grayscale}%)`);
+    filters.push(`sepia(${grading.sepia}%)`);
+    filters.push(`invert(${grading.invert}%)`);
+  }
+
+  // Note: Curves and HSL adjustments require SVG filters (feComponentTransfer/feColorMatrix)
+  // For now, we only apply the simple CSS filters here. Full implementation requires
+  // rasterizing the entire stack below the adjustment layer and applying the SVG filter
+  // to the resulting image data, which is complex. We will use a simplified approach
+  // where we only apply the simple CSS filters from the adjustment layer.
+  
+  // If HSL is adjusted globally, we can apply hue-rotate and saturation/luminance via CSS filters
+  if (type === 'hsl' && hslAdjustments?.global) {
+    const globalHsl = hslAdjustments.global;
+    const saturationValue = globalHsl.saturation / 100;
+    const brightnessAdjustment = 1 + (globalHsl.luminance / 100);
+    
+    filters.push(`hue-rotate(${globalHsl.hue}deg)`);
+    filters.push(`saturate(${saturationValue})`);
+    filters.push(`brightness(${brightnessAdjustment})`);
+  }
+
+  return filters.filter(Boolean).join(' ');
+};
+
+
 const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasElement | null> => {
   const {
     image,
@@ -17,7 +61,9 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     crop,
     transforms,
     frame,
-    colorMode, // NEW: Destructure colorMode
+    colorMode,
+    selectiveBlurMask, // Keep global selective blur mask for now
+    selectiveBlurAmount,
   } = options;
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -45,25 +91,35 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
   canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
-  // Apply color mode filters to the entire canvas context
+  // Apply global color mode filter once
   let colorModeFilter = '';
   if (colorMode === 'Grayscale') {
     colorModeFilter = ' grayscale(1)';
   } else if (colorMode === 'CMYK') {
-    // Simple CMYK simulation: invert colors and apply a slight yellow tint
     colorModeFilter = ' invert(1) hue-rotate(180deg) sepia(0.1) saturate(1.1)';
   }
   ctx.filter = colorModeFilter;
 
+  // We need to track the current filter stack and the rasterized canvas of the previous layer
+  let currentFilterStack = '';
+  let previousLayerCanvas: HTMLCanvasElement | null = null;
+
   // Draw layers in reverse order (bottom layer in array is drawn first)
   const reversedLayers = layers.slice().reverse();
   
-  // We need to track the rasterized canvas of the previous layer if the current layer is a clipping mask.
-  let previousLayerCanvas: HTMLCanvasElement | null = null;
-
+  // --- Rasterization Loop ---
   for (let i = 0; i < reversedLayers.length; i++) {
     const layer = reversedLayers[i];
     
+    // 1. Handle Adjustment Layers
+    if (layer.type === 'adjustment' && layer.visible) {
+      // Apply the adjustment filter to the current filter stack
+      const adjustmentFilter = getAdjustmentFilterString(layer);
+      currentFilterStack += ` ${adjustmentFilter}`;
+      previousLayerCanvas = null; // Adjustment layers don't produce a canvas to be clipped by
+      continue;
+    }
+
     // Skip layers that are not visible
     if (!layer.visible) {
         previousLayerCanvas = null;
@@ -74,7 +130,28 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     
     if (layer.type === 'image') {
         // Handle the main background image layer
-        ctx.filter = getFilterString(options) + colorModeFilter; // Apply filters + color mode
+        
+        // Apply global filters (from EditState) + current adjustment stack
+        // NOTE: We remove the global adjustments (brightness, contrast, etc.) from getFilterString
+        // and only use the effects/filters/selective blur/channels/curves from the global state
+        // for the background layer, as the core adjustments are now handled by adjustment layers.
+        
+        // For now, we apply the global filters (effects, selectedFilter) + current adjustment stack
+        // The core adjustments (brightness, contrast, saturation, grading, hsl) are now expected
+        // to be handled by adjustment layers placed above the background.
+        
+        // We need to combine the global effects/filters with the adjustment layer stack
+        const globalEffectsFilter = getFilterString({ 
+          adjustments: options.adjustments, // These should be default (100/100/100) if using adjustment layers
+          effects: options.effects, 
+          grading: options.grading, // These should be default (0/0/0) if using adjustment layers
+          selectedFilter: options.selectedFilter, 
+          hslAdjustments: options.hslAdjustments, // These should be default if using adjustment layers
+        });
+        
+        // Apply the combined filter stack to the context
+        ctx.filter = globalEffectsFilter + currentFilterStack + colorModeFilter;
+        
         ctx.save();
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.rotate(transforms.rotation * Math.PI / 180);
@@ -102,16 +179,27 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
         continue;
     }
 
-    // Rasterize the current layer (text, drawing, smart-object, etc.)
+    // 2. Rasterize the current layer (text, drawing, smart-object, etc.)
     layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
     if (!layerCanvas) {
         previousLayerCanvas = null;
         continue;
     }
 
-    // Check if the layer *above* this one (which is the one we just processed in the loop)
-    // was a clipping mask for *this* layer.
-    // Since we iterate in reverse, the clipping mask layer is the one *before* the clipped layer in the reversed array.
+    // 3. Apply current filter stack to the layer canvas
+    if (currentFilterStack) {
+      const tempFilteredCanvas = document.createElement('canvas');
+      tempFilteredCanvas.width = canvas.width;
+      tempFilteredCanvas.height = canvas.height;
+      const tempFilteredCtx = tempFilteredCanvas.getContext('2d');
+      if (tempFilteredCtx) {
+        tempFilteredCtx.filter = currentFilterStack;
+        tempFilteredCtx.drawImage(layerCanvas, 0, 0);
+        layerCanvas = tempFilteredCanvas;
+      }
+    }
+
+    // 4. Check for Clipping Mask
     const clippedLayer = reversedLayers[i - 1];
     
     if (clippedLayer && clippedLayer.isClippingMask) {
@@ -141,18 +229,27 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
         }
         
     } else {
-        // Normal drawing
+        // 5. Normal drawing
         ctx.globalAlpha = (layer.opacity ?? 100) / 100;
         ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
         ctx.drawImage(layerCanvas, 0, 0);
     }
     
-    // Update previousLayerCanvas for the next iteration
+    // 6. Update previousLayerCanvas for the next iteration
     previousLayerCanvas = layerCanvas;
   }
   
   ctx.globalAlpha = 1.0; // Reset global alpha
+  ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
 
+  // Apply global effects (Vignette, Noise, Sharpen, Clarity) and Selective Blur
+  // These effects are still applied globally after all layers are merged.
+  
+  // Note: Selective Blur requires SVG filters, which cannot be applied to the context
+  // after drawing. For now, we rely on the Workspace component to apply the SVG filter
+  // to the main image element, and we skip it here for rasterization.
+  
+  // Apply Vignette (Canvas API)
   if (options.effects.vignette > 0) {
     const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
     const innerRadius = outerRadius * (1 - (options.effects.vignette / 100) * 1.2);
@@ -166,6 +263,7 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
+  // Apply Frame (Canvas API)
   if (frame && frame.type === 'solid' && frame.width > 0) {
     const frameWidth = frame.width;
     const framedCanvas = document.createElement('canvas');

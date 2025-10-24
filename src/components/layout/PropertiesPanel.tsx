@@ -8,8 +8,9 @@ import { BrushOptions } from "@/components/editor/BrushOptions";
 import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
-import { GradientToolOptions } from "@/components/editor/GradientToolOptions"; // Import GradientToolOptions
-import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions"; // NEW Import
+import AdjustmentProperties from "@/components/editor/AdjustmentProperties"; // NEW Import
+import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
+import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
 import type { Layer, ActiveTool, BrushState, GradientToolState, HslAdjustment, EditState } from "@/hooks/useEditorState";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 
@@ -38,6 +39,8 @@ interface PropertiesPanelProps {
   systemFonts: string[]; // NEW prop
   customFonts: string[]; // NEW prop
   onOpenFontManager: () => void; // NEW prop
+  // Image Ref for Curves/Histogram
+  imgRef: React.RefObject<HTMLImageElement>; // NEW prop
 }
 
 export const PropertiesPanel = ({
@@ -61,6 +64,7 @@ export const PropertiesPanel = ({
   systemFonts, // Destructure NEW props
   customFonts,
   onOpenFontManager,
+  imgRef, // Destructure NEW prop
 }: PropertiesPanelProps) => {
   const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush';
   const isBlurBrushTool = activeTool === 'blurBrush';
@@ -108,9 +112,9 @@ export const PropertiesPanel = ({
               onDeleteGradientPreset={onDeleteGradientPreset}
             />
           ) : selectedLayer ? (
-            <Accordion type="multiple" className="w-full" defaultValue={['text', 'shape', 'gradient']}>
+            <Accordion type="multiple" className="w-full" defaultValue={['layer-specific']}>
               {selectedLayer.type === 'text' && (
-                <AccordionItem value="text">
+                <AccordionItem value="layer-specific">
                   <AccordionTrigger>Text Properties</AccordionTrigger>
                   <AccordionContent>
                     <TextProperties
@@ -125,7 +129,7 @@ export const PropertiesPanel = ({
                 </AccordionItem>
               )}
               {selectedLayer.type === 'vector-shape' && (
-                <AccordionItem value="shape">
+                <AccordionItem value="layer-specific">
                   <AccordionTrigger>Shape Properties</AccordionTrigger>
                   <AccordionContent>
                     <ShapeProperties
@@ -137,13 +141,26 @@ export const PropertiesPanel = ({
                 </AccordionItem>
               )}
               {selectedLayer.type === 'gradient' && (
-                <AccordionItem value="gradient">
+                <AccordionItem value="layer-specific">
                   <AccordionTrigger>Gradient Properties</AccordionTrigger>
                   <AccordionContent>
                     <GradientProperties
                       layer={selectedLayer}
                       onUpdate={onLayerUpdate}
                       onCommit={onLayerCommit}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+              {selectedLayer.type === 'adjustment' && (
+                <AccordionItem value="layer-specific">
+                  <AccordionTrigger>Adjustment Controls</AccordionTrigger>
+                  <AccordionContent>
+                    <AdjustmentProperties
+                      layer={selectedLayer}
+                      onUpdate={onLayerUpdate}
+                      onCommit={onLayerCommit}
+                      imgRef={imgRef}
                     />
                   </AccordionContent>
                 </AccordionItem>

@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import type { Layer, EditState, Point, GradientToolState, ActiveTool } from "./useEditorState";
+import type { Layer, EditState, Point, GradientToolState, ActiveTool, AdjustmentLayerData, initialCurvesState, initialHslAdjustment } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
 
 export interface HistoryItem {
@@ -64,6 +64,7 @@ export const useLayers = ({
     if (layer.type === 'drawing') action = 'Brush Stroke';
     if (layer.type === 'vector-shape') action = `Edit Shape "${layer.name}"`;
     if (layer.type === 'gradient') action = `Edit Gradient "${layer.name}"`;
+    if (layer.type === 'adjustment') action = `Edit Adjustment Layer "${layer.name}"`;
     recordHistory(action, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
@@ -806,6 +807,7 @@ export const useLayers = ({
       rotation: 0,
       letterSpacing: 0,
       padding: 10,
+      lineHeight: 1.2,
       isLocked: false,
     };
     const updated = [...layers, newLayer];
@@ -914,16 +916,105 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, gradientToolState, setSelectedLayerId]);
 
+  const addAdjustmentLayer = useCallback((adjustmentType: AdjustmentLayerData['type']) => {
+    let name: string;
+    let adjustmentData: AdjustmentLayerData;
+
+    switch (adjustmentType) {
+      case 'brightness':
+        name = `Brightness/Contrast ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'brightness').length + 1}`;
+        adjustmentData = { type: 'brightness', adjustments: { brightness: 100, contrast: 100, saturation: 100 } };
+        break;
+      case 'curves':
+        name = `Curves ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'curves').length + 1}`;
+        adjustmentData = { type: 'curves', curves: initialCurvesState };
+        break;
+      case 'hsl':
+        name = `HSL ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'hsl').length + 1}`;
+        adjustmentData = { type: 'hsl', hslAdjustments: { global: { ...initialHslAdjustment }, red: { ...initialHslAdjustment }, orange: { ...initialHslAdjustment }, yellow: { ...initialHslAdjustment }, green: { ...initialHslAdjustment }, aqua: { ...initialHslAdjustment }, blue: { ...initialHslAdjustment }, purple: { ...initialHslAdjustment }, magenta: { ...initialHslAdjustment } } };
+        break;
+      case 'grading':
+        name = `Color Grading ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'grading').length + 1}`;
+        adjustmentData = { type: 'grading', grading: { grayscale: 0, sepia: 0, invert: 0 } };
+        break;
+      default:
+        return;
+    }
+
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "adjustment",
+      name: name,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      adjustmentData: adjustmentData,
+      isLocked: false,
+    };
+
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, `Add Adjustment Layer: ${name}`);
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
 
   return {
+    image,
+    imgRef,
+    dimensions,
+    fileInfo,
+    exifData,
+    currentState,
+    history,
+    currentHistoryIndex,
+    aspect,
+    canUndo,
+    canRedo,
+    handleFileSelect,
+    handleUrlImageLoad,
+    handleGeneratedImageLoad,
+    handleNewProject,
+    handleNewFromClipboard,
+    handleSaveProject,
+    handleLoadProject,
+    handleAdjustmentChange,
+    handleAdjustmentCommit,
+    handleEffectChange,
+    handleEffectCommit,
+    handleGradingChange,
+    handleGradingCommit,
+    handleHslAdjustmentChange,
+    handleHslAdjustmentCommit,
+    handleChannelChange,
+    handleCurvesChange,
+    handleCurvesCommit,
+    handleFilterChange,
+    handleTransformChange,
+    handleRotationChange,
+    handleRotationCommit,
+    handleFramePresetChange,
+    handleFramePropertyChange,
+    handleFramePropertyCommit,
+    pendingCrop,
+    setPendingCrop: (crop) => onProjectUpdate({ pendingCrop: crop }),
+    applyCrop,
+    cancelCrop,
+    handleReset,
+    handleUndo,
+    handleRedo,
+    jumpToHistory,
+    handleDownload,
+    handleCopy,
+    setAspect: (aspect) => onProjectUpdate({ aspect }),
+    // Layer utilities
     layers,
-    setLayers,
     selectedLayerId,
-    setSelectedLayerId,
-    addTextLayer,
+    setSelectedLayer: (id) => onProjectUpdate({ selectedLayerId: id }),
+    addTextLayer: (coords) => addTextLayer(coords, foregroundColor),
     addDrawingLayer,
-    addShapeLayer,
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer,
+    addAdjustmentLayer, // Expose new function
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -950,5 +1041,53 @@ export const useLayers = ({
     invertLayerMask,
     toggleClippingMask,
     toggleLayerLock,
+    // Tool state
+    activeTool: initialProject.activeTool,
+    setActiveTool,
+    // Brush state
+    brushState,
+    setBrushState,
+    handleColorPick,
+    // Gradient tool state
+    gradientToolState,
+    setGradientToolState: (state) => onProjectUpdate({ gradientToolState: state }),
+    // Generative
+    applyGenerativeResult,
+    // Selection
+    selectionPath,
+    setSelectionPath: setSelectionPathAndGenerateMask,
+    selectionMaskDataUrl,
+    handleSelectionBrushStroke,
+    clearSelectionMask,
+    applyMaskToSelectionPath,
+    convertSelectionPathToMask,
+    // Selective Blur
+    handleSelectiveBlurStroke,
+    handleSelectiveBlurStrengthChange,
+    handleSelectiveBlurStrengthCommit,
+    // Shape tool
+    selectedShapeType,
+    setSelectedShapeType: (type) => onProjectUpdate({ selectedShapeType: type }),
+    // Foreground/Background Colors
+    foregroundColor,
+    handleForegroundColorChange,
+    backgroundColor,
+    handleBackgroundColorChange,
+    handleSwapColors,
+    // Template loading
+    loadTemplateData,
+    // Layer Masking
+    applySelectionAsMask,
+    // Presets & History
+    applyPreset, // <-- FIX 5: Ensure applyPreset is exposed
+    recordHistory, // <-- FIX 6, 7, 8: Expose recordHistory
+    // Fonts
+    // These are global and managed in Index.tsx, not per-project state
+    systemFonts: [],
+    setSystemFonts: () => {},
+    customFonts: [],
+    setCustomFonts: () => {},
+    // Expose loadImageData for Index.tsx template loading logic
+    loadImageData,
   };
 };

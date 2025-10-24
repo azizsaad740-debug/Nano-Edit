@@ -87,10 +87,20 @@ export interface Point {
   y: number;
 }
 
+/** Data structure for an Adjustment Layer */
+export interface AdjustmentLayerData {
+  type: 'brightness' | 'curves' | 'hsl' | 'grading';
+  // Only include the relevant state subset
+  adjustments?: EditState['adjustments'];
+  curves?: EditState['curves'];
+  hslAdjustments?: EditState['hslAdjustments'];
+  grading?: EditState['grading'];
+}
+
 /** Layer definition */
 export interface Layer {
   id: string;
-  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group" | "gradient";
+  type: "image" | "text" | "drawing" | "smart-object" | "vector-shape" | "group" | "gradient" | "adjustment";
   name: string;
   visible: boolean;
   opacity?: number;
@@ -147,6 +157,8 @@ export interface Layer {
   // Group layer properties
   children?: Layer[]; // For 'group' type
   expanded?: boolean; // For 'group' type
+  // Adjustment layer properties
+  adjustmentData?: AdjustmentLayerData;
 }
 
 export interface HistoryItem {

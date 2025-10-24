@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X, CornerUpLeft, Lock, LockOpen } from "lucide-react"; // Added Lock/LockOpen icon
+import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive, Layers, Square, Folder, FolderOpen, ChevronRight, ChevronDown, Palette, SquareStack, X, CornerUpLeft, Lock, LockOpen, SlidersHorizontal, Sun, Zap } from "lucide-react"; // Added adjustment icons
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
@@ -83,6 +83,19 @@ const LayerItem = ({
         return <Square className="h-4 w-4 text-muted-foreground shrink-0" />;
       case 'gradient': // Added for gradient layers
         return <Palette className="h-4 w-4 text-muted-foreground shrink-0" />;
+      case 'adjustment': // NEW: Adjustment layer icons
+        switch (layer.adjustmentData?.type) {
+          case 'brightness':
+            return <Sun className="h-4 w-4 text-muted-foreground shrink-0" />;
+          case 'curves':
+            return <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />;
+          case 'hsl':
+            return <Palette className="h-4 w-4 text-muted-foreground shrink-0" />;
+          case 'grading':
+            return <Zap className="h-4 w-4 text-muted-foreground shrink-0" />;
+          default:
+            return <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />;
+        }
       default:
         return <Layers className="h-4 w-4 text-muted-foreground shrink-0" />;
     }

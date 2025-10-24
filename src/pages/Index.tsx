@@ -164,6 +164,7 @@ const Index = () => {
     addDrawingLayer,
     addShapeLayer,
     addGradientLayer,
+    addAdjustmentLayer, // NEW: Destructure addAdjustmentLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -436,8 +437,8 @@ const Index = () => {
     onHistoryJump: jumpToHistory,
     dimensions,
     fileInfo,
-    imgRef,
     exifData,
+    imgRef,
     presets,
     onApplyPreset: applyPreset,
     onSavePreset: () => setIsSavingPreset(true),
@@ -448,6 +449,7 @@ const Index = () => {
     addDrawingLayer,
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
+    onAddAdjustmentLayer: addAdjustmentLayer, // NEW: Pass addAdjustmentLayer
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,

@@ -57,6 +57,7 @@ interface SidebarProps {
   addDrawingLayer: () => string;
   addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   addGradientLayer: () => void; // Added addGradientLayer
+  onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void; // NEW prop
   onDuplicateLayer: () => void; // Renamed from duplicateLayer
   onMergeLayerDown: () => void; // Renamed from mergeLayerDown
   onRasterizeLayer: () => void; // Renamed from rasterizeLayer
@@ -152,6 +153,7 @@ const Sidebar = (props: SidebarProps) => {
                 systemFonts={props.systemFonts} // NEW prop
                 customFonts={props.customFonts} // NEW prop
                 onOpenFontManager={props.onOpenFontManager} // NEW prop
+                imgRef={props.imgRef} // NEW: Pass imgRef
               />
             )}
           </div>
@@ -169,6 +171,7 @@ const Sidebar = (props: SidebarProps) => {
                 onAddDrawingLayer={props.addDrawingLayer}
                 onAddShapeLayer={props.addShapeLayer}
                 onAddGradientLayer={props.addGradientLayer} // Passed addGradientLayer
+                onAddAdjustmentLayer={props.onAddAdjustmentLayer} // Passed new prop
                 onDuplicateLayer={props.onDuplicateLayer} 
                 onMergeLayerDown={props.onMergeLayerDown} 
                 onRasterizeLayer={props.onRasterizeLayer}
