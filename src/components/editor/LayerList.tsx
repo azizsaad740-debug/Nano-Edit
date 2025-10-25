@@ -47,27 +47,22 @@ const LayerList: React.FC<LayerListProps> = ({
     <>
       {layersToRender.slice().reverse().map((layer) => (
         <React.Fragment key={layer.id}>
-          <SortableContext
-            items={[layer.id]}
-            strategy={verticalListSortingStrategy}
-          >
-            <LayerItem
-              layer={layer}
-              isEditing={editingId === layer.id}
-              tempName={tempName}
-              setTempName={setTempName}
-              startRename={startRename}
-              confirmRename={confirmRename}
-              cancelRename={cancelRename}
-              onToggleVisibility={onToggleVisibility}
-              isSelected={selectedLayerIds.includes(layer.id)}
-              onSelect={(e) => onSelectLayer(layer.id, e.ctrlKey || e.metaKey, e.shiftKey)}
-              onToggleGroupExpanded={onToggleGroupExpanded}
-              depth={depth}
-              onRemoveMask={onRemoveLayerMask}
-              onToggleLock={onToggleLayerLock}
-            />
-          </SortableContext>
+          <LayerItem
+            layer={layer}
+            isEditing={editingId === layer.id}
+            tempName={tempName}
+            setTempName={setTempName}
+            startRename={startRename}
+            confirmRename={confirmRename}
+            cancelRename={cancelRename}
+            onToggleVisibility={onToggleVisibility}
+            isSelected={selectedLayerIds.includes(layer.id)}
+            onSelect={(e) => onSelectLayer(layer.id, e.ctrlKey || e.metaKey, e.shiftKey)}
+            onToggleGroupExpanded={onToggleGroupExpanded}
+            depth={depth}
+            onRemoveMask={onRemoveLayerMask}
+            onToggleLock={onToggleLayerLock}
+          />
           {layer.type === 'group' && layer.expanded && layer.children && (
             <SortableContext
               items={layer.children.map(c => c.id)}
