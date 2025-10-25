@@ -6,8 +6,8 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import type { Layer, EditState, Point, GradientToolState, ActiveTool, AdjustmentLayerData } from "./useEditorState";
+import { initialCurvesState, initialHslAdjustment } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
-import { initialCurvesState, initialHslAdjustment } from "./useEditorState"; // Corrected import
 
 export interface HistoryItem {
   name: string;
@@ -28,82 +28,12 @@ export interface UseLayersProps {
   setLayers: (newLayersOrUpdater: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => void;
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
-  // Properties needed for shorthand return values (passed from useEditorState)
-  image: string | null;
-  dimensions: { width: number; height: number } | null;
-  fileInfo: { name: string; size: number } | null;
-  exifData: any | null;
+  // Props needed for canUndo/canRedo calculation
   history: HistoryItem[];
   currentHistoryIndex: number;
-  aspect: number | undefined;
-  canUndo: boolean;
-  canRedo: boolean;
-  handleFileSelect: (file: File | undefined, importInSameProject: boolean) => void;
-  handleUrlImageLoad: (url: string, importInSameProject: boolean) => void;
-  handleGeneratedImageLoad: (dataUrl: string) => void;
-  handleNewProject: (settings: any) => void;
-  handleNewFromClipboard: (importInSameProject: boolean) => void;
-  handleSaveProject: () => void;
-  handleLoadProject: (file: File) => Promise<void>;
-  handleAdjustmentChange: (key: string, value: number) => void;
-  handleAdjustmentCommit: (key: string, value: number) => void;
-  handleEffectChange: (key: string, value: number) => void;
-  handleEffectCommit: (key: string, value: number) => void;
-  handleGradingChange: (key: string, value: number) => void;
-  handleGradingCommit: (key: string, value: number) => void;
-  handleHslAdjustmentChange: (color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => void;
-  handleHslAdjustmentCommit: (color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => void;
-  handleChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
-  handleCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
-  handleCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
-  handleFilterChange: (value: string, name: string) => void;
-  handleTransformChange: (type: string) => void;
-  handleRotationChange: (value: number) => void;
-  handleRotationCommit: (value: number) => void;
-  handleFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
-  handleFramePropertyChange: (key: 'width' | 'color', value: any) => void;
-  handleFramePropertyCommit: () => void;
-  pendingCrop: any;
-  applyCrop: () => void;
-  cancelCrop: () => void;
-  handleReset: () => void;
-  handleUndo: () => void;
-  handleRedo: () => void;
-  jumpToHistory: (index: number) => void;
-  handleDownload: (options: any) => void;
-  handleCopy: () => void;
-  setAspect: (aspect: number | undefined) => void;
-  setSelectedLayer: (id: string | null) => void;
-  addTextLayer: (coords: { x: number; y: number } | undefined, foregroundColor: string) => void;
-  addShapeLayer: (coords: { x: number; y: number }, shapeType: Layer['shapeType'] | undefined, initialWidth: number, initialHeight: number, foregroundColor: string, backgroundColor: string) => void;
-  addGradientLayer: () => void;
-  addAdjustmentLayer: (adjustmentType: AdjustmentLayerData['type']) => void;
-  applyGenerativeResult: (url: string, maskDataUrl: string | null) => Promise<void>;
-  selectionPath: Point[] | null;
-  setSelectionPath: (path: Point[] | null) => void;
-  selectionMaskDataUrl: string | null;
-  handleSelectionBrushStroke: (strokeDataUrl: string, operation: 'add' | 'subtract') => Promise<void>;
-  clearSelectionMask: () => void;
-  applyMaskToSelectionPath: () => Promise<void>;
-  convertSelectionPathToMask: () => Promise<void>;
-  handleSelectiveBlurStroke: (strokeDataUrl: string, operation: 'add' | 'subtract') => Promise<void>;
-  handleSelectiveBlurStrengthChange: (value: number) => void;
-  handleSelectiveBlurStrengthCommit: (value: number) => void;
-  selectedShapeType: Layer['shapeType'] | null;
   foregroundColor: string;
-  handleForegroundColorChange: (color: string) => void;
   backgroundColor: string;
-  handleBackgroundColorChange: (color: string) => void;
-  handleSwapColors: () => void;
-  loadTemplateData: (templateData: any) => void;
-  applySelectionAsMask: () => Promise<void>;
-  applyPreset: (preset: any) => void;
-  loadImageData: (dataUrl: string, successMsg: string, initialLayers: Layer[], initialDimensions?: { width: number; height: number }) => void;
-  onProjectUpdate: (updates: any) => void;
-  brushState: any;
-  setBrushState: (updates: any) => void;
-  handleColorPick: (color: string) => void;
-  setActiveTool: (tool: ActiveTool | null) => void;
+  selectedShapeType: Layer['shapeType'] | null;
 }
 
 export const useLayers = ({
@@ -118,82 +48,11 @@ export const useLayers = ({
   setLayers,
   selectedLayerId,
   setSelectedLayerId,
-  // Destructure all properties needed for shorthand return values
-  image,
-  dimensions,
-  fileInfo,
-  exifData,
-  history,
-  currentHistoryIndex,
-  aspect,
-  canUndo,
-  canRedo,
-  handleFileSelect,
-  handleUrlImageLoad,
-  handleGeneratedImageLoad,
-  handleNewProject,
-  handleNewFromClipboard,
-  handleSaveProject,
-  handleLoadProject,
-  handleAdjustmentChange,
-  handleAdjustmentCommit,
-  handleEffectChange,
-  handleEffectCommit,
-  handleGradingChange,
-  handleGradingCommit,
-  handleHslAdjustmentChange,
-  handleHslAdjustmentCommit,
-  handleChannelChange,
-  handleCurvesChange,
-  handleCurvesCommit,
-  handleFilterChange,
-  handleTransformChange,
-  handleRotationChange,
-  handleRotationCommit,
-  handleFramePresetChange,
-  handleFramePropertyChange,
-  handleFramePropertyCommit,
-  pendingCrop,
-  applyCrop,
-  cancelCrop,
-  handleReset,
-  handleUndo,
-  handleRedo,
-  jumpToHistory,
-  handleDownload,
-  handleCopy,
-  setAspect,
-  setSelectedLayer,
-  addTextLayer: addTextLayerProp, // Rename to avoid conflict
-  addShapeLayer: addShapeLayerProp, // Rename to avoid conflict
-  addGradientLayer: addGradientLayerProp, // Rename to avoid conflict
-  addAdjustmentLayer: addAdjustmentLayerProp, // Rename to avoid conflict
-  applyGenerativeResult,
-  selectionPath,
-  setSelectionPath,
-  selectionMaskDataUrl,
-  handleSelectionBrushStroke,
-  clearSelectionMask,
-  applyMaskToSelectionPath,
-  convertSelectionPathToMask,
-  handleSelectiveBlurStroke,
-  handleSelectiveBlurStrengthChange,
-  handleSelectiveBlurStrengthCommit,
-  selectedShapeType,
+  history, // Destructure history
+  currentHistoryIndex, // Destructure currentHistoryIndex
   foregroundColor,
-  handleForegroundColorChange,
   backgroundColor,
-  handleBackgroundColorChange,
-  handleSwapColors,
-  loadTemplateData,
-  applySelectionAsMask,
-  applyPreset,
-  loadImageData,
-  onProjectUpdate,
-  brushState,
-  setBrushState,
-  handleColorPick,
-  setActiveTool,
+  selectedShapeType,
 }: UseLayersProps) => {
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
@@ -363,7 +222,6 @@ export const useLayers = ({
         opacity: layerToRasterize.opacity,
         blendMode: layerToRasterize.blendMode,
         dataUrl: dataUrl,
-        maskDataUrl: layerToRasterize.maskDataUrl,
         isClippingMask: layerToRasterize.isClippingMask,
         isLocked: false,
         x: layerToRasterize.x,
@@ -477,7 +335,7 @@ export const useLayers = ({
       }
       if (layer.type === 'group' && layer.children) {
         // TS2554 fix: Removed extraneous 'layer' argument
-        const found = findLayerLocation(id, layer.children, layer, [...parentGroups, layer]);
+        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
         if (found) return found;
       }
     }
@@ -982,75 +840,151 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, setSelectedLayerId]);
 
+  // Layer creation functions exposed by useLayers
+  const addTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "text",
+      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
+      visible: true,
+      content: "New Text",
+      x: coords.x,
+      y: coords.y,
+      fontSize: 48,
+      color: color,
+      fontFamily: "Roboto",
+      opacity: 100,
+      blendMode: 'normal',
+      fontWeight: "normal",
+      textAlign: "center",
+      rotation: 0,
+      letterSpacing: 0,
+      padding: 10,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Text Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addDrawingLayer = useCallback(() => {
+    if (!imageNaturalDimensions) {
+      showError("Cannot add drawing layer without image dimensions.");
+      return "";
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = imageNaturalDimensions.width;
+    canvas.height = imageNaturalDimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      showError("Failed to create canvas for new drawing layer.");
+      return "";
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const transparentDataUrl = canvas.toDataURL();
+
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "drawing",
+      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      dataUrl: transparentDataUrl,
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Drawing Layer");
+    setSelectedLayerId(newLayer.id);
+    return newLayer.id;
+  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+
+  const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "vector-shape",
+      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      visible: true,
+      x: coords.x,
+      y: coords.y,
+      width: initialWidth,
+      height: initialHeight,
+      rotation: 0,
+      opacity: 100,
+      blendMode: 'normal',
+      shapeType: shapeType,
+      fillColor: fillColor,
+      strokeColor: strokeColor,
+      strokeWidth: 2,
+      borderRadius: 0,
+      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Shape Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addGradientLayer = useCallback(() => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "gradient",
+      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      gradientType: gradientToolState.type,
+      gradientColors: gradientToolState.colors,
+      gradientStops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Gradient Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId, gradientToolState]);
+
 
   return {
-    image,
-    imgRef,
-    dimensions,
-    fileInfo,
-    exifData,
-    currentState: currentEditState,
-    history,
-    currentHistoryIndex,
-    aspect,
-    canUndo,
-    canRedo,
-    handleFileSelect,
-    handleUrlImageLoad,
-    handleGeneratedImageLoad,
-    handleNewProject,
-    handleNewFromClipboard,
-    handleSaveProject,
-    handleLoadProject,
-    handleAdjustmentChange,
-    handleAdjustmentCommit,
-    handleEffectChange,
-    handleEffectCommit,
-    handleGradingChange,
-    handleGradingCommit,
-    handleHslAdjustmentChange,
-    handleHslAdjustmentCommit,
-    handleChannelChange,
-    handleCurvesChange,
-    handleCurvesCommit,
-    handleFilterChange,
-    handleTransformChange,
-    handleRotationChange,
-    handleRotationCommit,
-    handleFramePresetChange,
-    handleFramePropertyChange,
-    handleFramePropertyCommit,
-    pendingCrop,
-    setPendingCrop: (crop) => onProjectUpdate({ pendingCrop: crop }),
-    applyCrop,
-    cancelCrop,
-    handleReset,
-    handleUndo,
-    handleRedo,
-    jumpToHistory,
-    handleDownload,
-    handleCopy,
-    setAspect,
-    // Layer utilities
     layers,
     selectedLayerId,
-    setSelectedLayer,
-    addTextLayer: addTextLayerProp,
-    addDrawingLayer,
-    addShapeLayer: addShapeLayerProp,
-    addGradientLayer: addGradientLayerProp,
-    addAdjustmentLayer,
-    toggleLayerVisibility,
-    renameLayer,
-    deleteLayer,
-    duplicateLayer,
-    mergeLayerDown,
-    rasterizeLayer,
-    updateLayer,
-    commitLayerChange,
+    setSelectedLayerId,
+    // Removed handleUndo, handleRedo, handleReorder (managed by useEditorState)
+    handleLayerUpdate: updateLayer,
+    handleLayerCommit: commitLayerChange,
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
+    handleAddTextLayer: addTextLayer, // FIX 4
+    handleAddDrawingLayer: addDrawingLayer, // FIX 5
+    handleAddShapeLayer: addShapeLayer, // FIX 6
+    handleAddGradientLayer: addGradientLayer, // FIX 7
+    addAdjustmentLayer,
+    handleDeleteLayer: deleteLayer,
+    handleDuplicateLayer: duplicateLayer,
+    handleToggleVisibility: toggleLayerVisibility,
+    handleDrawingStrokeEnd,
+    // FIX 8, 9, 10, 11: Correctly access history properties from props
+    canUndo: currentHistoryIndex > 0,
+    canRedo: currentHistoryIndex < history.length - 1,
+    // Expose all other necessary functions/state for useEditorState
+    updateLayer,
+    commitLayerChange,
+    // FIX 12, 13, 14: Renamed to avoid duplicate property names
+    handleLayerPropertyCommit: handleLayerPropertyCommit,
+    handleLayerOpacityChange: handleLayerOpacityChange,
+    handleLayerOpacityCommit: handleLayerOpacityCommit,
     reorderLayers,
     createSmartObject,
     openSmartObjectEditor,
@@ -1061,58 +995,10 @@ export const useLayers = ({
     moveSelectedLayer,
     groupLayers,
     toggleGroupExpanded,
-    handleDrawingStrokeEnd,
     removeLayerMask,
     invertLayerMask,
     toggleClippingMask,
     toggleLayerLock,
-    // Tool state
-    activeTool,
-    setActiveTool,
-    // Brush state
-    brushState,
-    setBrushState,
-    handleColorPick,
-    // Gradient tool state
-    gradientToolState,
-    setGradientToolState: (state) => onProjectUpdate({ gradientToolState: state }),
-    // Generative
-    applyGenerativeResult,
-    // Selection
-    selectionPath,
-    setSelectionPath,
-    selectionMaskDataUrl,
-    handleSelectionBrushStroke,
-    clearSelectionMask,
-    applyMaskToSelectionPath,
-    convertSelectionPathToMask,
-    // Selective Blur
-    handleSelectiveBlurStroke,
-    handleSelectiveBlurStrengthChange,
-    handleSelectiveBlurStrengthCommit,
-    // Shape tool
-    selectedShapeType,
-    setSelectedShapeType: (type) => onProjectUpdate({ selectedShapeType: type }),
-    // Foreground/Background Colors
-    foregroundColor,
-    handleForegroundColorChange,
-    backgroundColor,
-    handleBackgroundColorChange,
-    handleSwapColors,
-    // Template loading
-    loadTemplateData,
-    // Layer Masking
-    applySelectionAsMask,
-    // Presets & History
-    applyPreset,
-    recordHistory,
-    // Fonts
-    // These are global and managed in Index.tsx, not per-project state
-    systemFonts: [],
-    setSystemFonts: () => {},
-    customFonts: [],
-    setCustomFonts: () => {},
-    // Expose loadImageData for Index.tsx template loading logic
-    loadImageData,
+    renameLayer,
   };
 };

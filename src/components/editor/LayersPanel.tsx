@@ -27,7 +27,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer, EditState, ActiveTool, BrushState } from "@/hooks/useEditorState";
+import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/useEditorState";
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
@@ -35,7 +35,7 @@ import { LayerControls } from "./LayerControls"; // NEW Import
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "../editor/BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers, Type, Square } from "lucide-react"; // ADDED Layers, Type, Square icons
+import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showError } from "@/utils/toast"; // Import showError
 import {
@@ -370,15 +370,15 @@ export const LayersPanel = ({
                     Empty Layer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onAddTextLayer}>
-                    <Type className="h-4 w-4 mr-2" />
+                    <Layers className="h-4 w-4 mr-2" />
                     Text Layer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => onAddShapeLayer({ x: 50, y: 50 })}>
-                    <Square className="h-4 w-4 mr-2" />
+                    <Layers className="h-4 w-4 mr-2" />
                     Shape Layer
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onAddGradientLayer}>
-                    <Palette className="h-4 w-4 mr-2" />
+                    <Layers className="h-4 w-4 mr-2" />
                     Gradient Layer
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />

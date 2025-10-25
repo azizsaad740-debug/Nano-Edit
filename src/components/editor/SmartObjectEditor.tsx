@@ -199,7 +199,7 @@ export const SmartObjectEditor = ({
                     systemFonts={dummySystemFonts} // Passed dummy prop
                     customFonts={dummyCustomFonts} // Passed dummy prop
                     onOpenFontManager={dummyOnOpenFontManager} // Passed dummy prop
-                    imgRef={imgRef} // Pass the main image ref (required for Curves/Histogram in nested panels)
+                    imgRef={imgRef} // FIX 25: Pass the main image ref
                   />
                 </div>
               </ResizablePanel>
