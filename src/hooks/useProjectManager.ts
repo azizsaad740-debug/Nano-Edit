@@ -27,6 +27,7 @@ export interface Project {
   brushStateInternal: Omit<BrushState, 'color'>;
   selectedShapeType: Layer['shapeType'] | null;
   activeTool: ActiveTool | null; // NEW: Active tool state
+  selectiveBlurAmount: number; // NEW: Selective blur strength (0-100)
 }
 
 const createNewProject = (name: string = "Untitled"): Project => ({
@@ -50,6 +51,7 @@ const createNewProject = (name: string = "Untitled"): Project => ({
   brushStateInternal: initialBrushState,
   selectedShapeType: 'rect',
   activeTool: null, // NEW: Default active tool
+  selectiveBlurAmount: 50, // Initial value
 });
 
 export const useProjectManager = () => {
