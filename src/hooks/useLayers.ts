@@ -9,6 +9,35 @@ import type { Layer, EditState, Point, GradientToolState, ActiveTool, Adjustment
 import { initialCurvesState, initialHslAdjustment } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
 
+// Helper utility functions for nested layer manipulation
+const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
+  if (parentIds.length === 0) return newContainer;
+  
+  const targetId = parentIds[0];
+  return layers.map(l => {
+    if (l.id === targetId && l.type === 'group' && l.children) {
+      return {
+        ...l,
+        children: updateNestedContainer(l.children, parentIds.slice(1), newContainer),
+      };
+    }
+    return l;
+  });
+};
+
+const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
+  let currentContainer = tree;
+  for (const group of path) {
+    const foundGroup = currentContainer.find(l => l.id === group.id);
+    if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
+      currentContainer = foundGroup.children;
+    } else {
+      return [];
+    }
+  }
+  return currentContainer;
+};
+
 export interface HistoryItem {
   name: string;
   state: EditState;
@@ -63,6 +92,31 @@ export const useLayers = ({
     },
     [setLayers]
   );
+
+  interface LayerLocation {
+    layer: Layer;
+    container: Layer[];
+    index: number;
+    parentGroups: Layer[];
+  }
+
+  const findLayerLocation = useCallback((
+    id: string,
+    currentLayers: Layer[],
+    parentGroups: Layer[] = []
+  ): LayerLocation | null => {
+    for (let i = 0; i < currentLayers.length; i++) {
+      const layer = currentLayers[i];
+      if (layer.id === id) {
+        return { layer, container: currentLayers, index: i, parentGroups };
+      }
+      if (layer.type === 'group' && layer.children) {
+        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, []);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
     // TS2345 fix: setLayers now accepts a function updater
@@ -318,33 +372,7 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, imgRef]);
 
-  interface LayerLocation {
-    layer: Layer;
-    container: Layer[];
-    index: number;
-    parentGroups: Layer[];
-  }
-
-  const findLayerLocation = useCallback((
-    id: string,
-    currentLayers: Layer[],
-    parentGroups: Layer[] = []
-  ): LayerLocation | null => {
-    for (let i = 0; i < currentLayers.length; i++) {
-      const layer = currentLayers[i];
-      if (layer.id === id) {
-        return { layer, container: currentLayers, index: i, parentGroups };
-      }
-      if (layer.type === 'group' && layer.children) {
-        // TS2554 fix: Removed extraneous 'layer' argument
-        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
-
-  const reorderLayers = useCallback((activeId: string, overId: string, isDroppingIntoGroup: boolean = false) => {
+  const reorderLayers = useCallback((activeId: string, overId: string) => {
     const activeLocation = findLayerLocation(activeId, layers);
     const overLocation = findLayerLocation(overId, layers);
 
@@ -353,53 +381,62 @@ export const useLayers = ({
       return;
     }
 
-    const { layer: activeLayer, index: activeIndex, parentGroups: activeParentGroups } = activeLocation;
-    const { layer: overLayer, index: overIndex, parentGroups: overParentGroups } = overLocation;
+    const { layer: activeLayer, container: activeContainer, index: activeIndex, parentGroups: activeParentGroups } = activeLocation;
+    const { layer: overLayer, container: overContainer, index: overIndex, parentGroups: overParentGroups } = overLocation;
 
     if (activeLayer.type === 'image') {
       showError("The background layer cannot be moved.");
       return;
     }
 
-    let newLayers = JSON.parse(JSON.stringify(layers)) as Layer[];
+    // Check if they are in the same container (same parent path length and same parent ID if nested)
+    const sameParent = activeParentGroups.length === overParentGroups.length && 
+                       (activeParentGroups.length === 0 || activeParentGroups[activeParentGroups.length - 1].id === overParentGroups[overParentGroups.length - 1].id);
 
-    const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
-      let currentContainer = tree;
-      for (const group of path) {
-        const foundGroup = currentContainer.find(l => l.id === group.id);
-        if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
-          currentContainer = foundGroup.children;
-        } else {
-          console.error("Invalid path in getMutableContainer or group not found.");
-          return [];
-        }
-      }
-      return currentContainer;
-    };
-
-    const mutableActiveContainer = getMutableContainer(newLayers, activeParentGroups);
-    const mutableOverContainer = getMutableContainer(newLayers, overParentGroups);
-
-    const [movedLayer] = mutableActiveContainer.splice(activeIndex, 1);
-
-    let targetContainer: Layer[];
-    let targetIndex: number;
-
-    if (isDroppingIntoGroup && overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
-      targetContainer = getMutableContainer(newLayers, [...overParentGroups, overLayer]);
-      targetIndex = 0;
-    } else if (overLayer.type === 'group' && !overLayer.expanded) {
-      targetContainer = mutableOverContainer;
-      targetIndex = overIndex + 1;
+    if (sameParent) {
+      // 1. Simple reorder within the same container using arrayMove
+      const newContainer = arrayMove(activeContainer, activeIndex, overIndex);
+      
+      setLayers(prevLayers => {
+        const parentIds = activeParentGroups.map(g => g.id);
+        return updateNestedContainer(prevLayers, parentIds, newContainer);
+      }, `Reorder Layer "${activeLayer.name}"`);
+      
     } else {
-      targetContainer = mutableOverContainer;
-      targetIndex = overIndex;
+      // 2. Cross-container move (or drop into/out of a group)
+      
+      // Deep copy the entire structure to safely mutate
+      let newLayers = JSON.parse(JSON.stringify(layers)) as Layer[];
+
+      const mutableActiveContainer = getMutableContainer(newLayers, activeParentGroups);
+      
+      // Remove the active layer from its original container
+      const currentActiveIndex = mutableActiveContainer.findIndex(l => l.id === activeId);
+      if (currentActiveIndex === -1) return;
+      const [movedLayer] = mutableActiveContainer.splice(currentActiveIndex, 1);
+
+      let targetContainer: Layer[];
+      let targetIndex: number;
+
+      // Determine target container and index
+      if (overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
+        // Drop INTO an expanded group (insert at the top of its children)
+        targetContainer = getMutableContainer(newLayers, [...overParentGroups, overLayer]);
+        targetIndex = 0; 
+      } else {
+        // Drop NEXT TO a layer or collapsed group
+        targetContainer = getMutableContainer(newLayers, overParentGroups);
+        
+        // Find the index of the overId in the target container
+        const currentOverIndex = targetContainer.findIndex(l => l.id === overId);
+        targetIndex = currentOverIndex !== -1 ? currentOverIndex + 1 : targetContainer.length;
+      }
+
+      targetContainer.splice(targetIndex, 0, movedLayer);
+
+      updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
     }
-
-    targetContainer.splice(targetIndex, 0, movedLayer);
-
-    updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
-  }, [layers, updateLayersState, findLayerLocation]);
+  }, [layers, updateLayersState, findLayerLocation, setLayers]);
 
   /* ---------- Smart Object Functions ---------- */
   const createSmartObject = useCallback((layerIds: string[]) => {

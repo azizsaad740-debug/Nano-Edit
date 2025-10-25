@@ -61,7 +61,7 @@ interface SidebarProps {
   onDuplicateLayer: () => void; // Renamed from duplicateLayer
   onMergeLayerDown: () => void; // Renamed from mergeLayerDown
   onRasterizeLayer: () => void; // Renamed from rasterizeLayer
-  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Added this line
+  onReorder: (activeId: string, overId: string) => void; // UPDATED: Removed isDroppingIntoGroup
   toggleLayerVisibility: (id: string) => void; // ADDED
   renameLayer: (id: string, newName: string) => void; // ADDED
   deleteLayer: (id: string) => void; // ADDED

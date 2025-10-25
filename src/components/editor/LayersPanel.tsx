@@ -59,7 +59,7 @@ interface LayersPanelProps {
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
-  onReorder: (activeId: string, overId: string, isDroppingIntoGroup?: boolean) => void; // Updated signature
+  onReorder: (activeId: string, overId: string) => void; // UPDATED: Removed isDroppingIntoGroup
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
   channels: EditState['channels'];
@@ -158,43 +158,33 @@ export const LayersPanel = ({
     setEditingId(null);
   };
 
-  // Helper to find a layer by ID, potentially nested
-  const findLayerAndParent = (
+  // Helper to find a layer by ID, potentially nested (needed for DragOverlay)
+  const findLayerForDragOverlay = (
     id: string,
     currentLayers: Layer[],
-    parent: Layer | null = null,
-    path: Layer[] = []
-  ): { layer: Layer | undefined; parent: Layer | null; path: Layer[] } => {
+  ): Layer | undefined => {
     for (const layer of currentLayers) {
       if (layer.id === id) {
-        return { layer, parent, path: [...path, layer] };
+        return layer;
       }
       if (layer.type === 'group' && layer.children) {
-        const found = findLayerAndParent(id, layer.children, layer, [...path, layer]);
+        const found = findLayerForDragOverlay(id, layer.children);
         if (found) return found;
       }
     }
-    return { layer: undefined, parent: null, path: [] };
+    return undefined;
   };
 
-  // Helper to update layers array, potentially nested
-  const updateLayersRecursively = (
-    currentLayers: Layer[],
-    targetId: string,
-    updates: Partial<Layer>
-  ): Layer[] => {
-    return currentLayers.map(layer => {
-      if (layer.id === targetId) {
-        return { ...layer, ...updates };
+  // Helper to get all layer IDs (including nested ones if expanded)
+  const getAllLayerIds = (layersToProcess: Layer[]): string[] => {
+    let ids: string[] = [];
+    layersToProcess.forEach(layer => {
+      ids.push(layer.id);
+      if (layer.type === 'group' && layer.children && layer.expanded) {
+        ids = ids.concat(getAllLayerIds(layer.children));
       }
-      if (layer.type === 'group' && layer.children) {
-        return {
-          ...layer,
-          children: updateLayersRecursively(layer.children, targetId, updates),
-        };
-      }
-      return layer;
     });
+    return ids;
   };
 
   const handleSelectLayer = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
@@ -220,17 +210,6 @@ export const LayersPanel = ({
       setSelectedLayerIds([id]);
       onSelectLayer(id);
     }
-  };
-
-  const getAllLayerIds = (layersToProcess: Layer[]): string[] => {
-    let ids: string[] = [];
-    layersToProcess.forEach(layer => {
-      ids.push(layer.id);
-      if (layer.type === 'group' && layer.children && layer.expanded) {
-        ids = ids.concat(getAllLayerIds(layer.children));
-      }
-    });
-    return ids;
   };
 
   const renderLayerItems = (layersToRender: Layer[], depth: number) => {
@@ -286,15 +265,9 @@ export const LayersPanel = ({
   };
 
   const handleDragOver = (event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const { layer: overLayer } = findLayerAndParent(over.id as string, layers);
-
-    // If dragging over an expanded group, treat as dropping into the group
-    if (overLayer && overLayer.type === 'group' && overLayer.expanded) {
-      onReorder(active.id as string, over.id as string, true);
-    }
+    // We rely on the logic in useLayers.ts to determine if the drop is into a group
+    // based on the overId being an expanded group. We only need to handle the visual
+    // reordering logic in useLayers.
   };
 
   const selectedLayer = layers.find(l => l.id === selectedLayerId);
@@ -336,7 +309,7 @@ export const LayersPanel = ({
                 <DragOverlay>
                   {activeDragItem ? (
                     <LayerItem
-                      layer={findLayerAndParent(activeDragItem.id as string, layers).layer!}
+                      layer={findLayerForDragOverlay(activeDragItem.id as string, layers)!}
                       isEditing={false}
                       tempName=""
                       setTempName={() => {}}
