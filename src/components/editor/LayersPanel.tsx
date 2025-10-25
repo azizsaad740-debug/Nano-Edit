@@ -68,7 +68,7 @@ interface LayersPanelProps {
   onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void; // NEW prop
   onReorder: (activeId: string, overId: string) => void;
   selectedLayerId: string | null;
-  onSelectLayer: (id: string) => void;
+  onSelectLayer: (id: string | null) => void;
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
@@ -150,6 +150,7 @@ export const LayersPanel = ({
   );
 
   React.useEffect(() => {
+    // Sync local multi-selection state when global single selection changes
     if (selectedLayerId && !selectedLayerIds.includes(selectedLayerId)) {
       setSelectedLayerIds([selectedLayerId]);
     } else if (!selectedLayerId && selectedLayerIds.length > 0) {
@@ -191,13 +192,24 @@ export const LayersPanel = ({
 
   const handleSelectLayer = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
     if (ctrlKey) {
-      setSelectedLayerIds(prev =>
-        prev.includes(id)
+      setSelectedLayerIds(prev => {
+        const isDeselecting = prev.includes(id);
+        const newSelection = isDeselecting
           ? prev.filter(layerId => layerId !== id)
-          : [...prev, id]
-      );
+          : [...prev, id];
+        
+        // Update global selectedLayerId (for properties panel)
+        if (!isDeselecting) {
+          onSelectLayer(id); // Set clicked layer as primary
+        } else if (id === selectedLayerId) {
+          // If we deselected the primary layer, pick a new primary one (e.g., the last one remaining)
+          onSelectLayer(newSelection.length > 0 ? newSelection[newSelection.length - 1] : null);
+        }
+        
+        return newSelection;
+      });
     } else if (shiftKey && selectedLayerId) {
-      // Use utility function for display order
+      // Shift selection logic
       const allLayerIds = getLayerDisplayOrderIds(layers);
       const currentIndex = allLayerIds.indexOf(id);
       const lastIndex = allLayerIds.indexOf(selectedLayerId);
@@ -209,7 +221,9 @@ export const LayersPanel = ({
         .slice(startIndex, endIndex + 1);
         
       setSelectedLayerIds(newSelection);
+      onSelectLayer(id); // Set clicked layer as primary
     } else {
+      // Single click
       setSelectedLayerIds([id]);
       onSelectLayer(id);
     }
