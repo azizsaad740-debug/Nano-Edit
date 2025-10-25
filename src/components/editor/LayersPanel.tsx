@@ -218,7 +218,8 @@ export const LayersPanel = ({
       const endIndex = Math.max(currentIndex, lastIndex);
       
       const newSelection = allLayerIds
-        .slice(startIndex, endIndex + 1);
+        .slice(startIndex, endIndex + 1)
+        .filter(layerId => layers.some(l => l.id === layerId)); // Filter out IDs that might be from nested groups if the list is flattened
         
       setSelectedLayerIds(newSelection);
       onSelectLayer(id); // Set clicked layer as primary
