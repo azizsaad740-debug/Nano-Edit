@@ -1,101 +1,96 @@
 "use client";
 
 import * as React from "react";
-import type { EditState, HslAdjustment } from "@/hooks/useEditorState";
+import type { EditState, HslAdjustment, HslColorKey } from "@/hooks/useEditorState";
 
 interface HslFilterProps {
   hslAdjustments: EditState['hslAdjustments'];
 }
 
+const HSL_COLOR_KEYS: HslColorKey[] = ['global', 'red', 'orange', 'yellow', 'green', 'aqua', 'blue', 'purple', 'magenta'];
+
 const isDefaultHsl = (hsl: HslAdjustment) => hsl.hue === 0 && hsl.saturation === 100 && hsl.luminance === 0;
 
 export const HslFilter = ({ hslAdjustments }: HslFilterProps) => {
-  const globalHsl = hslAdjustments.global;
-  
-  // Check if any HSL adjustment (global or per-color) is active
   const isActive = Object.values(hslAdjustments).some(hsl => !isDefaultHsl(hsl));
 
   if (!isActive) {
     return null;
   }
 
-  // --- Global HSL Adjustments ---
-  
-  // 1. Hue Rotation (feColorMatrix type="hueRotate")
-  const hueRotate = globalHsl.hue;
-
-  // 2. Saturation (feColorMatrix type="saturate")
-  const saturationAmount = globalHsl.saturation / 100;
-
-  // 3. Luminance/Brightness (feComponentTransfer type="linear" slope/intercept)
-  // Luminance: -100% (0.0) to 100% (2.0). Default 0% (1.0).
-  const luminanceOffset = globalHsl.luminance / 100; // -1 to 1
-  const luminanceSlope = 1; // Keep slope at 1 for simple offset
-  const luminanceIntercept = luminanceOffset; // Use offset as intercept
-
-  // Determine the input chain
-  let lastResult = "SourceGraphic";
-  let hueResult = "SourceGraphic";
-  let saturateResult = "SourceGraphic";
-  let luminanceResult = "SourceGraphic";
-
-  if (hueRotate !== 0) {
-    hueResult = "hueShifted";
-    lastResult = hueResult;
-  }
-  if (saturationAmount !== 1) {
-    saturateResult = "saturated";
-    lastResult = saturateResult;
-  }
-  if (luminanceOffset !== 0) {
-    luminanceResult = "luminanceAdjusted";
-    lastResult = luminanceResult;
-  }
-  
-  // If multiple adjustments are active, we need to chain them correctly.
-  // The order is typically: Hue -> Saturation -> Luminance.
-  
   let currentInput = "SourceGraphic";
+  let filterNodes: React.ReactNode[] = [];
+  let resultCounter = 0;
+
+  // Iterate over all color keys, starting with 'global'
+  for (const colorKey of HSL_COLOR_KEYS) {
+    const hsl = hslAdjustments[colorKey];
+    if (isDefaultHsl(hsl)) continue;
+
+    const hueRotate = hsl.hue;
+    const saturationAmount = hsl.saturation / 100;
+    const luminanceOffset = hsl.luminance / 100;
+
+    // --- Structural Placeholder for Color Isolation (Only for per-color keys) ---
+    if (colorKey !== 'global') {
+        // In a real implementation, this section would contain complex feColorMatrix
+        // operations to isolate the hue range of 'colorKey' and create a mask,
+        // which would then be used with feComposite to apply the adjustment only to that range.
+        // For now, we apply the adjustment globally, which stacks but demonstrates the filter chaining structure.
+    }
+
+    // Apply Hue Rotation
+    if (hueRotate !== 0) {
+      resultCounter++;
+      filterNodes.push(
+        <feColorMatrix 
+          key={`${colorKey}-hue-${resultCounter}`}
+          type="hueRotate" 
+          values={String(hueRotate)} 
+          in={currentInput}
+          result={`result${resultCounter}`} 
+        />
+      );
+      currentInput = `result${resultCounter}`;
+    }
+    
+    // Apply Saturation
+    if (saturationAmount !== 1) {
+      resultCounter++;
+      filterNodes.push(
+        <feColorMatrix 
+          key={`${colorKey}-sat-${resultCounter}`}
+          type="saturate" 
+          values={String(saturationAmount)} 
+          in={currentInput}
+          result={`result${resultCounter}`}
+        />
+      );
+      currentInput = `result${resultCounter}`;
+    }
+    
+    // Apply Luminance (Brightness Offset)
+    if (luminanceOffset !== 0) {
+      resultCounter++;
+      filterNodes.push(
+        <feComponentTransfer 
+          key={`${colorKey}-lum-${resultCounter}`}
+          in={currentInput}
+          result={`result${resultCounter}`}
+        >
+          <feFuncR type="linear" slope={1} intercept={luminanceOffset} />
+          <feFuncG type="linear" slope={1} intercept={luminanceOffset} />
+          <feFuncB type="linear" slope={1} intercept={luminanceOffset} />
+        </feComponentTransfer>
+      );
+      currentInput = `result${resultCounter}`;
+    }
+  }
 
   return (
     <svg width="0" height="0" style={{ position: 'absolute' }}>
       <filter id="hsl-filter">
-        {/* Step 1: Apply Hue Rotation */}
-        {hueRotate !== 0 && (
-          <feColorMatrix 
-            type="hueRotate" 
-            values={String(hueRotate)} 
-            in={currentInput}
-            result="hueShifted" 
-          />
-        )}
-        {hueRotate !== 0 && (currentInput = "hueShifted")}
-        
-        {/* Step 2: Apply Saturation */}
-        {saturationAmount !== 1 && (
-          <feColorMatrix 
-            type="saturate" 
-            values={String(saturationAmount)} 
-            in={currentInput}
-            result="saturated"
-          />
-        )}
-        {saturationAmount !== 1 && (currentInput = "saturated")}
-        
-        {/* Step 3: Apply Luminance (Brightness Offset) */}
-        {luminanceOffset !== 0 && (
-          <feComponentTransfer 
-            in={currentInput}
-            result="luminanceAdjusted"
-          >
-            <feFuncR type="linear" slope={luminanceSlope} intercept={luminanceIntercept} />
-            <feFuncG type="linear" slope={luminanceSlope} intercept={luminanceIntercept} />
-            <feFuncB type="linear" slope={luminanceSlope} intercept={luminanceIntercept} />
-          </feComponentTransfer>
-        )}
-        {luminanceOffset !== 0 && (currentInput = "luminanceAdjusted")}
-        
-        {/* Final merge node ensures the output is correct */}
+        {filterNodes}
         <feMerge>
           <feMergeNode in={currentInput} />
         </feMerge>
