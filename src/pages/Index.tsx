@@ -202,6 +202,7 @@ const Index = () => {
     applyMaskToSelectionPath,
     convertSelectionPathToMask,
     handleSelectiveBlurStroke,
+    selectiveBlurStrength, // Destructure from editorState
     handleSelectiveBlurStrengthChange,
     handleSelectiveBlurStrengthCommit,
     selectedShapeType,
@@ -321,7 +322,7 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile();
+          const blob = items[i].getAsFile();
           if (file) {
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
@@ -354,7 +355,7 @@ const Index = () => {
     };
   }, [handleFileSelect, handleUrlImageLoad, createNewTab, setActiveProjectId]);
 
-  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, selectiveBlurStrength, hslAdjustments, colorMode } = currentState;
+  const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, hslAdjustments, colorMode } = currentState;
 
   const hasActiveSelection = !!selectionPath || !!selectionMaskDataUrl;
 
