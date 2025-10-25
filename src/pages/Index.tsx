@@ -322,12 +322,12 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const blob = items[i].getAsFile();
+          const file = items[i].getAsFile(); // Corrected variable name
           if (file) {
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
             setActiveProjectId(newProject.id);
-            handleFileSelect(file, false);
+            handleFileSelect(file, false); // Corrected variable name
             event.preventDefault();
             return;
           }
