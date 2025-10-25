@@ -281,7 +281,7 @@ export const useEditorState = (
   },
   onProjectUpdate: (updates: Partial<typeof initialProject>) => void,
   onHistoryUpdate: (history: HistoryItem[], currentHistoryIndex: number, layers: Layer[]) => void,
-  onLayerUpdate: (layers: Layer[], historyName?: string) => void,
+  onLayerUpdate: (layers: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => void,
   image: string | null,
   dimensions: { width: number; height: number } | null,
   fileInfo: { name: string; size: number } | null,
@@ -1094,6 +1094,11 @@ export const useEditorState = (
     showSuccess(`Selection applied as mask to layer "${layer.name}".`);
   }, [selectedLayerId, layers, initialProject.selectionMaskDataUrl, onProjectUpdate, onLayerUpdate]);
 
+  // Helper function to toggle tool or set it if currently null/different
+  const toggleTool = useCallback((tool: ActiveTool) => {
+    setActiveTool(prev => (prev === tool ? null : tool));
+  }, [setActiveTool]);
+
   // --- Hotkeys ---
   useHotkeys("ctrl+z, cmd+z", handleUndo, { preventDefault: true });
   useHotkeys("ctrl+y, cmd+shift+z", handleRedo, { preventDefault: true });
@@ -1103,6 +1108,20 @@ export const useEditorState = (
   }, { preventDefault: true });
   useHotkeys("ctrl+c, cmd+c", handleCopy, { preventDefault: true });
   useHotkeys("x", handleSwapColors, { preventDefault: true });
+  
+  // Tool Switching Hotkeys
+  useHotkeys("m", () => toggleTool("move"), { preventDefault: true });
+  useHotkeys("l", () => toggleTool("lasso"), { preventDefault: true });
+  useHotkeys("b", () => toggleTool("brush"), { preventDefault: true });
+  useHotkeys("e", () => toggleTool("eraser"), { preventDefault: true });
+  useHotkeys("s", () => toggleTool("selectionBrush"), { preventDefault: true });
+  useHotkeys("u", () => toggleTool("blurBrush"), { preventDefault: true });
+  useHotkeys("t", () => toggleTool("text"), { preventDefault: true });
+  useHotkeys("p", () => toggleTool("shape"), { preventDefault: true });
+  useHotkeys("g", () => toggleTool("gradient"), { preventDefault: true });
+  useHotkeys("c", () => toggleTool("crop"), { preventDefault: true });
+  useHotkeys("i", () => toggleTool("eyedropper"), { preventDefault: true });
+
 
   return {
     // Project State
