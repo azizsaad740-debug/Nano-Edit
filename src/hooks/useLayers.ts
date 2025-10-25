@@ -115,10 +115,12 @@ export const useLayers = ({
   const renameLayer = useCallback((id: string, newName: string) => {
     const layerToRename = layers.find(l => l.id === id);
     if (!layerToRename) return;
+
     if (layerToRename.type === 'image' && layerToRename.name === 'Background') {
       showError("The default background layer cannot be renamed.");
       return;
     }
+
     const updated = layers.map(l => l.id === id ? { ...l, name: newName } : l);
     updateLayersState(updated, `Rename Layer to "${newName}"`);
   }, [layers, updateLayersState]);
@@ -973,6 +975,8 @@ export const useLayers = ({
     addAdjustmentLayer,
     handleDeleteLayer: deleteLayer,
     handleDuplicateLayer: duplicateLayer,
+    handleMergeLayerDown: mergeLayerDown,
+    handleRasterizeLayer: rasterizeLayer,
     handleToggleVisibility: toggleLayerVisibility,
     handleDrawingStrokeEnd,
     // FIX 8, 9, 10, 11: Correctly access history properties from props
@@ -982,9 +986,9 @@ export const useLayers = ({
     updateLayer,
     commitLayerChange,
     // FIX 12, 13, 14: Renamed to avoid duplicate property names
-    handleLayerPropertyCommit: handleLayerPropertyCommit,
-    handleLayerOpacityChange: handleLayerOpacityChange,
-    handleLayerOpacityCommit: handleLayerOpacityCommit,
+    handleLayerPropertyCommit,
+    handleLayerOpacityChange,
+    handleLayerOpacityCommit,
     reorderLayers,
     createSmartObject,
     openSmartObjectEditor,
@@ -1000,5 +1004,8 @@ export const useLayers = ({
     toggleClippingMask,
     toggleLayerLock,
     renameLayer,
+    // Expose functions with their desired names for useEditorState
+    mergeLayerDown,
+    rasterizeLayer,
   };
 };

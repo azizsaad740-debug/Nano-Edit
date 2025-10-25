@@ -341,19 +341,18 @@ export const useEditorState = (
   );
 
   const {
-    setLayers, // FIX 15
     setSelectedLayerId: setLayerId,
-    handleAddTextLayer: addTextLayer, // FIX 16
-    handleAddDrawingLayer: addDrawingLayer, // FIX 17
-    handleAddShapeLayer: addShapeLayer, // FIX 18
-    handleAddGradientLayer: addGradientLayer, // FIX 19
+    handleAddTextLayer: addTextLayer,
+    handleAddDrawingLayer: addDrawingLayer,
+    handleAddShapeLayer: addShapeLayer,
+    handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
-    handleToggleVisibility: toggleLayerVisibility, // FIX 20
+    handleToggleVisibility: toggleLayerVisibility,
     renameLayer,
-    handleDeleteLayer: deleteLayer, // FIX 21
-    handleDuplicateLayer: duplicateLayer, // FIX 22
-    handleMergeLayerDown: mergeLayerDown, // FIX 23
-    handleRasterizeLayer: rasterizeLayer, // FIX 24
+    handleDeleteLayer: deleteLayer,
+    handleDuplicateLayer: duplicateLayer,
+    mergeLayerDown, // Renamed from handleMergeLayerDown
+    rasterizeLayer, // Renamed from handleRasterizeLayer
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,

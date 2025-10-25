@@ -424,8 +424,8 @@ const Index = () => {
     curves,
     onCurvesChange: handleCurvesChange,
     onCurvesCommit: handleCurvesCommit,
-    selectedFilter,
     onFilterChange: handleFilterChange,
+    selectedFilter,
     onTransformChange: handleTransformChange,
     rotation: transforms.rotation,
     onRotationChange: handleRotationChange,
@@ -788,6 +788,7 @@ const Index = () => {
           onSwapColors={handleSwapColors}
           selectedShapeType={selectedShapeType}
           setSelectedShapeType={setSelectedShapeType}
+          imgRef={imgRef}
         />
       )}
       <input
