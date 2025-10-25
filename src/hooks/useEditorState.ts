@@ -192,7 +192,7 @@ export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedr
 
 /* ---------- Initial state ---------- */
 const defaultCurve = [{ x: 0, y: 0 }, { x: 255, y: 255 }];
-export const initialCurvesState = {
+export const initialCurvesState: EditState['curves'] = {
   all: [...defaultCurve],
   r: [...defaultCurve],
   g: [...defaultCurve],
@@ -343,10 +343,11 @@ export const useEditorState = (
   const {
     setLayers,
     setSelectedLayerId,
-    addTextLayer,
+    addTextLayer: addTextLayerProp, // Renamed to avoid conflict
     addDrawingLayer,
-    addShapeLayer,
+    addShapeLayer: addShapeLayerProp, // Renamed to avoid conflict
     addGradientLayer,
+    addAdjustmentLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -394,6 +395,83 @@ export const useEditorState = (
     },
     selectedLayerId,
     setSelectedLayerId: (id) => onProjectUpdate({ selectedLayerId: id }),
+    // Pass all required props for useLayers return shorthand
+    image,
+    dimensions,
+    fileInfo,
+    exifData,
+    history,
+    currentHistoryIndex,
+    aspect,
+    canUndo,
+    canRedo,
+    handleFileSelect: (file, importInSameProject) => handleFileSelect(file, importInSameProject),
+    handleUrlImageLoad: (url, importInSameProject) => handleUrlImageLoad(url, importInSameProject),
+    handleGeneratedImageLoad,
+    handleNewProject,
+    handleNewFromClipboard,
+    handleSaveProject,
+    handleLoadProject,
+    handleAdjustmentChange,
+    handleAdjustmentCommit,
+    handleEffectChange,
+    handleEffectCommit,
+    handleGradingChange,
+    handleGradingCommit,
+    handleHslAdjustmentChange,
+    handleHslAdjustmentCommit,
+    handleChannelChange,
+    handleCurvesChange,
+    handleCurvesCommit,
+    handleFilterChange,
+    handleTransformChange,
+    handleRotationChange,
+    handleRotationCommit,
+    handleFramePresetChange,
+    handleFramePropertyChange,
+    handleFramePropertyCommit,
+    pendingCrop,
+    applyCrop,
+    cancelCrop,
+    handleReset,
+    handleUndo,
+    handleRedo,
+    jumpToHistory,
+    handleDownload,
+    handleCopy,
+    setAspect: (aspect) => onProjectUpdate({ aspect }),
+    setSelectedLayer: (id) => onProjectUpdate({ selectedLayerId: id }),
+    addTextLayer: (coords, color) => addTextLayerProp(coords, color),
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight, fg, bg) => addShapeLayerProp(coords, shapeType, initialWidth, initialHeight, fg, bg),
+    addGradientLayer,
+    addAdjustmentLayer,
+    applyGenerativeResult,
+    selectionPath,
+    setSelectionPath: (path) => setSelectionPathAndGenerateMask(path),
+    selectionMaskDataUrl,
+    handleSelectionBrushStroke,
+    clearSelectionMask,
+    applyMaskToSelectionPath,
+    convertSelectionPathToMask,
+    handleSelectiveBlurStroke,
+    handleSelectiveBlurStrengthChange,
+    handleSelectiveBlurStrengthCommit,
+    selectedShapeType,
+    setSelectedShapeType: (type) => onProjectUpdate({ selectedShapeType: type }),
+    foregroundColor,
+    handleForegroundColorChange,
+    backgroundColor,
+    handleBackgroundColorChange,
+    handleSwapColors,
+    loadTemplateData,
+    applySelectionAsMask,
+    applyPreset,
+    loadImageData,
+    onProjectUpdate,
+    brushState: { ...brushStateInternal, color: foregroundColor },
+    setBrushState: (updates) => onProjectUpdate({ brushStateInternal: { ...brushStateInternal, ...updates } }),
+    handleColorPick,
+    setActiveTool,
   });
 
   // Sync layers from useLayers back to history when they change
@@ -787,7 +865,7 @@ export const useEditorState = (
     const dataUrl = canvas.toDataURL('image/png');
 
     const newState = { ...initialEditState, ...editState };
-    const newHistoryItem = { name: "Load Template", state: newState, layers: templateLayers };
+    const newHistoryItem: HistoryItem = { name: "Load Template", state: newState, layers: templateLayers };
     
     onProjectUpdate({
       image: dataUrl,
@@ -1312,7 +1390,7 @@ export const useEditorState = (
       const updatedLayers = layers.map(l => 
         l.id === selectedLayerId ? { ...l, maskDataUrl: finalMaskDataUrl } : l
       );
-      onLayerUpdate(updatedLayers, `Apply Mask to Layer "${selectedLayer.name}"`);
+      onLayerUpdate(updatedLayers, `Apply Mask to Layer "${selectedLayer.name}".`);
       clearSelectionMask();
       dismissToast(toastId);
       showSuccess(`Selection applied as mask to layer "${selectedLayer.name}".`);
@@ -1460,10 +1538,11 @@ export const useEditorState = (
     layers,
     selectedLayerId,
     setSelectedLayer: (id) => onProjectUpdate({ selectedLayerId: id }),
-    addTextLayer: (coords) => addTextLayer(coords, foregroundColor),
+    addTextLayer: (coords) => addTextLayerProp(coords, foregroundColor),
     addDrawingLayer,
-    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayerProp(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer,
+    addAdjustmentLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
@@ -1538,5 +1617,7 @@ export const useEditorState = (
     setCustomFonts: () => {},
     // Expose loadImageData for Index.tsx template loading logic
     loadImageData,
+    // NEW: Expose addAdjustmentLayer
+    addAdjustmentLayer,
   };
 };

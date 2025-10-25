@@ -276,5 +276,3 @@ export const LayerActions = ({
     </div>
   );
 };
-
-export default LayerActions;

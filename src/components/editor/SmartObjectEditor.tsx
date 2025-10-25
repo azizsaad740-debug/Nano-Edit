@@ -29,6 +29,7 @@ interface SmartObjectEditorProps {
   onSwapColors: () => void;
   selectedShapeType: Layer['shapeType'] | null;
   setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
+  imgRef: React.RefObject<HTMLImageElement>; // NEW: Added imgRef prop
 }
 
 export const SmartObjectEditor = ({ 
@@ -47,6 +48,7 @@ export const SmartObjectEditor = ({
   onSwapColors,
   selectedShapeType,
   setSelectedShapeType,
+  imgRef, // Destructure new prop
 }: SmartObjectEditorProps) => {
   const smartObjectDimensions = smartObject.smartObjectData || { width: 1000, height: 1000 };
 
@@ -197,6 +199,7 @@ export const SmartObjectEditor = ({
                     systemFonts={dummySystemFonts} // Passed dummy prop
                     customFonts={dummyCustomFonts} // Passed dummy prop
                     onOpenFontManager={dummyOnOpenFontManager} // Passed dummy prop
+                    imgRef={imgRef} // Pass the main image ref (required for Curves/Histogram in nested panels)
                   />
                 </div>
               </ResizablePanel>

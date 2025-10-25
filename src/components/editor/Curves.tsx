@@ -144,7 +144,7 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
   }, [draggingIndex, handleMouseMove, handleMouseUp]);
 
   const handleReset = () => {
-    const newPoints = [
+    const newPoints: Point[] = [
       { x: 0, y: 0 },
       { x: 255, y: 255 },
     ];
