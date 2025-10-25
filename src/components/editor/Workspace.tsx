@@ -228,6 +228,9 @@ const Workspace = (props: WorkspaceProps) => {
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
   const [isMouseOverImage, setIsMouseOverImage] = useState(false); // New state for mouse over image
+  
+  // NEW: State to store the previous brush tool when eyedropper is active
+  const [previousBrushTool, setPreviousBrushTool] = useState<"brush" | "eraser" | "selectionBrush" | "blurBrush" | null>(null);
 
   // Shape drawing state
   const [isDrawingShape, setIsDrawingShape] = useState(false);
@@ -272,6 +275,19 @@ const Workspace = (props: WorkspaceProps) => {
       setPanOffset({ x: 0, y: 0 });
     }
   }, [image, handleFitScreen, imgRef]);
+  
+  // Effect to track previous brush tool when eyedropper is activated
+  useEffect(() => {
+    if (activeTool === 'eyedropper') {
+      if (previousBrushTool === null && (props.activeTool === 'brush' || props.activeTool === 'eraser' || props.activeTool === 'selectionBrush' || props.activeTool === 'blurBrush')) {
+        setPreviousBrushTool(props.activeTool);
+      }
+    } else if (previousBrushTool !== null && (props.activeTool !== 'brush' && props.activeTool !== 'eraser' && props.activeTool !== 'selectionBrush' && props.activeTool !== 'blurBrush')) {
+      // Clear previous brush tool if we switch to a non-eyedropper, non-brush tool
+      setPreviousBrushTool(null);
+    }
+  }, [activeTool, props.activeTool, previousBrushTool]);
+
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!image || !imageContainerRef.current || !imageNaturalDimensions) return;
@@ -571,7 +587,10 @@ const Workspace = (props: WorkspaceProps) => {
       const hexColor = `#${toHex(pixel[0])}${toHex(pixel[1])}${toHex(pixel[2])}`;
       
       handleColorPick(hexColor);
-      setActiveTool('brush'); // Switch to brush after picking color
+      
+      // Restore previous brush tool, or default to 'brush'
+      setActiveTool(previousBrushTool || 'brush');
+      setPreviousBrushTool(null); // Clear stored tool
     }
   };
 
