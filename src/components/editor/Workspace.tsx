@@ -26,6 +26,7 @@ import GradientLayer from "./GradientLayer"; // Import GradientLayer
 import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import GradientPreviewCanvas
 import { SelectionMaskOverlay } from "./SelectionMaskOverlay"; // Import SelectionMaskOverlay
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter"; // NEW Import
+import { HslFilter } from "./HslFilter"; // NEW Import
 
 interface WorkspaceProps {
   image: string | null;
@@ -250,9 +251,12 @@ const Workspace = (props: WorkspaceProps) => {
     const widthRatio = (containerWidth - padding) / naturalWidth;
     const heightRatio = (containerHeight - padding) / naturalHeight;
     const newZoom = Math.min(widthRatio, heightRatio, 1);
-    setZoom(newZoom);
+    
+    if (newZoom !== zoom) {
+      setZoom(newZoom);
+    }
     setPanOffset({ x: 0, y: 0 });
-  }, [imgRef]);
+  }, [imgRef, zoom]);
 
   useEffect(() => {
     if (image) {
@@ -578,12 +582,16 @@ const Workspace = (props: WorkspaceProps) => {
   const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
   const hasAdvancedEffects = effects.blur > 0 || effects.hueShift !== 0 || effects.sharpen > 0 || effects.clarity > 0;
   
-  const blurFilterUrl = (currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0) ? ' url(#selective-blur-filter)' : ''; // NEW: Blur filter URL
+  // Check if any HSL adjustment is active to apply the SVG filter
+  const isHslActive = Object.values(currentState.hslAdjustments).some(hsl => hsl.hue !== 0 || hsl.saturation !== 100 || hsl.luminance !== 0);
+  
+  const blurFilterUrl = (currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0) ? ' url(#selective-blur-filter)' : '';
   
   const baseFilter = getFilterString({ adjustments, effects, grading, selectedFilter, hslAdjustments: currentState.hslAdjustments });
   const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
   const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
+  const hslFilter = isHslActive ? ' url(#hsl-filter)' : ''; // NEW HSL filter URL
   
   // Apply color mode filters
   let colorModeFilter = '';
@@ -595,7 +603,7 @@ const Workspace = (props: WorkspaceProps) => {
   }
 
   // Apply all filters, including the new blur filter and color mode filter
-  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${blurFilterUrl}${colorModeFilter}` };
+  const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${hslFilter}${blurFilterUrl}${colorModeFilter}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
   const wrapperTransformStyle = isPreviewingOriginal ? {} : { transform: `rotate(${transforms.rotation}deg) scale(${transforms.scaleX}, ${transforms.scaleY})` };
@@ -757,6 +765,7 @@ const Workspace = (props: WorkspaceProps) => {
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />
       <EffectsFilters effects={effects} />
+      <HslFilter hslAdjustments={currentState.hslAdjustments} /> {/* NEW HSL Filter */}
       {currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0 && ( // NEW: Render selective blur filter definition
         <SelectiveBlurFilter
           maskDataUrl={currentState.selectiveBlurMask}

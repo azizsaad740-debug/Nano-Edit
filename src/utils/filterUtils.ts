@@ -21,24 +21,17 @@ export const getFilterString = (state: FilterState): string => {
     }
   } = state;
   
-  // For now, only use the global HSL adjustment for the filter string
-  const globalHsl: HslAdjustment = hslAdjustments.global;
-
-  // Normalize saturation (100% = 1.0)
-  const saturationValue = globalHsl.saturation / 100;
+  // NOTE: HSL adjustments (hue-rotate, global saturation/luminance) are now handled 
+  // exclusively by the HslFilter SVG component to allow for per-color adjustments.
   
-  // Normalize luminance (0% = 1.0, -100% = 0.0, 100% = 2.0)
-  const brightnessAdjustment = 1 + (globalHsl.luminance / 100);
-
   const filters = [
     selectedFilter,
-    `brightness(${adjustments.brightness * brightnessAdjustment / 100}%)`, // Combine brightness and luminance
+    `brightness(${adjustments.brightness}%)`,
     `contrast(${adjustments.contrast}%)`,
-    `saturate(${adjustments.saturation * saturationValue / 100}%)`, // Combine saturation
+    `saturate(${adjustments.saturation}%)`,
     `grayscale(${grading.grayscale}%)`,
     `sepia(${grading.sepia}%)`,
     `invert(${grading.invert}%)`,
-    `hue-rotate(${globalHsl.hue}deg)`, // Apply hue rotation
   ];
 
   return filters.filter(Boolean).join(' ');
