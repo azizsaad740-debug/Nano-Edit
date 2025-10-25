@@ -40,7 +40,7 @@ import { downloadSelectionAsImage } from "@/utils/imageUtils";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
 import { useProjectManager } from "@/hooks/useProjectManager";
-import { useFontManager } from "@/hooks/useFontManager"; // NEW Import
+import { useFontManager } from "@/hooks/useFontManager"; // NEW Hook
 
 const Index = () => {
   const {
@@ -67,6 +67,9 @@ const Index = () => {
   const [openProjectSettings, setOpenProjectSettings] = useState(false);
   const [openFontManager, setOpenFontManager] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  
   const openProjectInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
@@ -220,57 +223,7 @@ const Index = () => {
     loadImageData, // Expose loadImageData
   } = editorState;
 
-  // Local state for UI elements
-  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-
-  // --- Template Loading Effect ---
-  useEffect(() => {
-    const templateDataString = sessionStorage.getItem('nanoedit-template-data');
-    if (templateDataString) {
-      sessionStorage.removeItem('nanoedit-template-data');
-      try {
-        const templateData: TemplateData = JSON.parse(templateDataString);
-        
-        // Create a new project object based on the template data
-        const newProject = createNewTab(templateData.name || "Template");
-        
-        // Apply template data to the new project's state
-        const newState = { ...newProject.history[0].state, ...templateData.data.editState };
-        const newHistoryItem = { name: "Load Template", state: newState, layers: templateData.data.layers };
-        
-        // Update the newly created project in the manager
-        updateActiveProject({
-          id: newProject.id,
-          image: null, // Will be set by loadImageData
-          dimensions: templateData.data.dimensions,
-          fileInfo: { name: templateData.name || "Template", size: 0 },
-          exifData: null,
-          history: [newHistoryItem],
-          currentHistoryIndex: 0,
-          layers: templateData.data.layers,
-          selectedLayerId: null,
-          aspect: templateData.data.dimensions.width / templateData.data.dimensions.height,
-          activeTool: null,
-        });
-        
-        // Load image data (which uses the pre-set dimensions)
-        const canvas = document.createElement('canvas');
-        canvas.width = templateData.data.dimensions.width;
-        canvas.height = templateData.data.dimensions.height;
-        const dataUrl = canvas.toDataURL('image/png');
-        
-        // Use the exposed loadImageData function
-        loadImageData(dataUrl, "Template loaded successfully.", templateData.data.layers, templateData.data.dimensions);
-
-      } catch (error) {
-        console.error("Failed to parse template data:", error);
-        showError("Failed to load template data from storage.");
-      }
-    }
-  }, [createNewTab, updateActiveProject, loadImageData]);
-  // --- End Template Loading Effect ---
-
+  // --- Local Functions ---
   const handleOpenProjectClick = (importInSameProject: boolean) => {
     openProjectInputRef.current?.click();
     openProjectInputRef.current?.setAttribute('data-import-mode', importInSameProject ? 'same' : 'new');

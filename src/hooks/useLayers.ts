@@ -968,10 +968,10 @@ export const useLayers = ({
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
-    handleAddTextLayer: addTextLayer, // FIX 4
-    handleAddDrawingLayer: addDrawingLayer, // FIX 5
-    handleAddShapeLayer: addShapeLayer, // FIX 6
-    handleAddGradientLayer: addGradientLayer, // FIX 7
+    handleAddTextLayer: addTextLayer,
+    handleAddDrawingLayer: addDrawingLayer,
+    handleAddShapeLayer: addShapeLayer,
+    handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
     handleDeleteLayer: deleteLayer,
     handleDuplicateLayer: duplicateLayer,
@@ -979,13 +979,12 @@ export const useLayers = ({
     handleRasterizeLayer: rasterizeLayer,
     handleToggleVisibility: toggleLayerVisibility,
     handleDrawingStrokeEnd,
-    // FIX 8, 9, 10, 11: Correctly access history properties from props
+    // Correctly access history properties from props
     canUndo: currentHistoryIndex > 0,
     canRedo: currentHistoryIndex < history.length - 1,
     // Expose all other necessary functions/state for useEditorState
     updateLayer,
     commitLayerChange,
-    // FIX 12, 13, 14: Renamed to avoid duplicate property names
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
