@@ -19,7 +19,6 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
-  DragOverEvent,
   DragOverlay,
   Active,
 } from "@dnd-kit/core";
@@ -45,6 +44,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import LayerList from "./LayerList"; // NEW Import
+import { getLayerDisplayOrderIds } from "@/utils/layerUtils"; // NEW Import
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -88,7 +89,7 @@ interface LayersPanelProps {
   onRemoveLayerMask: (id: string) => void;
   onInvertLayerMask: (id: string) => void;
   onToggleClippingMask: () => void;
-  onToggleLayerLock: (id: string) => void;
+  onToggleLayerLock: (id: string) => void; // FIX: Corrected signature to accept ID
 }
 
 export const LayersPanel = ({
@@ -188,17 +189,6 @@ export const LayersPanel = ({
     return undefined;
   };
 
-  const getAllLayerIds = (layersToProcess: Layer[]): string[] => {
-    let ids: string[] = [];
-    layersToProcess.slice().reverse().forEach(layer => { // Iterate in display order (reverse array order)
-      ids.push(layer.id);
-      if (layer.type === 'group' && layer.children && layer.expanded) {
-        ids = ids.concat(getAllLayerIds(layer.children));
-      }
-    });
-    return ids;
-  };
-
   const handleSelectLayer = (id: string, ctrlKey: boolean, shiftKey: boolean) => {
     if (ctrlKey) {
       setSelectedLayerIds(prev =>
@@ -207,7 +197,8 @@ export const LayersPanel = ({
           : [...prev, id]
       );
     } else if (shiftKey && selectedLayerId) {
-      const allLayerIds = getAllLayerIds(layers);
+      // Use utility function for display order
+      const allLayerIds = getLayerDisplayOrderIds(layers);
       const currentIndex = allLayerIds.indexOf(id);
       const lastIndex = allLayerIds.indexOf(selectedLayerId);
       
@@ -222,42 +213,6 @@ export const LayersPanel = ({
       setSelectedLayerIds([id]);
       onSelectLayer(id);
     }
-  };
-
-  const renderLayerItems = (layersToRender: Layer[], depth: number) => {
-    return layersToRender.slice().reverse().map((layer) => (
-      <React.Fragment key={layer.id}>
-        <SortableContext
-          items={[layer.id]}
-          strategy={verticalListSortingStrategy}
-        >
-          <LayerItem
-            layer={layer}
-            isEditing={editingId === layer.id}
-            tempName={tempName}
-            setTempName={setTempName}
-            startRename={startRename}
-            confirmRename={confirmRename}
-            cancelRename={cancelRename}
-            onToggleVisibility={onToggleVisibility}
-            isSelected={selectedLayerIds.includes(layer.id)}
-            onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey || e.metaKey, e.shiftKey)}
-            onToggleGroupExpanded={toggleGroupExpanded}
-            depth={depth}
-            onRemoveMask={onRemoveLayerMask}
-            onToggleLock={onToggleLayerLock}
-          />
-        </SortableContext>
-        {layer.type === 'group' && layer.expanded && layer.children && (
-          <SortableContext
-            items={layer.children.map(c => c.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            {renderLayerItems(layer.children, depth + 1)}
-          </SortableContext>
-        )}
-      </React.Fragment>
-    ));
   };
 
   const handleDragStart = (event: any) => {
@@ -306,7 +261,22 @@ export const LayersPanel = ({
                   strategy={verticalListSortingStrategy}
                 >
                   <div className="space-y-0"> {/* Removed vertical spacing */}
-                    {renderLayerItems(layers, 0)}
+                    <LayerList
+                      layersToRender={layers}
+                      depth={0}
+                      editingId={editingId}
+                      tempName={tempName}
+                      setTempName={setTempName}
+                      startRename={startRename}
+                      confirmRename={confirmRename}
+                      cancelRename={cancelRename}
+                      onToggleVisibility={onToggleVisibility}
+                      selectedLayerIds={selectedLayerIds}
+                      onSelectLayer={handleSelectLayer}
+                      onToggleGroupExpanded={toggleGroupExpanded}
+                      onRemoveLayerMask={onRemoveLayerMask}
+                      onToggleLayerLock={onToggleLayerLock}
+                    />
                   </div>
                 </SortableContext>
                 <DragOverlay>

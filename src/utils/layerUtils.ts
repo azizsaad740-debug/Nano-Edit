@@ -139,11 +139,13 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
         ctx.arc(shapeWidth / 2, shapeHeight / 2, Math.min(shapeWidth, shapeHeight) / 2, 0, 2 * Math.PI);
         break;
       case 'triangle':
-        if (points && points.length === 3) {
+      case 'polygon':
+        if (points && points.length >= 3) {
           // Points are defined relative to a 100x100 box, scale them
           ctx.moveTo((points[0].x / 100) * shapeWidth, (points[0].y / 100) * shapeHeight);
-          ctx.lineTo((points[1].x / 100) * shapeWidth, (points[1].y / 100) * shapeHeight);
-          ctx.lineTo((points[2].x / 100) * shapeWidth, (points[2].y / 100) * shapeHeight);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo((points[i].x / 100) * shapeWidth, (points[i].y / 100) * shapeHeight);
+          }
           ctx.closePath();
         } else {
           // Default equilateral triangle
@@ -345,4 +347,21 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
   }
 
   return canvas;
+};
+
+/**
+ * Recursively flattens the layer tree into a list of IDs based on display order (top to bottom).
+ * Only includes children of expanded groups.
+ */
+export const getLayerDisplayOrderIds = (layersToProcess: Layer[]): string[] => {
+  let ids: string[] = [];
+  // Iterate in reverse array order (which is top-to-bottom display order in the panel)
+  layersToProcess.slice().reverse().forEach(layer => { 
+    ids.push(layer.id);
+    if (layer.type === 'group' && layer.children && layer.expanded) {
+      // Recursively add children IDs
+      ids = ids.concat(getLayerDisplayOrderIds(layer.children));
+    }
+  });
+  return ids;
 };
