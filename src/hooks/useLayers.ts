@@ -962,27 +962,7 @@ export const useLayers = ({
     layers,
     selectedLayerId,
     setSelectedLayerId,
-    // Removed handleUndo, handleRedo, handleReorder (managed by useEditorState)
-    handleLayerUpdate: updateLayer,
-    handleLayerCommit: commitLayerChange,
-    handleLayerPropertyCommit,
-    handleLayerOpacityChange,
-    handleLayerOpacityCommit,
-    handleAddTextLayer: addTextLayer,
-    handleAddDrawingLayer: addDrawingLayer,
-    handleAddShapeLayer: addShapeLayer,
-    handleAddGradientLayer: addGradientLayer,
-    addAdjustmentLayer,
-    handleDeleteLayer: deleteLayer,
-    handleDuplicateLayer: duplicateLayer,
-    handleMergeLayerDown: mergeLayerDown,
-    handleRasterizeLayer: rasterizeLayer,
-    handleToggleVisibility: toggleLayerVisibility,
-    handleDrawingStrokeEnd,
-    // Correctly access history properties from props
-    canUndo: currentHistoryIndex > 0,
-    canRedo: currentHistoryIndex < history.length - 1,
-    // Expose all other necessary functions/state for useEditorState
+    // Layer manipulation functions (returned by their original names)
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -1003,8 +983,22 @@ export const useLayers = ({
     toggleClippingMask,
     toggleLayerLock,
     renameLayer,
-    // Expose functions with their desired names for useEditorState
-    mergeLayerDown,
-    rasterizeLayer,
+    
+    // Layer creation/deletion/duplication functions (aliased for clarity in useEditorState)
+    handleAddTextLayer: addTextLayer,
+    handleAddDrawingLayer: addDrawingLayer,
+    handleAddShapeLayer: addShapeLayer,
+    handleAddGradientLayer: addGradientLayer,
+    addAdjustmentLayer,
+    handleDeleteLayer: deleteLayer,
+    handleDuplicateLayer: duplicateLayer,
+    handleMergeLayerDown: mergeLayerDown,
+    handleRasterizeLayer: rasterizeLayer,
+
+    // State/History helpers
+    handleToggleVisibility: toggleLayerVisibility,
+    handleDrawingStrokeEnd,
+    canUndo: currentHistoryIndex > 0,
+    canRedo: currentHistoryIndex < history.length - 1,
   };
 };
