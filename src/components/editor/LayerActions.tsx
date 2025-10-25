@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft } from "lucide-react"; // Added CornerUpLeft icon
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
 import type { Layer } from "@/hooks/useEditorState";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -13,7 +13,7 @@ interface LayerActionsProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
-  onAddGradientLayer: () => void; // Added onAddGradientLayer
+  onAddGradientLayer: () => void;
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
@@ -21,11 +21,16 @@ interface LayerActionsProps {
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
   selectedShapeType: Layer['shapeType'] | null;
-  groupLayers: () => void; // New prop for grouping layers
-  hasActiveSelection: boolean; // New prop to check for active selection
-  onApplySelectionAsMask: () => void; // New prop for applying selection as mask
-  onInvertLayerMask: () => void; // NEW prop
-  onToggleClippingMask: () => void; // NEW prop
+  groupLayers: () => void;
+  hasActiveSelection: boolean;
+  onApplySelectionAsMask: () => void;
+  onInvertLayerMask: () => void;
+  onToggleClippingMask: () => void;
+  onDeleteHiddenLayers: () => void; // NEW
+  onRasterizeSmartObject: () => void; // NEW
+  onConvertSmartObjectToLayers: () => void; // NEW
+  onExportSmartObjectContents: () => void; // NEW
+  onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void; // NEW
 }
 
 export const LayerActions = ({
@@ -35,7 +40,7 @@ export const LayerActions = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onAddShapeLayer,
-  onAddGradientLayer, // Destructure onAddGradientLayer
+  onAddGradientLayer,
   onDeleteLayer,
   onDuplicateLayer,
   onMergeLayerDown,
@@ -43,11 +48,16 @@ export const LayerActions = ({
   onCreateSmartObject,
   onOpenSmartObject,
   selectedShapeType,
-  groupLayers, // Destructure groupLayers
-  hasActiveSelection, // Destructure new prop
-  onApplySelectionAsMask, // Destructure new prop
-  onInvertLayerMask, // Destructure new prop
-  onToggleClippingMask, // Destructure new prop
+  groupLayers,
+  hasActiveSelection,
+  onApplySelectionAsMask,
+  onInvertLayerMask,
+  onToggleClippingMask,
+  onDeleteHiddenLayers, // Destructure NEW
+  onRasterizeSmartObject, // Destructure NEW
+  onConvertSmartObjectToLayers, // Destructure NEW
+  onExportSmartObjectContents, // Destructure NEW
+  onArrangeLayer, // Destructure NEW
 }: LayerActionsProps) => {
   const hasMultipleSelection = selectedLayerIds.length > 1;
   const isAnyLayerSelected = selectedLayerIds.length > 0;
@@ -61,214 +71,270 @@ export const LayerActions = ({
     return true;
   }, [layers, selectedLayer]);
 
-  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient'; // Added gradient
+  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient';
   const isSmartObject = selectedLayer?.type === 'smart-object';
   const isMaskable = selectedLayer && selectedLayer.type !== 'image';
-  const hasMask = selectedLayer?.maskDataUrl; // Check if selected layer has a mask
+  const hasMask = selectedLayer?.maskDataUrl;
   
   const selectedLayerIndex = layers.findIndex(l => l.id === selectedLayer?.id);
   const isClippingMaskable = selectedLayer && selectedLayer.type !== 'image' && selectedLayerIndex > 0;
   const isClipped = selectedLayer?.isClippingMask;
 
+  const iconSize = "h-3.5 w-3.5";
+  const buttonSize = "h-8 w-8";
+
   return (
     <div className="mt-4 space-y-2 border-t pt-4">
       <TooltipProvider>
-        <div className="flex flex-wrap gap-1 justify-center">
+        {/* Layer Arrangement */}
+        <div className="flex flex-wrap gap-1 justify-start">
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon" variant="outline" onClick={onAddTextLayer}>
-                <Type className="h-4 w-4" />
+              <Button size="icon" className={buttonSize} variant="outline" onClick={() => onArrangeLayer('front')} disabled={!isAnyLayerSelected}>
+                <ArrowUpToLine className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Add Text Layer</p>
-            </TooltipContent>
+            <TooltipContent><p>Bring to Front</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className={buttonSize} variant="outline" onClick={() => onArrangeLayer('forward')} disabled={!isAnyLayerSelected}>
+                <ArrowUp className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Bring Forward</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className={buttonSize} variant="outline" onClick={() => onArrangeLayer('backward')} disabled={!isAnyLayerSelected}>
+                <ArrowDown className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Send Backward</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className={buttonSize} variant="outline" onClick={() => onArrangeLayer('back')} disabled={!isAnyLayerSelected}>
+                <ArrowDownToLine className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Send to Back</p></TooltipContent>
+          </Tooltip>
+        </div>
+
+        {/* Core Layer Actions */}
+        <div className="flex flex-wrap gap-1 justify-start">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                className={buttonSize}
+                variant="outline"
+                onClick={onDuplicateLayer}
+                disabled={!selectedLayer || selectedLayer.type === 'image'}
+              >
+                <Copy className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Duplicate Layer</p></TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon" variant="outline" onClick={onAddDrawingLayer}>
-                <Layers className="h-4 w-4" />
+              <Button
+                size="icon"
+                className={buttonSize}
+                variant="outline"
+                onClick={onMergeLayerDown}
+                disabled={!isMergeable}
+              >
+                <Merge className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Add Drawing Layer</p>
-            </TooltipContent>
+            <TooltipContent><p>Merge Down</p></TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button size="icon" variant="outline" onClick={onAddGradientLayer}>
-                <Palette className="h-4 w-4" />
+              <Button
+                size="icon"
+                className={buttonSize}
+                variant="outline"
+                onClick={onRasterizeLayer}
+                disabled={!isRasterizable}
+              >
+                <Layers className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Add Gradient Layer</p>
-            </TooltipContent>
+            <TooltipContent><p>Rasterize Layer</p></TooltipContent>
           </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                className={buttonSize}
+                variant="outline"
+                onClick={onDeleteLayer}
+                disabled={!isAnyLayerSelected || selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')}
+              >
+                <Trash2 className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Delete Selected Layer</p></TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                size="icon"
+                className={buttonSize}
+                variant="outline"
+                onClick={onDeleteHiddenLayers}
+              >
+                <Minus className={iconSize} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Delete Hidden Layers</p></TooltipContent>
+          </Tooltip>
+        </div>
 
+        {/* Grouping / Smart Object Actions */}
+        <div className="flex flex-wrap gap-1 justify-start">
           {hasMultipleSelection ? (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
+                    className={buttonSize}
                     variant="outline"
                     onClick={() => onCreateSmartObject(selectedLayerIds)}
                   >
-                    <FileArchive className="h-4 w-4" />
+                    <FileArchive className={iconSize} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Create Smart Object</p>
-                </TooltipContent>
+                <TooltipContent><p>Create Smart Object</p></TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
+                    className={buttonSize}
                     variant="outline"
-                    onClick={groupLayers} // Call groupLayers here
-                    disabled={selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')} // Disable if background is selected
+                    onClick={groupLayers}
+                    disabled={selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')}
                   >
-                    <Group className="h-4 w-4" />
+                    <Group className={iconSize} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Group Layers</p>
-                </TooltipContent>
+                <TooltipContent><p>Group Layers</p></TooltipContent>
               </Tooltip>
             </>
-          ) : (
+          ) : isSmartObject ? (
             <>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
+                    className={buttonSize}
                     variant="outline"
-                    onClick={onDuplicateLayer}
-                    disabled={!selectedLayer || selectedLayer.type === 'image'} // Disable if no layer or background is selected
+                    onClick={() => selectedLayer.id && onOpenSmartObject(selectedLayer.id)}
                   >
-                    <Copy className="h-4 w-4" />
+                    <FileArchive className={iconSize} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Duplicate Layer</p>
-                </TooltipContent>
+                <TooltipContent><p>Edit Smart Object Contents</p></TooltipContent>
               </Tooltip>
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
+                    className={buttonSize}
                     variant="outline"
-                    onClick={onMergeLayerDown}
-                    disabled={!isMergeable}
+                    onClick={onConvertSmartObjectToLayers}
                   >
-                    <Merge className="h-4 w-4" />
+                    <Layers className={iconSize} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Merge Down</p>
-                </TooltipContent>
+                <TooltipContent><p>Convert to Layers</p></TooltipContent>
               </Tooltip>
-
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
+                    className={buttonSize}
                     variant="outline"
-                    onClick={onRasterizeLayer}
-                    disabled={!isRasterizable}
+                    onClick={onExportSmartObjectContents}
                   >
-                    <Layers className="h-4 w-4" />
+                    <Download className={iconSize} />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  <p>Rasterize Layer</p>
-                </TooltipContent>
+                <TooltipContent><p>Export Contents</p></TooltipContent>
               </Tooltip>
-
-              {isSmartObject && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size="icon"
-                      variant="outline"
-                      onClick={() => selectedLayer.id && onOpenSmartObject(selectedLayer.id)}
-                    >
-                      <FileArchive className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Open Smart Object</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    className={buttonSize}
+                    variant="outline"
+                    onClick={onRasterizeSmartObject}
+                  >
+                    <RotateCcw className={iconSize} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Rasterize Smart Object</p></TooltipContent>
+              </Tooltip>
             </>
-          )}
-          
+          ) : null}
+        </div>
+
+        {/* Masking / Clipping Actions */}
+        <div className="flex flex-wrap gap-1 justify-start">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
+                className={buttonSize}
                 variant="outline"
                 onClick={onApplySelectionAsMask}
                 disabled={!hasActiveSelection || !isMaskable}
               >
-                <SquareStack className="h-4 w-4" />
+                <SquareStack className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Apply Selection as Mask</p>
-            </TooltipContent>
+            <TooltipContent><p>Apply Selection as Mask</p></TooltipContent>
           </Tooltip>
           
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
+                className={buttonSize}
                 variant="outline"
                 onClick={onInvertLayerMask}
                 disabled={!hasMask}
               >
-                <ArrowDownUp className="h-4 w-4" />
+                <ArrowDownUp className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Invert Layer Mask</p>
-            </TooltipContent>
+            <TooltipContent><p>Invert Layer Mask</p></TooltipContent>
           </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 size="icon"
+                className={buttonSize}
                 variant={isClipped ? "secondary" : "outline"}
                 onClick={onToggleClippingMask}
                 disabled={!isClippingMaskable}
               >
-                <CornerUpLeft className="h-4 w-4" />
+                <CornerUpLeft className={iconSize} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
               <p>{isClipped ? "Remove Clipping Mask" : "Create Clipping Mask"}</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={onDeleteLayer}
-                disabled={!isAnyLayerSelected || selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')} // Disable if no layer selected or background is selected
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Delete Selected Layer</p>
             </TooltipContent>
           </Tooltip>
         </div>

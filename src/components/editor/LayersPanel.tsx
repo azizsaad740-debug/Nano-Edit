@@ -31,13 +31,13 @@ import type { Layer, EditState, Point, ActiveTool, BrushState } from "@/hooks/us
 import LayerItem from "./LayerItem";
 import { ChannelsPanel } from "./ChannelsPanel";
 import { LayerActions } from "./LayerActions";
-import { LayerControls } from "./LayerControls"; // NEW Import
+import { LayerControls } from "./LayerControls";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "../editor/BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers } from "lucide-react";
+import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers, Image as ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { showError } from "@/utils/toast"; // Import showError
+import { showError } from "@/utils/toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,42 +53,42 @@ interface LayersPanelProps {
   onDelete: (id: string) => void;
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
+  onAddLayerFromBackground: () => void; // NEW prop
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
-  onAddGradientLayer: () => void; // Added this line
-  onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void; // NEW prop
+  onAddGradientLayer: () => void;
+  onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
   onDuplicateLayer: () => void;
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
-  onReorder: (activeId: string, overId: string) => void; // UPDATED: Removed isDroppingIntoGroup
+  onRasterizeSmartObject: () => void; // NEW prop
+  onConvertSmartObjectToLayers: () => void; // NEW prop
+  onExportSmartObjectContents: () => void; // NEW prop
+  onDeleteHiddenLayers: () => void; // NEW prop
+  onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void; // NEW prop
+  onReorder: (activeId: string, overId: string) => void;
   selectedLayerId: string | null;
   onSelectLayer: (id: string) => void;
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
-  // Layer editing props for properties panels
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
-  // Smart object functions
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
   selectedShapeType: Layer['shapeType'] | null;
-  // Tool state
   activeTool: ActiveTool | null;
-  // Brush state
   brushState: BrushState;
   setBrushState: (updates: Partial<BrushState>) => void;
-  // Grouping
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
-  // Layer Masking
-  hasActiveSelection: boolean; // New prop
-  onApplySelectionAsMask: () => void; // New prop
-  onRemoveLayerMask: (id: string) => void; // NEW prop
-  onInvertLayerMask: (id: string) => void; // NEW prop
-  onToggleClippingMask: () => void; // NEW prop
-  onToggleLayerLock: (id: string) => void; // NEW prop
+  hasActiveSelection: boolean;
+  onApplySelectionAsMask: () => void;
+  onRemoveLayerMask: (id: string) => void;
+  onInvertLayerMask: (id: string) => void;
+  onToggleClippingMask: () => void;
+  onToggleLayerLock: (id: string) => void;
 }
 
 export const LayersPanel = ({
@@ -98,13 +98,19 @@ export const LayersPanel = ({
   onDelete,
   onAddTextLayer,
   onAddDrawingLayer,
+  onAddLayerFromBackground, // Destructure NEW
   onAddShapeLayer,
   onAddGradientLayer,
-  onAddAdjustmentLayer, // Destructure new prop
+  onAddAdjustmentLayer,
   onDuplicateLayer,
   onMergeLayerDown,
   onRasterizeLayer,
-  onReorder, // Updated
+  onRasterizeSmartObject, // Destructure NEW
+  onConvertSmartObjectToLayers, // Destructure NEW
+  onExportSmartObjectContents, // Destructure NEW
+  onDeleteHiddenLayers, // Destructure NEW
+  onArrangeLayer, // Destructure NEW
+  onReorder,
   selectedLayerId,
   onSelectLayer,
   channels,
@@ -122,12 +128,12 @@ export const LayersPanel = ({
   setBrushState,
   groupLayers,
   toggleGroupExpanded,
-  hasActiveSelection, // Destructure new prop
-  onApplySelectionAsMask, // Destructure new prop
-  onRemoveLayerMask, // Destructure new prop
-  onInvertLayerMask, // Destructure new prop
-  onToggleClippingMask, // Destructure new prop
-  onToggleLayerLock, // Destructure new prop
+  hasActiveSelection,
+  onApplySelectionAsMask,
+  onRemoveLayerMask,
+  onInvertLayerMask,
+  onToggleClippingMask,
+  onToggleLayerLock,
 }: LayersPanelProps) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
@@ -141,6 +147,14 @@ export const LayersPanel = ({
       },
     })
   );
+
+  React.useEffect(() => {
+    if (selectedLayerId && !selectedLayerIds.includes(selectedLayerId)) {
+      setSelectedLayerIds([selectedLayerId]);
+    } else if (!selectedLayerId && selectedLayerIds.length > 0) {
+      setSelectedLayerIds([]);
+    }
+  }, [selectedLayerId]);
 
   const startRename = (layer: Layer) => {
     setEditingId(layer.id);
@@ -158,7 +172,6 @@ export const LayersPanel = ({
     setEditingId(null);
   };
 
-  // Helper to find a layer by ID, potentially nested (needed for DragOverlay)
   const findLayerForDragOverlay = (
     id: string,
     currentLayers: Layer[],
@@ -175,10 +188,9 @@ export const LayersPanel = ({
     return undefined;
   };
 
-  // Helper to get all layer IDs (including nested ones if expanded)
   const getAllLayerIds = (layersToProcess: Layer[]): string[] => {
     let ids: string[] = [];
-    layersToProcess.forEach(layer => {
+    layersToProcess.slice().reverse().forEach(layer => { // Iterate in display order (reverse array order)
       ids.push(layer.id);
       if (layer.type === 'group' && layer.children && layer.expanded) {
         ids = ids.concat(getAllLayerIds(layer.children));
@@ -213,7 +225,6 @@ export const LayersPanel = ({
   };
 
   const renderLayerItems = (layersToRender: Layer[], depth: number) => {
-    // Reverse the order for display (top layer in array is at the top of the panel)
     return layersToRender.slice().reverse().map((layer) => (
       <React.Fragment key={layer.id}>
         <SortableContext
@@ -230,11 +241,11 @@ export const LayersPanel = ({
             cancelRename={cancelRename}
             onToggleVisibility={onToggleVisibility}
             isSelected={selectedLayerIds.includes(layer.id)}
-            onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey, e.shiftKey)}
+            onSelect={(e) => handleSelectLayer(layer.id, e.ctrlKey || e.metaKey, e.shiftKey)}
             onToggleGroupExpanded={toggleGroupExpanded}
             depth={depth}
-            onRemoveMask={onRemoveLayerMask} // Pass the new prop
-            onToggleLock={onToggleLayerLock} // Pass the new prop
+            onRemoveMask={onRemoveLayerMask}
+            onToggleLock={onToggleLayerLock}
           />
         </SortableContext>
         {layer.type === 'group' && layer.expanded && layer.children && (
@@ -242,7 +253,6 @@ export const LayersPanel = ({
             items={layer.children.map(c => c.id)}
             strategy={verticalListSortingStrategy}
           >
-            {/* Render children in reverse order too */}
             {renderLayerItems(layer.children, depth + 1)}
           </SortableContext>
         )}
@@ -264,25 +274,19 @@ export const LayersPanel = ({
     onReorder(active.id as string, over.id as string);
   };
 
-  const handleDragOver = (event: DragOverEvent) => {
-    // We rely on the logic in useLayers.ts to determine if the drop is into a group
-    // based on the overId being an expanded group. We only need to handle the visual
-    // reordering logic in useLayers.
-  };
-
   const selectedLayer = layers.find(l => l.id === selectedLayerId);
 
   return (
-    <Card className="mt-4 flex flex-col h-full">
-      <CardContent className="flex-1 flex flex-col min-h-0 pt-4">
+    <Card className="mt-4 flex flex-col h-full border-0">
+      <CardContent className="flex-1 flex flex-col min-h-0 p-0">
         <Tabs defaultValue="layers" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="layers">Layers</TabsTrigger>
-            <TabsTrigger value="channels">Channels</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-8">
+            <TabsTrigger value="layers" className="h-7 text-sm">Layers</TabsTrigger>
+            <TabsTrigger value="channels" className="h-7 text-sm">Channels</TabsTrigger>
           </TabsList>
           <TabsContent value="layers" className="flex-1 flex flex-col mt-2 overflow-hidden">
             
-            {/* NEW Layer Controls Section */}
+            {/* Layer Controls Section (Blend Mode, Opacity, Fill) */}
             <LayerControls
               selectedLayer={selectedLayer}
               onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
@@ -290,19 +294,18 @@ export const LayersPanel = ({
               onLayerOpacityCommit={onLayerOpacityCommit}
             />
             
-            <ScrollArea className="flex-1 pr-3 pt-2">
+            <ScrollArea className="flex-1 pt-2">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                onDragOver={handleDragOver}
               >
                 <SortableContext
                   items={layers.map((l) => l.id)}
                   strategy={verticalListSortingStrategy}
                 >
-                  <div className="space-y-2">
+                  <div className="space-y-0"> {/* Removed vertical spacing */}
                     {renderLayerItems(layers, 0)}
                   </div>
                 </SortableContext>
@@ -321,13 +324,15 @@ export const LayersPanel = ({
                       onSelect={() => {}}
                       onToggleGroupExpanded={() => {}}
                       depth={0}
-                      onRemoveMask={() => {}} // Dummy function for DragOverlay
-                      onToggleLock={() => {}} // Dummy function for DragOverlay
+                      onRemoveMask={() => {}}
+                      onToggleLock={() => {}}
                     />
                   ) : null}
                 </DragOverlay>
               </DndContext>
             </ScrollArea>
+            
+            {/* Layer Creation Dropdown */}
             <div className="mt-4 space-y-2 border-t pt-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -341,6 +346,10 @@ export const LayersPanel = ({
                   <DropdownMenuItem onClick={onAddDrawingLayer}>
                     <Layers className="h-4 w-4 mr-2" />
                     Empty Layer
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onAddLayerFromBackground}> {/* NEW action */}
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Layer from Background
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onAddTextLayer}>
                     <Layers className="h-4 w-4 mr-2" />
@@ -382,18 +391,23 @@ export const LayersPanel = ({
               onAddDrawingLayer={onAddDrawingLayer}
               onAddShapeLayer={onAddShapeLayer}
               onAddGradientLayer={onAddGradientLayer}
-              onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))} // Delete all selected layers
+              onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))}
               onDuplicateLayer={onDuplicateLayer}
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
+              onRasterizeSmartObject={onRasterizeSmartObject} // Pass NEW prop
+              onConvertSmartObjectToLayers={onConvertSmartObjectToLayers} // Pass NEW prop
+              onExportSmartObjectContents={onExportSmartObjectContents} // Pass NEW prop
+              onDeleteHiddenLayers={onDeleteHiddenLayers} // Pass NEW prop
+              onArrangeLayer={onArrangeLayer} // Pass NEW prop
               onCreateSmartObject={onCreateSmartObject}
               onOpenSmartObject={onOpenSmartObject}
               selectedShapeType={selectedShapeType}
-              groupLayers={() => groupLayers(selectedLayerIds)} // Pass groupLayers
-              hasActiveSelection={hasActiveSelection} // Pass new prop
-              onApplySelectionAsMask={onApplySelectionAsMask} // Pass new prop
-              onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)} // NEW: Pass handler
-              onToggleClippingMask={onToggleClippingMask} // NEW: Pass handler
+              groupLayers={() => groupLayers(selectedLayerIds)}
+              hasActiveSelection={hasActiveSelection}
+              onApplySelectionAsMask={onApplySelectionAsMask}
+              onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
+              onToggleClippingMask={onToggleClippingMask}
             />
           </TabsContent>
           <TabsContent value="channels" className="mt-2">

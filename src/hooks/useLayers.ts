@@ -8,6 +8,7 @@ import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import type { Layer, EditState, Point, GradientToolState, ActiveTool, AdjustmentLayerData } from "./useEditorState";
 import { initialCurvesState, initialHslAdjustment } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
+import { saveProjectToFile } from "@/utils/projectUtils"; // Import saveProjectToFile
 
 // Helper utility functions for nested layer manipulation
 const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
@@ -227,6 +228,18 @@ export const useLayers = ({
     updateLayersState(updated, "Delete Layer");
   }, [layers, updateLayersState, selectedLayerId, imageNaturalDimensions]);
 
+  const deleteHiddenLayers = useCallback(() => {
+    const hiddenLayers = layers.filter(l => !l.visible && l.type !== 'image');
+    if (hiddenLayers.length === 0) {
+      showSuccess("No hidden layers found to delete.");
+      return;
+    }
+    
+    const updated = layers.filter(l => l.visible || l.type === 'image');
+    updateLayersState(updated, `Delete ${hiddenLayers.length} Hidden Layers`);
+    showSuccess(`${hiddenLayers.length} hidden layers deleted.`);
+  }, [layers, updateLayersState]);
+
   const duplicateLayer = useCallback((id: string) => {
     const layerIndex = layers.findIndex(l => l.id === id);
     const layerToDuplicate = layers[layerIndex];
@@ -438,6 +451,37 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, findLayerLocation, setLayers]);
 
+  const arrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
+    if (!selectedLayerId) return;
+    const location = findLayerLocation(selectedLayerId, layers);
+    if (!location || location.layer.type === 'image') {
+      showError("Cannot arrange background layer.");
+      return;
+    }
+
+    const { container, index, layer } = location;
+    let newIndex = index;
+
+    if (direction === 'front') {
+      newIndex = container.length - 1;
+    } else if (direction === 'back') {
+      newIndex = 0;
+    } else if (direction === 'forward') {
+      newIndex = Math.min(container.length - 1, index + 1);
+    } else if (direction === 'backward') {
+      newIndex = Math.max(0, index - 1);
+    }
+
+    if (newIndex === index) return;
+
+    const newContainer = arrayMove(container, index, newIndex);
+    
+    setLayers(prevLayers => {
+      const parentIds = location.parentGroups.map(g => g.id);
+      return updateNestedContainer(prevLayers, parentIds, newContainer);
+    }, `Arrange Layer "${layer.name}" to ${direction}`);
+  }, [layers, selectedLayerId, findLayerLocation, setLayers]);
+
   /* ---------- Smart Object Functions ---------- */
   const createSmartObject = useCallback((layerIds: string[]) => {
     if (layerIds.length < 1) {
@@ -455,7 +499,7 @@ export const useLayers = ({
     let minX_px = Infinity, minY_px = Infinity, maxX_px = -Infinity, maxY_px = -Infinity;
     
     selectedLayers.forEach(layer => {
-      // We need to estimate the layer's bounding box in pixels based on its percentage properties
+      // We need to estimate the layer's bounding box in pixels relative to the main canvas
       const layerX_percent = layer.x ?? 50;
       const layerY_percent = layer.y ?? 50;
       let layerWidth_percent = layer.width ?? 10;
@@ -485,8 +529,8 @@ export const useLayers = ({
     });
     
     // 2. Define Smart Object's internal canvas dimensions
-    const smartObjectWidth_px = maxX_px - minX_px;
-    const smartObjectHeight_px = maxY_px - minY_px;
+    const smartObjectWidth_px = Math.max(1, maxX_px - minX_px);
+    const smartObjectHeight_px = Math.max(1, maxY_px - minY_px);
     
     // 3. Recalculate children's positions relative to the new Smart Object canvas (0,0)
     const nestedLayers: Layer[] = selectedLayers.map(layer => {
@@ -601,6 +645,145 @@ export const useLayers = ({
     showSuccess("Smart object changes saved.");
   }, [layers, updateLayersState, smartObjectEditingId, closeSmartObjectEditor]);
 
+  const rasterizeSmartObject = useCallback(async () => {
+    if (!selectedLayerId) return;
+    const layerToRasterize = layers.find(l => l.id === selectedLayerId);
+
+    if (!layerToRasterize || layerToRasterize.type !== 'smart-object' || !imgRef.current || !imageNaturalDimensions) {
+      showError("Select a Smart Object to rasterize.");
+      return;
+    }
+
+    const toastId = showLoading("Rasterizing Smart Object...");
+    try {
+      // Rasterize the Smart Object layer itself (which handles nested rendering)
+      const canvas = await rasterizeLayerToCanvas(layerToRasterize, imageNaturalDimensions);
+      if (!canvas) throw new Error("Failed to create canvas for rasterization.");
+
+      const dataUrl = canvas.toDataURL();
+
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: 'drawing',
+        name: `${layerToRasterize.name} (Rasterized)`,
+        visible: layerToRasterize.visible,
+        opacity: layerToRasterize.opacity,
+        blendMode: layerToRasterize.blendMode,
+        dataUrl: dataUrl,
+        isClippingMask: layerToRasterize.isClippingMask,
+        isLocked: false,
+        x: layerToRasterize.x,
+        y: layerToRasterize.y,
+        width: layerToRasterize.width,
+        height: layerToRasterize.height,
+        rotation: layerToRasterize.rotation,
+      };
+
+      const updatedLayers = layers.map(l => l.id === selectedLayerId ? newLayer : l);
+      updateLayersState(updatedLayers, `Rasterize Smart Object "${layerToRasterize.name}"`);
+      
+      dismissToast(toastId);
+      showSuccess("Smart Object rasterized.");
+    } catch (err: any) {
+      console.error("Failed to rasterize Smart Object:", err);
+      dismissToast(toastId);
+      showError(err.message || "Failed to rasterize Smart Object.");
+    }
+  }, [layers, updateLayersState, selectedLayerId, imgRef, imageNaturalDimensions]);
+
+  const convertSmartObjectToLayers = useCallback(() => {
+    if (!selectedLayerId) return;
+    const smartObjectLayer = layers.find(l => l.id === selectedLayerId);
+
+    if (!smartObjectLayer || smartObjectLayer.type !== 'smart-object' || !smartObjectLayer.smartObjectData || !imageNaturalDimensions) {
+      showError("Select a Smart Object to convert to layers.");
+      return;
+    }
+
+    const { smartObjectData, x: soX, y: soY, width: soW, height: soH } = smartObjectLayer;
+    const { width: soWidth_px, height: soHeight_px } = smartObjectData;
+
+    // 1. Calculate the Smart Object's bounding box in pixels relative to the main canvas
+    const soX_percent = soX ?? 50;
+    const soY_percent = soY ?? 50;
+    const soWidth_percent = soW ?? 100;
+    const soHeight_percent = soH ?? 100;
+    
+    const soX_px = (soX_percent / 100) * imageNaturalDimensions.width;
+    const soY_px = (soY_percent / 100) * imageNaturalDimensions.height;
+    
+    const soWidth_px_on_canvas = imageNaturalDimensions.width * (soWidth_percent / 100);
+    const soHeight_px_on_canvas = imageNaturalDimensions.height * (soHeight_percent / 100);
+
+    const minX_px = soX_px - soWidth_px_on_canvas / 2;
+    const minY_px = soY_px - soHeight_px_on_canvas / 2;
+
+    // 2. Re-position and re-size nested layers relative to the main canvas
+    const newLayers = smartObjectData.layers.map(nestedLayer => {
+      const nestedX_percent = nestedLayer.x ?? 50;
+      const nestedY_percent = nestedLayer.y ?? 50;
+      const nestedW_percent = nestedLayer.width ?? 100;
+      const nestedH_percent = nestedLayer.height ?? 100;
+
+      // Calculate nested layer's center position relative to SO's internal canvas
+      const relativeCenterX_px = (nestedX_percent / 100) * soWidth_px;
+      const relativeCenterY_px = (nestedY_percent / 100) * soHeight_px;
+
+      // Calculate nested layer's center position relative to main canvas
+      const absoluteCenterX_px = minX_px + relativeCenterX_px;
+      const absoluteCenterY_px = minY_px + relativeCenterY_px;
+
+      // Calculate nested layer's size relative to main canvas
+      const absoluteWidth_px = (nestedW_percent / 100) * soWidth_px_on_canvas;
+      const absoluteHeight_px = (nestedH_percent / 100) * soHeight_px_on_canvas;
+
+      return {
+        ...nestedLayer,
+        id: uuidv4(), // Assign new ID
+        name: `${smartObjectLayer.name} - ${nestedLayer.name}`,
+        isClippingMask: false,
+        isLocked: false,
+        
+        // New position/size relative to main canvas (in percentages)
+        x: (absoluteCenterX_px / imageNaturalDimensions.width) * 100,
+        y: (absoluteCenterY_px / imageNaturalDimensions.height) * 100,
+        width: (absoluteWidth_px / imageNaturalDimensions.width) * 100,
+        height: (absoluteHeight_px / imageNaturalDimensions.height) * 100,
+      };
+    });
+
+    // 3. Replace the Smart Object layer with its children
+    const soIndex = layers.findIndex(l => l.id === selectedLayerId);
+    const updatedLayers = [
+      ...layers.slice(0, soIndex),
+      ...newLayers,
+      ...layers.slice(soIndex + 1),
+    ];
+
+    updateLayersState(updatedLayers, `Convert Smart Object "${smartObjectLayer.name}" to Layers`);
+    setSelectedLayerId(null);
+    showSuccess("Smart Object converted to individual layers.");
+  }, [layers, selectedLayerId, updateLayersState, imageNaturalDimensions, setSelectedLayerId]);
+
+  const exportSmartObjectContents = useCallback(() => {
+    if (!selectedLayerId) return;
+    const smartObjectLayer = layers.find(l => l.id === selectedLayerId);
+
+    if (!smartObjectLayer || smartObjectLayer.type !== 'smart-object' || !smartObjectLayer.smartObjectData) {
+      showError("Select a Smart Object to export its contents.");
+      return;
+    }
+
+    const projectState = {
+      sourceImage: null, // Smart object contents don't have a single source image
+      history: [{ name: "Smart Object Contents", state: currentEditState, layers: smartObjectLayer.smartObjectData.layers }],
+      currentHistoryIndex: 0,
+      fileInfo: { name: `${smartObjectLayer.name}-contents.nanoedit`, size: 0 },
+    };
+    saveProjectToFile(projectState);
+    showSuccess(`Smart Object contents saved as "${smartObjectLayer.name}-contents.nanoedit".`);
+  }, [layers, selectedLayerId, currentEditState]);
+
   const moveSelectedLayer = useCallback((id: string, dx: number, dy: number) => {
     // TS2345 fix: setLayers now accepts a function updater
     setLayers(prevLayers => {
@@ -668,8 +851,8 @@ export const useLayers = ({
       maxY = Math.max(maxY, layerY_px + layerHeight_px / 2);
     });
 
-    const groupWidth_px = maxX - minX;
-    const groupHeight_px = maxY - minY;
+    const groupWidth_px = Math.max(1, maxX - minX);
+    const groupHeight_px = Math.max(1, maxY - minY);
     const groupX_px = minX + groupWidth_px / 2;
     const groupY_px = minY + groupHeight_px / 2;
 
@@ -693,14 +876,17 @@ export const useLayers = ({
       height: groupHeight_percent,
       rotation: 0,
       children: nonBackgroundSelected.map(layer => {
-        const childX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
-        const childY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
+        const childX_percent = layer.x ?? 50;
+        const childY_percent = layer.y ?? 50;
+        const childX_px = (childX_percent / 100) * imageNaturalDimensions.width;
+        const childY_px = (childY_percent / 100) * imageNaturalDimensions.height;
 
         const relativeX_px = childX_px - minX;
         const relativeY_px = childY_px - minY;
 
         return {
           ...layer,
+          // Recalculate child position relative to the group's bounding box (0-100%)
           x: (relativeX_px / groupWidth_px) * 100,
           y: (relativeY_px / groupHeight_px) * 100,
           isClippingMask: false,
@@ -941,6 +1127,45 @@ export const useLayers = ({
     return newLayer.id;
   }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
 
+  const addLayerFromBackground = useCallback(async () => {
+    const backgroundLayer = layers.find(l => l.type === 'image' || (l.type === 'drawing' && l.id === 'background'));
+    if (!backgroundLayer || !backgroundLayer.dataUrl || !imageNaturalDimensions) {
+      showError("No background image loaded to create a layer from.");
+      return;
+    }
+
+    const toastId = showLoading("Creating layer from background...");
+    try {
+      // Rasterize the background layer to ensure we capture the current state (if it's a drawing layer)
+      const canvas = await rasterizeLayerToCanvas(backgroundLayer, imageNaturalDimensions);
+      if (!canvas) throw new Error("Failed to rasterize background.");
+      const dataUrl = canvas.toDataURL();
+
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: `Layer from Background`,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+      };
+      const updated = [...layers, newLayer];
+      updateLayersState(updated, "Layer from Background");
+      setSelectedLayerId(newLayer.id);
+      dismissToast(toastId);
+      showSuccess("Layer created from background.");
+    } catch (error) {
+      dismissToast(toastId);
+      showError("Failed to create layer from background.");
+    }
+  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+
   const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
     const newLayer: Layer = {
       id: uuidv4(),
@@ -1024,13 +1249,19 @@ export const useLayers = ({
     // Layer creation/deletion/duplication functions (aliased for clarity in useEditorState)
     handleAddTextLayer: addTextLayer,
     handleAddDrawingLayer: addDrawingLayer,
+    handleAddLayerFromBackground: addLayerFromBackground, // NEW
     handleAddShapeLayer: addShapeLayer,
     handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
     handleDeleteLayer: deleteLayer,
+    handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
     handleDuplicateLayer: duplicateLayer,
     handleMergeLayerDown: mergeLayerDown,
     handleRasterizeLayer: rasterizeLayer,
+    handleRasterizeSmartObject: rasterizeSmartObject, // NEW
+    handleConvertSmartObjectToLayers: convertSmartObjectToLayers, // NEW
+    handleExportSmartObjectContents: exportSmartObjectContents, // NEW
+    handleArrangeLayer: arrangeLayer, // NEW
 
     // State/History helpers
     handleToggleVisibility: toggleLayerVisibility,

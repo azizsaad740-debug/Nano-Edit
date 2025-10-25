@@ -345,15 +345,21 @@ export const useEditorState = (
     setSelectedLayerId: setLayerId,
     handleAddTextLayer: addTextLayer,
     handleAddDrawingLayer: addDrawingLayer,
+    handleAddLayerFromBackground: addLayerFromBackground, // NEW
     handleAddShapeLayer: addShapeLayer,
     handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
     handleToggleVisibility: toggleLayerVisibility,
     renameLayer,
     handleDeleteLayer: deleteLayer,
+    handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
     handleDuplicateLayer: duplicateLayer,
     handleMergeLayerDown: mergeLayerDown,
     handleRasterizeLayer: rasterizeLayer,
+    handleRasterizeSmartObject: rasterizeSmartObject, // NEW
+    handleConvertSmartObjectToLayers: convertSmartObjectToLayers, // NEW
+    handleExportSmartObjectContents: exportSmartObjectContents, // NEW
+    handleArrangeLayer: arrangeLayer, // NEW
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -1163,15 +1169,21 @@ export const useEditorState = (
     setSelectedLayer: (id) => onProjectUpdate({ selectedLayerId: id }),
     addTextLayer: (coords) => addTextLayer(coords, foregroundColor),
     addDrawingLayer,
+    handleAddLayerFromBackground: addLayerFromBackground, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer,
     addAdjustmentLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
+    handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
     duplicateLayer,
     mergeLayerDown,
     rasterizeLayer,
+    handleRasterizeSmartObject: rasterizeSmartObject, // NEW
+    handleConvertSmartObjectToLayers: convertSmartObjectToLayers, // NEW
+    handleExportSmartObjectContents: exportSmartObjectContents, // NEW
+    handleArrangeLayer: arrangeLayer, // NEW
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,

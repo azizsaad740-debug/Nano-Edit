@@ -40,7 +40,7 @@ import { downloadSelectionAsImage } from "@/utils/imageUtils";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
 import { useProjectManager } from "@/hooks/useProjectManager";
-import { useFontManager } from "@/hooks/useFontManager"; // NEW Hook
+import { useFontManager } from "@/hooks/useFontManager";
 
 const Index = () => {
   const {
@@ -56,7 +56,7 @@ const Index = () => {
   const { geminiApiKey } = useSettings();
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
-  const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager(); // NEW Hook
+  const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
 
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [openSettings, setOpenSettings] = useState(false);
@@ -165,15 +165,21 @@ const Index = () => {
     setSelectedLayer,
     addTextLayer,
     addDrawingLayer,
+    handleAddLayerFromBackground, // NEW
     addShapeLayer,
     addGradientLayer,
-    addAdjustmentLayer, // NEW: Destructure addAdjustmentLayer
+    addAdjustmentLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
+    handleDeleteHiddenLayers, // NEW
     duplicateLayer,
     mergeLayerDown,
     rasterizeLayer,
+    handleRasterizeSmartObject, // NEW
+    handleConvertSmartObjectToLayers, // NEW
+    handleExportSmartObjectContents, // NEW
+    handleArrangeLayer, // NEW
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -186,6 +192,9 @@ const Index = () => {
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
+    moveSelectedLayer,
+    groupLayers: groupLayersFn, // Renamed to avoid redeclaration
+    toggleGroupExpanded: toggleGroupExpandedFn, // Renamed to avoid redeclaration
     activeTool,
     setActiveTool,
     brushState,
@@ -202,13 +211,11 @@ const Index = () => {
     applyMaskToSelectionPath,
     convertSelectionPathToMask,
     handleSelectiveBlurStroke,
-    selectiveBlurStrength, // Destructure from editorState
+    selectiveBlurStrength,
     handleSelectiveBlurStrengthChange,
     handleSelectiveBlurStrengthCommit,
     selectedShapeType,
     setSelectedShapeType,
-    groupLayers,
-    toggleGroupExpanded,
     foregroundColor,
     handleForegroundColorChange,
     backgroundColor,
@@ -221,7 +228,7 @@ const Index = () => {
     toggleClippingMask,
     toggleLayerLock,
     handleDrawingStrokeEnd,
-    loadImageData, // Expose loadImageData
+    loadImageData,
   } = editorState;
 
   // --- Local Functions ---
@@ -244,7 +251,7 @@ const Index = () => {
       } else {
         if (!importMode) {
           // Open in new tab
-          const newProject = createNewTab(file.name);
+          const newProject = createNewTab(file?.name || "New Image");
           setActiveProjectId(newProject.id);
           handleFileSelect(file, false);
         } else {
@@ -303,7 +310,10 @@ const Index = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
     document.addEventListener('fullscreenchange', onFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      // Ensure cleanup of hotkeys if needed, though useHotkeys handles its own cleanup
+    };
   }, []);
 
   useHotkeys(
@@ -322,12 +332,12 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile(); // Corrected variable name
+          const file = items[i].getAsFile();
           if (file) {
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
             setActiveProjectId(newProject.id);
-            handleFileSelect(file, false); // Corrected variable name
+            handleFileSelect(file, false);
             event.preventDefault();
             return;
           }
@@ -401,16 +411,22 @@ const Index = () => {
     layers,
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
+    onAddLayerFromBackground: handleAddLayerFromBackground, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
-    onAddAdjustmentLayer: addAdjustmentLayer, // NEW: Pass addAdjustmentLayer
-    toggleLayerVisibility,
-    renameLayer,
-    deleteLayer,
+    onAddAdjustmentLayer: addAdjustmentLayer,
     onDuplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
+    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // NEW
+    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // NEW
+    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // NEW
+    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
+    onArrangeLayer: handleArrangeLayer, // NEW
     onReorder: reorderLayers,
+    toggleLayerVisibility, // FIX 11
+    renameLayer, // FIX 11
+    deleteLayer, // FIX 11
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
@@ -439,8 +455,8 @@ const Index = () => {
     onSaveGradientPreset: saveGradientPreset,
     onDeleteGradientPreset: deleteGradientPreset,
     // Grouping
-    groupLayers,
-    toggleGroupExpanded,
+    groupLayers: (layerIds) => groupLayersFn(layerIds), // Use renamed function
+    toggleGroupExpanded: toggleGroupExpandedFn, // Use renamed function
     // Foreground/Background Colors
     foregroundColor,
     setForegroundColor: handleForegroundColorChange,
