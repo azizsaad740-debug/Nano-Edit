@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { showSuccess, showError } from "@/utils/toast";
-import type { EditState } from "@/hooks/useEditorState";
+import type { EditState } from "@/types/editor";
 
 interface ProjectSettingsDialogProps {
   open: boolean;
@@ -108,7 +108,7 @@ export const ProjectSettingsDialog = ({
           {/* Dimensions */}
           <div className="grid gap-2">
             <Label>Canvas Dimensions (Pixels)</Label>
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+            <div className="grid grid-cols-3 items-center gap-2">
               <Input type="number" value={width} onChange={handleWidthChange} />
               <span className="text-muted-foreground">×</span>
               <Input type="number" value={height} onChange={handleHeightChange} />

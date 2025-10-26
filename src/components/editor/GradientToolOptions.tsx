@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import type { GradientToolState } from "@/hooks/useEditorState";
+import type { GradientToolState } from "@/types/editor";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 import GradientPresets from "./GradientPresets";
 import { SaveGradientPresetDialog } from "./SaveGradientPresetDialog";

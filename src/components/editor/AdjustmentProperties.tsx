@@ -1,17 +1,17 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, AdjustmentLayerData, HslAdjustment, EditState, Point } from "@/types/editor";
+import type { Layer, AdjustmentLayerData, HslAdjustment, EditState, Point, HslColorKey } from "@/types/editor";
+import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import LightingAdjustments from "./LightingAdjustments";
 import ColorGrading from "./ColorGrading";
 import HslAdjustments from "./HslAdjustments";
 import Curves from "./Curves";
-import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 
-type HslColorKey = keyof EditState['hslAdjustments'];
+
 type AdjustmentType = AdjustmentLayerData['type'];
 
 interface AdjustmentPropertiesProps {

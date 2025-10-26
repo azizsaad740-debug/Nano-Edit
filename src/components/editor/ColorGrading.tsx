@@ -2,6 +2,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
+import * as React from "react";
 
 interface ColorGradingProps {
   grading: {

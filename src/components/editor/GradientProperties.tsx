@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, RotateCcw } from "lucide-react";

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Lock, LockOpen, Square, Move, Crop, Brush, Pencil, Search, Type } from "lucide-react";
 import type { Layer } from "@/types/editor";
 import { cn } from "@/lib/utils";
+import * as React from "react";
 
 interface LayerControlsProps {
   selectedLayer: Layer | undefined;
@@ -75,6 +76,7 @@ export const LayerControls = ({
             <SelectItem value="name">Name</SelectItem>
           </SelectContent>
         </Select>
+
         {/* Placeholder icons for filtering/sorting */}
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="h-8 w-8" disabled>

@@ -9,6 +9,7 @@ import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
 import GroupLayer from "./GroupLayer"; // Import GroupLayer
 import GradientLayer from "./GradientLayer"; // Import GradientLayer
+import * as React from "react";
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
