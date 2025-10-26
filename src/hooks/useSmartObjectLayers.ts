@@ -14,6 +14,28 @@ export interface UseSmartObjectLayersProps {
   selectedShapeType: Layer['shapeType'] | null;
 }
 
+/**
+ * Recursively updates a layer within the nested structure.
+ * @param layers The current array of layers (or children of a group).
+ * @param id The ID of the layer to update.
+ * @param updates The partial updates to apply to the layer.
+ * @returns A new array of layers with the specified layer updated.
+ */
+const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<Layer>): Layer[] => {
+  return layers.map(layer => {
+    if (layer.id === id) {
+      return { ...layer, ...updates };
+    }
+    if (layer.type === 'group' && layer.children) {
+      const newChildren = recursivelyUpdateLayer(layer.children, id, updates);
+      if (newChildren !== layer.children) {
+        return { ...layer, children: newChildren };
+      }
+    }
+    return layer;
+  });
+};
+
 export const useSmartObjectLayers = ({
   initialLayers,
   smartObjectDimensions,
@@ -51,7 +73,7 @@ export const useSmartObjectLayers = ({
   }, [history, historyIndex]);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-    setLayers(prev => prev.map(l => (l.id === id ? { ...l, ...updates } : l)));
+    setLayers(prev => recursivelyUpdateLayer(prev, id, updates));
   }, []);
 
   const commitLayerChange = useCallback((id: string) => {
@@ -63,7 +85,7 @@ export const useSmartObjectLayers = ({
 
   const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
     setLayers(prev => {
-      const updatedLayers = prev.map(l => (l.id === id ? { ...l, ...updates } : l));
+      const updatedLayers = recursivelyUpdateLayer(prev, id, updates);
       recordHistory(updatedLayers);
       return updatedLayers;
     });
@@ -197,11 +219,14 @@ export const useSmartObjectLayers = ({
 
   const handleDeleteLayer = useCallback(() => {
     if (!selectedLayerId) return;
-    const updated = layers.filter(l => l.id !== selectedLayerId);
-    setLayers(updated);
-    recordHistory(updated);
+    
+    setLayers(prev => {
+      const updated = recursivelyUpdateLayer(prev, selectedLayerId, { visible: false }).filter(l => l.id !== selectedLayerId);
+      recordHistory(updated);
+      return updated;
+    });
     setSelectedLayerId(null);
-  }, [layers, selectedLayerId, recordHistory]);
+  }, [selectedLayerId, recordHistory]);
 
   const handleDuplicateLayer = useCallback(() => {
     const selectedLayer = layers.find(l => l.id === selectedLayerId);
@@ -222,7 +247,7 @@ export const useSmartObjectLayers = ({
 
   const handleToggleVisibility = useCallback((id: string) => {
     setLayers(prev => {
-      const updated = prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
+      const updated = recursivelyUpdateLayer(prev, id, { visible: !(prev.find(l => l.id === id) as Layer)?.visible });
       recordHistory(updated);
       return updated;
     });
