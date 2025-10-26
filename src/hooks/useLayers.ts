@@ -12,6 +12,29 @@ import { saveProjectToFile } from "@/utils/projectUtils"; // Import saveProjectT
 import { rasterizeEditedImageWithMask } from "@/utils/imageUtils"; // NEW import
 
 // Helper utility functions for nested layer manipulation
+
+/**
+ * Recursively updates a layer within the nested structure.
+ * @param layers The current array of layers (or children of a group).
+ * @param id The ID of the layer to update.
+ * @param updates The partial updates to apply to the layer.
+ * @returns A new array of layers with the specified layer updated.
+ */
+const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<Layer>): Layer[] => {
+  return layers.map(layer => {
+    if (layer.id === id) {
+      return { ...layer, ...updates };
+    }
+    if (layer.type === 'group' && layer.children) {
+      const newChildren = recursivelyUpdateLayer(layer.children, id, updates);
+      if (newChildren !== layer.children) {
+        return { ...layer, children: newChildren };
+      }
+    }
+    return layer;
+  });
+};
+
 const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
   if (parentIds.length === 0) return newContainer;
   
@@ -126,8 +149,8 @@ export const useLayers = ({
   }, []);
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-    // TS2345 fix: setLayers now accepts a function updater
-    setLayers(prev => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    // Use the recursive helper to update the layer anywhere in the tree
+    setLayers(prev => recursivelyUpdateLayer(prev, id, updates));
   }, [setLayers]);
 
   const commitLayerChange = useCallback((id: string) => {
@@ -142,7 +165,7 @@ export const useLayers = ({
   }, [currentEditState, layers, recordHistory]);
 
   const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
-    const updatedLayers = layers.map((l) => (l.id === id ? { ...l, ...updates } : l));
+    const updatedLayers = recursivelyUpdateLayer(layers, id, updates);
     updateLayersState(updatedLayers, historyName);
   }, [layers, updateLayersState]);
 
@@ -159,7 +182,9 @@ export const useLayers = ({
   }, [selectedLayerId, commitLayerChange]);
 
   const toggleLayerVisibility = useCallback((id: string) => {
-    const updated = layers.map(l => l.id === id ? { ...l, visible: !l.visible } : l);
+    const layer = layers.find(l => l.id === id);
+    if (!layer) return;
+    const updated = recursivelyUpdateLayer(layers, id, { visible: !layer.visible });
     updateLayersState(updated, "Toggle Layer Visibility");
   }, [layers, updateLayersState]);
 
@@ -169,7 +194,7 @@ export const useLayers = ({
       showError("The background layer cannot be locked/unlocked.");
       return;
     }
-    const updated = layers.map(l => l.id === id ? { ...l, isLocked: !l.isLocked } : l);
+    const updated = recursivelyUpdateLayer(layers, id, { isLocked: !layer.isLocked });
     updateLayersState(updated, `Toggle Layer Lock on "${layer.name}"`);
   }, [layers, updateLayersState]);
 
@@ -182,7 +207,7 @@ export const useLayers = ({
       return;
     }
 
-    const updated = layers.map(l => l.id === id ? { ...l, name: newName } : l);
+    const updated = recursivelyUpdateLayer(layers, id, { name: newName });
     updateLayersState(updated, `Rename Layer to "${newName}"`);
   }, [layers, updateLayersState]);
 
@@ -230,48 +255,78 @@ export const useLayers = ({
     if (id === selectedLayerId) {
       setSelectedLayerId(null);
     }
-    const updated = layers.filter(l => l.id !== id);
+    
+    // Recursive filter function to remove the layer
+    const recursivelyFilterLayers = (currentLayers: Layer[]): Layer[] => {
+      return currentLayers.filter(l => l.id !== id).map(l => {
+        if (l.type === 'group' && l.children) {
+          return { ...l, children: recursivelyFilterLayers(l.children) };
+        }
+        return l;
+      });
+    };
+
+    const updated = recursivelyFilterLayers(layers);
     updateLayersState(updated, "Delete Layer");
   }, [layers, updateLayersState, selectedLayerId, imageNaturalDimensions]);
 
   const deleteHiddenLayers = useCallback(() => {
-    const hiddenLayers = layers.filter(l => !l.visible && l.type !== 'image');
+    const hiddenLayers: Layer[] = [];
+    
+    const recursivelyFilterHidden = (currentLayers: Layer[]): Layer[] => {
+      return currentLayers.filter(l => {
+        if (!l.visible && l.type !== 'image') {
+          hiddenLayers.push(l);
+          return false;
+        }
+        if (l.type === 'group' && l.children) {
+          l.children = recursivelyFilterHidden(l.children);
+        }
+        return true;
+      });
+    };
+
+    const updated = recursivelyFilterHidden(layers);
+    
     if (hiddenLayers.length === 0) {
       showSuccess("No hidden layers found to delete.");
       return;
     }
     
-    const updated = layers.filter(l => l.visible || l.type === 'image');
     updateLayersState(updated, `Delete ${hiddenLayers.length} Hidden Layers`);
     showSuccess(`${hiddenLayers.length} hidden layers deleted.`);
   }, [layers, updateLayersState]);
 
   const duplicateLayer = useCallback((id: string) => {
-    const layerIndex = layers.findIndex(l => l.id === id);
-    const layerToDuplicate = layers[layerIndex];
-
-    if (!layerToDuplicate || layerToDuplicate.type === 'image') {
+    const location = findLayerLocation(id, layers);
+    if (!location || location.layer.type === 'image') {
       showError("The background layer cannot be duplicated.");
       return;
     }
+    
+    const { container, index, layer, parentGroups } = location;
 
     const newLayer: Layer = {
-      ...layerToDuplicate,
+      ...layer,
       id: uuidv4(),
-      name: `${layerToDuplicate.name} Copy`,
+      name: `${layer.name} Copy`,
       isClippingMask: false,
       isLocked: false,
     };
 
-    const updated = [
-      ...layers.slice(0, layerIndex + 1),
+    const newContainer = [
+      ...container.slice(0, index + 1),
       newLayer,
-      ...layers.slice(layerIndex + 1),
+      ...container.slice(index + 1),
     ];
 
-    updateLayersState(updated, "Duplicate Layer");
+    setLayers(prevLayers => {
+      const parentIds = parentGroups.map(g => g.id);
+      return updateNestedContainer(prevLayers, parentIds, newContainer);
+    }, "Duplicate Layer");
+    
     setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState]);
+  }, [layers, findLayerLocation, setLayers, setSelectedLayerId]);
 
   const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = layers.find(l => l.id === id);
@@ -319,15 +374,20 @@ export const useLayers = ({
   }, [layers, updateLayersState, imgRef]);
 
   const mergeLayerDown = useCallback(async (id: string) => {
-    const layerIndex = layers.findIndex(l => l.id === id);
+    const location = findLayerLocation(id, layers);
+    if (!location) {
+      showError("Layer not found.");
+      return;
+    }
     
-    if (layerIndex < 1 || layers[layerIndex - 1].type === 'image') {
+    const { container, index, layer: topLayer, parentGroups } = location;
+
+    if (index === 0 || container[index - 1].type === 'image') {
       showError("This layer cannot be merged down.");
       return;
     }
 
-    const topLayer = layers[layerIndex];
-    const bottomLayer = layers[layerIndex - 1];
+    const bottomLayer = container[index - 1];
 
     const toastId = showLoading("Merging layers...");
 
@@ -375,11 +435,14 @@ export const useLayers = ({
         rotation: bottomLayer.rotation,
       };
 
-      const updatedLayers = layers
-        .filter(l => l.id !== topLayer.id)
-        .map(l => l.id === bottomLayer.id ? newBottomLayer : l);
+      // Remove top layer and update bottom layer in the container
+      const newContainer = container.filter(l => l.id !== topLayer.id).map(l => l.id === bottomLayer.id ? newBottomLayer : l);
 
-      updateLayersState(updatedLayers, `Merge Layer "${topLayer.name}" Down`);
+      setLayers(prevLayers => {
+        const parentIds = parentGroups.map(g => g.id);
+        return updateNestedContainer(prevLayers, parentIds, newContainer);
+      }, `Merge Layer "${topLayer.name}" Down`);
+      
       setSelectedLayerId(bottomLayer.id);
       dismissToast(toastId);
       showSuccess("Layers merged.");
@@ -389,7 +452,7 @@ export const useLayers = ({
       dismissToast(toastId);
       showError(err.message || "Failed to merge layers.");
     }
-  }, [layers, updateLayersState, imgRef]);
+  }, [layers, findLayerLocation, setLayers, imgRef, setSelectedLayerId]);
 
   const reorderLayers = useCallback((activeId: string, overId: string) => {
     const activeLocation = findLayerLocation(activeId, layers);
@@ -465,7 +528,7 @@ export const useLayers = ({
       return;
     }
 
-    const { container, index, layer } = location;
+    const { container, index, layer, parentGroups } = location;
     let newIndex = index;
 
     if (direction === 'front') {
@@ -483,7 +546,7 @@ export const useLayers = ({
     const newContainer = arrayMove(container, index, newIndex);
     
     setLayers(prevLayers => {
-      const parentIds = location.parentGroups.map(g => g.id);
+      const parentIds = parentGroups.map(g => g.id);
       return updateNestedContainer(prevLayers, parentIds, newContainer);
     }, `Arrange Layer "${layer.name}" to ${direction}`);
   }, [layers, selectedLayerId, findLayerLocation, setLayers]);
@@ -791,18 +854,11 @@ export const useLayers = ({
   }, [layers, selectedLayerId, currentEditState]);
 
   const moveSelectedLayer = useCallback((id: string, dx: number, dy: number) => {
-    // TS2345 fix: setLayers now accepts a function updater
-    setLayers(prevLayers => {
-      const updatedLayers = prevLayers.map(layer => {
-        if (layer.id === id && (layer.x !== undefined && layer.y !== undefined)) {
-          const newX = (layer.x ?? 0) + dx;
-          const newY = (layer.y ?? 0) + dy;
-          return { ...layer, x: newX, y: newY };
-        }
-        return layer;
-      });
-      return updatedLayers;
-    });
+    // Use the recursive helper to update the layer anywhere in the tree
+    setLayers(prevLayers => recursivelyUpdateLayer(prevLayers, id, { 
+      x: (prevLayers.find(l => l.id === id)?.x ?? 0) + dx,
+      y: (prevLayers.find(l => l.id === id)?.y ?? 0) + dy,
+    }));
   }, [setLayers]);
 
   const groupLayers = useCallback((layerIds: string[]) => {
@@ -911,13 +967,8 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const toggleGroupExpanded = useCallback((id: string) => {
-    // TS2345 fix: setLayers now accepts a function updater
-    setLayers(prevLayers => prevLayers.map(layer => {
-      if (layer.id === id && layer.type === 'group') {
-        return { ...layer, expanded: !layer.expanded };
-      }
-      return layer;
-    }));
+    // Use the recursive helper to update the group's expanded state anywhere in the tree
+    setLayers(prevLayers => recursivelyUpdateLayer(prevLayers, id, { expanded: !(prevLayers.find(l => l.id === id) as Layer)?.expanded }));
   }, [setLayers]);
 
   const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
@@ -972,9 +1023,8 @@ export const useLayers = ({
       return;
     }
     
-    const updatedLayers = layers.map(l => 
-      l.id === id ? { ...l, maskDataUrl: undefined } : l
-    );
+    const updatedLayers = recursivelyUpdateLayer(layers, id, { maskDataUrl: undefined });
+    
     updateLayersState(updatedLayers, `Remove Mask from Layer "${layer.name}"`);
     showSuccess(`Mask removed from layer "${layer.name}".`);
   }, [layers, updateLayersState]);
@@ -998,9 +1048,8 @@ export const useLayers = ({
         imageNaturalDimensions.height
       );
 
-      const updatedLayers = layers.map(l => 
-        l.id === id ? { ...l, maskDataUrl: invertedMaskDataUrl } : l
-      );
+      const updatedLayers = recursivelyUpdateLayer(layers, id, { maskDataUrl: invertedMaskDataUrl });
+      
       updateLayersState(updatedLayers, `Invert Mask on Layer "${layer.name}"`);
       dismissToast(toastId);
       showSuccess(`Mask inverted on layer "${layer.name}".`);
@@ -1012,23 +1061,23 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions]);
 
   const toggleClippingMask = useCallback((id: string) => {
-    const layerIndex = layers.findIndex(l => l.id === id);
-    const layer = layers[layerIndex];
+    const location = findLayerLocation(id, layers);
+    if (!location) return;
+    
+    const { container, index, layer } = location;
 
-    if (!layer || layer.type === 'image') {
+    if (layer.type === 'image') {
       showError("The background layer cannot be a clipping mask.");
       return;
     }
-    if (layerIndex === 0) {
-      showError("Cannot clip mask to the layer below (it's the background).");
+    if (index === 0) {
+      showError("Cannot clip mask to the layer below (it's the bottom layer in the container).");
       return;
     }
 
-    const updated = layers.map(l => 
-      l.id === id ? { ...l, isClippingMask: !l.isClippingMask } : l
-    );
+    const updated = recursivelyUpdateLayer(layers, id, { isClippingMask: !layer.isClippingMask });
     updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
-  }, [layers, updateLayersState]);
+  }, [layers, updateLayersState, findLayerLocation]);
 
   const addAdjustmentLayer = useCallback((adjustmentType: AdjustmentLayerData['type']) => {
     let name: string;
@@ -1089,9 +1138,7 @@ export const useLayers = ({
       return;
     }
 
-    const updatedLayers = layers.map(l => 
-      l.id === selectedLayerId ? { ...l, maskDataUrl: selectionMaskDataUrl } : l
-    );
+    const updatedLayers = recursivelyUpdateLayer(layers, selectedLayerId, { maskDataUrl: selectionMaskDataUrl });
     
     clearSelectionState();
     updateLayersState(updatedLayers, `Apply Selection as Mask to "${layer.name}"`);
