@@ -1,6 +1,6 @@
 import { type Crop } from 'react-image-crop';
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { EditState, Layer } from '@/hooks/useEditorState';
+import type { EditState, Layer } from '@/types/editor';
 import { getFilterString } from './filterUtils';
 import { rasterizeLayerToCanvas } from './layerUtils'; // Import the utility
 import { upscaleImageApi } from "./stabilityApi"; // NEW import

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { EditState } from "@/hooks/useEditorState";
+import type { EditState } from "@/types/editor";
 
 interface EffectsFiltersProps {
   effects: EditState['effects'];

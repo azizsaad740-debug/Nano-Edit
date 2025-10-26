@@ -1,4 +1,4 @@
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 
 /**
  * Rasterizes a single layer (text, drawing, smart-object, vector-shape, or gradient) to a canvas.

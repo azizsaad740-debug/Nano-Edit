@@ -5,11 +5,20 @@ import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import type { Layer, EditState, Point, GradientToolState, ActiveTool, AdjustmentLayerData } from "./useEditorState";
-import { initialCurvesState, initialHslAdjustment } from "./useEditorState";
-import { invertMaskDataUrl } from "@/utils/maskUtils";
-import { saveProjectToFile } from "@/utils/projectUtils"; // Import saveProjectToFile
-import { rasterizeEditedImageWithMask } from "@/utils/imageUtils"; // NEW import
+import { saveProjectToFile } from "@/utils/projectUtils";
+import { rasterizeEditedImageWithMask } from "@/utils/imageUtils";
+import { invertMaskDataUrl, polygonToMaskDataUrl } from "@/utils/maskUtils";
+import {
+  initialCurvesState,
+  initialHslAdjustment,
+  type Layer,
+  type EditState,
+  type Point,
+  type GradientToolState,
+  type ActiveTool,
+  type AdjustmentLayerData,
+  type HistoryItem,
+} from "@/types/editor"; // Import types from centralized file
 
 // Helper utility functions for nested layer manipulation
 
@@ -35,6 +44,38 @@ const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<La
   });
 };
 
+/**
+ * Recursively finds a layer's location (layer, container, index, parent path).
+ */
+interface LayerLocation {
+  layer: Layer;
+  container: Layer[];
+  index: number;
+  parentGroups: Layer[];
+}
+
+const findLayerLocation = (
+  id: string,
+  currentLayers: Layer[],
+  parentGroups: Layer[] = []
+): LayerLocation | null => {
+  for (let i = 0; i < currentLayers.length; i++) {
+    const layer = currentLayers[i];
+    if (layer.id === id) {
+      return { layer, container: currentLayers, index: i, parentGroups };
+    }
+    if (layer.type === 'group' && layer.children) {
+      // FIX Error 22: Corrected recursive call argument
+      const found = findLayerLocation(id, layer.children, [...parentGroups, layer]); 
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+/**
+ * Recursively updates a nested container (used for reordering/grouping).
+ */
 const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
   if (parentIds.length === 0) return newContainer;
   
@@ -50,6 +91,9 @@ const updateNestedContainer = (layers: Layer[], parentIds: string[], newContaine
   });
 };
 
+/**
+ * Recursively gets a mutable reference to a nested container.
+ */
 const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
   let currentContainer = tree;
   for (const group of path) {
@@ -63,11 +107,6 @@ const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
   return currentContainer;
 };
 
-export interface HistoryItem {
-  name: string;
-  state: EditState;
-  layers: Layer[];
-}
 
 export interface UseLayersProps {
   currentEditState: EditState;
@@ -78,17 +117,14 @@ export interface UseLayersProps {
   gradientToolState: GradientToolState;
   activeTool: ActiveTool | null;
   layers: Layer[];
-  // Allow function updates for setLayers to resolve TS2345 errors
   setLayers: (newLayersOrUpdater: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => void;
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
-  // Props needed for canUndo/canRedo calculation
   history: HistoryItem[];
   currentHistoryIndex: number;
   foregroundColor: string;
   backgroundColor: string;
   selectedShapeType: Layer['shapeType'] | null;
-  // NEW PROPS for selection state management
   selectionMaskDataUrl: string | null;
   clearSelectionState: () => void;
 }
@@ -105,13 +141,13 @@ export const useLayers = ({
   setLayers,
   selectedLayerId,
   setSelectedLayerId,
-  history, // Destructure history
-  currentHistoryIndex, // Destructure currentHistoryIndex
+  history,
+  currentHistoryIndex,
   foregroundColor,
   backgroundColor,
   selectedShapeType,
-  selectionMaskDataUrl, // NEW
-  clearSelectionState, // NEW
+  selectionMaskDataUrl,
+  clearSelectionState,
 }: UseLayersProps) => {
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
@@ -123,33 +159,9 @@ export const useLayers = ({
     [setLayers]
   );
 
-  interface LayerLocation {
-    layer: Layer;
-    container: Layer[];
-    index: number;
-    parentGroups: Layer[];
-  }
-
-  const findLayerLocation = useCallback((
-    id: string,
-    currentLayers: Layer[],
-    parentGroups: Layer[] = []
-  ): LayerLocation | null => {
-    for (let i = 0; i < currentLayers.length; i++) {
-      const layer = currentLayers[i];
-      if (layer.id === id) {
-        return { layer, container: currentLayers, index: i, parentGroups };
-      }
-      if (layer.type === 'group' && layer.children) {
-        const found = findLayerLocation(id, layer.children, [...parentGroups, layer]);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
+  // --- Layer Property Management ---
 
   const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-    // Use the recursive helper to update the layer anywhere in the tree
     setLayers(prev => recursivelyUpdateLayer(prev, id, updates));
   }, [setLayers]);
 
@@ -233,19 +245,19 @@ export const useLayers = ({
       const transparentDataUrl = canvas.toDataURL();
 
       const newBgLayer: Layer = {
-        id: uuidv4(),
+        id: 'background',
         type: "drawing",
         name: "Background (Transparent)",
         visible: true,
         opacity: 100,
         blendMode: 'normal',
         dataUrl: transparentDataUrl,
+        isLocked: true,
         x: 50,
         y: 50,
         width: 100,
         height: 100,
         rotation: 0,
-        isLocked: true,
       };
       const updated = layers.map(l => l.id === id ? newBgLayer : l);
       updateLayersState(updated, "Delete Background (Replaced with Transparent)");
@@ -326,7 +338,7 @@ export const useLayers = ({
     }, "Duplicate Layer");
     
     setSelectedLayerId(newLayer.id);
-  }, [layers, findLayerLocation, setLayers, setSelectedLayerId]);
+  }, [layers, setLayers, setSelectedLayerId]);
 
   const rasterizeLayer = useCallback(async (id: string) => {
     const layerToRasterize = layers.find(l => l.id === id);
@@ -419,20 +431,16 @@ export const useLayers = ({
       const mergedDataUrl = mergedCanvas.toDataURL();
 
       const newBottomLayer: Layer = {
-        id: bottomLayer.id,
+        ...bottomLayer,
         type: 'drawing',
-        name: bottomLayer.name,
+        name: `${bottomLayer.name} (Merged)`,
         visible: bottomLayer.visible,
         dataUrl: mergedDataUrl,
         opacity: 100,
         blendMode: 'normal',
         isClippingMask: bottomLayer.isClippingMask,
         isLocked: false,
-        x: bottomLayer.x,
-        y: bottomLayer.y,
-        width: bottomLayer.width,
-        height: bottomLayer.height,
-        rotation: bottomLayer.rotation,
+        // Keep existing transforms
       };
 
       // Remove top layer and update bottom layer in the container
@@ -453,6 +461,37 @@ export const useLayers = ({
       showError(err.message || "Failed to merge layers.");
     }
   }, [layers, findLayerLocation, setLayers, imgRef, setSelectedLayerId]);
+
+  const handleArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
+    if (!selectedLayerId) return;
+    const location = findLayerLocation(selectedLayerId, layers);
+    if (!location || location.layer.type === 'image') {
+      showError("Cannot arrange background layer.");
+      return;
+    }
+
+    const { container, index, layer, parentGroups } = location;
+    let newIndex = index;
+
+    if (direction === 'front') {
+      newIndex = container.length - 1;
+    } else if (direction === 'back') {
+      newIndex = 0;
+    } else if (direction === 'forward') {
+      newIndex = Math.min(container.length - 1, index + 1);
+    } else if (direction === 'backward') {
+      newIndex = Math.max(0, index - 1);
+    }
+
+    if (newIndex === index) return;
+
+    const newContainer = arrayMove(container, index, newIndex);
+    
+    setLayers(prevLayers => {
+      const parentIds = parentGroups.map(g => g.id);
+      return updateNestedContainer(prevLayers, parentIds, newContainer);
+    }, `Arrange Layer "${layer.name}" to ${direction}`);
+  }, [layers, selectedLayerId, setLayers]);
 
   const reorderLayers = useCallback((activeId: string, overId: string) => {
     const activeLocation = findLayerLocation(activeId, layers);
@@ -518,40 +557,266 @@ export const useLayers = ({
 
       updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
     }
-  }, [layers, updateLayersState, findLayerLocation, setLayers]);
+  }, [layers, updateLayersState]);
 
-  const arrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
-    if (!selectedLayerId) return;
-    const location = findLayerLocation(selectedLayerId, layers);
-    if (!location || location.layer.type === 'image') {
-      showError("Cannot arrange background layer.");
+  // --- Layer Creation ---
+
+  const addTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "text",
+      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
+      visible: true,
+      content: "New Text",
+      x: coords.x,
+      y: coords.y,
+      fontSize: 48,
+      color: color,
+      fontFamily: "Roboto",
+      opacity: 100,
+      blendMode: 'normal',
+      fontWeight: "normal",
+      textAlign: "center",
+      rotation: 0,
+      letterSpacing: 0,
+      padding: 10,
+      lineHeight: 1.2,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Text Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addDrawingLayer = useCallback(() => {
+    if (!imageNaturalDimensions) {
+      showError("Cannot add drawing layer without image dimensions.");
+      return "";
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = imageNaturalDimensions.width;
+    canvas.height = imageNaturalDimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      showError("Failed to create canvas for new drawing layer.");
+      return "";
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const transparentDataUrl = canvas.toDataURL();
+
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "drawing",
+      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      dataUrl: transparentDataUrl,
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Drawing Layer");
+    setSelectedLayerId(newLayer.id);
+    return newLayer.id;
+  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+
+  const handleAddLayerFromBackground = useCallback(async () => {
+    const backgroundLayer = layers.find(l => l.id === 'background');
+    if (!backgroundLayer || !backgroundLayer.dataUrl || !imageNaturalDimensions) {
+      showError("No background image loaded to create a layer from.");
       return;
     }
 
-    const { container, index, layer, parentGroups } = location;
-    let newIndex = index;
+    const toastId = showLoading("Creating layer from background...");
+    try {
+      // Rasterize the background layer to ensure we capture the current state
+      const canvas = await rasterizeLayerToCanvas(backgroundLayer, imageNaturalDimensions);
+      if (!canvas) throw new Error("Failed to rasterize background.");
+      const dataUrl = canvas.toDataURL();
 
-    if (direction === 'front') {
-      newIndex = container.length - 1;
-    } else if (direction === 'back') {
-      newIndex = 0;
-    } else if (direction === 'forward') {
-      newIndex = Math.min(container.length - 1, index + 1);
-    } else if (direction === 'backward') {
-      newIndex = Math.max(0, index - 1);
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: `Layer from Background`,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+        isLocked: false,
+      };
+      
+      // Insert immediately above the background layer (index 1)
+      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      
+      updateLayersState(updated, "Layer from Background");
+      setSelectedLayerId(newLayer.id);
+      dismissToast(toastId);
+      showSuccess("Layer created from background.");
+    } catch (error) {
+      dismissToast(toastId);
+      showError("Failed to create layer from background.");
+    }
+  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+
+  const handleLayerFromSelection = useCallback(async () => {
+    if (!selectionMaskDataUrl || !imgRef.current || !imageNaturalDimensions) {
+      showError("An active selection is required to create a layer from selection.");
+      return;
     }
 
-    if (newIndex === index) return;
+    const toastId = showLoading("Creating layer from selection...");
+    try {
+      const options = {
+        image: imgRef.current,
+        layers: layers,
+        ...currentEditState,
+      };
+      
+      const dataUrl = await rasterizeEditedImageWithMask(options, selectionMaskDataUrl);
 
-    const newContainer = arrayMove(container, index, newIndex);
-    
-    setLayers(prevLayers => {
-      const parentIds = parentGroups.map(g => g.id);
-      return updateNestedContainer(prevLayers, parentIds, newContainer);
-    }, `Arrange Layer "${layer.name}" to ${direction}`);
-  }, [layers, selectedLayerId, findLayerLocation, setLayers]);
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: `Layer via Copy ${layers.filter((l) => l.type === "drawing").length + 1}`,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+        isLocked: false,
+      };
+      
+      // Insert immediately above the background layer (index 1)
+      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      
+      clearSelectionState();
+      updateLayersState(updated, "Layer via Copy");
+      setSelectedLayerId(newLayer.id);
+      dismissToast(toastId);
+      showSuccess("Layer created from selection.");
+    } catch (error) {
+      console.error("Failed to create layer from selection:", error);
+      dismissToast(toastId);
+      showError("Failed to create layer from selection.");
+    }
+  }, [selectionMaskDataUrl, imgRef, imageNaturalDimensions, layers, currentEditState, clearSelectionState, updateLayersState, setSelectedLayerId]);
 
-  /* ---------- Smart Object Functions ---------- */
+  const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "vector-shape",
+      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      visible: true,
+      x: coords.x,
+      y: coords.y,
+      width: initialWidth,
+      height: initialHeight,
+      rotation: 0,
+      opacity: 100,
+      blendMode: 'normal',
+      shapeType: shapeType,
+      fillColor: fillColor,
+      strokeColor: strokeColor,
+      strokeWidth: 2,
+      borderRadius: 0,
+      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Shape Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  const addGradientLayer = useCallback(() => {
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "gradient",
+      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      gradientType: gradientToolState.type,
+      gradientColors: gradientToolState.colors,
+      gradientStops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
+      isLocked: false,
+    };
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, "Add Gradient Layer");
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId, gradientToolState]);
+
+  const addAdjustmentLayer = useCallback((adjustmentType: AdjustmentLayerData['type']) => {
+    let name: string;
+    let adjustmentData: AdjustmentLayerData;
+
+    switch (adjustmentType) {
+      case 'brightness':
+        name = `Brightness/Contrast ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'brightness').length + 1}`;
+        adjustmentData = { type: 'brightness', adjustments: { brightness: 100, contrast: 100, saturation: 100 } };
+        break;
+      case 'curves':
+        name = `Curves ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'curves').length + 1}`;
+        adjustmentData = { type: 'curves', curves: initialCurvesState };
+        break;
+      case 'hsl':
+        name = `HSL ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'hsl').length + 1}`;
+        adjustmentData = { type: 'hsl', hslAdjustments: { 
+          global: { ...initialHslAdjustment }, red: { ...initialHslAdjustment }, orange: { ...initialHslAdjustment }, 
+          yellow: { ...initialHslAdjustment }, green: { ...initialHslAdjustment }, aqua: { ...initialHslAdjustment }, 
+          blue: { ...initialHslAdjustment }, purple: { ...initialHslAdjustment }, magenta: { ...initialHslAdjustment } 
+        } };
+        break;
+      case 'grading':
+        name = `Color Grading ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'grading').length + 1}`;
+        adjustmentData = { type: 'grading', grading: { grayscale: 0, sepia: 0, invert: 0 } };
+        break;
+      default:
+        return;
+    }
+
+    const newLayer: Layer = {
+      id: uuidv4(),
+      type: "adjustment",
+      name: name,
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      adjustmentData: adjustmentData,
+      isLocked: false,
+    };
+
+    const updated = [...layers, newLayer];
+    updateLayersState(updated, `Add Adjustment Layer: ${name}`);
+    setSelectedLayerId(newLayer.id);
+  }, [layers, updateLayersState, setSelectedLayerId]);
+
+  // --- Smart Object Functions ---
+
   const createSmartObject = useCallback((layerIds: string[]) => {
     if (layerIds.length < 1) {
       showError("Please select at least one layer to create a smart object.");
@@ -834,7 +1099,7 @@ export const useLayers = ({
     showSuccess("Smart Object converted to individual layers.");
   }, [layers, selectedLayerId, updateLayersState, imageNaturalDimensions, setSelectedLayerId]);
 
-  const exportSmartObjectContents = useCallback(() => {
+  const handleExportSmartObjectContents = useCallback(() => {
     if (!selectedLayerId) return;
     const smartObjectLayer = layers.find(l => l.id === selectedLayerId);
 
@@ -853,13 +1118,7 @@ export const useLayers = ({
     showSuccess(`Smart Object contents saved as "${smartObjectLayer.name}-contents.nanoedit".`);
   }, [layers, selectedLayerId, currentEditState]);
 
-  const moveSelectedLayer = useCallback((id: string, dx: number, dy: number) => {
-    // Use the recursive helper to update the layer anywhere in the tree
-    setLayers(prevLayers => recursivelyUpdateLayer(prevLayers, id, { 
-      x: (prevLayers.find(l => l.id === id)?.x ?? 0) + dx,
-      y: (prevLayers.find(l => l.id === id)?.y ?? 0) + dy,
-    }));
-  }, [setLayers]);
+  // --- Group Functions ---
 
   const groupLayers = useCallback((layerIds: string[]) => {
     if (layerIds.length < 2) {
@@ -879,6 +1138,7 @@ export const useLayers = ({
       return;
     }
 
+    // 1. Calculate bounding box and group position/size relative to main canvas
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
     nonBackgroundSelected.forEach(layer => {
@@ -923,6 +1183,26 @@ export const useLayers = ({
     const groupWidth_percent = (groupWidth_px / imageNaturalDimensions.width) * 100;
     const groupHeight_percent = (groupHeight_px / imageNaturalDimensions.height) * 100;
 
+    // 2. Recalculate children's positions relative to the new Group canvas (0,0)
+    const childrenLayers = nonBackgroundSelected.map(layer => {
+      const layerX_percent = layer.x ?? 50;
+      const layerY_percent = layer.y ?? 50;
+      const layerX_px = (layerX_percent / 100) * imageNaturalDimensions.width;
+      const layerY_px = (layerY_percent / 100) * imageNaturalDimensions.height;
+
+      const relativeX_px = layerX_px - minX;
+      const relativeY_px = layerY_px - minY;
+
+      return {
+        ...layer,
+        // Recalculate child position relative to the group's bounding box (0-100%)
+        x: (relativeX_px / groupWidth_px) * 100,
+        y: (relativeY_px / groupHeight_px) * 100,
+        isClippingMask: false,
+        isLocked: false,
+      };
+    });
+
     const newGroup: Layer = {
       id: uuidv4(),
       type: "group",
@@ -937,26 +1217,10 @@ export const useLayers = ({
       width: groupWidth_percent,
       height: groupHeight_percent,
       rotation: 0,
-      children: nonBackgroundSelected.map(layer => {
-        const childX_percent = layer.x ?? 50;
-        const childY_percent = layer.y ?? 50;
-        const childX_px = (childX_percent / 100) * imageNaturalDimensions.width;
-        const childY_px = (childY_percent / 100) * imageNaturalDimensions.height;
-
-        const relativeX_px = childX_px - minX;
-        const relativeY_px = childY_px - minY;
-
-        return {
-          ...layer,
-          // Recalculate child position relative to the group's bounding box (0-100%)
-          x: (relativeX_px / groupWidth_px) * 100,
-          y: (relativeY_px / groupHeight_px) * 100,
-          isClippingMask: false,
-          isLocked: false,
-        };
-      }),
+      children: childrenLayers,
     };
 
+    // 3. Replace the selected layers with the new group
     const updatedLayers = layers
       .filter(layer => !layerIds.includes(layer.id))
       .concat(newGroup);
@@ -967,54 +1231,11 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const toggleGroupExpanded = useCallback((id: string) => {
-    // Use the recursive helper to update the group's expanded state anywhere in the tree
-    setLayers(prevLayers => recursivelyUpdateLayer(prevLayers, id, { expanded: !(prevLayers.find(l => l.id === id) as Layer)?.expanded }));
-  }, [setLayers]);
+    const updated = recursivelyUpdateLayer(layers, id, { expanded: !(layers.find(l => l.id === id) as Layer)?.expanded });
+    updateLayersState(updated, `Toggle Group ${layers.find(l => l.id === id)?.expanded ? 'Collapse' : 'Expand'}`);
+  }, [layers, updateLayersState]);
 
-  const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
-    const targetLayer = layers.find(l => l.id === layerId);
-    if (!targetLayer || !imgRef.current) return;
-
-    const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = imageDimensions.width;
-    tempCanvas.height = imageDimensions.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) return;
-
-    const baseImg = new Image();
-    const strokeImg = new Image();
-
-    const basePromise = targetLayer.dataUrl ? new Promise((res, rej) => { baseImg.onload = res; baseImg.onerror = rej; baseImg.src = targetLayer.dataUrl!; }) : Promise.resolve();
-    const strokePromise = new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
-
-    await Promise.all([basePromise, strokePromise]);
-
-    // Ensure default composite operation and full opacity for initial drawing
-    tempCtx.globalCompositeOperation = 'source-over';
-    tempCtx.globalAlpha = 1.0;
-
-    if (targetLayer.dataUrl) {
-      tempCtx.drawImage(baseImg, 0, 0); // Draw existing content
-    }
-
-    // Apply the correct composite operation for the new stroke
-    if (activeTool === 'eraser') {
-      tempCtx.globalCompositeOperation = 'destination-out';
-    } else {
-      tempCtx.globalCompositeOperation = 'source-over';
-    }
-    
-    tempCtx.drawImage(strokeImg, 0, 0); // Draw the new stroke
-    
-    // Reset composite operation to default for subsequent operations if any
-    tempCtx.globalCompositeOperation = 'source-over'; 
-    tempCtx.globalAlpha = 1.0;
-
-    const combinedDataUrl = tempCanvas.toDataURL();
-    updateLayer(layerId, { dataUrl: combinedDataUrl });
-    commitLayerChange(layerId);
-  }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]);
+  // --- Masking Functions ---
 
   const removeLayerMask = useCallback((id: string) => {
     const layer = layers.find(l => l.id === id);
@@ -1077,48 +1298,7 @@ export const useLayers = ({
 
     const updated = recursivelyUpdateLayer(layers, id, { isClippingMask: !layer.isClippingMask });
     updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
-  }, [layers, updateLayersState, findLayerLocation]);
-
-  const addAdjustmentLayer = useCallback((adjustmentType: AdjustmentLayerData['type']) => {
-    let name: string;
-    let adjustmentData: AdjustmentLayerData;
-
-    switch (adjustmentType) {
-      case 'brightness':
-        name = `Brightness/Contrast ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'brightness').length + 1}`;
-        adjustmentData = { type: 'brightness', adjustments: { brightness: 100, contrast: 100, saturation: 100 } };
-        break;
-      case 'curves':
-        name = `Curves ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'curves').length + 1}`;
-        adjustmentData = { type: 'curves', curves: initialCurvesState };
-        break;
-      case 'hsl':
-        name = `HSL ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'hsl').length + 1}`;
-        adjustmentData = { type: 'hsl', hslAdjustments: { global: { ...initialHslAdjustment }, red: { ...initialHslAdjustment }, orange: { ...initialHslAdjustment }, yellow: { ...initialHslAdjustment }, green: { ...initialHslAdjustment }, aqua: { ...initialHslAdjustment }, blue: { ...initialHslAdjustment }, purple: { ...initialHslAdjustment }, magenta: { ...initialHslAdjustment } } };
-        break;
-      case 'grading':
-        name = `Color Grading ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'grading').length + 1}`;
-        adjustmentData = { type: 'grading', grading: { grayscale: 0, sepia: 0, invert: 0 } };
-        break;
-      default:
-        return;
-    }
-
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "adjustment",
-      name: name,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      adjustmentData: adjustmentData,
-      isLocked: false,
-    };
-
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, `Add Adjustment Layer: ${name}`);
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, setSelectedLayerId]);
+  }, [layers, updateLayersState]);
 
   const applySelectionAsMask = useCallback(() => {
     if (!selectedLayerId || !selectionMaskDataUrl) {
@@ -1132,7 +1312,6 @@ export const useLayers = ({
       return;
     }
     
-    // NEW CHECK: Prevent masking adjustment layers due to rendering complexity
     if (layer.type === 'adjustment') {
       showError("Cannot apply mask to Adjustment Layers.");
       return;
@@ -1145,215 +1324,58 @@ export const useLayers = ({
     showSuccess(`Selection applied as mask to layer "${layer.name}".`);
   }, [selectedLayerId, layers, selectionMaskDataUrl, clearSelectionState, updateLayersState]);
 
-  // Layer creation functions exposed by useLayers
-  const addTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "text",
-      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
-      visible: true,
-      content: "New Text",
-      x: coords.x,
-      y: coords.y,
-      fontSize: 48,
-      color: color,
-      fontFamily: "Roboto",
-      opacity: 100,
-      blendMode: 'normal',
-      fontWeight: "normal",
-      textAlign: "center",
-      rotation: 0,
-      letterSpacing: 0,
-      padding: 10,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Text Layer");
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, setSelectedLayerId]);
+  // --- Drawing/Brush Handlers ---
 
-  const addDrawingLayer = useCallback(() => {
-    if (!imageNaturalDimensions) {
-      showError("Cannot add drawing layer without image dimensions.");
-      return "";
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = imageNaturalDimensions.width;
-    canvas.height = imageNaturalDimensions.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      showError("Failed to create canvas for new drawing layer.");
-      return "";
-    }
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const transparentDataUrl = canvas.toDataURL();
+  const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    const targetLayer = layers.find(l => l.id === layerId);
+    if (!targetLayer || !imgRef.current) return;
 
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "drawing",
-      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      dataUrl: transparentDataUrl,
-      x: 50,
-      y: 50,
-      width: 100,
-      height: 100,
-      rotation: 0,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Drawing Layer");
-    setSelectedLayerId(newLayer.id);
-    return newLayer.id;
-  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+    const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = imageDimensions.width;
+    tempCanvas.height = imageDimensions.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
 
-  const addLayerFromBackground = useCallback(async () => {
-    const backgroundLayer = layers.find(l => l.type === 'image' || (l.type === 'drawing' && l.id === 'background'));
-    if (!backgroundLayer || !backgroundLayer.dataUrl || !imageNaturalDimensions) {
-      showError("No background image loaded to create a layer from.");
-      return;
+    const baseImg = new Image();
+    const strokeImg = new Image();
+
+    const basePromise = targetLayer.dataUrl ? new Promise((res, rej) => { baseImg.onload = res; baseImg.onerror = rej; baseImg.src = targetLayer.dataUrl!; }) : Promise.resolve();
+    const strokePromise = new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
+
+    await Promise.all([basePromise, strokePromise]);
+
+    // Ensure default composite operation and full opacity for initial drawing
+    tempCtx.globalCompositeOperation = 'source-over';
+    tempCtx.globalAlpha = 1.0;
+
+    if (targetLayer.dataUrl) {
+      tempCtx.drawImage(baseImg, 0, 0); // Draw existing content
     }
 
-    const toastId = showLoading("Creating layer from background...");
-    try {
-      // Rasterize the background layer to ensure we capture the current state (if it's a drawing layer)
-      const canvas = await rasterizeLayerToCanvas(backgroundLayer, imageNaturalDimensions);
-      if (!canvas) throw new Error("Failed to rasterize background.");
-      const dataUrl = canvas.toDataURL();
-
-      const newLayer: Layer = {
-        id: uuidv4(),
-        type: "drawing",
-        name: `Layer from Background`,
-        visible: true,
-        opacity: 100,
-        blendMode: 'normal',
-        dataUrl: dataUrl,
-        x: 50,
-        y: 50,
-        width: 100,
-        height: 100,
-        rotation: 0,
-      };
-      
-      // Insert immediately above the background layer (index 1)
-      const updated = [layers[0], newLayer, ...layers.slice(1)];
-      
-      updateLayersState(updated, "Layer from Background");
-      setSelectedLayerId(newLayer.id);
-      dismissToast(toastId);
-      showSuccess("Layer created from background.");
-    } catch (error) {
-      dismissToast(toastId);
-      showError("Failed to create layer from background.");
+    // Apply the correct composite operation for the new stroke
+    if (activeTool === 'eraser') {
+      tempCtx.globalCompositeOperation = 'destination-out';
+    } else {
+      tempCtx.globalCompositeOperation = 'source-over';
     }
-  }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
+    
+    tempCtx.drawImage(strokeImg, 0, 0); // Draw the new stroke
+    
+    // Reset composite operation to default for subsequent operations if any
+    tempCtx.globalCompositeOperation = 'source-over'; 
+    tempCtx.globalAlpha = 1.0;
 
-  const handleLayerFromSelection = useCallback(async () => {
-    if (!selectionMaskDataUrl || !imgRef.current || !imageNaturalDimensions) {
-      showError("An active selection is required to create a layer from selection.");
-      return;
-    }
+    const combinedDataUrl = tempCanvas.toDataURL();
+    updateLayer(layerId, { dataUrl: combinedDataUrl });
+    commitLayerChange(layerId);
+  }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]);
 
-    const toastId = showLoading("Creating layer from selection...");
-    try {
-      const options = {
-        image: imgRef.current,
-        layers: layers,
-        ...currentEditState,
-      };
-      
-      const dataUrl = await rasterizeEditedImageWithMask(options, selectionMaskDataUrl);
-
-      const newLayer: Layer = {
-        id: uuidv4(),
-        type: "drawing",
-        name: `Layer via Copy ${layers.filter((l) => l.type === "drawing").length + 1}`,
-        visible: true,
-        opacity: 100,
-        blendMode: 'normal',
-        dataUrl: dataUrl,
-        x: 50,
-        y: 50,
-        width: 100,
-        height: 100,
-        rotation: 0,
-      };
-      
-      // Insert immediately above the background layer (index 1)
-      const updated = [layers[0], newLayer, ...layers.slice(1)];
-      
-      clearSelectionState();
-      updateLayersState(updated, "Layer via Copy");
-      setSelectedLayerId(newLayer.id);
-      dismissToast(toastId);
-      showSuccess("Layer created from selection.");
-    } catch (error) {
-      console.error("Failed to create layer from selection:", error);
-      dismissToast(toastId);
-      showError("Failed to create layer from selection.");
-    }
-  }, [selectionMaskDataUrl, imgRef, imageNaturalDimensions, layers, currentEditState, clearSelectionState, updateLayersState, setSelectedLayerId]);
-
-  const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "vector-shape",
-      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
-      visible: true,
-      x: coords.x,
-      y: coords.y,
-      width: initialWidth,
-      height: initialHeight,
-      rotation: 0,
-      opacity: 100,
-      blendMode: 'normal',
-      shapeType: shapeType,
-      fillColor: fillColor,
-      strokeColor: strokeColor,
-      strokeWidth: 2,
-      borderRadius: 0,
-      points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Shape Layer");
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, setSelectedLayerId]);
-
-  const addGradientLayer = useCallback(() => {
-    const newLayer: Layer = {
-      id: uuidv4(),
-      type: "gradient",
-      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      x: 50,
-      y: 50,
-      width: 100,
-      height: 100,
-      rotation: 0,
-      gradientType: gradientToolState.type,
-      gradientColors: gradientToolState.colors,
-      gradientStops: gradientToolState.stops,
-      gradientAngle: gradientToolState.angle,
-      gradientFeather: gradientToolState.feather,
-      gradientInverted: gradientToolState.inverted,
-      gradientCenterX: gradientToolState.centerX,
-      gradientCenterY: gradientToolState.centerY,
-      gradientRadius: gradientToolState.radius,
-    };
-    const updated = [...layers, newLayer];
-    updateLayersState(updated, "Add Gradient Layer");
-    setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, setSelectedLayerId, gradientToolState]);
-
-
+  // --- Public Interface ---
   return {
     layers,
     selectedLayerId,
     setSelectedLayerId,
-    // Layer manipulation functions (returned by their original names)
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -1366,7 +1388,7 @@ export const useLayers = ({
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
-    moveSelectedLayer,
+    moveSelectedLayer: updateLayer, // Simple move is handled by updateLayer
     groupLayers,
     toggleGroupExpanded,
     removeLayerMask,
@@ -1375,29 +1397,29 @@ export const useLayers = ({
     toggleLayerLock,
     renameLayer,
     
-    // Layer creation/deletion/duplication functions (aliased for clarity in useEditorState)
+    // Layer creation/deletion/duplication functions (FIXED NAMING)
     handleAddTextLayer: addTextLayer,
     handleAddDrawingLayer: addDrawingLayer,
-    handleAddLayerFromBackground: addLayerFromBackground, // NEW
-    handleLayerFromSelection, // NEW
+    handleAddLayerFromBackground,
+    handleLayerFromSelection,
     handleAddShapeLayer: addShapeLayer,
     handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
-    handleDeleteLayer: deleteLayer,
-    handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
-    handleDuplicateLayer: duplicateLayer,
-    handleMergeLayerDown: mergeLayerDown,
-    handleRasterizeLayer: rasterizeLayer,
-    handleRasterizeSmartObject: rasterizeSmartObject, // NEW
-    handleConvertSmartObjectToLayers: convertSmartObjectToLayers, // NEW
-    handleExportSmartObjectContents: exportSmartObjectContents, // NEW
-    handleArrangeLayer: arrangeLayer, // NEW
+    deleteLayer: deleteLayer,
+    handleDeleteHiddenLayers: deleteHiddenLayers,
+    duplicateLayer: duplicateLayer,
+    mergeLayerDown: mergeLayerDown,
+    rasterizeLayer: rasterizeLayer,
+    handleRasterizeSmartObject: rasterizeSmartObject,
+    handleConvertSmartObjectToLayers: convertSmartObjectToLayers,
+    handleExportSmartObjectContents,
+    handleArrangeLayer,
 
     // State/History helpers
     handleToggleVisibility: toggleLayerVisibility,
     handleDrawingStrokeEnd,
-    applySelectionAsMask, // Expose new function
-    canUndo: currentHistoryIndex > 0,
-    canRedo: currentHistoryIndex < history.length - 1,
+    applySelectionAsMask,
+    canUndoLayers: () => currentHistoryIndex > 0,
+    canRedoLayers: () => currentHistoryIndex < history.length - 1,
   };
 };

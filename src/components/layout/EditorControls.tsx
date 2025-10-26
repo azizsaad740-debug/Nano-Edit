@@ -37,7 +37,7 @@ import Effects from "@/components/editor/Effects";
 import HslAdjustments from "@/components/editor/HslAdjustments"; // NEW Import
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Point, EditState, HslAdjustment } from "@/hooks/useEditorState";
+import type { Point, EditState, HslAdjustment } from "@/types/editor";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
 

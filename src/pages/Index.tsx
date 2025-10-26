@@ -170,7 +170,7 @@ const Index = () => {
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
-    toggleLayerVisibility,
+    toggleLayerVisibility: toggleLayerVisibilityFn, // Renamed to avoid conflict with prop name
     renameLayer,
     deleteLayer,
     handleDeleteHiddenLayers, // NEW
@@ -212,7 +212,7 @@ const Index = () => {
     applyMaskToSelectionPath,
     convertSelectionPathToMask,
     handleSelectiveBlurStroke,
-    selectiveBlurStrength,
+    selectiveBlurStrength: selectiveBlurStrengthState, // Renamed to avoid conflict with prop name
     handleSelectiveBlurStrengthChange,
     handleSelectiveBlurStrengthCommit,
     selectedShapeType,
@@ -426,7 +426,7 @@ const Index = () => {
     onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
     onArrangeLayer: handleArrangeLayer, // FIX 6
     onReorder: reorderLayers,
-    toggleLayerVisibility, // FIX 11
+    toggleLayerVisibility: toggleLayerVisibilityFn, // FIX Error 106: Use the function from editorState
     renameLayer, // FIX 11
     deleteLayer, // FIX 11
     // selection
@@ -463,7 +463,7 @@ const Index = () => {
     foregroundColor,
     setForegroundColor: handleForegroundColorChange,
     // Selective Blur Props
-    selectiveBlurStrength,
+    selectiveBlurStrength: selectiveBlurStrengthState, // FIX Error 107: Use the state variable
     onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange,
     onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit,
     // Layer Masking
@@ -524,8 +524,8 @@ const Index = () => {
         onTogglePreview={setIsPreviewingOriginal}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
+        canUndo={canUndo()} // FIX Error 108: Call the function
+        canRedo={canRedo()} // FIX Error 109: Call the function
         setOpenSettings={setOpenSettings}
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}

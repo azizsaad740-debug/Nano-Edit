@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { EditState } from './useEditorState';
+import type { EditState } from '@/types/editor';
 import { showSuccess } from '@/utils/toast';
 
 export interface Preset {

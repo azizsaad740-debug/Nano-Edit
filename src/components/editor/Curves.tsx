@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import type { Point, EditState } from '@/hooks/useEditorState';
+import type { Point, EditState } from '@/types/editor';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { Slider } from "@/components/ui/slider";
@@ -202,7 +202,7 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
 
   return (
     <div className="space-y-4">
-      <Tabs value={activeChannel} onValueChange={(v) => setActiveChannel(v as Channel)} className="w-full">
+      <Tabs value={activeChannel as string} onValueChange={(v) => setActiveChannel(v as Channel)} className="w-full">
         <div className="flex items-center justify-between">
           <TabsList className="grid grid-cols-4 w-48 h-8">
             <TabsTrigger value="all" className="h-6 text-xs">RGB</TabsTrigger>
@@ -215,7 +215,7 @@ const Curves = ({ curves, onChange, onCommit, imgRef }: CurvesProps) => {
             <span className="sr-only">Reset Curve</span>
           </Button>
         </div>
-        <TabsContent value={activeChannel}>
+        <TabsContent value={activeChannel as string}>
           <svg 
             ref={svgRef} 
             viewBox={`0 0 ${SIZE} ${SIZE}`} 

@@ -8,7 +8,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, LockOpen, Square, Move, Crop, Brush, Pencil, Search, Type } from "lucide-react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { cn } from "@/lib/utils";
 
 interface LayerControlsProps {

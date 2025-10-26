@@ -1,4 +1,4 @@
-import type { EditState, HslAdjustment } from '@/hooks/useEditorState';
+import type { EditState, HslAdjustment } from '@/types/editor';
 
 type FilterState = Pick<EditState, 'adjustments' | 'effects' | 'grading' | 'selectedFilter' | 'hslAdjustments'>;
 

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import type { EditState } from "@/hooks/useEditorState";
+import type { EditState } from "@/types/editor";
 
 interface ChannelsPanelProps {
   channels: EditState['channels'];

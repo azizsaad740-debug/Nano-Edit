@@ -1,5 +1,5 @@
 import { showSuccess, showError } from "@/utils/toast";
-import type { HistoryItem } from "@/hooks/useEditorState";
+import type { HistoryItem } from "@/types/editor";
 
 export interface ProjectFile {
   version: string;
