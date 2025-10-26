@@ -338,6 +338,15 @@ export const useEditorState = (
     setCurrentState(newState);
   }, [currentState, initialProject.layers, recordHistory]);
 
+  // --- Selection & Generative Fill ---
+  const setSelectionPath = useCallback((path: Point[] | null) => {
+    onProjectUpdate({ selectionPath: path, selectionMaskDataUrl: null });
+  }, [onProjectUpdate]);
+
+  const clearSelectionMask = useCallback(() => {
+    onProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
+  }, [onProjectUpdate]);
+
   // --- Layer Management Hook ---
   const {
     layers,
@@ -380,6 +389,7 @@ export const useEditorState = (
     invertLayerMask,
     toggleClippingMask,
     toggleLayerLock,
+    applySelectionAsMask, // This function is now defined in useLayers
     canUndo: canUndoLayers,
     canRedo: canRedoLayers,
   } = useLayers({
@@ -399,6 +409,9 @@ export const useEditorState = (
     foregroundColor,
     backgroundColor,
     selectedShapeType,
+    // NEW PROPS for selection state management
+    selectionMaskDataUrl: initialProject.selectionMaskDataUrl,
+    clearSelectionState: clearSelectionMask,
   });
 
   // --- History & Undo/Redo ---
@@ -1072,27 +1085,6 @@ export const useEditorState = (
     recordHistory("Generative Fill Applied", currentState, updatedLayers);
     showSuccess("Generative fill applied.");
   }, [dimensions, image, layers, currentState, onProjectUpdate, recordHistory]);
-
-  const applySelectionAsMask = useCallback(() => {
-    if (!selectedLayerId || !initialProject.selectionMaskDataUrl) {
-      showError("Select a layer and ensure a selection mask is active.");
-      return;
-    }
-    
-    const layer = layers.find(l => l.id === selectedLayerId);
-    if (!layer || layer.type === 'image') {
-      showError("Cannot apply mask to the background layer.");
-      return;
-    }
-
-    const updatedLayers = layers.map(l => 
-      l.id === selectedLayerId ? { ...l, maskDataUrl: initialProject.selectionMaskDataUrl } : l
-    );
-    
-    onProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
-    onLayerUpdate(updatedLayers, `Apply Selection as Mask to "${layer.name}"`);
-    showSuccess(`Selection applied as mask to layer "${layer.name}".`);
-  }, [selectedLayerId, layers, initialProject.selectionMaskDataUrl, onProjectUpdate, onLayerUpdate]);
 
   // Helper function to toggle tool or set it if currently null/different
   const toggleTool = useCallback((tool: ActiveTool) => {

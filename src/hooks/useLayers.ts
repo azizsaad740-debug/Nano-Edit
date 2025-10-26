@@ -64,6 +64,9 @@ export interface UseLayersProps {
   foregroundColor: string;
   backgroundColor: string;
   selectedShapeType: Layer['shapeType'] | null;
+  // NEW PROPS for selection state management
+  selectionMaskDataUrl: string | null;
+  clearSelectionState: () => void;
 }
 
 export const useLayers = ({
@@ -83,6 +86,8 @@ export const useLayers = ({
   foregroundColor,
   backgroundColor,
   selectedShapeType,
+  selectionMaskDataUrl, // NEW
+  clearSelectionState, // NEW
 }: UseLayersProps) => {
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);
@@ -1065,6 +1070,33 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, setSelectedLayerId]);
 
+  const applySelectionAsMask = useCallback(() => {
+    if (!selectedLayerId || !selectionMaskDataUrl) {
+      showError("Select a layer and ensure a selection mask is active.");
+      return;
+    }
+    
+    const layer = layers.find(l => l.id === selectedLayerId);
+    if (!layer || layer.type === 'image') {
+      showError("Cannot apply mask to the background layer.");
+      return;
+    }
+    
+    // NEW CHECK: Prevent masking adjustment layers due to rendering complexity
+    if (layer.type === 'adjustment') {
+      showError("Cannot apply mask to Adjustment Layers.");
+      return;
+    }
+
+    const updatedLayers = layers.map(l => 
+      l.id === selectedLayerId ? { ...l, maskDataUrl: selectionMaskDataUrl } : l
+    );
+    
+    clearSelectionState();
+    updateLayersState(updatedLayers, `Apply Selection as Mask to "${layer.name}"`);
+    showSuccess(`Selection applied as mask to layer "${layer.name}".`);
+  }, [selectedLayerId, layers, selectionMaskDataUrl, clearSelectionState, updateLayersState]);
+
   // Layer creation functions exposed by useLayers
   const addTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
     const newLayer: Layer = {
@@ -1255,7 +1287,7 @@ export const useLayers = ({
     addAdjustmentLayer,
     handleDeleteLayer: deleteLayer,
     handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
-    handleDuplicateLayer: duplicateLayer, // UPDATED to accept ID
+    handleDuplicateLayer: duplicateLayer,
     handleMergeLayerDown: mergeLayerDown,
     handleRasterizeLayer: rasterizeLayer,
     handleRasterizeSmartObject: rasterizeSmartObject, // NEW
@@ -1266,6 +1298,7 @@ export const useLayers = ({
     // State/History helpers
     handleToggleVisibility: toggleLayerVisibility,
     handleDrawingStrokeEnd,
+    applySelectionAsMask, // Expose new function
     canUndo: currentHistoryIndex > 0,
     canRedo: currentHistoryIndex < history.length - 1,
   };

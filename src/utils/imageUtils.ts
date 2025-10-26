@@ -49,6 +49,24 @@ const getAdjustmentFilterString = (layer: Layer): string => {
   return filters.filter(Boolean).join(' ');
 };
 
+/**
+ * Calculates the combined filter string from all adjustment layers above the given index.
+ */
+const getAdjustmentFiltersAbove = (layers: Layer[], index: number): string => {
+    let filters: string[] = [];
+    // Iterate over layers above the current index (i+1 to N)
+    for (let j = index + 1; j < layers.length; j++) {
+        const layer = layers[j];
+        if (layer.type === 'adjustment' && layer.visible) {
+            const adjustmentFilter = getAdjustmentFilterString(layer);
+            if (adjustmentFilter) {
+                filters.push(adjustmentFilter);
+            }
+        }
+    }
+    return filters.join(' ');
+};
+
 
 const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasElement | null> => {
   const {
@@ -58,7 +76,7 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     transforms,
     frame,
     colorMode,
-    selectiveBlurMask, // Keep global selective blur mask for now
+    selectiveBlurMask,
     selectiveBlurAmount,
   } = options;
   const canvas = document.createElement('canvas');
@@ -112,46 +130,42 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   
   ctx.filter = colorModeFilter; // Start with color mode filter
 
-  // We need to track the current filter stack (filters applied by adjustment layers above the current layer)
-  let filterStack: string[] = [];
-  let previousLayerCanvas: HTMLCanvasElement | null = null;
+  // We need to store the rasterized content of the layer immediately below the current one
+  // for clipping mask purposes.
+  let baseLayerCanvas: HTMLCanvasElement | null = null; 
 
-  // Draw layers in reverse order (bottom layer in array is drawn first)
-  const reversedLayers = layers.slice().reverse();
-  
-  // --- Rasterization Loop ---
-  for (let i = 0; i < reversedLayers.length; i++) {
-    const layer = reversedLayers[i];
+  // --- Rasterization Loop (Bottom-Up) ---
+  // Iterate from bottom layer (index 0) to top layer (index N-1)
+  for (let i = 0; i < layers.length; i++) {
+    const layer = layers[i];
     
-    // 1. Handle Adjustment Layers
-    if (layer.type === 'adjustment' && layer.visible) {
-      const adjustmentFilter = getAdjustmentFilterString(layer);
-      if (adjustmentFilter) {
-        filterStack.push(adjustmentFilter);
-      }
-      previousLayerCanvas = null; // Adjustment layers don't produce a canvas to be clipped by
+    // 1. Handle Adjustment Layers: Skip drawing them, their effect is applied to layers below them (already drawn)
+    // or layers above them (applied during rasterization of content layers).
+    if (layer.type === 'adjustment') {
+      // Adjustment layers do not produce a canvas to be clipped by or drawn directly.
+      baseLayerCanvas = null;
       continue;
     }
 
     // Skip layers that are not visible
     if (!layer.visible) {
-        previousLayerCanvas = null;
+        baseLayerCanvas = null;
         continue;
     }
 
     // 2. Determine the filter to apply to this layer
-    const currentLayerFilter = filterStack.join(' ');
-    filterStack = []; // Reset filter stack after applying it to the layer below
+    // Apply global filters (if no adjustment layers) + adjustment filters from layers ABOVE this one.
+    const adjustmentFiltersAbove = getAdjustmentFiltersAbove(layers, i);
+    const currentLayerFilter = globalFilter + adjustmentFiltersAbove;
 
     let layerCanvas: HTMLCanvasElement | null = null;
     
     if (layer.type === 'image') {
         // Handle the main background image layer
         
-        // Apply global filters (if no adjustment layers) + current adjustment stack
-        ctx.filter = globalFilter + currentLayerFilter + colorModeFilter;
-        
         ctx.save();
+        ctx.filter = currentLayerFilter + colorModeFilter;
+        
         ctx.translate(canvas.width / 2, canvas.height / 2);
         ctx.rotate(transforms.rotation * Math.PI / 180);
         ctx.scale(transforms.scaleX, transforms.scaleY);
@@ -174,14 +188,14 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
         bgCanvas.width = canvas.width;
         bgCanvas.height = canvas.height;
         bgCanvas.getContext('2d')?.drawImage(canvas, 0, 0);
-        previousLayerCanvas = bgCanvas;
+        baseLayerCanvas = bgCanvas;
         continue;
     }
 
     // 3. Rasterize the current layer (text, drawing, smart-object, etc.)
     layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
     if (!layerCanvas) {
-        previousLayerCanvas = null;
+        baseLayerCanvas = null;
         continue;
     }
 
@@ -199,32 +213,38 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
     }
 
     // 5. Check for Clipping Mask
-    const clippedLayer = reversedLayers[i - 1];
+    // Layer A (layerCanvas) is the layer being drawn.
+    // Layer B (baseLayerCanvas) is the layer below it.
     
-    if (clippedLayer && clippedLayer.isClippingMask) {
-        // The layer we are currently drawing (layerCanvas) is the base layer (Layer B)
-        // The layer that is clipping (clippedLayer) is Layer A
+    const isClipped = layer.isClippingMask;
+    
+    if (isClipped) {
+        // Layer A is clipped by Layer B
         
-        const clippingLayerCanvas = previousLayerCanvas; // This is the rasterized Layer A
-        
-        if (clippingLayerCanvas) {
+        if (baseLayerCanvas) {
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = canvas.width;
             tempCanvas.height = canvas.height;
             const tempCtx = tempCanvas.getContext('2d');
             if (tempCtx) {
-                // 1. Draw the base layer (Layer B)
+                // 1. Draw the clipping layer (Layer A)
                 tempCtx.drawImage(layerCanvas, 0, 0);
                 
-                // 2. Use the clipping layer (Layer A) as the clipping shape (destination-in)
+                // 2. Use the base layer (Layer B) as the clipping shape (destination-in)
+                // Note: We use the content of Layer B (baseLayerCanvas) as the mask.
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(clippingLayerCanvas, 0, 0);
+                tempCtx.drawImage(baseLayerCanvas, 0, 0);
                 
                 // 3. Draw the result onto the main canvas
                 ctx.globalAlpha = (layer.opacity ?? 100) / 100;
                 ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
                 ctx.drawImage(tempCanvas, 0, 0);
             }
+        } else {
+            // If there is no base layer canvas (e.g., layer below was invisible or adjustment), draw normally
+            ctx.globalAlpha = (layer.opacity ?? 100) / 100;
+            ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+            ctx.drawImage(layerCanvas, 0, 0);
         }
         
     } else {
@@ -234,8 +254,8 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
         ctx.drawImage(layerCanvas, 0, 0);
     }
     
-    // 7. Update previousLayerCanvas for the next iteration
-    previousLayerCanvas = layerCanvas;
+    // 7. Update baseLayerCanvas for the next iteration (Layer A becomes Layer B for the layer above it)
+    baseLayerCanvas = layerCanvas;
   }
   
   ctx.globalAlpha = 1.0; // Reset global alpha
