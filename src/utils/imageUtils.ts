@@ -11,6 +11,20 @@ interface ImageOptions extends EditState {
 }
 
 /**
+ * Applies SVG-based curves adjustment to a canvas using feComponentTransfer.
+ * NOTE: This is a simplified stub that only applies the effect without full SVG rendering.
+ * A full implementation would require generating the SVG filter string and applying it.
+ */
+const applyCurvesToCanvas = (ctx: CanvasRenderingContext2D, curves: EditState['curves']) => {
+    // Since we cannot easily apply SVG filters to a canvas context, 
+    // we will skip the complex curves application for now during rasterization, 
+    // as it requires a full SVG rendering pipeline or complex WebGL/WASM.
+    // This is a known limitation in standard Canvas API.
+    // For now, we rely on the CSS filter application for simple adjustments.
+    console.warn("Curves adjustment layers are not fully supported in canvas rasterization.");
+};
+
+/**
  * Calculates the CSS filter string for a single adjustment layer.
  * This is a simplified version of getFilterString, only using the adjustment layer's data.
  */
@@ -130,6 +144,13 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
   
   ctx.filter = colorModeFilter; // Start with color mode filter
 
+  // We need a temporary canvas to hold the accumulated result of layers below the current one.
+  const accumulatedCanvas = document.createElement('canvas');
+  accumulatedCanvas.width = canvas.width;
+  accumulatedCanvas.height = canvas.height;
+  const accCtx = accumulatedCanvas.getContext('2d');
+  if (!accCtx) return null;
+  
   // We need to store the rasterized content of the layer immediately below the current one
   // for clipping mask purposes.
   let baseLayerCanvas: HTMLCanvasElement | null = null; 
@@ -139,9 +160,90 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i];
     
-    // 1. Handle Adjustment Layers: Skip drawing them, their effect is applied to layers below them (already drawn)
-    // or layers above them (applied during rasterization of content layers).
+    // 1. Handle Adjustment Layers
     if (layer.type === 'adjustment') {
+      if (!layer.visible || !layer.adjustmentData) {
+        baseLayerCanvas = null;
+        continue;
+      }
+      
+      // Apply adjustment effect to the accumulated canvas (accCtx)
+      accCtx.save();
+      
+      // Apply mask if present
+      if (layer.maskDataUrl) {
+        const maskImg = new Image();
+        await new Promise((res, rej) => {
+          maskImg.onload = res;
+          maskImg.onerror = rej;
+          maskImg.src = layer.maskDataUrl!;
+        });
+        
+        // Use the mask to clip the adjustment effect area
+        // 1. Create a temporary canvas with the mask applied to the accumulated content
+        const maskedAccCanvas = document.createElement('canvas');
+        maskedAccCanvas.width = canvas.width;
+        maskedAccCanvas.height = canvas.height;
+        const maskedAccCtx = maskedAccCanvas.getContext('2d');
+        if (!maskedAccCtx) {
+            accCtx.restore();
+            baseLayerCanvas = null;
+            continue;
+        }
+        
+        // Draw accumulated content
+        maskedAccCtx.drawImage(accumulatedCanvas, 0, 0);
+        
+        // Clip by mask
+        maskedAccCtx.globalCompositeOperation = 'destination-in';
+        maskedAccCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
+        
+        // 2. Apply the adjustment filter to the masked content
+        const adjustmentFilter = getAdjustmentFilterString(layer);
+        if (adjustmentFilter) {
+            maskedAccCtx.filter = adjustmentFilter;
+            maskedAccCtx.globalCompositeOperation = 'source-over';
+            maskedAccCtx.drawImage(maskedAccCanvas, 0, 0); // Redraw onto itself with filter
+            maskedAccCtx.filter = 'none';
+        }
+        
+        // Handle Curves/HSL (SVG filters) - Currently stubbed/warned
+        if (layer.adjustmentData.type === 'curves' && layer.adjustmentData.curves) {
+            applyCurvesToCanvas(maskedAccCtx, layer.adjustmentData.curves);
+        }
+        
+        // 3. Draw the adjusted, masked content back onto the main accumulated canvas
+        // We need to draw the adjusted part (maskedAccCanvas) over the original accumulated content (accumulatedCanvas)
+        // only where the mask was applied.
+        
+        // Draw the original accumulated content first
+        accCtx.globalCompositeOperation = 'source-over';
+        accCtx.drawImage(accumulatedCanvas, 0, 0);
+        
+        // Draw the adjusted, masked content over it
+        accCtx.drawImage(maskedAccCanvas, 0, 0);
+        
+      } else {
+        // No mask: Apply adjustment globally to the accumulated canvas
+        
+        // Apply CSS filters (Brightness, Contrast, Saturation, Grading, HSL global)
+        const adjustmentFilter = getAdjustmentFilterString(layer);
+        if (adjustmentFilter) {
+          accCtx.filter = adjustmentFilter;
+          // Redraw the accumulated content onto itself with the filter applied
+          accCtx.globalCompositeOperation = 'source-over';
+          accCtx.drawImage(accumulatedCanvas, 0, 0);
+          accCtx.filter = 'none'; // Reset filter
+        }
+        
+        // Handle Curves/HSL (SVG filters) - Currently stubbed/warned
+        if (layer.adjustmentData.type === 'curves' && layer.adjustmentData.curves) {
+            applyCurvesToCanvas(accCtx, layer.adjustmentData.curves);
+        }
+      }
+      
+      accCtx.restore();
+      
       // Adjustment layers do not produce a canvas to be clipped by or drawn directly.
       baseLayerCanvas = null;
       continue;
@@ -183,6 +285,9 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
         ctx.restore();
         ctx.filter = colorModeFilter; // Reset filter for subsequent layers
         
+        // Draw to accumulated canvas
+        accCtx.drawImage(canvas, 0, 0);
+        
         // Create a canvas of the drawn background for clipping mask reference
         const bgCanvas = document.createElement('canvas');
         bgCanvas.width = canvas.width;
@@ -213,13 +318,10 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
     }
 
     // 5. Check for Clipping Mask
-    // Layer A (layerCanvas) is the layer being drawn.
-    // Layer B (baseLayerCanvas) is the layer below it.
-    
     const isClipped = layer.isClippingMask;
     
     if (isClipped) {
-        // Layer A is clipped by Layer B
+        // Layer A (layerCanvas) is clipped by Layer B (baseLayerCanvas)
         
         if (baseLayerCanvas) {
             const tempCanvas = document.createElement('canvas');
@@ -231,41 +333,37 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
                 tempCtx.drawImage(layerCanvas, 0, 0);
                 
                 // 2. Use the base layer (Layer B) as the clipping shape (destination-in)
-                // Note: We use the content of Layer B (baseLayerCanvas) as the mask.
                 tempCtx.globalCompositeOperation = 'destination-in';
                 tempCtx.drawImage(baseLayerCanvas, 0, 0);
                 
-                // 3. Draw the result onto the main canvas
-                ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-                ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
-                ctx.drawImage(tempCanvas, 0, 0);
+                // 3. Draw the result onto the accumulated canvas
+                accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
+                accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+                accCtx.drawImage(tempCanvas, 0, 0);
             }
         } else {
-            // If there is no base layer canvas (e.g., layer below was invisible or adjustment), draw normally
-            ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-            ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
-            ctx.drawImage(layerCanvas, 0, 0);
+            // If there is no base layer canvas, draw normally to accumulated canvas
+            accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
+            accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+            accCtx.drawImage(layerCanvas, 0, 0);
         }
         
     } else {
-        // 6. Normal drawing
-        ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-        ctx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
-        ctx.drawImage(layerCanvas, 0, 0);
+        // 6. Normal drawing to accumulated canvas
+        accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
+        accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
+        accCtx.drawImage(layerCanvas, 0, 0);
     }
     
     // 7. Update baseLayerCanvas for the next iteration (Layer A becomes Layer B for the layer above it)
     baseLayerCanvas = layerCanvas;
   }
   
-  ctx.globalAlpha = 1.0; // Reset global alpha
-  ctx.globalCompositeOperation = 'source-over'; // Reset composite operation
+  // Final step: Draw the accumulated canvas onto the main canvas
+  ctx.globalAlpha = 1.0;
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(accumulatedCanvas, 0, 0);
 
-  // Apply global effects (Vignette, Noise, Sharpen, Clarity)
-  // Note: Selective Blur requires SVG filters, which cannot be applied to the context
-  // after drawing. For now, we rely on the Workspace component to apply the SVG filter
-  // to the main image element, and we skip it here for rasterization.
-  
   // Apply Vignette (Canvas API)
   if (options.effects.vignette > 0) {
     const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
@@ -298,14 +396,6 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
   return canvas;
 };
 
-/**
- * Rasterizes the fully edited image (including all layers and effects) 
- * and clips it using the provided selection mask.
- *
- * @param options ImageOptions including layers and edit state.
- * @param selectionMaskDataUrl The data URL of the selection mask.
- * @returns A Promise resolving to a data URL of the clipped image.
- */
 export const rasterizeEditedImageWithMask = async (
   options: ImageOptions,
   selectionMaskDataUrl: string

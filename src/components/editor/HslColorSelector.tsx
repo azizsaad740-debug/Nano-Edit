@@ -1,4 +1,3 @@
-import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { EditState, HslColorKey } from "@/types/editor";
 import { Globe } from "lucide-react";
