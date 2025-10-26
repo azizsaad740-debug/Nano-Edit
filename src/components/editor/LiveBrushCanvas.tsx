@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { type BrushState, type Layer } from "@/hooks/useEditorState";
+import { type BrushState, type Layer } from "@/types/editor";
 
 interface LiveBrushCanvasProps {
   brushState: BrushState;

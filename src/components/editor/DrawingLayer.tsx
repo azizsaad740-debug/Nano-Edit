@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 
 interface DrawingLayerProps {
   layer: Layer;

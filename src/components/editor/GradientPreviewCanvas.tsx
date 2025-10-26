@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Point, GradientToolState } from "@/hooks/useEditorState";
+import type { Point, GradientToolState } from "@/types/editor";
 
 interface GradientPreviewCanvasProps {
   start: Point;

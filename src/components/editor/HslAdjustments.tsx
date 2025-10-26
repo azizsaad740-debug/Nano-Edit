@@ -2,12 +2,10 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
-import type { EditState, HslAdjustment } from "@/hooks/useEditorState";
+import type { EditState, HslAdjustment, HslColorKey } from "@/types/editor";
 import { HslColorSelector } from "./HslColorSelector";
 import React from "react";
 import { cn } from "@/lib/utils";
-
-type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface HslAdjustmentsProps {
   hslAdjustments: EditState['hslAdjustments'];

@@ -16,7 +16,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { SmartLayerItem } from "./SmartLayerItem";
 import { LayerControls } from "./LayerControls";
 

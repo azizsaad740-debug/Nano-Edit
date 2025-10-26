@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { showLoading, showSuccess, showError, dismissToast } from "@/utils/toast";
 import { generativeFillApi } from "@/utils/aiImageGenerator"; // Import the simulated API
+import type { Point } from "@/types/editor";
 
 interface GenerativeDialogProps {
   open: boolean;
@@ -23,11 +24,6 @@ interface GenerativeDialogProps {
   selectionPath: Point[] | null;
   selectionMaskDataUrl: string | null; // New prop
   imageNaturalDimensions: { width: number; height: number } | null; // New prop
-}
-
-interface Point { // Define Point interface here or import from a common type file
-  x: number;
-  y: number;
 }
 
 export const GenerativeDialog = ({

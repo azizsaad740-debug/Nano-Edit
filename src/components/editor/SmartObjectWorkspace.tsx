@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
-import type { Layer, ActiveTool } from "@/hooks/useEditorState"; // Import ActiveTool
+import { useRef, useState, useCallback, useEffect } from "react";
+import type { Layer, ActiveTool } from "@/types/editor";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { cn } from "@/lib/utils";

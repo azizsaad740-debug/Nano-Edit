@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Point, EditState } from "@/hooks/useEditorState";
+import type { Point, EditState } from "@/types/editor";
 
 interface CurvesFilterProps {
   curves: EditState['curves'];

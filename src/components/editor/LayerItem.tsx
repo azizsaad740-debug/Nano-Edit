@@ -7,7 +7,7 @@ import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 
 interface LayerItemProps {
   layer: Layer;

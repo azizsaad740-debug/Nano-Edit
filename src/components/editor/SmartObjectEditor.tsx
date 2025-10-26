@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { X, Undo2, Redo2, Save } from "lucide-react";
-import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { PropertiesPanel } from "@/components/layout/PropertiesPanel";

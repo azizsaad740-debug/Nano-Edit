@@ -6,6 +6,7 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Circle, Square } from "lucide-react"; // Import icons for shapes
+import type { BrushState } from "@/types/editor";
 
 interface BrushOptionsProps {
   brushSize: number;

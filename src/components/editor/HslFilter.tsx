@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { EditState, HslAdjustment, HslColorKey } from "@/hooks/useEditorState";
+import type { EditState, HslAdjustment, HslColorKey } from "@/types/editor";
 
 interface HslFilterProps {
   hslAdjustments: EditState['hslAdjustments'];

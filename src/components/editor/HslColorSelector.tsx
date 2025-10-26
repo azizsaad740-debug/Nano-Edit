@@ -1,10 +1,8 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { EditState } from "@/hooks/useEditorState";
+import type { EditState, HslColorKey } from "@/types/editor";
 import { Globe } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-
-type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface HslColorSelectorProps {
   selectedColor: HslColorKey;

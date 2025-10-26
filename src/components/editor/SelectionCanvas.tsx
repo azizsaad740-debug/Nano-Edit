@@ -1,11 +1,7 @@
 "use client";
 
 import * as React from "react";
-
-interface Point {
-  x: number;
-  y: number;
-}
+import type { Point } from "@/types/editor";
 
 interface SelectionCanvasProps {
   imageRef: React.RefObject<HTMLImageElement>;
