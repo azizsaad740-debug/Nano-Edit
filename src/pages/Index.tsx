@@ -332,12 +332,12 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const file = items[i].getAsFile();
-          if (file) {
+          const imageFile = items[i].getAsFile(); // Renamed variable
+          if (imageFile) { // Use renamed variable
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
             setActiveProjectId(newProject.id);
-            handleFileSelect(file, false);
+            handleFileSelect(imageFile, false); // Use renamed variable
             event.preventDefault();
             return;
           }
@@ -411,18 +411,18 @@ const Index = () => {
     layers,
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
-    onAddLayerFromBackground: handleAddLayerFromBackground, // NEW
+    onAddLayerFromBackground: handleAddLayerFromBackground, // FIX 7: Added missing prop
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
-    onAddAdjustmentLayer: addAdjustmentLayer,
-    onDuplicateLayer: duplicateLayer, // Now passes the function that accepts ID
+    onAddAdjustmentLayer: addAdjustmentLayer, // FIX 7: Added missing prop
+    onDuplicateLayer: duplicateLayer, // Now accepts ID
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
-    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // NEW
-    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // NEW
-    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // NEW
+    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // FIX 3
+    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // FIX 4
+    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // FIX 5
     onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
-    onArrangeLayer: handleArrangeLayer, // NEW
+    onArrangeLayer: handleArrangeLayer, // FIX 6
     onReorder: reorderLayers,
     toggleLayerVisibility, // FIX 11
     renameLayer, // FIX 11
@@ -759,6 +759,9 @@ const Index = () => {
           selectedShapeType={selectedShapeType}
           setSelectedShapeType={setSelectedShapeType}
           imgRef={imgRef}
+          systemFonts={systemFonts}
+          customFonts={customFonts}
+          onOpenFontManager={() => setOpenFontManager(true)}
         />
       )}
       <input

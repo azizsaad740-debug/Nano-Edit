@@ -29,7 +29,11 @@ interface SmartObjectEditorProps {
   onSwapColors: () => void;
   selectedShapeType: Layer['shapeType'] | null;
   setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
-  imgRef: React.RefObject<HTMLImageElement>; // NEW: Added imgRef prop
+  imgRef: React.RefObject<HTMLImageElement>;
+  // NEW FONT PROPS
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
 }
 
 export const SmartObjectEditor = ({ 
@@ -48,7 +52,10 @@ export const SmartObjectEditor = ({
   onSwapColors,
   selectedShapeType,
   setSelectedShapeType,
-  imgRef, // Destructure new prop
+  imgRef,
+  systemFonts, // Destructure new props
+  customFonts,
+  onOpenFontManager,
 }: SmartObjectEditorProps) => {
   const smartObjectDimensions = smartObject.smartObjectData || { width: 1000, height: 1000 };
 
@@ -106,9 +113,6 @@ export const SmartObjectEditor = ({
   const dummySelectiveBlurStrength = 50;
   const dummyOnSelectiveBlurStrengthChange = () => {};
   const dummyOnSelectiveBlurStrengthCommit = () => {};
-  const dummySystemFonts: string[] = []; // Dummy font props
-  const dummyCustomFonts: string[] = []; // Dummy font props
-  const dummyOnOpenFontManager = () => {}; // Dummy font props
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -196,10 +200,10 @@ export const SmartObjectEditor = ({
                     selectiveBlurStrength={dummySelectiveBlurStrength}
                     onSelectiveBlurStrengthChange={dummyOnSelectiveBlurStrengthChange}
                     onSelectiveBlurStrengthCommit={dummyOnSelectiveBlurStrengthCommit}
-                    systemFonts={dummySystemFonts} // Passed dummy prop
-                    customFonts={dummyCustomFonts} // Passed dummy prop
-                    onOpenFontManager={dummyOnOpenFontManager} // Passed dummy prop
-                    imgRef={imgRef} // FIX 25: Pass the main image ref
+                    systemFonts={systemFonts}
+                    customFonts={customFonts}
+                    onOpenFontManager={onOpenFontManager}
+                    imgRef={imgRef}
                   />
                 </div>
               </ResizablePanel>
