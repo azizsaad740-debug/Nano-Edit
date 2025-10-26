@@ -86,11 +86,13 @@ export const LiveBrushCanvas = ({
         ctx.globalAlpha = 1.0;
       }
     } else if (activeTool === 'eraser') {
+      // When generating the stroke image for the eraser, we draw an opaque stroke (source-over)
+      // The erasing composite operation (destination-out) is applied in useLayers.ts when merging.
       ctx.globalCompositeOperation = 'source-over'; 
       ctx.strokeStyle = 'rgba(0,0,0,1)'; 
       ctx.fillStyle = 'rgba(0,0,0,1)';
       ctx.shadowColor = 'rgba(0,0,0,1)';
-      ctx.globalAlpha = 1.0; 
+      ctx.globalAlpha = brushState.opacity / 100; // Use brush opacity for eraser transparency
     } else { // brush tool
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = foregroundColor; // Use foregroundColor directly
@@ -100,8 +102,23 @@ export const LiveBrushCanvas = ({
     }
   }, [brushState, activeTool, isSelectionBrush, isBlurBrush, foregroundColor]);
 
-  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>) => {
+  const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>, shape: 'circle' | 'square', size: number) => {
     if (points.length < 1) return;
+
+    if (points.length === 1) {
+      // Handle single point click/tap by drawing a filled shape
+      ctx.beginPath();
+      const p = points[0];
+      const radius = size / 2;
+      
+      if (shape === 'circle') {
+        ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+      } else {
+        ctx.fillRect(p.x - radius, p.y - radius, size, size);
+      }
+      return;
+    }
 
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
@@ -123,13 +140,13 @@ export const LiveBrushCanvas = ({
     } else {
       // For regular brush/eraser, draw live preview
       applyBrushSettings(ctx, 'add'); // Live preview always draws based on foreground/tool settings
-      drawPath(ctx, pathPointsRef.current);
+      drawPath(ctx, pathPointsRef.current, brushState.shape, brushState.size);
     }
 
     if (isDrawingRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
     }
-  }, [drawPath, isSelectionBrush, isBlurBrush, applyBrushSettings]);
+  }, [drawPath, isSelectionBrush, isBlurBrush, applyBrushSettings, brushState.shape, brushState.size]);
 
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
@@ -181,7 +198,7 @@ export const LiveBrushCanvas = ({
       const operation = currentOperationRef.current;
       
       applyBrushSettings(offscreenCtx, operation);
-      drawPath(offscreenCtx, pathPointsRef.current);
+      drawPath(offscreenCtx, pathPointsRef.current, brushState.shape, brushState.size);
 
       if (isSelectionBrush && onSelectionBrushStrokeEnd) {
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
@@ -198,7 +215,7 @@ export const LiveBrushCanvas = ({
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
     activeDrawingLayerIdRef.current = null; 
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, brushState.shape, brushState.size]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;

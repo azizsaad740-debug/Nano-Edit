@@ -59,7 +59,7 @@ interface SidebarProps {
   addShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
-  onDuplicateLayer: () => void;
+  onDuplicateLayer: (id: string) => void; // FIX: Updated signature
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
   onRasterizeSmartObject: () => void; // NEW prop

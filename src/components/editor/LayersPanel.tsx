@@ -58,7 +58,7 @@ interface LayersPanelProps {
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
-  onDuplicateLayer: (id: string) => void; // FIX: Updated signature to accept ID
+  onDuplicateLayer: (id: string) => void; // This is the function that accepts ID from Index.tsx
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
   onRasterizeSmartObject: () => void; // NEW prop
@@ -103,7 +103,7 @@ export const LayersPanel = ({
   onAddShapeLayer,
   onAddGradientLayer,
   onAddAdjustmentLayer,
-  onDuplicateLayer,
+  onDuplicateLayer: duplicateLayerById, // Rename prop to avoid conflict
   onMergeLayerDown,
   onRasterizeLayer,
   onRasterizeSmartObject, // Destructure NEW
@@ -377,7 +377,7 @@ export const LayersPanel = ({
               onAddShapeLayer={onAddShapeLayer}
               onAddGradientLayer={onAddGradientLayer}
               onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))}
-              onDuplicateLayer={() => selectedLayerIds.forEach(id => onDuplicateLayer(id))} // Apply to all selected
+              onDuplicateLayer={() => selectedLayerIds.forEach(id => duplicateLayerById(id))} // FIX: Call the renamed prop with ID
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
               onRasterizeSmartObject={onRasterizeSmartObject} // Pass NEW prop
