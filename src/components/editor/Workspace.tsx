@@ -523,10 +523,15 @@ const Workspace = (props: WorkspaceProps) => {
         }
 
         // For text, vector shapes, smart objects, and gradients, check if the click is within their transformed bounds
-        const layerX_px = (layer.x ?? 50) / 100 * imageNaturalDimensions.width;
-        const layerY_px = (layer.y ?? 50) / 100 * imageNaturalDimensions.height;
-        let layerWidth_px = (layer.width ?? 10) / 100 * imageNaturalDimensions.width;
-        let layerHeight_px = (layer.height ?? 10) / 100 * imageNaturalDimensions.height;
+        const layerX_percent = layer.x ?? 50;
+        const layerY_percent = layer.y ?? 50;
+        let layerWidth_percent = layer.width ?? 10;
+        let layerHeight_percent = layer.height ?? 10;
+
+        const layerX_px = (layerX_percent / 100) * imageNaturalDimensions.width;
+        const layerY_px = (layerY_percent / 100) * imageNaturalDimensions.height;
+        let layerWidth_px = (layerWidth_percent / 100) * imageNaturalDimensions.width;
+        let layerHeight_px = (layerHeight_percent / 100) * imageNaturalDimensions.height;
 
         if (layer.type === 'text') {
           const approxCharWidth = (layer.fontSize || 48) * 0.6; // Rough estimate
@@ -687,75 +692,61 @@ const Workspace = (props: WorkspaceProps) => {
   }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
-    // Render layers in reverse order (bottom layer in array is rendered first)
+    // Render layers in array order (bottom layer in array is rendered first in DOM)
     return layersToRender.map((layer) => {
       if (!layer.visible) return null;
+      
+      const layerProps = {
+        key: layer.id,
+        layer: layer,
+        containerRef: imageContainerRef,
+        onUpdate: onLayerUpdate,
+        onCommit: onLayerCommit,
+        isSelected: layer.id === selectedLayerId,
+        activeTool: activeTool,
+      };
 
       if (layer.type === 'text') {
-        return <TextLayer key={layer.id} layer={layer} containerRef={imageContainerRef} onUpdate={onLayerUpdate} onCommit={onLayerCommit} isSelected={layer.id === selectedLayerId} activeTool={activeTool} />;
+        return <TextLayer {...layerProps} />;
       }
-      if (layer.type === 'drawing') {
+      if (layer.type === 'drawing' && layer.dataUrl) {
         return <DrawingLayer key={layer.id} layer={layer} />;
       }
       if (layer.type === 'smart-object') {
         return (
           <SmartObjectLayer
-            key={layer.id}
-            layer={layer}
-            containerRef={imageContainerRef}
-            onUpdate={onLayerUpdate}
-            onCommit={onLayerCommit}
-            isSelected={layer.id === selectedLayerId}
+            {...layerProps}
             parentDimensions={imageNaturalDimensions}
-            activeTool={activeTool}
           />
         );
       }
       if (layer.type === 'vector-shape') {
         return (
           <VectorShapeLayer
-            key={layer.id}
-            layer={layer}
-            containerRef={imageContainerRef}
-            onUpdate={onLayerUpdate}
-            onCommit={onLayerCommit}
-            isSelected={layer.id === selectedLayerId}
-            activeTool={activeTool}
+            {...layerProps}
           />
         );
       }
       if (layer.type === 'gradient') {
         return (
           <GradientLayer
-            key={layer.id}
-            layer={layer}
-            containerRef={imageContainerRef}
-            onUpdate={onLayerUpdate}
-            onCommit={onLayerCommit}
-            isSelected={layer.id === selectedLayerId}
+            {...layerProps}
             imageNaturalDimensions={imageNaturalDimensions}
-            activeTool={activeTool}
           />
         );
       }
       if (layer.type === 'group') {
         return (
           <GroupLayer
-            key={layer.id}
-            layer={layer}
-            containerRef={imageContainerRef}
-            onUpdate={onLayerUpdate}
-            onCommit={onLayerCommit}
-            isSelected={layer.id === selectedLayerId}
+            {...layerProps}
             parentDimensions={imageNaturalDimensions}
-            activeTool={activeTool}
             renderChildren={renderWorkspaceLayers} // Pass recursive renderer
             globalSelectedLayerId={selectedLayerId} // Pass global selected ID
           />
         );
       }
       return null;
-    }).slice().reverse(); // Render layers in reverse order of the array (bottom layer in array is rendered first)
+    });
   };
 
   return (
@@ -845,7 +836,7 @@ const Workspace = (props: WorkspaceProps) => {
                           crossOrigin="anonymous"
                         />
                         
-                        {renderWorkspaceLayers(layers)} {/* Render layers first */}
+                        {renderWorkspaceLayers(layers)} {/* Render layers bottom-to-top */}
 
                         {activeTool === 'lasso' && ( // Render SelectionCanvas after layers
                           <SelectionCanvas 
