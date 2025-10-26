@@ -17,6 +17,8 @@ export interface Stroke {
   width: number;
 }
 
+export type HslColorKey = 'global' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
+
 export interface HslAdjustment {
   hue: number;
   saturation: number; // 0 to 200 (100 is neutral)
