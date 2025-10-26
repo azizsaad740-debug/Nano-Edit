@@ -92,19 +92,41 @@ const updateNestedContainer = (layers: Layer[], parentIds: string[], newContaine
 };
 
 /**
- * Recursively gets a mutable reference to a nested container.
+ * Recursively removes a layer from the nested structure.
  */
-const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
-  let currentContainer = tree;
-  for (const group of path) {
-    const foundGroup = currentContainer.find(l => l.id === group.id);
-    if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
-      currentContainer = foundGroup.children;
-    } else {
-      return [];
+const recursivelyRemoveLayer = (layers: Layer[], id: string): Layer[] => {
+  return layers.filter(layer => layer.id !== id).map(layer => {
+    if (layer.type === 'group' && layer.children) {
+      const newChildren = recursivelyRemoveLayer(layer.children, id);
+      if (newChildren.length !== layer.children.length) {
+        return { ...layer, children: newChildren };
+      }
     }
+    return layer;
+  });
+};
+
+/**
+ * Recursively inserts a layer into a specific container defined by its path.
+ */
+const recursivelyInsertLayer = (layers: Layer[], targetContainerPath: string[], layerToInsert: Layer, targetIndex: number): Layer[] => {
+  if (targetContainerPath.length === 0) {
+    // We are at the root container
+    const newContainer = [...layers];
+    newContainer.splice(targetIndex, 0, layerToInsert);
+    return newContainer;
   }
-  return currentContainer;
+
+  const targetGroupId = targetContainerPath[0];
+  return layers.map(layer => {
+    if (layer.id === targetGroupId && layer.type === 'group' && layer.children) {
+      return {
+        ...layer,
+        children: recursivelyInsertLayer(layer.children, targetContainerPath.slice(1), layerToInsert, targetIndex),
+      };
+    }
+    return layer;
+  });
 };
 
 
@@ -526,38 +548,29 @@ export const useLayers = ({
     } else {
       // 2. Cross-container move (or drop into/out of a group)
       
-      // Deep copy the entire structure to safely mutate
-      let newLayers = JSON.parse(JSON.stringify(layers)) as Layer[];
-
-      const mutableActiveContainer = getMutableContainer(newLayers, activeParentGroups);
+      // A. Remove the layer from its original location
+      const layersAfterRemoval = recursivelyRemoveLayer(layers, activeId);
       
-      // Remove the active layer from its original container
-      const currentActiveIndex = mutableActiveContainer.findIndex(l => l.id === activeId);
-      if (currentActiveIndex === -1) return;
-      const [movedLayer] = mutableActiveContainer.splice(currentActiveIndex, 1);
-
-      let targetContainer: Layer[];
+      // B. Determine target container path and index
+      let targetContainerPath: string[];
       let targetIndex: number;
 
-      // Determine target container and index
       if (overLayer.type === 'group' && overLayer.expanded && overLayer.children) {
         // Drop INTO an expanded group (insert at the top of its children)
-        targetContainer = getMutableContainer(newLayers, [...overParentGroups, overLayer]);
+        targetContainerPath = [...overParentGroups.map(g => g.id), overLayer.id];
         targetIndex = 0; 
       } else {
         // Drop NEXT TO a layer or collapsed group
-        targetContainer = getMutableContainer(newLayers, overParentGroups);
-        
-        // Find the index of the overId in the target container
-        const currentOverIndex = targetContainer.findIndex(l => l.id === overId);
-        targetIndex = currentOverIndex !== -1 ? currentOverIndex + 1 : targetContainer.length;
+        targetContainerPath = overParentGroups.map(g => g.id);
+        targetIndex = overIndex + 1;
       }
+      
+      // C. Insert the layer into the new location
+      const layersAfterInsertion = recursivelyInsertLayer(layersAfterRemoval, targetContainerPath, activeLayer, targetIndex);
 
-      targetContainer.splice(targetIndex, 0, movedLayer);
-
-      updateLayersState(newLayers, `Reorder Layer "${activeLayer.name}"`);
+      updateLayersState(layersAfterInsertion, `Move Layer "${activeLayer.name}"`);
     }
-  }, [layers, updateLayersState]);
+  }, [layers, updateLayersState, setLayers]);
 
   // --- Layer Creation ---
 
