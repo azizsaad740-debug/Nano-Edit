@@ -1188,7 +1188,10 @@ export const useLayers = ({
         height: 100,
         rotation: 0,
       };
-      const updated = [...layers, newLayer];
+      
+      // Insert immediately above the background layer (index 1)
+      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      
       updateLayersState(updated, "Layer from Background");
       setSelectedLayerId(newLayer.id);
       dismissToast(toastId);
@@ -1230,7 +1233,9 @@ export const useLayers = ({
         rotation: 0,
       };
       
-      const updated = [...layers, newLayer];
+      // Insert immediately above the background layer (index 1)
+      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      
       clearSelectionState();
       updateLayersState(updated, "Layer via Copy");
       setSelectedLayerId(newLayer.id);
