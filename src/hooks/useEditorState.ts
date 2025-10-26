@@ -514,7 +514,6 @@ export const useEditorState = (
         try {
           const buffer = new Uint8Array(dataUrl.split(',')[1].length);
           // Stub: In a real app, you'd parse the PSD buffer here.
-          // For now, we just acknowledge the file and load the base image.
           
           // Fallback to loading the base image data URL
           loadImageData(dataUrl, file.name, file.size, isImport);
@@ -873,14 +872,6 @@ export const useEditorState = (
   }, []);
 
   // --- Selection & Generative Fill ---
-  const setSelectionPath = useCallback((path: Point[] | null) => {
-    onProjectUpdate({ selectionPath: path, selectionMaskDataUrl: null });
-  }, [onProjectUpdate]);
-
-  const clearSelectionMask = useCallback(() => {
-    onProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
-  }, [onProjectUpdate]);
-
   const applyMaskToSelectionPath = useCallback(() => {
     if (!initialProject.selectionMaskDataUrl) {
       showError("No mask data available to apply.");
