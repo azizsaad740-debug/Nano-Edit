@@ -9,6 +9,7 @@ import type { Layer, EditState, Point, GradientToolState, ActiveTool, Adjustment
 import { initialCurvesState, initialHslAdjustment } from "./useEditorState";
 import { invertMaskDataUrl } from "@/utils/maskUtils";
 import { saveProjectToFile } from "@/utils/projectUtils"; // Import saveProjectToFile
+import { rasterizeEditedImageWithMask } from "@/utils/imageUtils"; // NEW import
 
 // Helper utility functions for nested layer manipulation
 const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
@@ -1198,6 +1199,50 @@ export const useLayers = ({
     }
   }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
 
+  const handleLayerFromSelection = useCallback(async () => {
+    if (!selectionMaskDataUrl || !imgRef.current || !imageNaturalDimensions) {
+      showError("An active selection is required to create a layer from selection.");
+      return;
+    }
+
+    const toastId = showLoading("Creating layer from selection...");
+    try {
+      const options = {
+        image: imgRef.current,
+        layers: layers,
+        ...currentEditState,
+      };
+      
+      const dataUrl = await rasterizeEditedImageWithMask(options, selectionMaskDataUrl);
+
+      const newLayer: Layer = {
+        id: uuidv4(),
+        type: "drawing",
+        name: `Layer via Copy ${layers.filter((l) => l.type === "drawing").length + 1}`,
+        visible: true,
+        opacity: 100,
+        blendMode: 'normal',
+        dataUrl: dataUrl,
+        x: 50,
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+      };
+      
+      const updated = [...layers, newLayer];
+      clearSelectionState();
+      updateLayersState(updated, "Layer via Copy");
+      setSelectedLayerId(newLayer.id);
+      dismissToast(toastId);
+      showSuccess("Layer created from selection.");
+    } catch (error) {
+      console.error("Failed to create layer from selection:", error);
+      dismissToast(toastId);
+      showError("Failed to create layer from selection.");
+    }
+  }, [selectionMaskDataUrl, imgRef, imageNaturalDimensions, layers, currentEditState, clearSelectionState, updateLayersState, setSelectedLayerId]);
+
   const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
     const newLayer: Layer = {
       id: uuidv4(),
@@ -1282,6 +1327,7 @@ export const useLayers = ({
     handleAddTextLayer: addTextLayer,
     handleAddDrawingLayer: addDrawingLayer,
     handleAddLayerFromBackground: addLayerFromBackground, // NEW
+    handleLayerFromSelection, // NEW
     handleAddShapeLayer: addShapeLayer,
     handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,

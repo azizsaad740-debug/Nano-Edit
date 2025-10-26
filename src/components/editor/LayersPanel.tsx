@@ -34,7 +34,7 @@ import { LayerControls } from "./LayerControls";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { BrushOptions } from "../editor/BrushOptions";
 import { arrayMove } from "@dnd-kit/sortable";
-import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers, Image as ImageIcon, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, SlidersHorizontal, Palette, Zap, Sun, ChevronDown, Layers, Image as ImageIcon, ArrowUp, ArrowDown, SquareStack } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { showError } from "@/utils/toast";
 import {
@@ -55,6 +55,7 @@ interface LayersPanelProps {
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => string;
   onAddLayerFromBackground: () => void; // NEW prop
+  onLayerFromSelection: () => void; // NEW prop
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
@@ -100,6 +101,7 @@ export const LayersPanel = ({
   onAddTextLayer,
   onAddDrawingLayer,
   onAddLayerFromBackground, // Destructure NEW
+  onLayerFromSelection, // Destructure NEW
   onAddShapeLayer,
   onAddGradientLayer,
   onAddAdjustmentLayer,
@@ -332,9 +334,13 @@ export const LayersPanel = ({
                     <Layers className="h-4 w-4 mr-2" />
                     Empty Layer
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onAddLayerFromBackground}> {/* NEW action */}
+                  <DropdownMenuItem onClick={onAddLayerFromBackground}>
                     <ImageIcon className="h-4 w-4 mr-2" />
                     Layer from Background
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={onLayerFromSelection} disabled={!hasActiveSelection}>
+                    <SquareStack className="h-4 w-4 mr-2" />
+                    Layer from Selection
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={onAddTextLayer}>
                     <Layers className="h-4 w-4 mr-2" />
@@ -380,18 +386,18 @@ export const LayersPanel = ({
               onDuplicateLayer={() => selectedLayerIds.forEach(id => duplicateLayerById(id))} // FIX: Call the renamed prop with ID
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
-              onRasterizeSmartObject={onRasterizeSmartObject} // Pass NEW prop
-              onConvertSmartObjectToLayers={onConvertSmartObjectToLayers} // Pass NEW prop
-              onExportSmartObjectContents={onExportSmartObjectContents} // Pass NEW prop
-              onDeleteHiddenLayers={onDeleteHiddenLayers} // Pass NEW prop
-              onArrangeLayer={onArrangeLayer} // Pass NEW prop
+              onRasterizeSmartObject={onRasterizeSmartObject}
+              onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
+              onExportSmartObjectContents={onExportSmartObjectContents}
+              onDeleteHiddenLayers={onDeleteHiddenLayers}
+              onArrangeLayer={onArrangeLayer}
               onCreateSmartObject={onCreateSmartObject}
               onOpenSmartObject={onOpenSmartObject}
               selectedShapeType={selectedShapeType}
               groupLayers={() => groupLayers(selectedLayerIds)}
               hasActiveSelection={hasActiveSelection}
               onApplySelectionAsMask={onApplySelectionAsMask}
-              onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
+              onInvertLayerMask={onInvertLayerMask}
               onToggleClippingMask={onToggleClippingMask}
             />
           </TabsContent>

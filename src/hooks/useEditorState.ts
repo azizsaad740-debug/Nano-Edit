@@ -355,6 +355,7 @@ export const useEditorState = (
     handleAddTextLayer: addTextLayer,
     handleAddDrawingLayer: addDrawingLayer,
     handleAddLayerFromBackground: addLayerFromBackground, // NEW
+    handleLayerFromSelection, // NEW
     handleAddShapeLayer: addShapeLayer,
     handleAddGradientLayer: addGradientLayer,
     addAdjustmentLayer,
@@ -1172,13 +1173,14 @@ export const useEditorState = (
     addTextLayer: (coords) => addTextLayer(coords, foregroundColor),
     addDrawingLayer,
     handleAddLayerFromBackground: addLayerFromBackground, // NEW
+    handleLayerFromSelection, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer,
     addAdjustmentLayer,
     toggleLayerVisibility,
     renameLayer,
     deleteLayer,
-    handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
+    handleDeleteHiddenLayers: deleteLayers, // NEW
     duplicateLayer, // UPDATED to accept ID
     mergeLayerDown,
     rasterizeLayer,

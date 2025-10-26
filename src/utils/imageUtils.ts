@@ -68,7 +68,7 @@ const getAdjustmentFiltersAbove = (layers: Layer[], index: number): string => {
 };
 
 
-const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasElement | null> => {
+export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasElement | null> => {
   const {
     image,
     layers,
@@ -298,6 +298,50 @@ const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLCanvasEl
   return canvas;
 };
 
+/**
+ * Rasterizes the fully edited image (including all layers and effects) 
+ * and clips it using the provided selection mask.
+ *
+ * @param options ImageOptions including layers and edit state.
+ * @param selectionMaskDataUrl The data URL of the selection mask.
+ * @returns A Promise resolving to a data URL of the clipped image.
+ */
+export const rasterizeEditedImageWithMask = async (
+  options: ImageOptions,
+  selectionMaskDataUrl: string
+): Promise<string> => {
+  const fullCanvas = await getEditedImageCanvas(options);
+  if (!fullCanvas) throw new Error("Failed to rasterize full image.");
+
+  const { width, height } = fullCanvas;
+  const ctx = fullCanvas.getContext('2d');
+  if (!ctx) throw new Error("Failed to get canvas context.");
+
+  // 1. Load the mask
+  const maskImage = new Image();
+  await new Promise((resolve, reject) => {
+    maskImage.onload = resolve;
+    maskImage.onerror = reject;
+    maskImage.src = selectionMaskDataUrl;
+  });
+
+  // 2. Use a temporary canvas to apply the mask
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d');
+  if (!tempCtx) throw new Error("Failed to get temporary canvas context.");
+
+  // Draw the full edited image onto the temp canvas
+  tempCtx.drawImage(fullCanvas, 0, 0);
+
+  // Apply the mask using destination-in
+  tempCtx.globalCompositeOperation = 'destination-in';
+  tempCtx.drawImage(maskImage, 0, 0, width, height);
+  
+  return tempCanvas.toDataURL('image/png');
+};
+
 export const copyImageToClipboard = async (options: ImageOptions) => {
   const canvas = await getEditedImageCanvas(options);
   if (!canvas) return;
@@ -451,7 +495,6 @@ export const downloadSelectionAsImage = async (
 
     // 1. Draw the full image (including all layers) onto a temporary canvas
     // Since we only have the imageElement here, we need to draw the fully edited image first.
-    // For simplicity and speed, we will only export the base image clipped by the mask.
     // If the user wants layers included, they should use the full export after cropping.
     
     // Draw the base image

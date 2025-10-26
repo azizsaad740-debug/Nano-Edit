@@ -166,6 +166,7 @@ const Index = () => {
     addTextLayer,
     addDrawingLayer,
     handleAddLayerFromBackground, // NEW
+    handleLayerFromSelection, // NEW
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
@@ -332,12 +333,12 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const imageFile = items[i].getAsFile(); // Renamed variable
-          if (imageFile) { // Use renamed variable
+          const imageFile = items[i].getAsFile();
+          if (imageFile) {
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
             setActiveProjectId(newProject.id);
-            handleFileSelect(imageFile, false); // Use renamed variable
+            handleFileSelect(imageFile, false);
             event.preventDefault();
             return;
           }
@@ -412,6 +413,7 @@ const Index = () => {
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
     onAddLayerFromBackground: handleAddLayerFromBackground, // FIX 7: Added missing prop
+    onLayerFromSelection: handleLayerFromSelection, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
     onAddAdjustmentLayer: addAdjustmentLayer, // FIX 7: Added missing prop
