@@ -8,10 +8,10 @@ import { BrushOptions } from "@/components/editor/BrushOptions";
 import TextProperties from "@/components/editor/TextProperties";
 import ShapeProperties from "@/components/editor/ShapeProperties";
 import GradientProperties from "@/components/editor/GradientProperties";
-import AdjustmentProperties from "@/components/editor/AdjustmentProperties"; // NEW Import
+import AdjustmentProperties from "@/components/editor/AdjustmentProperties";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
-import type { Layer, ActiveTool, BrushState, GradientToolState, HslAdjustment, EditState } from "@/hooks/useEditorState";
+import type { Layer, ActiveTool, BrushState, GradientToolState, HslAdjustment, EditState } from "@/types/editor";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 
 type HslColorKey = keyof EditState['hslAdjustments'];

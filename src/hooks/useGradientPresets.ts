@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { GradientToolState } from './useEditorState';
+import type { GradientToolState } from '@/types/editor';
 import { showSuccess } from '@/utils/toast';
 
 export interface GradientPreset {

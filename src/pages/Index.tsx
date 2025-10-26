@@ -170,7 +170,7 @@ const Index = () => {
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
-    toggleLayerVisibility: toggleLayerVisibilityFn, // Renamed to avoid conflict with prop name
+    handleToggleVisibility: toggleLayerVisibilityFn, // Corrected destructuring name
     renameLayer,
     deleteLayer,
     handleDeleteHiddenLayers, // NEW
@@ -212,7 +212,7 @@ const Index = () => {
     applyMaskToSelectionPath,
     convertSelectionPathToMask,
     handleSelectiveBlurStroke,
-    selectiveBlurStrength: selectiveBlurStrengthState, // Renamed to avoid conflict with prop name
+    selectiveBlurAmount: selectiveBlurStrengthState, // Corrected destructuring name
     handleSelectiveBlurStrengthChange,
     handleSelectiveBlurStrengthCommit,
     selectedShapeType,

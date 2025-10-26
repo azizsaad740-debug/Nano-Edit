@@ -36,6 +36,70 @@ const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<La
   });
 };
 
+/**
+ * Recursively finds a layer's location (layer, container, index, parent path).
+ */
+interface LayerLocation {
+  layer: Layer;
+  container: Layer[];
+  index: number;
+  parentGroups: Layer[];
+}
+
+const findLayerLocation = (
+  id: string,
+  currentLayers: Layer[],
+  parentGroups: Layer[] = []
+): LayerLocation | null => {
+  for (let i = 0; i < currentLayers.length; i++) {
+    const layer = currentLayers[i];
+    if (layer.id === id) {
+      return { layer, container: currentLayers, index: i, parentGroups };
+    }
+    if (layer.type === 'group' && layer.children) {
+      // FIX Error 22: Corrected recursive call argument
+      const found = findLayerLocation(id, layer.children, [...parentGroups, layer]); 
+      if (found) return found;
+    }
+  }
+  return null;
+};
+
+/**
+ * Recursively updates a nested container (used for reordering/grouping).
+ */
+const updateNestedContainer = (layers: Layer[], parentIds: string[], newContainer: Layer[]): Layer[] => {
+  if (parentIds.length === 0) return newContainer;
+  
+  const targetId = parentIds[0];
+  return layers.map(l => {
+    if (l.id === targetId && l.type === 'group' && l.children) {
+      return {
+        ...l,
+        children: updateNestedContainer(l.children, parentIds.slice(1), newContainer),
+      };
+    }
+    return l;
+  });
+};
+
+/**
+ * Recursively gets a mutable reference to a nested container.
+ */
+const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
+  let currentContainer = tree;
+  for (const group of path) {
+    const foundGroup = currentContainer.find(l => l.id === group.id);
+    if (foundGroup && foundGroup.type === 'group' && foundGroup.children) {
+      currentContainer = foundGroup.children;
+    } else {
+      return [];
+    }
+  }
+  return currentContainer;
+};
+
+
 export const useSmartObjectLayers = ({
   initialLayers,
   smartObjectDimensions,
@@ -123,6 +187,8 @@ export const useSmartObjectLayers = ({
       rotation: 0,
       letterSpacing: 0,
       padding: 10,
+      lineHeight: 1.2,
+      isLocked: false, // FIX Error 11
     };
     const updated = [...layers, newLayer];
     setLayers(updated);

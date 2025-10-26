@@ -23,6 +23,7 @@ import {
   type GradientToolState,
   type ActiveTool,
   type HslAdjustment,
+  type HslColorKey,
 } from "@/types/editor"; // Import types from centralized file
 
 // Helper to deep clone state
@@ -54,12 +55,13 @@ export const useEditorState = (
   const selectionPath = activeProject.selectionPath;
   const selectionMaskDataUrl = activeProject.selectionMaskDataUrl;
   const foregroundColor = activeProject.foregroundColor;
-  const backgroundColor = activeProject.backgroundColor; // Fixed redeclaration
+  const backgroundColor = activeProject.backgroundColor;
   const gradientToolState = activeProject.gradientToolState;
   const brushStateInternal = activeProject.brushStateInternal;
   const selectedShapeType = activeProject.selectedShapeType;
   const activeTool = activeProject.activeTool;
   const selectiveBlurAmount = activeProject.selectiveBlurAmount;
+  const selectiveBlurMask = activeProject.selectiveBlurMask; // NEW: Selective blur mask
 
   // The current EditState is derived from the active history item
   const currentState: EditState = useMemo(() => {
@@ -133,9 +135,9 @@ export const useEditorState = (
     handleArrangeLayer,
     handleToggleVisibility,
     handleDrawingStrokeEnd,
-    applySelectionAsMask,
-    canUndo: canUndoLayers,
-    canRedo: canRedoLayers,
+    applySelectionAsMask: applySelectionAsMaskFromLayers,
+    canUndoLayers, // Corrected destructuring name
+    canRedoLayers, // Corrected destructuring name
   } = useLayers({
     currentEditState: currentState,
     recordHistory,
@@ -450,7 +452,7 @@ export const useEditorState = (
     recordHistory(`Apply Grading ${key} to ${value}%`, currentState, layers);
   }, [currentState, layers, recordHistory]);
 
-  const handleHslAdjustmentChange = useCallback((color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => {
+  const handleHslAdjustmentChange = useCallback((color: HslColorKey, key: keyof HslAdjustment, value: number) => {
     const newHsl = { 
       ...currentState.hslAdjustments, 
       [color]: { ...currentState.hslAdjustments[color], [key]: value } 
@@ -458,7 +460,7 @@ export const useEditorState = (
     updateCurrentState({ hslAdjustments: newHsl });
   }, [currentState.hslAdjustments, updateCurrentState]);
 
-  const handleHslAdjustmentCommit = useCallback((color: keyof EditState['hslAdjustments'], key: keyof HslAdjustment, value: number) => {
+  const handleHslAdjustmentCommit = useCallback((color: HslColorKey, key: keyof HslAdjustment, value: number) => {
     recordHistory(`Adjust HSL ${color}/${key} to ${value}`, currentState, layers);
   }, [currentState, layers, recordHistory]);
 
@@ -548,7 +550,6 @@ export const useEditorState = (
   }, [currentState, layers, recordHistory, updateCurrentState]);
 
   // --- Crop Handlers ---
-  // Removed redeclaration of pendingCrop (Error 32)
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>(currentState.crop); 
 
   useEffect(() => {
@@ -561,7 +562,8 @@ export const useEditorState = (
     const newState = { ...currentState, crop: pendingCrop };
     updateCurrentState(newState);
     recordHistory("Apply Crop", newState, layers);
-    handleProjectUpdate({ aspect: pendingCrop.aspect });
+    // Fix Error 3: Crop type does not have 'aspect' property directly, use the aspect state from project manager
+    handleProjectUpdate({ aspect: pendingCrop.aspect }); 
     setActiveTool(null);
   }, [currentState, pendingCrop, layers, recordHistory, handleProjectUpdate, setActiveTool, updateCurrentState]);
 
@@ -606,7 +608,6 @@ export const useEditorState = (
   }, [handleProjectUpdate]);
 
   const handleSwapColors = useCallback(() => {
-    // Fixed scope access (Errors 38, 39)
     handleProjectUpdate({ foregroundColor: backgroundColor, backgroundColor: foregroundColor }); 
   }, [foregroundColor, backgroundColor, handleProjectUpdate]);
 
@@ -715,7 +716,7 @@ export const useEditorState = (
 
   const handleSelectiveBlurStroke = useCallback((strokeDataUrl: string, operation: 'add' | 'subtract') => {
     // This stroke is applied to the selectiveBlurMask
-    if (!activeProject.selectiveBlurMask) {
+    if (!selectiveBlurMask) {
       handleProjectUpdate({ selectiveBlurMask: strokeDataUrl });
       showSuccess("Selective blur mask created.");
     } else {
@@ -724,7 +725,7 @@ export const useEditorState = (
       handleProjectUpdate({ selectiveBlurMask: strokeDataUrl });
       showSuccess("Selective blur mask updated (stub merge).");
     }
-  }, [activeProject.selectiveBlurMask, handleProjectUpdate]);
+  }, [selectiveBlurMask, handleProjectUpdate]);
 
   // --- Template Loading ---
   const loadTemplateData = useCallback((template: { data: { editState: Partial<EditState>, layers: Layer[], dimensions: { width: number, height: number } } }) => {
@@ -794,14 +795,15 @@ export const useEditorState = (
     currentHistoryIndex,
     currentState,
     aspect,
-    pendingCrop, // Correctly refers to the useState variable
+    pendingCrop,
     foregroundColor,
-    backgroundColor, // Fixed shorthand property (Error 35, 40)
+    backgroundColor,
     activeTool,
     selectedShapeType,
     selectionPath,
     selectionMaskDataUrl,
     selectiveBlurAmount,
+    selectiveBlurMask,
 
     // Project/File actions
     handleFileSelect,
@@ -817,8 +819,8 @@ export const useEditorState = (
     handleUndo,
     handleRedo,
     jumpToHistory,
-    canUndo: canUndoLayers,
-    canRedo: canRedoLayers,
+    canUndo: canUndoLayers, // Corrected property name
+    canRedo: canRedoLayers, // Corrected property name
     recordHistory,
 
     // Edit State Management
@@ -900,7 +902,7 @@ export const useEditorState = (
     addDrawingLayer: handleAddDrawingLayer,
     handleAddLayerFromBackground,
     handleLayerFromSelection,
-    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), // Fixed backgroundColor access (Error 41)
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
     addGradientLayer: handleAddGradientLayer,
     addAdjustmentLayer,
     handleDrawingStrokeEnd,

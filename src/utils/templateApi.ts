@@ -1,4 +1,4 @@
-import type { CommunityTemplate } from "../types/template"; // FIXED: Relative path
+import type { CommunityTemplate } from "../types/template";
 import { v4 as uuidv4 } from "uuid";
 
 const mockTemplates: CommunityTemplate[] = [
@@ -20,6 +20,7 @@ const mockTemplates: CommunityTemplate[] = [
           visible: true,
           opacity: 100,
           blendMode: 'normal',
+          isLocked: true, // FIX Error 14
         },
         {
           id: uuidv4(),
@@ -37,6 +38,7 @@ const mockTemplates: CommunityTemplate[] = [
           fillColor: "#EF4444",
           strokeColor: "none",
           strokeWidth: 0,
+          isLocked: false, // FIX Error 15
         },
         {
           id: uuidv4(),
@@ -54,6 +56,7 @@ const mockTemplates: CommunityTemplate[] = [
           fontWeight: "bold",
           textAlign: "center",
           letterSpacing: 5,
+          isLocked: false, // FIX Error 16
         },
         {
           id: uuidv4(),
@@ -70,6 +73,7 @@ const mockTemplates: CommunityTemplate[] = [
           blendMode: 'normal',
           fontWeight: "normal",
           textAlign: "center",
+          isLocked: false, // FIX Error 17
         },
       ],
       dimensions: { width: 1080, height: 1350 }, // 4:5 aspect ratio
@@ -96,6 +100,7 @@ const mockTemplates: CommunityTemplate[] = [
           visible: true,
           opacity: 100,
           blendMode: 'normal',
+          isLocked: true, // FIX Error 18
         },
       ],
       dimensions: { width: 1920, height: 1080 }, // 16:9 aspect ratio
@@ -120,6 +125,7 @@ const mockTemplates: CommunityTemplate[] = [
           visible: true,
           opacity: 100,
           blendMode: 'normal',
+          isLocked: true, // FIX Error 19
         },
         {
           id: uuidv4(),
@@ -137,6 +143,7 @@ const mockTemplates: CommunityTemplate[] = [
           fontWeight: "bold",
           textAlign: "center",
           textShadow: { color: 'rgba(0,0,0,0.8)', blur: 10, offsetX: 2, offsetY: 2 },
+          isLocked: false, // FIX Error 20
         },
       ],
       dimensions: { width: 1080, height: 1920 }, // 9:16 aspect ratio
@@ -162,6 +169,7 @@ const mockTemplates: CommunityTemplate[] = [
           visible: true,
           opacity: 100,
           blendMode: 'normal',
+          isLocked: true, // FIX Error 21
         },
       ],
       dimensions: { width: 1200, height: 800 },
