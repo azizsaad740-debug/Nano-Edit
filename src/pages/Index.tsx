@@ -173,7 +173,7 @@ const Index = () => {
     renameLayer,
     deleteLayer,
     handleDeleteHiddenLayers, // NEW
-    duplicateLayer,
+    duplicateLayer, // Now accepts ID
     mergeLayerDown,
     rasterizeLayer,
     handleRasterizeSmartObject, // NEW
@@ -415,7 +415,7 @@ const Index = () => {
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
     onAddAdjustmentLayer: addAdjustmentLayer,
-    onDuplicateLayer: () => selectedLayerId && duplicateLayer(selectedLayerId),
+    onDuplicateLayer: duplicateLayer, // Now passes the function that accepts ID
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
     onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // NEW

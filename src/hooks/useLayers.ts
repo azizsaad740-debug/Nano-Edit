@@ -1255,7 +1255,7 @@ export const useLayers = ({
     addAdjustmentLayer,
     handleDeleteLayer: deleteLayer,
     handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
-    handleDuplicateLayer: duplicateLayer,
+    handleDuplicateLayer: duplicateLayer, // UPDATED to accept ID
     handleMergeLayerDown: mergeLayerDown,
     handleRasterizeLayer: rasterizeLayer,
     handleRasterizeSmartObject: rasterizeSmartObject, // NEW

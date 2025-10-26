@@ -1196,7 +1196,7 @@ export const useEditorState = (
     renameLayer,
     deleteLayer,
     handleDeleteHiddenLayers: deleteHiddenLayers, // NEW
-    duplicateLayer,
+    duplicateLayer, // UPDATED to accept ID
     mergeLayerDown,
     rasterizeLayer,
     handleRasterizeSmartObject: rasterizeSmartObject, // NEW

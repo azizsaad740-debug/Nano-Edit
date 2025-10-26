@@ -58,7 +58,7 @@ interface LayersPanelProps {
   onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
-  onDuplicateLayer: () => void;
+  onDuplicateLayer: (id: string) => void; // FIX: Updated signature to accept ID
   onMergeLayerDown: () => void;
   onRasterizeLayer: () => void;
   onRasterizeSmartObject: () => void; // NEW prop
@@ -377,7 +377,7 @@ export const LayersPanel = ({
               onAddShapeLayer={onAddShapeLayer}
               onAddGradientLayer={onAddGradientLayer}
               onDeleteLayer={() => selectedLayerIds.forEach(id => onDelete(id))}
-              onDuplicateLayer={onDuplicateLayer}
+              onDuplicateLayer={() => selectedLayerIds.forEach(id => onDuplicateLayer(id))} // Apply to all selected
               onMergeLayerDown={onMergeLayerDown}
               onRasterizeLayer={onRasterizeLayer}
               onRasterizeSmartObject={onRasterizeSmartObject} // Pass NEW prop
