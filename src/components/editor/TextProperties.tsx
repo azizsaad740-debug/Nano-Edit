@@ -4,7 +4,7 @@ import * as React from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { TextCharacterPanel } from "./TextCharacterPanel";

@@ -12,7 +12,7 @@ import { getFilterString } from "@/utils/filterUtils";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import type { Layer, BrushState, Point, EditState, GradientToolState } from "@/hooks/useEditorState";
+import type { Layer, BrushState, Point, EditState, GradientToolState, ActiveTool } from "@/types/editor";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { useHotkeys } from "react-hotkeys-hook";
 import { SelectionCanvas } from "./SelectionCanvas";
@@ -27,6 +27,7 @@ import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import Gradi
 import { SelectionMaskOverlay } from "./SelectionMaskOverlay"; // Import SelectionMaskOverlay
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter"; // NEW Import
 import { HslFilter } from "./HslFilter"; // NEW Import
+import * as React from "react";
 
 interface WorkspaceProps {
   image: string | null;
@@ -51,7 +52,7 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | null; // ADDED blurBrush
+  activeTool?: ActiveTool | null; // ADDED blurBrush
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
@@ -76,7 +77,7 @@ interface WorkspaceProps {
   imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
   selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
   setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | null) => void; // Added setActiveTool
+  setActiveTool: (tool: ActiveTool | null) => void; // Added setActiveTool
   foregroundColor: string; // New prop
   backgroundColor: string; // New prop
   onDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // NEW: Prop for drawing layer commit

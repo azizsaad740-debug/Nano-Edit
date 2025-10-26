@@ -7,10 +7,8 @@ import LayersPanel from "../editor/LayersPanel";
 import { ChannelsPanel } from "../editor/ChannelsPanel";
 import { Separator } from "@/components/ui/separator";
 import type { Preset } from "@/hooks/usePresets";
-import type { Point, EditState, HslAdjustment, Layer, BrushState, GradientToolState, ActiveTool } from "@/types/editor";
+import type { Point, EditState, HslAdjustment, Layer, BrushState, GradientToolState, ActiveTool, HslColorKey } from "@/types/editor";
 import React from "react";
-
-type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface SidebarProps {
   hasImage: boolean;

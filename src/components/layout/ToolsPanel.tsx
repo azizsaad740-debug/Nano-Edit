@@ -27,12 +27,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { Layer, BrushState } from "@/hooks/useEditorState"; // Import BrushState
+import type { Layer, ActiveTool, BrushState } from "@/types/editor"; // Import ActiveTool and BrushState
 import { ColorTool } from "./ColorTool"; // Import ColorTool
 import { Slider } from "@/components/ui/slider"; // Import Slider
 import { Label } from "@/components/ui/label"; // Import Label
 
-type Tool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush"; // Added 'blurBrush' tool
+type Tool = ActiveTool; // Use ActiveTool type directly
 
 interface ToolsPanelProps {
   activeTool: Tool | null;

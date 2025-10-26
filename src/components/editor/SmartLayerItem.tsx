@@ -6,7 +6,7 @@ import { Move, Type, Layers, Eye, EyeOff, Square, Palette } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 
 interface SmartLayerItemProps {
   layer: Layer;

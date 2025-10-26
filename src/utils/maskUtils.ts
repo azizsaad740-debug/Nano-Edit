@@ -1,4 +1,4 @@
-import type { Point } from "@/hooks/useEditorState";
+import type { Point } from "@/types/editor";
 
 /**
  * Converts a polygonal path into a binary mask data URL.

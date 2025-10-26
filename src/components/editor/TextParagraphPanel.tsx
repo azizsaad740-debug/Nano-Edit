@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { AlignLeft, AlignCenter, AlignRight, AlignJustify, ChevronDown, ChevronUp, CornerDownLeft, ArrowRight, ArrowLeft } from "lucide-react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { Button } from "@/components/ui/button";
 
 interface TextParagraphPanelProps {

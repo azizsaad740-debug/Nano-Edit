@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showError } from "@/utils/toast";
-import type { Layer, ActiveTool, BrushState, GradientToolState } from "./useEditorState";
+import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
 
 export interface UseSmartObjectLayersProps {
   initialLayers: Layer[];
@@ -150,6 +150,12 @@ export const useSmartObjectLayers = ({
       opacity: 100,
       blendMode: 'normal',
       dataUrl: transparentDataUrl,
+      x: 50,
+      y: 50,
+      width: 100,
+      height: 100,
+      rotation: 0,
+      isLocked: false,
     };
     const updated = [...layers, newLayer];
     setLayers(updated);
@@ -181,6 +187,7 @@ export const useSmartObjectLayers = ({
       strokeWidth: 2,
       borderRadius: 0,
       points: selectedShapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
+      isLocked: false,
     };
     const updated = [...layers, newLayer];
     setLayers(updated);
@@ -210,6 +217,7 @@ export const useSmartObjectLayers = ({
       gradientCenterX: 50,
       gradientCenterY: 50,
       gradientRadius: 50,
+      isLocked: false,
     };
     const updated = [...layers, newLayer];
     setLayers(updated);

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Bold, Italic, Type, ChevronDown, ChevronUp, ArrowLeft, ArrowRight, ArrowDownUp, CornerDownLeft, Settings } from "lucide-react";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 import { Button } from "@/components/ui/button";
 
 interface TextCharacterPanelProps {

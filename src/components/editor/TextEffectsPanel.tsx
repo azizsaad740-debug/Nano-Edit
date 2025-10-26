@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Switch } from "@/components/ui/switch";
-import type { Layer } from "@/hooks/useEditorState";
+import type { Layer } from "@/types/editor";
 
 interface TextEffectsPanelProps {
   layer: Layer;

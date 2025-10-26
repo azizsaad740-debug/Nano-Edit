@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { v4 as uuidv4 } from "uuid";
-import type { EditState, Layer, HistoryItem, GradientToolState, BrushState, ActiveTool } from "./useEditorState";
-import { initialEditState, initialLayerState, initialHistoryItem, initialBrushState, initialGradientToolState } from "./useEditorState"; // Import initial states
+import { initialEditState, initialLayerState, initialHistoryItem, initialBrushState, initialGradientToolState, Layer, HistoryItem, GradientToolState, BrushState, ActiveTool } from "@/types/editor"; // Import types and initial states
 
 export interface Project {
   id: string;
@@ -28,6 +27,7 @@ export interface Project {
   selectedShapeType: Layer['shapeType'] | null;
   activeTool: ActiveTool | null; // NEW: Active tool state
   selectiveBlurAmount: number; // NEW: Selective blur strength (0-100)
+  selectiveBlurMask: string | null; // NEW: Selective blur mask
 }
 
 const createNewProject = (name: string = "Untitled"): Project => ({
@@ -52,6 +52,7 @@ const createNewProject = (name: string = "Untitled"): Project => ({
   selectedShapeType: 'rect',
   activeTool: null, // NEW: Default active tool
   selectiveBlurAmount: 50, // Initial value
+  selectiveBlurMask: null,
 });
 
 export const useProjectManager = () => {

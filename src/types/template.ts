@@ -1,4 +1,4 @@
-import type { EditState, Layer } from "@/hooks/useEditorState";
+import type { EditState, Layer } from "@/types/editor";
 
 export interface TemplateProjectData {
   editState: Partial<EditState>;
