@@ -416,11 +416,11 @@ const Index = () => {
     layers,
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
-    onAddLayerFromBackground: handleAddLayerFromBackground, // FIX 7: Added missing prop
+    onAddLayerFromBackground: handleAddLayerFromBackground, // NEW
     onLayerFromSelection: handleLayerFromSelection, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
-    onAddAdjustmentLayer: addAdjustmentLayer, // FIX 7: Added missing prop
+    onAddAdjustmentLayer: addAdjustmentLayer, // NEW
     onDuplicateLayer: duplicateLayer, // Now accepts ID
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
