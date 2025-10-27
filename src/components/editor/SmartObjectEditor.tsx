@@ -4,7 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
-import { PropertiesPanel } from "@/components/layout/PropertiesPanel";
+import { PropertiesPanel } from "@/components/editor/PropertiesPanel";
 import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers";
@@ -108,7 +108,7 @@ export const SmartObjectEditor = ({
   // Dummy state for PropertiesPanel requirements (since we don't have full editor state here)
   const dummyGradientToolState: GradientToolState = { type: 'linear', colors: [], stops: [], angle: 0, centerX: 0, centerY: 0, radius: 0, feather: 0, inverted: false };
   const dummyPresets = [];
-  const dummySetGradientToolState = () => {};
+  const dummySetGradientToolState = () => {}; // Placeholder function
   const dummyOnSaveGradientPreset = () => {};
   const dummyOnDeleteGradientPreset = () => {};
   
@@ -198,7 +198,7 @@ export const SmartObjectEditor = ({
                     brushState={brushState}
                     setBrushState={setBrushState}
                     gradientToolState={dummyGradientToolState}
-                    setGradientToolState={dummySetGradientToolState}
+                    setGradientToolState={dummySetGradientToolState as any}
                     onLayerUpdate={handleLayerUpdate}
                     onLayerCommit={handleLayerCommit}
                     onLayerPropertyCommit={handleLayerPropertyCommit}
