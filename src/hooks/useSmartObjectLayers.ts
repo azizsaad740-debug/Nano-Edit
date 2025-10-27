@@ -310,7 +310,7 @@ export const useSmartObjectLayers = ({
     if (!selectedLayerId) return;
     
     setLayers(prev => {
-      const updated = recursivelyUpdateLayer(prev, selectedLayerId, { visible: false }).filter(l => l.id !== selectedLayerId);
+      const updated = prev.filter(l => l.id !== selectedLayerId);
       recordHistory(updated);
       return updated;
     });
