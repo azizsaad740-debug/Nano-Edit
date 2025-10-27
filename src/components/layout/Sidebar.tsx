@@ -4,27 +4,39 @@ import LayersPanel from '@/components/editor/LayersPanel';
 import HistoryPanel from '@/components/editor/HistoryPanel';
 import AssetsPanel from '@/components/editor/AssetsPanel';
 import { Layers, History, Image } from 'lucide-react';
+import { Layer } from '@/types/editor'; // Import Layer type
 
-// Assuming props structure based on the error message
+// Defining SidebarProps to match the props passed from Index.tsx (Fixes Error 2)
 interface SidebarProps {
     hasImage: boolean;
-    layers: any[]; // Using any[] since the full Layer type is complex
+    layers: Layer[];
     toggleLayerVisibility: (id: string) => void;
     onRename: (id: string, newName: string) => void;
     onDelete: (id: string) => void;
     onAddTextLayer: () => void;
     onAddDrawingLayer: () => string;
     onApplySelectionAsMask: () => void;
-    // ... many other props implied by the error
+    
+    // Layer Action Props
+    selectedLayerId: string | null;
+    selectedLayerIds: string[];
+    hasActiveSelection: boolean;
+    onCreateSmartObject: (layerIds: string[]) => void;
+    onToggleClippingMask: (id: string) => void;
+    
+    // Other props (using index signature for brevity, though specific props are passed)
     [key: string]: any;
 }
 
 const Sidebar: React.FC<SidebarProps> = (props) => {
-    // Placeholder functions to satisfy LayersPanelProps (Fixes Error 2)
-    const handleAddLayer = () => console.log('Add Layer');
-    const handleAddLayerMask = (id: string) => console.log(`Add Mask to ${id}`);
-    const handleConvertToSmartObject = (id: string) => console.log(`Convert to Smart Object ${id}`);
-    const handleCreateClippingMask = (id: string) => console.log(`Create Clipping Mask ${id}`);
+    // Wrapper functions to map generic actions to specific handlers
+    const handleAddLayer = props.onAddDrawingLayer; 
+    
+    // Wrapper for 'Create Clipping Mask' button
+    const handleToggleClippingMask = (id: string) => props.onToggleClippingMask(id);
+    
+    // Wrapper for 'Convert to Smart Object' button
+    const handleCreateSmartObject = (layerIds: string[]) => props.onCreateSmartObject(layerIds);
 
     return (
         <div className="h-full w-full flex flex-col bg-background border-r">
@@ -48,15 +60,24 @@ const Sidebar: React.FC<SidebarProps> = (props) => {
                                 layers={props.layers}
                                 onToggleVisibility={props.toggleLayerVisibility}
                                 onRename={props.onRename}
-                                onDelete={props.onDelete}
+                                onDelete={props.onDelete} // Pass delete handler
                                 onAddTextLayer={props.onAddTextLayer}
                                 onAddDrawingLayer={props.onAddDrawingLayer}
                                 onApplySelectionAsMask={props.onApplySelectionAsMask}
-                                // Passing the newly required handlers (Fixes Error 2)
+                                
+                                // Pass state
+                                selectedLayerId={props.selectedLayerId}
+                                selectedLayerIds={props.selectedLayerIds}
+                                hasActiveSelection={props.hasActiveSelection}
+                                
+                                // Pass action handlers
                                 onAddLayer={handleAddLayer}
-                                onAddLayerMask={handleAddLayerMask}
-                                onConvertToSmartObject={handleConvertToSmartObject}
-                                onCreateClippingMask={handleCreateClippingMask}
+                                onAddLayerMask={props.onApplySelectionAsMask} // Masking uses selection, so this is the correct handler
+                                onConvertToSmartObject={handleCreateSmartObject}
+                                onCreateClippingMask={handleToggleClippingMask}
+                                
+                                // Pass other props needed by LayerItem/LayerList (via rest spread in LayersPanel)
+                                {...props}
                             />
                         ) : (
                             <div className="p-4 text-center text-sm text-muted-foreground">

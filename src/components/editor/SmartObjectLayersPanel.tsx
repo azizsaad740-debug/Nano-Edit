@@ -7,14 +7,27 @@ import { SmartLayerItem } from "./SmartLayerItem";
 import LayerControls from "./LayerControls";
 import { Layer } from '@/types/editor'; // Import Layer type
 
-// Mock data for layers (Fixes Error 3)
+// Mock data for layers
 const mockLayers: Layer[] = [
   { id: '1', name: 'Background', visible: true, isLocked: false, type: 'image', opacity: 100, blendMode: 'Normal' },
-  { id: '2', name: 'Text Layer', visible: true, isLocked: false, type: 'text', opacity: 100, blendMode: 'Normal' },
+  { id: '2', name: 'Text Layer', visible: true, isLocked: false, type: 'text', opacity: 100, blendMode: 'Normal', content: 'Text' },
   { id: '3', name: 'Shape 1', visible: false, isLocked: true, type: 'vector-shape', opacity: 100, blendMode: 'Normal' },
 ];
 
 const SmartObjectLayersPanel: React.FC = () => {
+  // Placeholder handlers for SmartLayerItem
+  const placeholderHandlers = {
+    isSelected: false,
+    onSelect: () => {},
+    onToggleVisibility: () => {},
+    isEditing: false,
+    tempName: '',
+    setTempName: () => {},
+    startRename: () => {},
+    confirmRename: () => {},
+    cancelRename: () => {},
+  };
+
   return (
     <div className="flex flex-col h-full">
       {/* Layer Controls (Opacity/Blend Mode) */}
@@ -41,7 +54,11 @@ const SmartObjectLayersPanel: React.FC = () => {
       <ScrollArea className="flex-grow">
         <div className="p-1 space-y-1">
           {mockLayers.map(layer => (
-            <SmartLayerItem key={layer.id} layer={layer} />
+            <SmartLayerItem 
+              key={layer.id} 
+              layer={layer} 
+              {...placeholderHandlers}
+            />
           ))}
         </div>
       </ScrollArea>
