@@ -20,7 +20,7 @@ import {
   type HistoryItem,
 } from "@/types/editor"; // Import types from centralized file
 
-// Helper utility functions for nested layer manipulation
+// --- Helper utility functions for nested layer manipulation ---
 
 /**
  * Recursively updates a layer within the nested structure.
@@ -65,7 +65,6 @@ const findLayerLocation = (
       return { layer, container: currentLayers, index: i, parentGroups };
     }
     if (layer.type === 'group' && layer.children) {
-      // FIX Error 22: Corrected recursive call argument
       const found = findLayerLocation(id, layer.children, [...parentGroups, layer]); 
       if (found) return found;
     }
@@ -482,7 +481,7 @@ export const useLayers = ({
       dismissToast(toastId);
       showError(err.message || "Failed to merge layers.");
     }
-  }, [layers, findLayerLocation, setLayers, imgRef, setSelectedLayerId]);
+  }, [layers, setLayers, imgRef, setSelectedLayerId]);
 
   const handleArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
     if (!selectedLayerId) return;

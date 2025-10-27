@@ -406,7 +406,7 @@ export const useEditorState = (
         image: projectData.sourceImage,
         dimensions: newDimensions,
         fileInfo: projectData.fileInfo,
-        exifData: null, // EXIF data is not saved in project file
+        exifData: null,
         aspect: newDimensions.width / newDimensions.height,
         history: projectData.history,
         currentHistoryIndex: projectData.currentHistoryIndex,
@@ -895,6 +895,7 @@ export const useEditorState = (
     handleConvertSmartObjectToLayers,
     handleExportSmartObjectContents,
     handleArrangeLayer,
+    handleToggleVisibility,
     addTextLayer: (coords) => handleAddTextLayer(coords, foregroundColor),
     addDrawingLayer: handleAddDrawingLayer,
     handleAddLayerFromBackground,

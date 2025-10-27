@@ -428,7 +428,7 @@ const Index = () => {
     toggleLayerVisibility: handleToggleVisibility, // FIX Error 106: Use the function from editorState
     renameLayer, // FIX 11
     deleteLayer, // FIX 11
-    handleDeleteHiddenLayers, // NEW
+    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
