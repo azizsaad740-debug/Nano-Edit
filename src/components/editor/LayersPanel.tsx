@@ -12,21 +12,13 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Type,
-  Layers,
-  Square,
-  Palette,
-  SlidersHorizontal,
-  Sun,
-} from "lucide-react";
 import type { Layer } from "@/types/editor";
 import LayerList from "./LayerList";
 import { LayerControls } from "./LayerControls";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { LayerActions } from "./LayerActions";
+
+// NOTE: Keeping all props defined here to avoid cascading errors in parent components, 
+// even though many related actions/buttons are removed for space saving.
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -75,42 +67,14 @@ const LayersPanel = (props: LayersPanelProps) => {
     onReorder,
     onToggleVisibility,
     onRename,
-    onDelete,
-    onDuplicateLayer,
-    onMergeLayerDown,
-    onRasterizeLayer,
-    onCreateSmartObject,
-    onOpenSmartObject,
-    onLayerPropertyCommit,
-    onLayerOpacityChange,
-    onLayerOpacityCommit,
-    onAddTextLayer,
-    onAddDrawingLayer,
-    onAddLayerFromBackground,
-    onLayerFromSelection,
-    onAddShapeLayer,
-    onAddGradientLayer,
-    onAddAdjustmentLayer,
-    selectedShapeType,
-    groupLayers,
-    toggleGroupExpanded,
     onRemoveLayerMask,
-    onInvertLayerMask,
-    onToggleClippingMask,
     onToggleLayerLock,
-    onDeleteHiddenLayers,
-    onRasterizeSmartObject,
-    onConvertSmartObjectToLayers,
-    onExportSmartObjectContents,
-    onArrangeLayer,
-    hasActiveSelection,
-    onApplySelectionAsMask,
   } = props;
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [tempName, setTempName] = React.useState("");
   const selectedLayer = layers.find((l) => l.id === selectedLayerId);
-  const selectedLayerIds = selectedLayerId ? [selectedLayerId] : []; // Simplified for now
+  const selectedLayerIds = selectedLayerId ? [selectedLayerId] : [];
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -142,32 +106,13 @@ const LayersPanel = (props: LayersPanelProps) => {
     setEditingId(null);
   };
 
-  const handleAddLayer = (type: 'text' | 'drawing' | 'shape' | 'gradient' | 'adjustment' | 'from-background' | 'from-selection') => {
-    if (type === 'text') {
-      onAddTextLayer();
-    } else if (type === 'drawing') {
-      onAddDrawingLayer();
-    } else if (type === 'shape') {
-      onAddShapeLayer({ x: 50, y: 50 }, selectedShapeType || 'rect', 10, 10);
-    } else if (type === 'gradient') {
-      onAddGradientLayer();
-    } else if (type === 'adjustment') {
-      // Default to brightness/contrast for quick add
-      onAddAdjustmentLayer('brightness');
-    } else if (type === 'from-background') {
-      onAddLayerFromBackground();
-    } else if (type === 'from-selection') {
-      onLayerFromSelection();
-    }
-  };
-
   return (
     <div className="flex flex-col h-full">
       <LayerControls
         selectedLayer={selectedLayer}
-        onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
-        onLayerOpacityChange={onLayerOpacityChange}
-        onLayerOpacityCommit={onLayerOpacityCommit}
+        onLayerPropertyCommit={(updates, name) => selectedLayerId && props.onLayerPropertyCommit(selectedLayerId, updates, name)}
+        onLayerOpacityChange={props.onLayerOpacityChange}
+        onLayerOpacityCommit={props.onLayerOpacityCommit}
       />
       <ScrollArea className="flex-1 pr-3">
         <DndContext
@@ -193,7 +138,7 @@ const LayersPanel = (props: LayersPanelProps) => {
                 onToggleVisibility={onToggleVisibility}
                 selectedLayerIds={selectedLayerIds}
                 onSelectLayer={onSelectLayer}
-                onToggleGroupExpanded={toggleGroupExpanded}
+                onToggleGroupExpanded={props.toggleGroupExpanded}
                 onRemoveLayerMask={onRemoveLayerMask}
                 onToggleLayerLock={onToggleLayerLock}
               />
@@ -201,95 +146,6 @@ const LayersPanel = (props: LayersPanelProps) => {
           </SortableContext>
         </DndContext>
       </ScrollArea>
-      
-      <div className="mt-4 space-y-2 border-t pt-4">
-        {/* Quick Add Buttons */}
-        <div className="flex flex-wrap gap-1 justify-start">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('text')}>
-                <Type className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Add Text Layer</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('drawing')}>
-                <Layers className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Add Empty Layer</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('shape')}>
-                <Square className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Add Shape Layer</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('gradient')}>
-                <Palette className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Add Gradient Layer</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('adjustment')}>
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Add Adjustment Layer</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-background')}>
-                <Sun className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Layer from Background</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-selection')} disabled={!hasActiveSelection}>
-                <Layers className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent><p>Layer from Selection</p></TooltipContent>
-          </Tooltip>
-        </div>
-
-        <LayerActions
-          layers={layers}
-          selectedLayer={selectedLayer}
-          selectedLayerIds={selectedLayerIds}
-          onAddTextLayer={onAddTextLayer}
-          onAddDrawingLayer={onAddDrawingLayer}
-          onAddShapeLayer={onAddShapeLayer}
-          onAddGradientLayer={onAddGradientLayer}
-          onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
-          onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
-          onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}
-          onRasterizeLayer={() => selectedLayerId && onRasterizeLayer(selectedLayerId)}
-          onCreateSmartObject={onCreateSmartObject}
-          onOpenSmartObject={onOpenSmartObject}
-          selectedShapeType={selectedShapeType}
-          groupLayers={() => groupLayers(selectedLayerIds)}
-          hasActiveSelection={hasActiveSelection}
-          onApplySelectionAsMask={onApplySelectionAsMask}
-          onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
-          onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
-          onDeleteHiddenLayers={onDeleteHiddenLayers}
-          onRasterizeSmartObject={onRasterizeSmartObject}
-          onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
-          onExportSmartObjectContents={onExportSmartObjectContents}
-          onArrangeLayer={onArrangeLayer}
-        />
-      </div>
     </div>
   );
 };
