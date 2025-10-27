@@ -31,7 +31,7 @@ import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog";
 import { useHotkeys } from "react-hotkeys-hook";
 import { BrushOptions } from "@/components/editor/BrushOptions";
-import SmartObjectEditor from "@/components/editor/SmartObjectEditor";
+import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
@@ -170,9 +170,9 @@ const Index = () => {
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
-    handleToggleVisibility, // Corrected destructuring name
-    renameLayer, // FIX 11
-    deleteLayer, // FIX 11
+    handleToggleVisibility: toggleLayerVisibilityFn, // Corrected destructuring name
+    renameLayer,
+    deleteLayer,
     handleDeleteHiddenLayers, // NEW
     duplicateLayer, // Now accepts ID
     mergeLayerDown,
@@ -231,9 +231,6 @@ const Index = () => {
     handleDrawingStrokeEnd,
     loadImageData,
   } = editorState;
-
-  // --- Derived State ---
-  const selectedLayerIds = selectedLayerId ? [selectedLayerId] : []; // Derive selectedLayerIds for multi-select actions
 
   // --- Local Functions ---
   const handleOpenProjectClick = (importInSameProject: boolean) => {
@@ -415,7 +412,7 @@ const Index = () => {
     layers,
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
     addDrawingLayer,
-    onAddLayerFromBackground: handleAddLayerFromBackground, // NEW
+    onAddLayerFromBackground: handleAddLayerFromBackground, // FIX 7: Added missing prop
     onLayerFromSelection: handleLayerFromSelection, // NEW
     addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
     addGradientLayer,
@@ -426,15 +423,14 @@ const Index = () => {
     onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // FIX 3
     onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // FIX 4
     onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // FIX 5
+    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
     onArrangeLayer: handleArrangeLayer, // FIX 6
     onReorder: reorderLayers,
-    toggleLayerVisibility: handleToggleVisibility, // Corrected destructuring name
+    toggleLayerVisibility: toggleLayerVisibilityFn, // FIX Error 106: Use the function from editorState
     renameLayer, // FIX 11
-    onDelete: deleteLayer, // Pass delete handler
-    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
+    deleteLayer, // FIX 11
     // selection
     selectedLayerId,
-    selectedLayerIds, // Pass the derived array
     onSelectLayer: setSelectedLayer,
     // layer editing
     onLayerUpdate: updateLayer,
@@ -475,7 +471,7 @@ const Index = () => {
     onApplySelectionAsMask: applySelectionAsMask,
     onRemoveLayerMask: removeLayerMask,
     onInvertLayerMask: invertLayerMask,
-    onToggleClippingMask: toggleClippingMask, // Pass the function that takes ID
+    onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId),
     onToggleLayerLock: (id: string) => toggleLayerLock(id),
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd,
@@ -488,10 +484,6 @@ const Index = () => {
     systemFonts,
     customFonts,
     onOpenFontManager: () => setOpenFontManager(true),
-    // Required by SidebarProps
-    onRename: renameLayer,
-    onAddTextLayer: () => addTextLayer({ x: 50, y: 50 }),
-    onAddDrawingLayer: addDrawingLayer,
   };
 
   
@@ -532,8 +524,8 @@ const Index = () => {
         onTogglePreview={setIsPreviewingOriginal}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        canUndo={canUndo()}
-        canRedo={canRedo()}
+        canUndo={canUndo()} // FIX Error 108: Call the function
+        canRedo={canRedo()} // FIX Error 109: Call the function
         setOpenSettings={setOpenSettings}
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}

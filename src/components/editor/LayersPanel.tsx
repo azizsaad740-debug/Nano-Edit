@@ -1,195 +1,313 @@
-import React from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Search, Plus, Trash2, Square, Scissors, Package } from 'lucide-react';
-import LayerItem from './LayerItem';
-import LayerControls from './LayerControls';
-import { Layer } from '@/types/editor'; // Import Layer type
-import { showError } from '@/utils/toast'; // Import showError
+"use client";
 
-// Define Props based on Sidebar usage error (Fixes Error 2 component signature)
+import * as React from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  Type,
+  Layers,
+  Square,
+  Palette,
+  SlidersHorizontal,
+  Sun,
+} from "lucide-react";
+import type { Layer } from "@/types/editor";
+import LayerItem from "./LayerItem";
+import { LayerControls } from "./LayerControls";
+import { LayerActions } from "./LayerActions";
+import LayerList from "./LayerList";
+
 interface LayersPanelProps {
   layers: Layer[];
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
+  onReorder: (activeId: string, overId: string) => void;
   onToggleVisibility: (id: string) => void;
   onRename: (id: string, newName: string) => void;
-  onDelete: (id: string) => void; // Delete handler (needs selected ID)
-  onAddDrawingLayer: () => string; // Generic add layer
-  onApplySelectionAsMask: () => void; // Add Mask
-  onCreateSmartObject: (layerIds: string[]) => void; // Convert to Smart Object
-  onToggleClippingMask: (id: string) => void; // Create Clipping Mask
-  
-  selectedLayerId: string | null;
-  selectedLayerIds: string[];
+  onDelete: (id: string) => void;
+  onDuplicateLayer: (id: string) => void;
+  onMergeLayerDown: (id: string) => void;
+  onRasterizeLayer: (id: string) => void;
+  onCreateSmartObject: (layerIds: string[]) => void;
+  onOpenSmartObject: (id: string) => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
+  onLayerOpacityChange: (opacity: number) => void;
+  onLayerOpacityCommit: () => void;
+  onAddTextLayer: () => void;
+  onAddDrawingLayer: () => string;
+  onAddLayerFromBackground: () => void;
+  onLayerFromSelection: () => void;
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  onAddGradientLayer: () => void;
+  onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
+  selectedShapeType: Layer['shapeType'] | null;
+  groupLayers: (layerIds: string[]) => void;
+  toggleGroupExpanded: (id: string) => void;
   hasActiveSelection: boolean;
-  
-  // Other props needed by LayerItem/LayerList (assuming LayerList is used later)
-  [key: string]: any; 
+  onApplySelectionAsMask: () => void;
+  onRemoveLayerMask: (id: string) => void;
+  onInvertLayerMask: (id: string) => void;
+  onToggleClippingMask: (id: string) => void;
+  onToggleLayerLock: (id: string) => void;
+  onDeleteHiddenLayers: () => void;
+  onRasterizeSmartObject: () => void;
+  onConvertSmartObjectToLayers: () => void;
+  onExportSmartObjectContents: () => void;
+  onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }
 
-// Mock data for layers (kept for fallback/initial render)
-const mockLayers: Layer[] = [
-  { id: '1', name: 'Background', visible: true, isLocked: false, type: 'image', opacity: 100, blendMode: 'Normal' },
-  { id: '2', name: 'Text Layer', visible: true, isLocked: false, type: 'text', opacity: 100, blendMode: 'Normal' },
-  { id: '3', name: 'Shape 1', visible: false, isLocked: true, type: 'vector-shape', opacity: 100, blendMode: 'Normal' },
-];
+const LayersPanel = (props: LayersPanelProps) => {
+  const {
+    layers,
+    selectedLayerId,
+    onSelectLayer,
+    onReorder,
+    onToggleVisibility,
+    onRename,
+    onDelete,
+    onDuplicateLayer,
+    onMergeLayerDown,
+    onRasterizeLayer,
+    onCreateSmartObject,
+    onOpenSmartObject,
+    onLayerPropertyCommit,
+    onLayerOpacityChange,
+    onLayerOpacityCommit,
+    onAddTextLayer,
+    onAddDrawingLayer,
+    onAddLayerFromBackground,
+    onLayerFromSelection,
+    onAddShapeLayer,
+    onAddGradientLayer,
+    onAddAdjustmentLayer,
+    selectedShapeType,
+    groupLayers,
+    toggleGroupExpanded,
+    onRemoveLayerMask,
+    onInvertLayerMask,
+    onToggleClippingMask,
+    onToggleLayerLock,
+    onDeleteHiddenLayers,
+    onRasterizeSmartObject,
+    onConvertSmartObjectToLayers,
+    onExportSmartObjectContents,
+    onArrangeLayer,
+    hasActiveSelection,
+    onApplySelectionAsMask,
+  } = props;
 
-const LayersPanel: React.FC<LayersPanelProps> = ({ 
-  layers, 
-  onToggleVisibility, 
-  onDelete, 
-  onAddDrawingLayer, 
-  onApplySelectionAsMask, 
-  onCreateSmartObject, 
-  onToggleClippingMask,
-  selectedLayerId,
-  selectedLayerIds,
-  hasActiveSelection,
-  ...rest // Capture other props like onRename, onSelectLayer, etc.
-}) => {
-  const layersToRender = layers && layers.length > 0 ? layers : mockLayers;
-  
-  const isAnyLayerSelected = selectedLayerId !== null;
-  const isMultiSelected = selectedLayerIds.length > 1;
-  
-  const handleNewLayer = () => onAddDrawingLayer();
-  
-  const handleDeleteLayer = () => {
-    if (selectedLayerId) {
-      onDelete(selectedLayerId);
-    } else {
-      showError("Select a layer to delete.");
-    }
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [tempName, setTempName] = React.useState("");
+  const selectedLayer = layers.find((l) => l.id === selectedLayerId);
+  const selectedLayerIds = selectedLayerId ? [selectedLayerId] : []; // Simplified for now
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    onReorder(active.id as string, over.id as string);
   };
-  
-  const handleAddMask = () => {
-    if (!isAnyLayerSelected) {
-      showError("Select a layer to apply a mask.");
-    } else if (!hasActiveSelection) {
-      showError("Create an active selection first.");
-    } else {
-      onApplySelectionAsMask();
-    }
+
+  const startRename = (layer: Layer) => {
+    setEditingId(layer.id);
+    setTempName(layer.name);
   };
-  
-  const handleClippingMask = () => {
-    if (!selectedLayerId) {
-      showError("Select a layer to toggle clipping mask.");
-    } else {
-      onToggleClippingMask(selectedLayerId);
+
+  const confirmRename = (id: string) => {
+    if (tempName.trim() && tempName !== selectedLayer?.name) {
+      onRename(id, tempName.trim());
     }
+    setEditingId(null);
   };
-  
-  const handleSmartObject = () => {
-    if (isMultiSelected) {
-      onCreateSmartObject(selectedLayerIds);
-    } else {
-      showError("Select multiple layers to create a Smart Object.");
+
+  const cancelRename = () => {
+    setEditingId(null);
+  };
+
+  const handleAddLayer = (type: 'text' | 'drawing' | 'shape' | 'gradient' | 'adjustment' | 'from-background' | 'from-selection') => {
+    if (type === 'text') {
+      onAddTextLayer();
+    } else if (type === 'drawing') {
+      onAddDrawingLayer();
+    } else if (type === 'shape') {
+      onAddShapeLayer({ x: 50, y: 50 }, selectedShapeType || 'rect', 10, 10);
+    } else if (type === 'gradient') {
+      onAddGradientLayer();
+    } else if (type === 'adjustment') {
+      // Default to brightness/contrast for quick add
+      onAddAdjustmentLayer('brightness');
+    } else if (type === 'from-background') {
+      onAddLayerFromBackground();
+    } else if (type === 'from-selection') {
+      onLayerFromSelection();
     }
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Layer Controls (Opacity/Blend Mode) */}
-      <LayerControls />
-
-      {/* Filter/Sort Bar */}
-      <div className="flex items-center gap-2 p-2 border-b">
-        <Select defaultValue="kind">
-          <SelectTrigger className="h-8 w-1/2 text-xs">
-            <SelectValue placeholder="Filter" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="kind" className="text-xs">Kind</SelectItem>
-            <SelectItem value="name" className="text-xs">Name</SelectItem>
-          </SelectContent>
-        </Select>
-        <div className="relative w-1/2">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-          <Input placeholder="Search" className="h-8 pl-7 text-xs" />
-        </div>
-      </div>
-
-      {/* Layer List (Currently using mock data and simple LayerItem) */}
-      <ScrollArea className="flex-grow">
-        <div className="p-1 space-y-1">
-          {/* NOTE: This should eventually use LayerList and SortableContext */}
-          {layersToRender.map(layer => (
-            <LayerItem 
-              key={layer.id} 
-              layer={layer} 
-              onToggleVisibility={onToggleVisibility}
-              isSelected={selectedLayerId === layer.id}
-              // Placeholder props for LayerItem to avoid errors
-              isEditing={false}
-              tempName={layer.name}
-              setTempName={() => {}}
-              startRename={() => {}}
-              confirmRename={() => {}}
-              cancelRename={() => {}}
-              onSelect={() => {}}
-              onRemoveMask={() => {}}
-              onToggleLock={() => {}}
-            />
-          ))}
-        </div>
-      </ScrollArea>
-
-      {/* Layer Action Bar (Restored functionality) */}
-      <div className="flex justify-between items-center p-2 border-t bg-gray-50 dark:bg-gray-800">
-        {/* Left side: New Layer, Delete */}
-        <div className="flex gap-1">
-          <Button variant="ghost" size="icon" title="New Layer (Drawing)" className="h-7 w-7" onClick={handleNewLayer}>
-            <Plus size={14} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Delete Selected Layer" 
-            className="h-7 w-7" 
-            onClick={handleDeleteLayer}
-            disabled={!selectedLayerId || layers.find(l => l.id === selectedLayerId)?.type === 'image'}
+    <Card className="flex flex-col h-full">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Layers</CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
+        <LayerControls
+          selectedLayer={selectedLayer}
+          onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
+          onLayerOpacityChange={onLayerOpacityChange}
+          onLayerOpacityCommit={onLayerOpacityCommit}
+        />
+        <ScrollArea className="flex-1 pr-3">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
           >
-            <Trash2 size={14} />
-          </Button>
-        </div>
+            <SortableContext
+              items={layers.map((l) => l.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="space-y-0.5">
+                {/* Recursive Layer List */}
+                <LayerList
+                  layersToRender={layers}
+                  depth={0}
+                  editingId={editingId}
+                  tempName={tempName}
+                  setTempName={setTempName}
+                  startRename={startRename}
+                  confirmRename={confirmRename}
+                  cancelRename={cancelRename}
+                  onToggleVisibility={onToggleVisibility}
+                  selectedLayerIds={selectedLayerIds}
+                  onSelectLayer={onSelectLayer}
+                  onToggleGroupExpanded={toggleGroupExpanded}
+                  onRemoveLayerMask={onRemoveLayerMask}
+                  onToggleLayerLock={onToggleLayerLock}
+                />
+              </div>
+            </SortableContext>
+          </DndContext>
+        </ScrollArea>
+        
+        <div className="mt-4 space-y-2 border-t pt-4">
+          {/* Quick Add Buttons */}
+          <div className="flex flex-wrap gap-1 justify-start">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('text')}>
+                  <Type className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Add Text Layer</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('drawing')}>
+                  <Layers className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Add Empty Layer</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('shape')}>
+                  <Square className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Add Shape Layer</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('gradient')}>
+                  <Palette className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Add Gradient Layer</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('adjustment')}>
+                  <SlidersHorizontal className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Add Adjustment Layer</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-background')}>
+                  <Sun className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Layer from Background</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-selection')} disabled={!hasActiveSelection}>
+                  <Layers className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Layer from Selection</p></TooltipContent>
+            </Tooltip>
+          </div>
 
-        {/* Right side: Masking, Smart Object, Clipping Mask */}
-        <div className="flex gap-1">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Apply Selection as Mask" 
-            className="h-7 w-7" 
-            onClick={handleAddMask}
-            disabled={!isAnyLayerSelected || !hasActiveSelection || layers.find(l => l.id === selectedLayerId)?.type === 'image'}
-          >
-            <Square size={14} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Toggle Clipping Mask" 
-            className="h-7 w-7" 
-            onClick={handleClippingMask}
-            disabled={!isAnyLayerSelected || layers.findIndex(l => l.id === selectedLayerId) === 0}
-          >
-            <Scissors size={14} />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            title="Convert to Smart Object" 
-            className="h-7 w-7" 
-            onClick={handleSmartObject}
-            disabled={!isMultiSelected}
-          >
-            <Package size={14} />
-          </Button>
+          <LayerActions
+            layers={layers}
+            selectedLayer={selectedLayer}
+            selectedLayerIds={selectedLayerIds}
+            onAddTextLayer={onAddTextLayer}
+            onAddDrawingLayer={onAddDrawingLayer}
+            onAddShapeLayer={onAddShapeLayer}
+            onAddGradientLayer={onAddGradientLayer}
+            onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+            onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
+            onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}
+            onRasterizeLayer={() => selectedLayerId && onRasterizeLayer(selectedLayerId)}
+            onCreateSmartObject={onCreateSmartObject}
+            onOpenSmartObject={onOpenSmartObject}
+            selectedShapeType={selectedShapeType}
+            groupLayers={() => groupLayers(selectedLayerIds)}
+            hasActiveSelection={hasActiveSelection}
+            onApplySelectionAsMask={onApplySelectionAsMask}
+            onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
+            onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
+            onDeleteHiddenLayers={onDeleteHiddenLayers}
+            onRasterizeSmartObject={onRasterizeSmartObject}
+            onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
+            onExportSmartObjectContents={onExportSmartObjectContents}
+            onArrangeLayer={onArrangeLayer}
+          />
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

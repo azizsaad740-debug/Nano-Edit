@@ -167,17 +167,6 @@ export const useSmartObjectLayers = ({
     }
   }, [selectedLayerId, commitLayerChange]);
 
-  const renameLayer = useCallback((id: string, newName: string) => {
-    const layerToRename = layers.find(l => l.id === id);
-    if (!layerToRename) return;
-
-    setLayers(prev => {
-      const updated = recursivelyUpdateLayer(prev, id, { name: newName });
-      recordHistory(updated);
-      return updated;
-    });
-  }, [layers, recordHistory]);
-
   const handleAddTextLayer = useCallback(() => {
     const newLayer: Layer = {
       id: uuidv4(),
@@ -199,7 +188,7 @@ export const useSmartObjectLayers = ({
       letterSpacing: 0,
       padding: 10,
       lineHeight: 1.2,
-      isLocked: false,
+      isLocked: false, // FIX Error 11
     };
     const updated = [...layers, newLayer];
     setLayers(updated);
@@ -208,10 +197,6 @@ export const useSmartObjectLayers = ({
   }, [layers, recordHistory, foregroundColor]);
 
   const handleAddDrawingLayer = useCallback(() => {
-    if (!smartObjectDimensions) {
-      showError("Cannot add drawing layer without dimensions.");
-      return "";
-    }
     const canvas = document.createElement('canvas');
     canvas.width = smartObjectDimensions.width;
     canvas.height = smartObjectDimensions.height;
@@ -310,7 +295,7 @@ export const useSmartObjectLayers = ({
     if (!selectedLayerId) return;
     
     setLayers(prev => {
-      const updated = prev.filter(l => l.id !== selectedLayerId);
+      const updated = recursivelyUpdateLayer(prev, selectedLayerId, { visible: false }).filter(l => l.id !== selectedLayerId);
       recordHistory(updated);
       return updated;
     });
@@ -378,7 +363,6 @@ export const useSmartObjectLayers = ({
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
-    renameLayer,
     handleAddTextLayer,
     handleAddDrawingLayer,
     handleAddShapeLayer,

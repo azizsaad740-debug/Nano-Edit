@@ -406,7 +406,7 @@ export const useEditorState = (
         image: projectData.sourceImage,
         dimensions: newDimensions,
         fileInfo: projectData.fileInfo,
-        exifData: null,
+        exifData: null, // EXIF data is not saved in project file
         aspect: newDimensions.width / newDimensions.height,
         history: projectData.history,
         currentHistoryIndex: projectData.currentHistoryIndex,
@@ -563,9 +563,9 @@ export const useEditorState = (
     updateCurrentState(newState);
     recordHistory("Apply Crop", newState, layers);
     // Fix Error 3: Crop type does not have 'aspect' property directly, use the aspect state from project manager
-    // Removed the line causing the error: handleProjectUpdate({ aspect: pendingCrop.aspect }); 
+    handleProjectUpdate({ aspect: pendingCrop.aspect }); 
     setActiveTool(null);
-  }, [currentState, pendingCrop, layers, recordHistory, setActiveTool, updateCurrentState]);
+  }, [currentState, pendingCrop, layers, recordHistory, handleProjectUpdate, setActiveTool, updateCurrentState]);
 
   const cancelCrop = useCallback(() => {
     setPendingCrop(currentState.crop);
@@ -679,6 +679,8 @@ export const useEditorState = (
 
   const applyMaskToSelectionPath = useCallback(() => {
     // This function is used when the lasso path is finalized and needs to be converted to a mask.
+    // Since the lasso path is already stored in selectionPath, we need a utility to convert it.
+    // This utility is defined in src/utils/maskToPolygon.ts and src/utils/maskUtils.ts
     // For now, we rely on the Workspace component to call convertSelectionPathToMask when needed.
     showError("Use 'Refine Selection' to convert Lasso path to a mask first.");
   }, []);
@@ -690,6 +692,7 @@ export const useEditorState = (
     }
     const toastId = showLoading("Refining selection...");
     try {
+      // We use maskToPolygon to get a simplified path, but here we need the actual mask data URL.
       const { polygonToMaskDataUrl } = await import("@/utils/maskUtils");
       const maskDataUrl = await polygonToMaskDataUrl(selectionPath, dimensions.width, dimensions.height);
       
@@ -895,7 +898,6 @@ export const useEditorState = (
     handleConvertSmartObjectToLayers,
     handleExportSmartObjectContents,
     handleArrangeLayer,
-    handleToggleVisibility,
     addTextLayer: (coords) => handleAddTextLayer(coords, foregroundColor),
     addDrawingLayer: handleAddDrawingLayer,
     handleAddLayerFromBackground,

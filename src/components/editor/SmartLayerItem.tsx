@@ -2,39 +2,20 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Move, Type, Layers, Eye, EyeOff, Square, Palette, Edit2 } from "lucide-react";
+import { Move, Type, Layers, Eye, EyeOff, Square, Palette } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import type { Layer } from "@/types/editor";
-import { Input } from "@/components/ui/input";
 
 interface SmartLayerItemProps {
   layer: Layer;
   isSelected: boolean;
   onSelect: (e: React.MouseEvent) => void;
   onToggleVisibility: (id: string) => void;
-  // Renaming props
-  isEditing: boolean;
-  tempName: string;
-  setTempName: (name: string) => void;
-  startRename: (layer: Layer) => void;
-  confirmRename: (id: string) => void;
-  cancelRename: () => void;
 }
 
-export const SmartLayerItem = ({ 
-  layer, 
-  isSelected, 
-  onSelect, 
-  onToggleVisibility,
-  isEditing,
-  tempName,
-  setTempName,
-  startRename,
-  confirmRename,
-  cancelRename,
-}: SmartLayerItemProps) => {
+export const SmartLayerItem = ({ layer, isSelected, onSelect, onToggleVisibility }: SmartLayerItemProps) => {
   const {
     attributes,
     listeners,
@@ -73,7 +54,7 @@ export const SmartLayerItem = ({
       style={style}
       onClick={onSelect}
       className={cn(
-        "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer bg-background group",
+        "flex items-center justify-between p-2 border rounded-md transition-shadow cursor-pointer bg-background",
         isDragging && "shadow-lg z-10 relative",
         isSelected && !isDragging && "bg-accent text-accent-foreground ring-2 ring-ring"
       )}
@@ -95,37 +76,8 @@ export const SmartLayerItem = ({
           {layer.visible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4 text-muted-foreground" />}
         </Button>
         {getLayerIcon()}
-        
-        {isEditing ? (
-          <Input
-            className="h-8 text-sm flex-1"
-            value={tempName}
-            onChange={(e) => setTempName(e.target.value)}
-            onBlur={() => confirmRename(layer.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") confirmRename(layer.id);
-              if (e.key === "Escape") cancelRename();
-            }}
-            autoFocus
-          />
-        ) : (
-          <span
-            className="font-medium truncate flex-1"
-            onDoubleClick={() => startRename(layer)}
-          >
-            {layer.name}
-          </span>
-        )}
+        <span className="font-medium truncate">{layer.name}</span>
       </div>
-      
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={(e) => handleIconClick(e, () => startRename(layer))}
-      >
-        <Edit2 className="h-3.5 w-3.5" />
-      </Button>
     </div>
   );
 };
