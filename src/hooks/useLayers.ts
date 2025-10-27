@@ -65,7 +65,6 @@ const findLayerLocation = (
       return { layer, container: currentLayers, index: i, parentGroups };
     }
     if (layer.type === 'group' && layer.children) {
-      // FIX Error 22: Corrected recursive call argument
       const found = findLayerLocation(id, layer.children, [...parentGroups, layer]); 
       if (found) return found;
     }
