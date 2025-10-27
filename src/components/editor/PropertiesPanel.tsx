@@ -11,6 +11,7 @@ import GradientProperties from "@/components/editor/GradientProperties";
 import AdjustmentProperties from "@/components/editor/AdjustmentProperties"; // NEW Import
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
+import LayerGeneralProperties from "./LayerGeneralProperties";
 import type { Layer, ActiveTool, BrushState, GradientToolState, EditState } from "@/types/editor";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 
@@ -112,7 +113,21 @@ export const PropertiesPanel = ({
               onDeleteGradientPreset={onDeleteGradientPreset}
             />
           ) : selectedLayer ? (
-            <Accordion type="multiple" className="w-full" defaultValue={['layer-specific']}>
+            <Accordion type="multiple" className="w-full" defaultValue={['general', 'layer-specific']}>
+              
+              {/* General Layer Properties */}
+              <AccordionItem value="general">
+                <AccordionTrigger>General Properties</AccordionTrigger>
+                <AccordionContent>
+                  <LayerGeneralProperties
+                    layer={selectedLayer}
+                    onUpdate={onLayerUpdate}
+                    onCommit={onLayerCommit}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Layer Specific Properties */}
               {selectedLayer.type === 'text' && (
                 <AccordionItem value="layer-specific">
                   <AccordionTrigger>Text Properties</AccordionTrigger>
