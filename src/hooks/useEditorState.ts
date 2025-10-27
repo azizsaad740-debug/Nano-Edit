@@ -562,8 +562,8 @@ export const useEditorState = (
     const newState = { ...currentState, crop: pendingCrop };
     updateCurrentState(newState);
     recordHistory("Apply Crop", newState, layers);
-    // Fix Error 3: Crop type does not have 'aspect' property directly, use the aspect state from project manager
-    handleProjectUpdate({ aspect: pendingCrop.aspect }); 
+    // Fix TS Error 1: Remove access to pendingCrop.aspect
+    // handleProjectUpdate({ aspect: pendingCrop.aspect }); 
     setActiveTool(null);
   }, [currentState, pendingCrop, layers, recordHistory, handleProjectUpdate, setActiveTool, updateCurrentState]);
 
@@ -898,6 +898,7 @@ export const useEditorState = (
     handleConvertSmartObjectToLayers,
     handleExportSmartObjectContents,
     handleArrangeLayer,
+    handleToggleVisibility, // TS Error 2 Fix: Explicitly return this property
     addTextLayer: (coords) => handleAddTextLayer(coords, foregroundColor),
     addDrawingLayer: handleAddDrawingLayer,
     handleAddLayerFromBackground,

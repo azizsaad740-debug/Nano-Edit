@@ -188,7 +188,8 @@ export const useLayers = ({
   }, [setLayers]);
 
   const commitLayerChange = useCallback((id: string) => {
-    const layer = layers.find((l) => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find((l) => l.id === id);
     if (!layer) return;
     let action = `Edit Layer "${layer.name}"`;
     if (layer.type === 'drawing') action = 'Brush Stroke';
@@ -199,7 +200,8 @@ export const useLayers = ({
   }, [currentEditState, layers, recordHistory]);
 
   const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
-    const updatedLayers = recursivelyUpdateLayer(layers, id, updates);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const updatedLayers = recursivelyUpdateLayer(safeLayers, id, updates);
     updateLayersState(updatedLayers, historyName);
   }, [layers, updateLayersState]);
 
@@ -216,24 +218,27 @@ export const useLayers = ({
   }, [selectedLayerId, commitLayerChange]);
 
   const toggleLayerVisibility = useCallback((id: string) => {
-    const layer = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === id);
     if (!layer) return;
-    const updated = recursivelyUpdateLayer(layers, id, { visible: !layer.visible });
+    const updated = recursivelyUpdateLayer(safeLayers, id, { visible: !layer.visible });
     updateLayersState(updated, "Toggle Layer Visibility");
   }, [layers, updateLayersState]);
 
   const toggleLayerLock = useCallback((id: string) => {
-    const layer = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === id);
     if (!layer || layer.type === 'image') {
       showError("The background layer cannot be locked/unlocked.");
       return;
     }
-    const updated = recursivelyUpdateLayer(layers, id, { isLocked: !layer.isLocked });
+    const updated = recursivelyUpdateLayer(safeLayers, id, { isLocked: !layer.isLocked });
     updateLayersState(updated, `Toggle Layer Lock on "${layer.name}"`);
   }, [layers, updateLayersState]);
 
   const renameLayer = useCallback((id: string, newName: string) => {
-    const layerToRename = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layerToRename = safeLayers.find(l => l.id === id);
     if (!layerToRename) return;
 
     if (layerToRename.type === 'image' && layerToRename.name === 'Background') {
@@ -241,12 +246,13 @@ export const useLayers = ({
       return;
     }
 
-    const updated = recursivelyUpdateLayer(layers, id, { name: newName });
+    const updated = recursivelyUpdateLayer(safeLayers, id, { name: newName });
     updateLayersState(updated, `Rename Layer to "${newName}"`);
   }, [layers, updateLayersState]);
 
   const deleteLayer = useCallback((id: string) => {
-    const layerToDelete = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layerToDelete = safeLayers.find(l => l.id === id);
     if (!layerToDelete) return;
 
     if (layerToDelete.type === 'image') {
@@ -268,8 +274,8 @@ export const useLayers = ({
 
       const newBgLayer: Layer = {
         id: 'background',
-        type: "drawing",
         name: "Background (Transparent)",
+        type: "drawing",
         visible: true,
         opacity: 100,
         blendMode: 'normal',
@@ -281,7 +287,7 @@ export const useLayers = ({
         height: 100,
         rotation: 0,
       };
-      const updated = layers.map(l => l.id === id ? newBgLayer : l);
+      const updated = safeLayers.map(l => l.id === id ? newBgLayer : l);
       updateLayersState(updated, "Delete Background (Replaced with Transparent)");
       return;
     }
@@ -300,11 +306,12 @@ export const useLayers = ({
       });
     };
 
-    const updated = recursivelyFilterLayers(layers);
+    const updated = recursivelyFilterLayers(safeLayers);
     updateLayersState(updated, "Delete Layer");
   }, [layers, updateLayersState, selectedLayerId, imageNaturalDimensions]);
 
   const deleteHiddenLayers = useCallback(() => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const hiddenLayers: Layer[] = [];
     
     const recursivelyFilterHidden = (currentLayers: Layer[]): Layer[] => {
@@ -320,7 +327,7 @@ export const useLayers = ({
       });
     };
 
-    const updated = recursivelyFilterHidden(layers);
+    const updated = recursivelyFilterHidden(safeLayers);
     
     if (hiddenLayers.length === 0) {
       showSuccess("No hidden layers found to delete.");
@@ -332,7 +339,8 @@ export const useLayers = ({
   }, [layers, updateLayersState]);
 
   const duplicateLayer = useCallback((id: string) => {
-    const location = findLayerLocation(id, layers);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const location = findLayerLocation(id, safeLayers);
     if (!location || location.layer.type === 'image') {
       showError("The background layer cannot be duplicated.");
       return;
@@ -363,7 +371,8 @@ export const useLayers = ({
   }, [layers, setLayers, setSelectedLayerId]);
 
   const rasterizeLayer = useCallback(async (id: string) => {
-    const layerToRasterize = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layerToRasterize = safeLayers.find(l => l.id === id);
 
     if (!layerToRasterize || (layerToRasterize.type !== 'text' && layerToRasterize.type !== 'vector-shape' && layerToRasterize.type !== 'gradient') || !imgRef.current) {
       showError("Only text, vector shape, and gradient layers can be rasterized.");
@@ -395,7 +404,7 @@ export const useLayers = ({
         rotation: layerToRasterize.rotation,
       };
 
-      const updatedLayers = layers.map(l => l.id === id ? newLayer : l);
+      const updatedLayers = safeLayers.map(l => l.id === id ? newLayer : l);
       updateLayersState(updatedLayers, `Rasterize Layer "${layerToRasterize.name}"`);
       
       dismissToast(toastId);
@@ -408,7 +417,8 @@ export const useLayers = ({
   }, [layers, updateLayersState, imgRef]);
 
   const mergeLayerDown = useCallback(async (id: string) => {
-    const location = findLayerLocation(id, layers);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const location = findLayerLocation(id, safeLayers);
     if (!location) {
       showError("Layer not found.");
       return;
@@ -486,7 +496,8 @@ export const useLayers = ({
 
   const handleArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
     if (!selectedLayerId) return;
-    const location = findLayerLocation(selectedLayerId, layers);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const location = findLayerLocation(selectedLayerId, safeLayers);
     if (!location || location.layer.type === 'image') {
       showError("Cannot arrange background layer.");
       return;
@@ -516,8 +527,9 @@ export const useLayers = ({
   }, [layers, selectedLayerId, setLayers]);
 
   const reorderLayers = useCallback((activeId: string, overId: string) => {
-    const activeLocation = findLayerLocation(activeId, layers);
-    const overLocation = findLayerLocation(overId, layers);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const activeLocation = findLayerLocation(activeId, safeLayers);
+    const overLocation = findLayerLocation(overId, safeLayers);
 
     if (!activeLocation || !overLocation) {
       showError("Could not find layers for reordering.");
@@ -549,7 +561,7 @@ export const useLayers = ({
       // 2. Cross-container move (or drop into/out of a group)
       
       // A. Remove the layer from its original location
-      const layersAfterRemoval = recursivelyRemoveLayer(layers, activeId);
+      const layersAfterRemoval = recursivelyRemoveLayer(safeLayers, activeId);
       
       // B. Determine target container path and index
       let targetContainerPath: string[];
@@ -575,10 +587,11 @@ export const useLayers = ({
   // --- Layer Creation ---
 
   const addTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "text",
-      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
+      name: `Text ${safeLayers.filter((l) => l.type === "text").length + 1}`,
       visible: true,
       content: "New Text",
       x: coords.x,
@@ -596,10 +609,10 @@ export const useLayers = ({
       lineHeight: 1.2,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     updateLayersState(updated, "Add Text Layer");
     setSelectedLayerId(newLayer.id);
-  }, [layers, updateLayersState, setSelectedLayerId]);
+  }, [layers, updateLayersState, setSelectedLayerId, foregroundColor]);
 
   const addDrawingLayer = useCallback(() => {
     if (!imageNaturalDimensions) {
@@ -617,10 +630,11 @@ export const useLayers = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const transparentDataUrl = canvas.toDataURL();
 
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "drawing",
-      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
+      name: `Drawing ${safeLayers.filter((l) => l.type === "drawing").length + 1}`,
       visible: true,
       opacity: 100,
       blendMode: 'normal',
@@ -632,14 +646,15 @@ export const useLayers = ({
       rotation: 0,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     updateLayersState(updated, "Add Drawing Layer");
     setSelectedLayerId(newLayer.id);
     return newLayer.id;
   }, [layers, updateLayersState, setSelectedLayerId, imageNaturalDimensions]);
 
   const handleAddLayerFromBackground = useCallback(async () => {
-    const backgroundLayer = layers.find(l => l.id === 'background');
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const backgroundLayer = safeLayers.find(l => l.id === 'background');
     if (!backgroundLayer || !backgroundLayer.dataUrl || !imageNaturalDimensions) {
       showError("No background image loaded to create a layer from.");
       return;
@@ -669,7 +684,7 @@ export const useLayers = ({
       };
       
       // Insert immediately above the background layer (index 1)
-      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      const updated = [safeLayers[0], newLayer, ...safeLayers.slice(1)];
       
       updateLayersState(updated, "Layer from Background");
       setSelectedLayerId(newLayer.id);
@@ -697,10 +712,11 @@ export const useLayers = ({
       
       const dataUrl = await rasterizeEditedImageWithMask(options, selectionMaskDataUrl);
 
+      const safeLayers = Array.isArray(layers) ? layers : [];
       const newLayer: Layer = {
         id: uuidv4(),
         type: "drawing",
-        name: `Layer via Copy ${layers.filter((l) => l.type === "drawing").length + 1}`,
+        name: `Layer via Copy ${safeLayers.filter((l) => l.type === "drawing").length + 1}`,
         visible: true,
         opacity: 100,
         blendMode: 'normal',
@@ -714,7 +730,7 @@ export const useLayers = ({
       };
       
       // Insert immediately above the background layer (index 1)
-      const updated = [layers[0], newLayer, ...layers.slice(1)];
+      const updated = [safeLayers[0], newLayer, ...safeLayers.slice(1)];
       
       clearSelectionState();
       updateLayersState(updated, "Layer via Copy");
@@ -729,10 +745,11 @@ export const useLayers = ({
   }, [selectionMaskDataUrl, imgRef, imageNaturalDimensions, layers, currentEditState, clearSelectionState, updateLayersState, setSelectedLayerId]);
 
   const addShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "vector-shape",
-      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${safeLayers.filter((l) => l.type === "vector-shape").length + 1}`,
       visible: true,
       x: coords.x,
       y: coords.y,
@@ -749,16 +766,17 @@ export const useLayers = ({
       points: shapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     updateLayersState(updated, "Add Shape Layer");
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, setSelectedLayerId]);
 
   const addGradientLayer = useCallback(() => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "gradient",
-      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      name: `Gradient ${safeLayers.filter((l) => l.type === "gradient").length + 1}`,
       visible: true,
       opacity: 100,
       blendMode: 'normal',
@@ -778,7 +796,7 @@ export const useLayers = ({
       gradientRadius: gradientToolState.radius,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     updateLayersState(updated, "Add Gradient Layer");
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, setSelectedLayerId, gradientToolState]);
@@ -786,18 +804,19 @@ export const useLayers = ({
   const addAdjustmentLayer = useCallback((adjustmentType: AdjustmentLayerData['type']) => {
     let name: string;
     let adjustmentData: AdjustmentLayerData;
+    const safeLayers = Array.isArray(layers) ? layers : [];
 
     switch (adjustmentType) {
       case 'brightness':
-        name = `Brightness/Contrast ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'brightness').length + 1}`;
+        name = `Brightness/Contrast ${safeLayers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'brightness').length + 1}`;
         adjustmentData = { type: 'brightness', adjustments: { brightness: 100, contrast: 100, saturation: 100 } };
         break;
       case 'curves':
-        name = `Curves ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'curves').length + 1}`;
+        name = `Curves ${safeLayers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'curves').length + 1}`;
         adjustmentData = { type: 'curves', curves: initialCurvesState };
         break;
       case 'hsl':
-        name = `HSL ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'hsl').length + 1}`;
+        name = `HSL ${safeLayers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'hsl').length + 1}`;
         adjustmentData = { type: 'hsl', hslAdjustments: { 
           global: { ...initialHslAdjustment }, red: { ...initialHslAdjustment }, orange: { ...initialHslAdjustment }, 
           yellow: { ...initialHslAdjustment }, green: { ...initialHslAdjustment }, aqua: { ...initialHslAdjustment }, 
@@ -805,7 +824,7 @@ export const useLayers = ({
         } };
         break;
       case 'grading':
-        name = `Color Grading ${layers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'grading').length + 1}`;
+        name = `Color Grading ${safeLayers.filter(l => l.type === 'adjustment' && l.adjustmentData?.type === 'grading').length + 1}`;
         adjustmentData = { type: 'grading', grading: { grayscale: 0, sepia: 0, invert: 0 } };
         break;
       default:
@@ -823,7 +842,7 @@ export const useLayers = ({
       isLocked: false,
     };
 
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     updateLayersState(updated, `Add Adjustment Layer: ${name}`);
     setSelectedLayerId(newLayer.id);
   }, [layers, updateLayersState, setSelectedLayerId]);
@@ -840,7 +859,8 @@ export const useLayers = ({
       return;
     }
 
-    const selectedLayers = layers.filter(layer => layerIds.includes(layer.id));
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const selectedLayers = safeLayers.filter(layer => layerIds.includes(layer.id));
     
     // 1. Calculate the bounding box in PIXELS relative to the main image canvas
     let minX_px = Infinity, minY_px = Infinity, maxX_px = -Infinity, maxY_px = -Infinity;
@@ -947,7 +967,7 @@ export const useLayers = ({
       }
     };
 
-    const updatedLayers = layers
+    const updatedLayers = safeLayers
       .filter(layer => !layerIds.includes(layer.id))
       .concat(smartObjectLayer);
 
@@ -956,7 +976,8 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const openSmartObjectEditor = useCallback((id: string) => {
-    const layer = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === id);
     if (!layer || layer.type !== 'smart-object') {
       showError("Invalid smart object layer.");
       return;
@@ -992,9 +1013,10 @@ export const useLayers = ({
     showSuccess("Smart object changes saved.");
   }, [layers, updateLayersState, smartObjectEditingId, closeSmartObjectEditor]);
 
-  const rasterizeSmartObject = useCallback(async () => {
-    if (!selectedLayerId) return;
-    const layerToRasterize = layers.find(l => l.id === selectedLayerId);
+  const rasterizeSmartObject = useCallback(async (id: string) => {
+    if (!id) return;
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layerToRasterize = safeLayers.find(l => l.id === id);
 
     if (!layerToRasterize || layerToRasterize.type !== 'smart-object' || !imgRef.current || !imageNaturalDimensions) {
       showError("Select a Smart Object to rasterize.");
@@ -1026,7 +1048,7 @@ export const useLayers = ({
         rotation: layerToRasterize.rotation,
       };
 
-      const updatedLayers = layers.map(l => l.id === selectedLayerId ? newLayer : l);
+      const updatedLayers = safeLayers.map(l => l.id === id ? newLayer : l);
       updateLayersState(updatedLayers, `Rasterize Smart Object "${layerToRasterize.name}"`);
       
       dismissToast(toastId);
@@ -1036,11 +1058,12 @@ export const useLayers = ({
       dismissToast(toastId);
       showError(err.message || "Failed to rasterize Smart Object.");
     }
-  }, [layers, updateLayersState, selectedLayerId, imgRef, imageNaturalDimensions]);
+  }, [layers, updateLayersState, imgRef, imageNaturalDimensions]);
 
-  const convertSmartObjectToLayers = useCallback(() => {
-    if (!selectedLayerId) return;
-    const smartObjectLayer = layers.find(l => l.id === selectedLayerId);
+  const convertSmartObjectToLayers = useCallback((id: string) => {
+    if (!id) return;
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const smartObjectLayer = safeLayers.find(l => l.id === id);
 
     if (!smartObjectLayer || smartObjectLayer.type !== 'smart-object' || !smartObjectLayer.smartObjectData || !imageNaturalDimensions) {
       showError("Select a Smart Object to convert to layers.");
@@ -1100,11 +1123,11 @@ export const useLayers = ({
     });
 
     // 3. Replace the Smart Object layer with its children
-    const soIndex = layers.findIndex(l => l.id === selectedLayerId);
+    const soIndex = safeLayers.findIndex(l => l.id === id);
     const updatedLayers = [
-      ...layers.slice(0, soIndex),
+      ...safeLayers.slice(0, soIndex),
       ...newLayers,
-      ...layers.slice(soIndex + 1),
+      ...safeLayers.slice(soIndex + 1),
     ];
 
     updateLayersState(updatedLayers, `Convert Smart Object "${smartObjectLayer.name}" to Layers`);
@@ -1112,9 +1135,10 @@ export const useLayers = ({
     showSuccess("Smart Object converted to individual layers.");
   }, [layers, selectedLayerId, updateLayersState, imageNaturalDimensions, setSelectedLayerId]);
 
-  const handleExportSmartObjectContents = useCallback(() => {
-    if (!selectedLayerId) return;
-    const smartObjectLayer = layers.find(l => l.id === selectedLayerId);
+  const handleExportSmartObjectContents = useCallback((id: string) => {
+    if (!id) return;
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const smartObjectLayer = safeLayers.find(l => l.id === id);
 
     if (!smartObjectLayer || smartObjectLayer.type !== 'smart-object' || !smartObjectLayer.smartObjectData) {
       showError("Select a Smart Object to export its contents.");
@@ -1143,7 +1167,8 @@ export const useLayers = ({
       return;
     }
 
-    const selectedLayers = layers.filter(layer => layerIds.includes(layer.id));
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const selectedLayers = safeLayers.filter(layer => layerIds.includes(layer.id));
     const nonBackgroundSelected = selectedLayers.filter(l => l.type !== 'image');
 
     if (nonBackgroundSelected.length !== selectedLayers.length) {
@@ -1219,7 +1244,7 @@ export const useLayers = ({
     const newGroup: Layer = {
       id: uuidv4(),
       type: "group",
-      name: `Group ${layers.filter(l => l.type === 'group').length + 1}`,
+      name: `Group ${safeLayers.filter(l => l.type === 'group').length + 1}`,
       visible: true,
       opacity: 100,
       blendMode: 'normal',
@@ -1234,7 +1259,7 @@ export const useLayers = ({
     };
 
     // 3. Replace the selected layers with the new group
-    const updatedLayers = layers
+    const updatedLayers = safeLayers
       .filter(layer => !layerIds.includes(layer.id))
       .concat(newGroup);
 
@@ -1244,27 +1269,30 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions, imgRef, setSelectedLayerId]);
 
   const toggleGroupExpanded = useCallback((id: string) => {
-    const updated = recursivelyUpdateLayer(layers, id, { expanded: !(layers.find(l => l.id === id) as Layer)?.expanded });
-    updateLayersState(updated, `Toggle Group ${layers.find(l => l.id === id)?.expanded ? 'Collapse' : 'Expand'}`);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const updated = recursivelyUpdateLayer(safeLayers, id, { expanded: !(safeLayers.find(l => l.id === id) as Layer)?.expanded });
+    updateLayersState(updated, `Toggle Group ${safeLayers.find(l => l.id === id)?.expanded ? 'Collapse' : 'Expand'}`);
   }, [layers, updateLayersState]);
 
   // --- Masking Functions ---
 
   const removeLayerMask = useCallback((id: string) => {
-    const layer = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === id);
     if (!layer || !layer.maskDataUrl) {
       showError("Layer does not have a mask.");
       return;
     }
     
-    const updatedLayers = recursivelyUpdateLayer(layers, id, { maskDataUrl: undefined });
+    const updatedLayers = recursivelyUpdateLayer(safeLayers, id, { maskDataUrl: undefined });
     
     updateLayersState(updatedLayers, `Remove Mask from Layer "${layer.name}"`);
     showSuccess(`Mask removed from layer "${layer.name}".`);
   }, [layers, updateLayersState]);
 
   const invertLayerMask = useCallback(async (id: string) => {
-    const layer = layers.find(l => l.id === id);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === id);
     if (!layer || !layer.maskDataUrl) {
       showError("Layer does not have a mask to invert.");
       return;
@@ -1282,7 +1310,7 @@ export const useLayers = ({
         imageNaturalDimensions.height
       );
 
-      const updatedLayers = recursivelyUpdateLayer(layers, id, { maskDataUrl: invertedMaskDataUrl });
+      const updatedLayers = recursivelyUpdateLayer(safeLayers, id, { maskDataUrl: invertedMaskDataUrl });
       
       updateLayersState(updatedLayers, `Invert Mask on Layer "${layer.name}"`);
       dismissToast(toastId);
@@ -1295,7 +1323,8 @@ export const useLayers = ({
   }, [layers, updateLayersState, imageNaturalDimensions]);
 
   const toggleClippingMask = useCallback((id: string) => {
-    const location = findLayerLocation(id, layers);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const location = findLayerLocation(id, safeLayers);
     if (!location) return;
     
     const { container, index, layer } = location;
@@ -1309,7 +1338,7 @@ export const useLayers = ({
       return;
     }
 
-    const updated = recursivelyUpdateLayer(layers, id, { isClippingMask: !layer.isClippingMask });
+    const updated = recursivelyUpdateLayer(safeLayers, id, { isClippingMask: !layer.isClippingMask });
     updateLayersState(updated, `Toggle Clipping Mask on Layer "${layer.name}"`);
   }, [layers, updateLayersState]);
 
@@ -1319,7 +1348,8 @@ export const useLayers = ({
       return;
     }
     
-    const layer = layers.find(l => l.id === selectedLayerId);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find(l => l.id === selectedLayerId);
     if (!layer || layer.type === 'image') {
       showError("Cannot apply mask to the background layer.");
       return;
@@ -1330,7 +1360,7 @@ export const useLayers = ({
       return;
     }
 
-    const updatedLayers = recursivelyUpdateLayer(layers, selectedLayerId, { maskDataUrl: selectionMaskDataUrl });
+    const updatedLayers = recursivelyUpdateLayer(safeLayers, selectedLayerId, { maskDataUrl: selectionMaskDataUrl });
     
     clearSelectionState();
     updateLayersState(updatedLayers, `Apply Selection as Mask to "${layer.name}"`);
@@ -1340,7 +1370,8 @@ export const useLayers = ({
   // --- Drawing/Brush Handlers ---
 
   const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
-    const targetLayer = layers.find(l => l.id === layerId);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const targetLayer = safeLayers.find(l => l.id === layerId);
     if (!targetLayer || !imgRef.current) return;
 
     const imageDimensions = { width: imgRef.current.naturalWidth, height: imgRef.current.naturalHeight };
@@ -1425,7 +1456,7 @@ export const useLayers = ({
     rasterizeLayer: rasterizeLayer,
     handleRasterizeSmartObject: rasterizeSmartObject,
     handleConvertSmartObjectToLayers: convertSmartObjectToLayers,
-    handleExportSmartObjectContents,
+    handleExportSmartObjectContents: handleExportSmartObjectContents,
     handleArrangeLayer,
 
     // State/History helpers
