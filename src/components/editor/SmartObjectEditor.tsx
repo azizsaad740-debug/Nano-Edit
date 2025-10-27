@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { X, Undo2, Redo2, Save } from "lucide-react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
@@ -11,6 +9,9 @@ import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers";
 import { useHotkeys } from "react-hotkeys-hook";
+import { Button } from "@/components/ui/button";
+import { X, Undo2, Redo2, Save } from "lucide-react";
+import * as React from "react";
 
 interface SmartObjectEditorProps {
   smartObject: Layer;
@@ -110,9 +111,15 @@ export const SmartObjectEditor = ({
   const dummySetGradientToolState = () => {};
   const dummyOnSaveGradientPreset = () => {};
   const dummyOnDeleteGradientPreset = () => {};
+  
+  // Dummy Selective Blur Props (Selective blur is a global effect, not managed inside SO)
   const dummySelectiveBlurStrength = 50;
-  const dummyOnSelectiveBlurStrengthChange = () => {};
-  const dummyOnSelectiveBlurStrengthCommit = () => {};
+  const dummyOnSelectiveBlurStrengthChange = React.useCallback((value: number) => {
+    // No operation needed in Smart Object context
+  }, []);
+  const dummyOnSelectiveBlurStrengthCommit = React.useCallback((value: number) => {
+    // No operation needed in Smart Object context
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -153,6 +160,9 @@ export const SmartObjectEditor = ({
           onSwapColors={onSwapColors} 
           brushState={brushState} 
           setBrushState={setBrushState} 
+          selectiveBlurStrength={dummySelectiveBlurStrength}
+          onSelectiveBlurStrengthChange={dummyOnSelectiveBlurStrengthChange}
+          onSelectiveBlurStrengthCommit={dummyOnSelectiveBlurStrengthCommit}
         />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           {/* Middle Panel: Workspace Preview */}

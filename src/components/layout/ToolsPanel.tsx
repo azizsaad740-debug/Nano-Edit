@@ -30,6 +30,7 @@ import {
 import type { Layer, ActiveTool, BrushState } from "@/types/editor"; // Import ActiveTool and BrushState
 import { ColorTool } from "./ColorTool"; // Import ColorTool
 import { BrushOptions } from "@/components/editor/BrushOptions"; // Import BrushOptions
+import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions"; // NEW Import
 
 type Tool = ActiveTool; // Use ActiveTool type directly
 
@@ -45,6 +46,10 @@ interface ToolsPanelProps {
   onSwapColors: () => void; // New prop
   brushState: BrushState; // New prop for brush state
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void; // New prop for setting brush state
+  // NEW PROPS for Selective Blur
+  selectiveBlurStrength: number;
+  onSelectiveBlurStrengthChange: (value: number) => void;
+  onSelectiveBlurStrengthCommit: (value: number) => void;
 }
 
 const tools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string }[] = [
@@ -79,6 +84,9 @@ export const ToolsPanel = ({
   onSwapColors,
   brushState, // Destructure brushState
   setBrushState, // Destructure setBrushState
+  selectiveBlurStrength,
+  onSelectiveBlurStrengthChange,
+  onSelectiveBlurStrengthCommit,
 }: ToolsPanelProps) => {
   const currentShapeIcon = React.useMemo(() => {
     const subTool = shapeSubTools.find(st => st.type === selectedShapeType);
@@ -170,7 +178,7 @@ export const ToolsPanel = ({
           )}
           
           {isAnyBrushActive && (
-            <div className="mt-4 w-full">
+            <div className="mt-4 w-full space-y-4">
               <BrushOptions
                 activeTool={activeTool as "brush" | "eraser"}
                 brushSize={brushState.size}
@@ -186,6 +194,13 @@ export const ToolsPanel = ({
                 brushShape={brushState.shape}
                 setBrushShape={(shape) => setBrushState({ shape })}
               />
+              {isBlurBrushActive && (
+                <BlurBrushOptions
+                  selectiveBlurStrength={selectiveBlurStrength}
+                  onStrengthChange={onSelectiveBlurStrengthChange}
+                  onStrengthCommit={onSelectiveBlurStrengthCommit}
+                />
+              )}
             </div>
           )}
         </div>

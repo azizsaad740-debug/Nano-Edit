@@ -225,11 +225,11 @@ const Index = () => {
     loadTemplateData,
     applySelectionAsMask,
     removeLayerMask,
-    invertLayerMask,
     toggleClippingMask,
     toggleLayerLock,
     handleDrawingStrokeEnd,
     loadImageData,
+    invertLayerMask,
   } = editorState;
 
   // --- Local Functions ---
@@ -600,6 +600,9 @@ const Index = () => {
           onSwapColors={handleSwapColors} 
           brushState={brushState} 
           setBrushState={setBrushState} 
+          selectiveBlurStrength={selectiveBlurStrengthState}
+          onSelectiveBlurStrengthChange={handleSelectiveBlurStrengthChange}
+          onSelectiveBlurStrengthCommit={handleSelectiveBlurStrengthCommit}
         />
         <ResizablePanelGroup direction="horizontal" className="flex-1">
           <ResizablePanel defaultSize={75}>
