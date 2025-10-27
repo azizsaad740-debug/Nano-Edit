@@ -141,19 +141,21 @@ export const useSmartObjectLayers = ({
   }, []);
 
   const commitLayerChange = useCallback((id: string) => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const layer = safeLayers.find((l) => l.id === id);
+    if (!layer) return;
     setLayers(prev => {
       recordHistory(prev);
       return prev;
     });
-  }, [recordHistory]);
+  }, [recordHistory, layers]);
 
   const handleLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
-    setLayers(prev => {
-      const updatedLayers = recursivelyUpdateLayer(prev, id, updates);
-      recordHistory(updatedLayers);
-      return updatedLayers;
-    });
-  }, [recordHistory]);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const updatedLayers = recursivelyUpdateLayer(safeLayers, id, updates);
+    setLayers(updatedLayers);
+    recordHistory(updatedLayers);
+  }, [recordHistory, layers]);
 
   const handleLayerOpacityChange = useCallback((opacity: number) => {
     if (selectedLayerId) {
@@ -168,10 +170,11 @@ export const useSmartObjectLayers = ({
   }, [selectedLayerId, commitLayerChange]);
 
   const handleAddTextLayer = useCallback(() => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "text",
-      name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
+      name: `Text ${safeLayers.filter((l) => l.type === "text").length + 1}`,
       visible: true,
       content: "New Text",
       x: 50,
@@ -190,7 +193,7 @@ export const useSmartObjectLayers = ({
       lineHeight: 1.2,
       isLocked: false, // FIX Error 11
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     setLayers(updated);
     recordHistory(updated);
     setSelectedLayerId(newLayer.id);
@@ -208,10 +211,11 @@ export const useSmartObjectLayers = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const transparentDataUrl = canvas.toDataURL();
 
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "drawing",
-      name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
+      name: `Drawing ${safeLayers.filter((l) => l.type === "drawing").length + 1}`,
       visible: true,
       opacity: 100,
       blendMode: 'normal',
@@ -223,7 +227,7 @@ export const useSmartObjectLayers = ({
       rotation: 0,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     setLayers(updated);
     recordHistory(updated);
     setSelectedLayerId(newLayer.id);
@@ -231,6 +235,7 @@ export const useSmartObjectLayers = ({
   }, [layers, recordHistory, smartObjectDimensions]);
 
   const handleAddShapeLayer = useCallback(() => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     if (!selectedShapeType) {
       showError("Please select a shape type first.");
       return;
@@ -238,7 +243,7 @@ export const useSmartObjectLayers = ({
     const newLayer: Layer = {
       id: uuidv4(),
       type: "vector-shape",
-      name: `${selectedShapeType?.charAt(0).toUpperCase() + selectedShapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
+      name: `${selectedShapeType?.charAt(0).toUpperCase() + selectedShapeType?.slice(1) || 'Shape'} ${safeLayers.filter((l) => l.type === "vector-shape").length + 1}`,
       visible: true,
       x: 50,
       y: 50,
@@ -255,17 +260,18 @@ export const useSmartObjectLayers = ({
       points: selectedShapeType === 'triangle' ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     setLayers(updated);
     recordHistory(updated);
     setSelectedLayerId(newLayer.id);
   }, [layers, recordHistory, selectedShapeType, foregroundColor, backgroundColor]);
 
   const handleAddGradientLayer = useCallback(() => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     const newLayer: Layer = {
       id: uuidv4(),
       type: "gradient",
-      name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
+      name: `Gradient ${safeLayers.filter((l) => l.type === "gradient").length + 1}`,
       visible: true,
       opacity: 100,
       blendMode: 'normal',
@@ -285,7 +291,7 @@ export const useSmartObjectLayers = ({
       gradientRadius: 50,
       isLocked: false,
     };
-    const updated = [...layers, newLayer];
+    const updated = [...safeLayers, newLayer];
     setLayers(updated);
     recordHistory(updated);
     setSelectedLayerId(newLayer.id);
@@ -295,7 +301,8 @@ export const useSmartObjectLayers = ({
     if (!selectedLayerId) return;
     
     setLayers(prev => {
-      const updated = recursivelyUpdateLayer(prev, selectedLayerId, { visible: false }).filter(l => l.id !== selectedLayerId);
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const updated = recursivelyUpdateLayer(safePrev, selectedLayerId, { visible: false }).filter(l => l.id !== selectedLayerId);
       recordHistory(updated);
       return updated;
     });
@@ -303,7 +310,8 @@ export const useSmartObjectLayers = ({
   }, [selectedLayerId, recordHistory]);
 
   const handleDuplicateLayer = useCallback(() => {
-    const selectedLayer = layers.find(l => l.id === selectedLayerId);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const selectedLayer = safeLayers.find(l => l.id === selectedLayerId);
     if (!selectedLayer) return;
     const newLayer: Layer = {
       ...selectedLayer,
@@ -311,8 +319,9 @@ export const useSmartObjectLayers = ({
       name: `${selectedLayer.name} Copy`,
     };
     setLayers(prev => {
-      const index = prev.findIndex(l => l.id === selectedLayer.id);
-      const updated = [...prev.slice(0, index + 1), newLayer, ...prev.slice(index + 1)];
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const index = safePrev.findIndex(l => l.id === selectedLayer.id);
+      const updated = [...safePrev.slice(0, index + 1), newLayer, ...safePrev.slice(index + 1)];
       recordHistory(updated);
       return updated;
     });
@@ -320,23 +329,25 @@ export const useSmartObjectLayers = ({
   }, [layers, selectedLayerId, recordHistory]);
 
   const handleToggleVisibility = useCallback((id: string) => {
+    const safeLayers = Array.isArray(layers) ? layers : [];
     setLayers(prev => {
-      const updated = recursivelyUpdateLayer(prev, id, { visible: !(prev.find(l => l.id === id) as Layer)?.visible });
+      const updated = recursivelyUpdateLayer(safeLayers, id, { visible: !(safeLayers.find(l => l.id === id) as Layer)?.visible });
       recordHistory(updated);
       return updated;
     });
-  }, [recordHistory]);
+  }, [recordHistory, layers]);
 
   const handleReorder = useCallback((activeId: string, overId: string) => {
-    const oldIndex = layers.findIndex((l) => l.id === activeId);
-    const newIndex = layers.findIndex((l) => l.id === overId);
+    const safeLayers = Array.isArray(layers) ? layers : [];
+    const oldIndex = safeLayers.findIndex((l) => l.id === activeId);
+    const newIndex = safeLayers.findIndex((l) => l.id === overId);
 
     if (oldIndex === -1 || newIndex === -1) {
       return;
     }
     
     setLayers(prev => {
-      const updated = arrayMove(prev, oldIndex, newIndex);
+      const updated = arrayMove(safeLayers, oldIndex, newIndex);
       recordHistory(updated);
       return updated;
     });
@@ -344,8 +355,7 @@ export const useSmartObjectLayers = ({
 
   const handleDrawingStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
     // This is a simplified version for the Smart Object Editor, assuming no complex history/undo needed here.
-    // In a real scenario, this would merge the stroke onto the existing drawing layer dataUrl.
-    // For now, we'll just update the dataUrl of the target layer.
+    // For now, we'll just update the dataUrl of the target layer and commit.
     updateLayer(layerId, { dataUrl: strokeDataUrl });
     commitLayerChange(layerId);
   }, [updateLayer, commitLayerChange]);

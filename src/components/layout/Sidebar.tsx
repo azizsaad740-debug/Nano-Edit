@@ -100,6 +100,10 @@ interface SidebarProps {
   selectiveBlurStrength: number;
   onSelectiveBlurStrengthChange: (value: number) => void;
   onSelectiveBlurStrengthCommit: (value: number) => void;
+  // Fonts
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

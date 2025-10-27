@@ -333,12 +333,12 @@ const Index = () => {
 
       for (let i = 0; i < items.length; i++) {
         if (items[i].type.indexOf("image") !== -1) {
-          const imageFile = items[i].getAsFile();
-          if (imageFile) {
+          const blob = items[i].getAsFile();
+          if (blob) {
             // Paste image in new tab
             const newProject = createNewTab("Pasted Image");
             setActiveProjectId(newProject.id);
-            handleFileSelect(imageFile, false);
+            handleFileSelect(blob, false);
             event.preventDefault();
             return;
           }
@@ -408,6 +408,10 @@ const Index = () => {
     onApplyPreset: applyPreset,
     onSavePreset: () => setIsSavingPreset(true),
     onDeletePreset: deletePreset,
+    frame,
+    onFramePresetChange: handleFramePresetChange,
+    onFramePropertyChange: handleFramePropertyChange,
+    onFramePropertyCommit: handleFramePropertyCommit,
     // layers
     layers,
     addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
@@ -420,9 +424,9 @@ const Index = () => {
     onDuplicateLayer: duplicateLayer, // Now accepts ID
     onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
     onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
-    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // FIX 3
-    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // FIX 4
-    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // FIX 5
+    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(selectedLayerId), // FIX 3
+    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(selectedLayerId), // FIX 4
+    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(selectedLayerId), // FIX 5
     onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
     onArrangeLayer: handleArrangeLayer, // FIX 6
     onReorder: reorderLayers,
@@ -475,11 +479,6 @@ const Index = () => {
     onToggleLayerLock: (id: string) => toggleLayerLock(id),
     // Drawing stroke end handler from useLayers
     handleDrawingStrokeEnd,
-    // --- MISSING FRAME PROPS ---
-    frame,
-    onFramePresetChange: handleFramePresetChange,
-    onFramePropertyChange: handleFramePropertyChange,
-    onFramePropertyCommit: handleFramePropertyCommit,
     // Fonts
     systemFonts,
     customFonts,
