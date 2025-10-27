@@ -36,6 +36,8 @@ interface SmartObjectLayersPanelProps {
   handleAddGradientLayer: () => void;
   handleDeleteLayer: () => void;
   handleDuplicateLayer: () => void;
+  onRename: (id: string, newName: string)
+    => void;
 }
 
 export const SmartObjectLayersPanel = ({
@@ -54,7 +56,11 @@ export const SmartObjectLayersPanel = ({
   handleAddGradientLayer,
   handleDeleteLayer,
   handleDuplicateLayer,
+  onRename,
 }: SmartObjectLayersPanelProps) => {
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [tempName, setTempName] = React.useState("");
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -67,6 +73,22 @@ export const SmartObjectLayersPanel = ({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     onReorder(active.id as string, over.id as string);
+  };
+
+  const startRename = (layer: Layer) => {
+    setEditingId(layer.id);
+    setTempName(layer.name);
+  };
+
+  const confirmRename = (id: string) => {
+    if (tempName.trim() && tempName !== layers.find(l => l.id === id)?.name) {
+      onRename(id, tempName.trim());
+    }
+    setEditingId(null);
+  };
+
+  const cancelRename = () => {
+    setEditingId(null);
   };
 
   return (
@@ -99,6 +121,12 @@ export const SmartObjectLayersPanel = ({
                     isSelected={selectedLayerId === layer.id}
                     onSelect={() => onSelectLayer(layer.id)}
                     onToggleVisibility={onToggleVisibility}
+                    isEditing={editingId === layer.id}
+                    tempName={tempName}
+                    setTempName={setTempName}
+                    startRename={startRename}
+                    confirmRename={confirmRename}
+                    cancelRename={cancelRename}
                   />
                 ))}
               </div>

@@ -81,6 +81,7 @@ export const SmartObjectEditor = ({
     handleDrawingStrokeEnd,
     canUndo,
     canRedo,
+    renameLayer, // <-- Destructure renameLayer
   } = useSmartObjectLayers({
     initialLayers: smartObject.smartObjectData?.layers || [],
     smartObjectDimensions,
@@ -227,6 +228,7 @@ export const SmartObjectEditor = ({
                     handleAddGradientLayer={handleAddGradientLayer}
                     handleDeleteLayer={handleDeleteLayer}
                     handleDuplicateLayer={handleDuplicateLayer}
+                    onRename={renameLayer} // <-- Pass renameLayer
                   />
                 </div>
               </ResizablePanel>
