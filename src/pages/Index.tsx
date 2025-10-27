@@ -170,9 +170,9 @@ const Index = () => {
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
-    handleToggleVisibility: toggleLayerVisibilityFn, // Corrected destructuring name
-    renameLayer,
-    deleteLayer,
+    handleToggleVisibility, // Corrected destructuring name
+    renameLayer, // FIX 11
+    deleteLayer, // FIX 11
     handleDeleteHiddenLayers, // NEW
     duplicateLayer, // Now accepts ID
     mergeLayerDown,
@@ -423,12 +423,12 @@ const Index = () => {
     onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(), // FIX 3
     onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(), // FIX 4
     onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(), // FIX 5
-    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
     onArrangeLayer: handleArrangeLayer, // FIX 6
     onReorder: reorderLayers,
-    toggleLayerVisibility: toggleLayerVisibilityFn, // FIX Error 106: Use the function from editorState
+    toggleLayerVisibility: handleToggleVisibility, // FIX Error 106: Use the function from editorState
     renameLayer, // FIX 11
     deleteLayer, // FIX 11
+    handleDeleteHiddenLayers, // NEW
     // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
