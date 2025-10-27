@@ -6,6 +6,7 @@ import EditorControls from "./EditorControls";
 import LayersPanel from "../editor/LayersPanel";
 import { ChannelsPanel } from "../editor/ChannelsPanel";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Preset } from "@/hooks/usePresets";
 import type { Point, EditState, HslAdjustment, Layer, BrushState, GradientToolState, ActiveTool, HslColorKey } from "@/types/editor";
 import React from "react";
@@ -160,58 +161,67 @@ const Sidebar = (props: SidebarProps) => {
 
       <ResizablePanel defaultSize={50} minSize={20}>
         <Card className="flex flex-col h-full border-none shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Channels</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2">
-            <ChannelsPanel channels={props.channels} onChannelChange={props.onChannelChange} />
+          <CardContent className="flex-1 flex flex-col min-h-0 p-0">
+            <Tabs defaultValue="layers" className="w-full flex flex-col flex-1 min-h-0">
+              <TabsList className="grid w-full grid-cols-2 h-10 rounded-none border-b bg-background p-0">
+                <TabsTrigger value="layers" className="h-10 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                  Layers
+                </TabsTrigger>
+                <TabsTrigger value="channels" className="h-10 rounded-none data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary">
+                  Channels
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="layers" className="flex-1 flex flex-col min-h-0 p-4 pt-0">
+                {props.hasImage ? (
+                  <LayersPanel
+                    layers={props.layers}
+                    onToggleVisibility={props.toggleLayerVisibility}
+                    onRename={props.renameLayer}
+                    onDelete={props.deleteLayer}
+                    onAddTextLayer={props.addTextLayer}
+                    onAddDrawingLayer={props.addDrawingLayer}
+                    onAddLayerFromBackground={props.onAddLayerFromBackground}
+                    onLayerFromSelection={props.onLayerFromSelection}
+                    onAddShapeLayer={props.addShapeLayer}
+                    onAddGradientLayer={props.addGradientLayer}
+                    onAddAdjustmentLayer={props.onAddAdjustmentLayer}
+                    onDuplicateLayer={props.onDuplicateLayer}
+                    onMergeLayerDown={props.onMergeLayerDown}
+                    onRasterizeLayer={props.onRasterizeLayer}
+                    onCreateSmartObject={props.onCreateSmartObject}
+                    onOpenSmartObject={props.onOpenSmartObject}
+                    onLayerPropertyCommit={props.onLayerPropertyCommit}
+                    onLayerOpacityChange={props.onLayerOpacityChange}
+                    onLayerOpacityCommit={props.onLayerOpacityCommit}
+                    onReorder={props.onReorder}
+                    selectedLayerId={props.selectedLayerId}
+                    onSelectLayer={props.onSelectLayer}
+                    selectedShapeType={props.selectedShapeType}
+                    groupLayers={props.groupLayers}
+                    toggleGroupExpanded={props.toggleGroupExpanded}
+                    onRemoveLayerMask={props.onRemoveLayerMask}
+                    onInvertLayerMask={props.onInvertLayerMask}
+                    onToggleClippingMask={props.onToggleClippingMask}
+                    onToggleLayerLock={props.onToggleLayerLock}
+                    onDeleteHiddenLayers={props.onDeleteHiddenLayers}
+                    onRasterizeSmartObject={props.onRasterizeSmartObject}
+                    onConvertSmartObjectToLayers={props.onConvertSmartObjectToLayers}
+                    onExportSmartObjectContents={props.onExportSmartObjectContents}
+                    onArrangeLayer={props.onArrangeLayer}
+                    hasActiveSelection={props.hasActiveSelection}
+                    onApplySelectionAsMask={props.onApplySelectionAsMask}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+                    Load an image to view layers.
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="channels" className="p-4 pt-0">
+                <ChannelsPanel channels={props.channels} onChannelChange={props.onChannelChange} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
-          <Separator />
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Layers</CardTitle>
-          </CardHeader>
-          <div className="p-4 h-full overflow-y-auto flex flex-col">
-            {props.hasImage && (
-              <LayersPanel
-                layers={props.layers}
-                onToggleVisibility={props.toggleLayerVisibility}
-                onRename={props.renameLayer}
-                onDelete={props.deleteLayer}
-                onAddTextLayer={props.addTextLayer}
-                onAddDrawingLayer={props.addDrawingLayer}
-                onAddLayerFromBackground={props.onAddLayerFromBackground}
-                onLayerFromSelection={props.onLayerFromSelection}
-                onAddShapeLayer={props.addShapeLayer}
-                onAddGradientLayer={props.addGradientLayer}
-                onAddAdjustmentLayer={props.onAddAdjustmentLayer}
-                onDuplicateLayer={props.onDuplicateLayer}
-                onMergeLayerDown={props.onMergeLayerDown}
-                onRasterizeLayer={props.onRasterizeLayer}
-                onCreateSmartObject={props.onCreateSmartObject}
-                onOpenSmartObject={props.onOpenSmartObject}
-                onLayerPropertyCommit={props.onLayerPropertyCommit}
-                onLayerOpacityChange={props.onLayerOpacityChange}
-                onLayerOpacityCommit={props.onLayerOpacityCommit}
-                onReorder={props.onReorder}
-                selectedLayerId={props.selectedLayerId}
-                onSelectLayer={props.onSelectLayer}
-                selectedShapeType={props.selectedShapeType}
-                groupLayers={props.groupLayers}
-                toggleGroupExpanded={props.toggleGroupExpanded}
-                onRemoveLayerMask={props.onRemoveLayerMask}
-                onInvertLayerMask={props.onInvertLayerMask}
-                onToggleClippingMask={props.onToggleClippingMask}
-                onToggleLayerLock={props.onToggleLayerLock}
-                onDeleteHiddenLayers={props.onDeleteHiddenLayers}
-                onRasterizeSmartObject={props.onRasterizeSmartObject}
-                onConvertSmartObjectToLayers={props.onConvertSmartObjectToLayers}
-                onExportSmartObjectContents={props.onExportSmartObjectContents}
-                onArrangeLayer={props.onArrangeLayer}
-                hasActiveSelection={props.hasActiveSelection}
-                onApplySelectionAsMask={props.onApplySelectionAsMask}
-              />
-            )}
-          </div>
         </Card>
       </ResizablePanel>
     </div>

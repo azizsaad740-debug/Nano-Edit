@@ -15,18 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
   Type,
   Layers,
   Square,
@@ -35,10 +23,10 @@ import {
   Sun,
 } from "lucide-react";
 import type { Layer } from "@/types/editor";
-import LayerItem from "./LayerItem";
-import { LayerControls } from "./LayerControls";
-import { LayerActions } from "./LayerActions";
 import LayerList from "./LayerList";
+import { LayerControls } from "./LayerControls";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { LayerActions } from "./LayerActions";
 
 interface LayersPanelProps {
   layers: Layer[];
@@ -174,140 +162,135 @@ const LayersPanel = (props: LayersPanelProps) => {
   };
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Layers</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
-        <LayerControls
-          selectedLayer={selectedLayer}
-          onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
-          onLayerOpacityChange={onLayerOpacityChange}
-          onLayerOpacityCommit={onLayerOpacityCommit}
-        />
-        <ScrollArea className="flex-1 pr-3">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+    <div className="flex flex-col h-full">
+      <LayerControls
+        selectedLayer={selectedLayer}
+        onLayerPropertyCommit={(updates, name) => selectedLayerId && onLayerPropertyCommit(selectedLayerId, updates, name)}
+        onLayerOpacityChange={onLayerOpacityChange}
+        onLayerOpacityCommit={onLayerOpacityCommit}
+      />
+      <ScrollArea className="flex-1 pr-3">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={layers.map((l) => l.id)}
+            strategy={verticalListSortingStrategy}
           >
-            <SortableContext
-              items={layers.map((l) => l.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <div className="space-y-0.5">
-                {/* Recursive Layer List */}
-                <LayerList
-                  layersToRender={layers}
-                  depth={0}
-                  editingId={editingId}
-                  tempName={tempName}
-                  setTempName={setTempName}
-                  startRename={startRename}
-                  confirmRename={confirmRename}
-                  cancelRename={cancelRename}
-                  onToggleVisibility={onToggleVisibility}
-                  selectedLayerIds={selectedLayerIds}
-                  onSelectLayer={onSelectLayer}
-                  onToggleGroupExpanded={toggleGroupExpanded}
-                  onRemoveLayerMask={onRemoveLayerMask}
-                  onToggleLayerLock={onToggleLayerLock}
-                />
-              </div>
-            </SortableContext>
-          </DndContext>
-        </ScrollArea>
-        
-        <div className="mt-4 space-y-2 border-t pt-4">
-          {/* Quick Add Buttons */}
-          <div className="flex flex-wrap gap-1 justify-start">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('text')}>
-                  <Type className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Add Text Layer</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('drawing')}>
-                  <Layers className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Add Empty Layer</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('shape')}>
-                  <Square className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Add Shape Layer</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('gradient')}>
-                  <Palette className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Add Gradient Layer</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('adjustment')}>
-                  <SlidersHorizontal className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Add Adjustment Layer</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-background')}>
-                  <Sun className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Layer from Background</p></TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-selection')} disabled={!hasActiveSelection}>
-                  <Layers className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent><p>Layer from Selection</p></TooltipContent>
-            </Tooltip>
-          </div>
-
-          <LayerActions
-            layers={layers}
-            selectedLayer={selectedLayer}
-            selectedLayerIds={selectedLayerIds}
-            onAddTextLayer={onAddTextLayer}
-            onAddDrawingLayer={onAddDrawingLayer}
-            onAddShapeLayer={onAddShapeLayer}
-            onAddGradientLayer={onAddGradientLayer}
-            onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
-            onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
-            onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}
-            onRasterizeLayer={() => selectedLayerId && onRasterizeLayer(selectedLayerId)}
-            onCreateSmartObject={onCreateSmartObject}
-            onOpenSmartObject={onOpenSmartObject}
-            selectedShapeType={selectedShapeType}
-            groupLayers={() => groupLayers(selectedLayerIds)}
-            hasActiveSelection={hasActiveSelection}
-            onApplySelectionAsMask={onApplySelectionAsMask}
-            onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
-            onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
-            onDeleteHiddenLayers={onDeleteHiddenLayers}
-            onRasterizeSmartObject={onRasterizeSmartObject}
-            onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
-            onExportSmartObjectContents={onExportSmartObjectContents}
-            onArrangeLayer={onArrangeLayer}
-          />
+            <div className="space-y-0.5">
+              {/* Recursive Layer List */}
+              <LayerList
+                layersToRender={layers}
+                depth={0}
+                editingId={editingId}
+                tempName={tempName}
+                setTempName={setTempName}
+                startRename={startRename}
+                confirmRename={confirmRename}
+                cancelRename={cancelRename}
+                onToggleVisibility={onToggleVisibility}
+                selectedLayerIds={selectedLayerIds}
+                onSelectLayer={onSelectLayer}
+                onToggleGroupExpanded={toggleGroupExpanded}
+                onRemoveLayerMask={onRemoveLayerMask}
+                onToggleLayerLock={onToggleLayerLock}
+              />
+            </div>
+          </SortableContext>
+        </DndContext>
+      </ScrollArea>
+      
+      <div className="mt-4 space-y-2 border-t pt-4">
+        {/* Quick Add Buttons */}
+        <div className="flex flex-wrap gap-1 justify-start">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('text')}>
+                <Type className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Add Text Layer</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('drawing')}>
+                <Layers className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Add Empty Layer</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('shape')}>
+                <Square className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Add Shape Layer</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('gradient')}>
+                <Palette className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Add Gradient Layer</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('adjustment')}>
+                <SlidersHorizontal className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Add Adjustment Layer</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-background')}>
+                <Sun className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Layer from Background</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button size="icon" className="h-8 w-8" variant="outline" onClick={() => handleAddLayer('from-selection')} disabled={!hasActiveSelection}>
+                <Layers className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent><p>Layer from Selection</p></TooltipContent>
+          </Tooltip>
         </div>
-      </CardContent>
-    </Card>
+
+        <LayerActions
+          layers={layers}
+          selectedLayer={selectedLayer}
+          selectedLayerIds={selectedLayerIds}
+          onAddTextLayer={onAddTextLayer}
+          onAddDrawingLayer={onAddDrawingLayer}
+          onAddShapeLayer={onAddShapeLayer}
+          onAddGradientLayer={onAddGradientLayer}
+          onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+          onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
+          onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}
+          onRasterizeLayer={() => selectedLayerId && onRasterizeLayer(selectedLayerId)}
+          onCreateSmartObject={onCreateSmartObject}
+          onOpenSmartObject={onOpenSmartObject}
+          selectedShapeType={selectedShapeType}
+          groupLayers={() => groupLayers(selectedLayerIds)}
+          hasActiveSelection={hasActiveSelection}
+          onApplySelectionAsMask={onApplySelectionAsMask}
+          onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
+          onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
+          onDeleteHiddenLayers={onDeleteHiddenLayers}
+          onRasterizeSmartObject={onRasterizeSmartObject}
+          onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
+          onExportSmartObjectContents={onExportSmartObjectContents}
+          onArrangeLayer={onArrangeLayer}
+        />
+      </div>
+    </div>
   );
 };
 
