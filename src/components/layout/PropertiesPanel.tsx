@@ -78,32 +78,7 @@ export const PropertiesPanel = ({
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
         <ScrollArea className="flex-1 pr-3 pb-2">
-          {isBrushTool || isBlurBrushTool ? (
-            <div className="space-y-4">
-              <BrushOptions
-                activeTool={activeTool as "brush" | "eraser"}
-                brushSize={brushState.size}
-                setBrushSize={(size) => setBrushState({ size })}
-                brushOpacity={brushState.opacity}
-                setBrushOpacity={(opacity) => setBrushState({ opacity })}
-                foregroundColor={foregroundColor} // Pass foregroundColor
-                setForegroundColor={setForegroundColor} // Pass setForegroundColor
-                brushHardness={brushState.hardness} // Pass hardness
-                setBrushHardness={(hardness) => setBrushState({ hardness })} // Pass hardness setter
-                brushSmoothness={brushState.smoothness} // Pass smoothness
-                setBrushSmoothness={(smoothness) => setBrushState({ smoothness })} // Pass smoothness setter
-                brushShape={brushState.shape} // Pass brush shape
-                setBrushShape={(shape) => setBrushState({ shape })} // Pass brush shape setter
-              />
-              {isBlurBrushTool && (
-                <BlurBrushOptions
-                  selectiveBlurStrength={selectiveBlurStrength}
-                  onStrengthChange={onSelectiveBlurStrengthChange}
-                  onStrengthCommit={onSelectiveBlurStrengthCommit}
-                />
-              )}
-            </div>
-          ) : isGradientTool ? (
+          {isGradientTool ? (
             <GradientToolOptions
               gradientToolState={gradientToolState}
               setGradientToolState={setGradientToolState}

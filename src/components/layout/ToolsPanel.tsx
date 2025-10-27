@@ -29,8 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Layer, ActiveTool, BrushState } from "@/types/editor"; // Import ActiveTool and BrushState
 import { ColorTool } from "./ColorTool"; // Import ColorTool
-import { Slider } from "@/components/ui/slider"; // Import Slider
-import { Label } from "@/components/ui/label"; // Import Label
+import { BrushOptions } from "@/components/editor/BrushOptions"; // Import BrushOptions
 
 type Tool = ActiveTool; // Use ActiveTool type directly
 
@@ -91,8 +90,11 @@ export const ToolsPanel = ({
     setSelectedShapeType(type);
   };
 
+  const isBrushActive = activeTool === 'brush' || activeTool === 'eraser';
   const isSelectionBrushActive = activeTool === 'selectionBrush';
-  const isBlurBrushActive = activeTool === 'blurBrush'; // NEW
+  const isBlurBrushActive = activeTool === 'blurBrush';
+  const isAnyBrushActive = isBrushActive || isSelectionBrushActive || isBlurBrushActive;
+
 
   return (
     <aside className="h-full border-r bg-muted/40 p-2 flex flex-col">
@@ -149,8 +151,6 @@ export const ToolsPanel = ({
           })}
           <div className="w-full h-px bg-border my-2" /> {/* Separator */}
           
-          {/* Removed BrushOptions from here */}
-
           <ColorTool
             foregroundColor={foregroundColor}
             onForegroundColorChange={onForegroundColorChange}
@@ -166,6 +166,26 @@ export const ToolsPanel = ({
               {isBlurBrushActive && (
                 <>Foreground: Add Blur <br /> Background: Remove Blur</>
               )}
+            </div>
+          )}
+          
+          {isAnyBrushActive && (
+            <div className="mt-4 w-full">
+              <BrushOptions
+                activeTool={activeTool as "brush" | "eraser"}
+                brushSize={brushState.size}
+                setBrushSize={(size) => setBrushState({ size })}
+                brushOpacity={brushState.opacity}
+                setBrushOpacity={(opacity) => setBrushState({ opacity })}
+                foregroundColor={foregroundColor}
+                setForegroundColor={onForegroundColorChange}
+                brushHardness={brushState.hardness}
+                setBrushHardness={(hardness) => setBrushState({ hardness })}
+                brushSmoothness={brushState.smoothness}
+                setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
+                brushShape={brushState.shape}
+                setBrushShape={(shape) => setBrushState({ shape })}
+              />
             </div>
           )}
         </div>
