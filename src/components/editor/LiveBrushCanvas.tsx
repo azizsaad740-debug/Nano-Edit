@@ -59,6 +59,7 @@ export const LiveBrushCanvas = ({
     ctx.lineJoin = brushState.shape === 'circle' ? "round" : "miter";
     ctx.lineCap = brushState.shape === 'circle' ? "round" : "butt";
 
+    // Shadow blur simulates softness/hardness
     const maxBlur = brushState.size * 0.75;
     ctx.shadowBlur = maxBlur * (1 - brushState.hardness / 100);
 
@@ -105,28 +106,35 @@ export const LiveBrushCanvas = ({
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>, shape: 'circle' | 'square', size: number) => {
     if (points.length < 1) return;
 
-    if (points.length === 1) {
-      // Handle single point click/tap by drawing a filled shape
-      ctx.beginPath();
-      const p = points[0];
-      const radius = size / 2;
-      
-      if (shape === 'circle') {
-        ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
-        ctx.fill();
-      } else {
-        ctx.fillRect(p.x - radius, p.y - radius, size, size);
-      }
-      return;
-    }
-
+    // 1. Draw the continuous line stroke
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
 
     for (let i = 1; i < points.length; i++) {
       ctx.lineTo(points[i].x, points[i].y);
     }
-    ctx.stroke(); // Draw the continuous line
+    ctx.stroke(); 
+
+    // 2. Draw filled circles at the start and end points to ensure continuity and proper shadow application
+    // This is crucial for soft brushes (low hardness) and single clicks.
+    const drawFilledShape = (p: { x: number; y: number }) => {
+      const radius = size / 2;
+      ctx.beginPath();
+      if (shape === 'circle') {
+        ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+      } else {
+        ctx.rect(p.x - radius, p.y - radius, size, size);
+      }
+      ctx.fill();
+    };
+
+    // Draw filled shape at the start point
+    drawFilledShape(points[0]);
+
+    // Draw filled shape at the end point if it's a continuous path
+    if (points.length > 1) {
+      drawFilledShape(points[points.length - 1]);
+    }
   }, []);
 
   const renderLiveStroke = React.useCallback(() => {
