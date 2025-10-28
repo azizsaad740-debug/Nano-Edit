@@ -19,9 +19,11 @@ interface AdjustmentLayerControlsProps {
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   imgRef: React.RefObject<HTMLImageElement>;
+  customHslColor: string; // NEW
+  setCustomHslColor: (color: string) => void; // NEW
 }
 
-const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef }: AdjustmentLayerControlsProps) => {
+const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslColor, setCustomHslColor }: AdjustmentLayerControlsProps) => {
   if (!layer || layer.type !== 'adjustment' || !layer.adjustmentData) {
     return <p className="text-sm text-muted-foreground">Select an adjustment layer to edit its properties.</p>;
   }
@@ -176,6 +178,8 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef }: Adjustme
               hslAdjustments={adjustmentData.hslAdjustments || {} as EditState['hslAdjustments']}
               onAdjustmentChange={handleHslAdjustmentChange}
               onAdjustmentCommit={handleHslAdjustmentCommit}
+              customColor={customHslColor}
+              setCustomColor={setCustomHslColor}
             />
           </div>
         );

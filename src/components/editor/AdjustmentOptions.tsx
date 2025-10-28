@@ -11,6 +11,8 @@ interface AdjustmentOptionsProps {
   onLayerUpdate: (updates: Partial<Layer>) => void;
   onLayerCommit: (historyName: string) => void;
   imgRef: React.RefObject<HTMLImageElement>; // Required for Curves component
+  customHslColor: string; // NEW
+  setCustomHslColor: (color: string) => void; // NEW
 }
 
 export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
@@ -18,6 +20,8 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
   onLayerUpdate,
   onLayerCommit,
   imgRef,
+  customHslColor,
+  setCustomHslColor,
 }) => {
   const isAdjustment = layer.type === 'adjustment';
 
@@ -49,6 +53,8 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
             onUpdate={handleUpdateById}
             onCommit={handleCommitById}
             imgRef={imgRef}
+            customHslColor={customHslColor}
+            setCustomHslColor={setCustomHslColor}
           />
         </CardContent>
       </Card>

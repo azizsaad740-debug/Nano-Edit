@@ -62,6 +62,8 @@ interface RightSidebarTabsProps {
   imgRef: React.RefObject<HTMLImageElement>;
   onRemoveLayerMask: (id: string) => void;
   onInvertLayerMask: (id: string) => void;
+  customHslColor: string; // NEW
+  setCustomHslColor: (color: string) => void; // NEW
   // Layers Panel Props
   layers: Layer[];
   selectedLayerId: string | null;
@@ -144,11 +146,11 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onLayerPropertyCommit: props.onLayerPropertyCommit, // Full commit signature (needed by LayersPanel)
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
-    onAddTextLayer: props.addTextLayer,
-    onAddDrawingLayer: props.addDrawingLayer,
+    addTextLayer: props.addTextLayer,
+    addDrawingLayer: props.addDrawingLayer,
     onAddLayerFromBackground: props.onAddLayerFromBackground,
     onLayerFromSelection: props.onLayerFromSelection,
-    onAddShapeLayer: props.addShapeLayer,
+    addShapeLayer: props.addShapeLayer,
     onAddGradientLayer: props.addGradientLayer,
     onAddAdjustmentLayer: props.onAddAdjustmentLayer,
     selectedShapeType: props.selectedShapeType,
@@ -193,6 +195,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     imgRef: props.imgRef,
     onRemoveLayerMask: props.onRemoveLayerMask,
     onInvertLayerMask: props.onInvertLayerMask,
+    customHslColor: props.customHslColor, // NEW
+    setCustomHslColor: props.setCustomHslColor, // NEW
   };
 
   // Props for Auxiliary Panels (used for multiple panels)

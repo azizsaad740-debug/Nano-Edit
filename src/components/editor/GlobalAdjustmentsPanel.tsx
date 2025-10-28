@@ -89,6 +89,8 @@ interface GlobalAdjustmentsPanelProps {
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
   imgRef: React.RefObject<HTMLImageElement>;
+  customHslColor: string; // NEW
+  setCustomHslColor: (color: string) => void; // NEW
 }
 
 const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
@@ -125,6 +127,8 @@ const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
     onFramePresetChange,
     onFramePropertyChange,
     onFramePropertyCommit,
+    customHslColor, // NEW
+    setCustomHslColor, // NEW
   } = props;
 
   if (!hasImage) {
@@ -207,6 +211,8 @@ const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
                 hslAdjustments={hslAdjustments}
                 onAdjustmentChange={onHslAdjustmentChange}
                 onAdjustmentCommit={onHslAdjustmentCommit}
+                customColor={customHslColor}
+                setCustomColor={setCustomHslColor}
               />
             </AccordionContent>
           </AccordionItem>
