@@ -145,7 +145,8 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
     onLayerCommit(`Toggle Text Effect: ${effect}`);
   };
 
-  const isBoldActive = layer.fontWeight === 'bold' || layer.fontWeight === 700;
+  // Fix: Safely check if fontWeight is 'bold' or its numeric equivalent '700'
+  const isBoldActive = layer.fontWeight === 'bold' || layer.fontWeight === '700' || layer.fontWeight === 700;
   const isItalicActive = layer.fontStyle === 'italic';
   const isUnderlineActive = layer.textDecoration === 'underline';
   const isStrikethroughActive = layer.textDecoration === 'line-through';
@@ -290,43 +291,43 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
               <TextControl 
                 icon={ChevronUp} 
                 value={layer.lineHeight || 1.2} 
-                onChange={(v: number) => onLayerUpdate({ lineHeight: v })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ lineHeight: parseFloat(e.target.value) || 0 })}
                 onCommit={() => handleCommit('lineHeight', `Change Leading`)}
                 unit="x"
                 min={0.5}
                 max={3.0}
                 step={0.1}
                 placeholder="1.2"
-                label="Leading"
+                label="Leading (Line Height)"
               />
               <TextControl 
                 icon={ArrowDownUp} 
                 value={layer.letterSpacing || 0} 
-                onChange={(v: number) => onLayerUpdate({ letterSpacing: v })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ letterSpacing: parseFloat(e.target.value) || 0 })}
                 onCommit={() => handleCommit('letterSpacing', `Change Tracking`)}
                 unit="px"
                 min={-10}
                 max={50}
                 step={0.5}
                 placeholder="0"
-                label="Tracking"
+                label="Tracking (Letter Spacing)"
               />
               <TextControl 
                 icon={Type} 
                 value={layer.wordSpacing || 0} 
-                onChange={(v: number) => onLayerUpdate({ wordSpacing: v })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ wordSpacing: parseFloat(e.target.value) || 0 })}
                 onCommit={() => handleCommit('wordSpacing', `Change Kerning`)}
                 unit="px"
                 min={-10}
                 max={50}
                 step={0.5}
                 placeholder="0"
-                label="Kerning"
+                label="Kerning (Word Spacing)"
               />
               <TextControl 
                 icon={TextCursor} 
                 value={layer.baselineShift || 0} 
-                onChange={(v: number) => onLayerUpdate({ baselineShift: v })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ baselineShift: parseFloat(e.target.value) || 0 })}
                 onCommit={() => handleCommit('baselineShift', `Change Baseline Shift`)}
                 unit="pt"
                 min={-50}
@@ -424,7 +425,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
               <TextControl 
                 icon={CornerDownLeft} 
                 value={layer.indentation || 0} 
-                onChange={(v: number) => onLayerUpdate({ indentation: v })}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ indentation: parseFloat(e.target.value) || 0 })}
                 onCommit={() => handleCommit('indentation', `Change Indentation`)}
                 unit="px"
                 disabled
@@ -435,7 +436,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <TextControl 
                   icon={ChevronUp} 
                   value={layer.spaceBefore || 0} 
-                  onChange={(v: number) => onLayerUpdate({ spaceBefore: v })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ spaceBefore: parseFloat(e.target.value) || 0 })}
                   onCommit={() => handleCommit('spaceBefore', `Change Space Before`)}
                   unit="px"
                   disabled
@@ -445,7 +446,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <TextControl 
                   icon={ChevronDown} 
                   value={layer.spaceAfter || 0} 
-                  onChange={(v: number) => onLayerUpdate({ spaceAfter: v })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => onLayerUpdate({ spaceAfter: parseFloat(e.target.value) || 0 })}
                   onCommit={() => handleCommit('spaceAfter', `Change Space After`)}
                   unit="px"
                   disabled
@@ -704,7 +705,7 @@ const TextControl = ({ icon: Icon, value, onChange, onCommit, unit = 'pt', min =
           <Input
             type="number"
             value={value}
-            onChange={(e) => onChange(e)}
+            onChange={onChange}
             onBlur={onCommit}
             min={min}
             max={max}
