@@ -235,6 +235,7 @@ export interface BrushState {
   hardness: number; // 0 to 100
   smoothness: number; // 0 to 100
   shape: 'circle' | 'square';
+  color: string; // ADDED: Brush color
 }
 
 export interface GradientToolState {

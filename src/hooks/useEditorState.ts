@@ -779,7 +779,8 @@ export const useEditorState = (
   // --- Brush State Management ---
   const brushState: BrushState = useMemo(() => ({
     ...brushStateInternal,
-  }), [brushStateInternal]);
+    color: foregroundColor, // Include foregroundColor as the brush color
+  }), [brushStateInternal, foregroundColor]);
 
   const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
     handleProjectUpdate({ brushStateInternal: { ...brushStateInternal, ...updates } });
