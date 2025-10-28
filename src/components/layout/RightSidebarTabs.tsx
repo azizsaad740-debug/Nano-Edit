@@ -141,7 +141,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onRasterizeLayer: props.onRasterizeLayer,
     onCreateSmartObject: props.onCreateSmartObject,
     onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerPropertyCommit, // CORRECTED: Passing the full signature
+    onLayerPropertyCommit: props.onLayerPropertyCommit, // Full commit signature (needed by LayersPanel)
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
     onAddTextLayer: props.addTextLayer,
@@ -176,8 +176,9 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     gradientToolState: props.gradientToolState,
     setGradientToolState: props.setGradientToolState,
     onLayerUpdate: props.onLayerUpdate,
-    onLayerCommit: props.onLayerCommit,
-    onLayerPropertyCommit: props.onLayerPropertyCommit,
+    onLayerCommit: props.onLayerCommit, // Simple commit (id, name)
+    // FIX 1: PropertiesPanel expects the simple commit signature here too.
+    onLayerPropertyCommit: props.onLayerCommit, // Pass the simple commit function (id, name)
     gradientPresets: props.gradientPresets,
     onSaveGradientPreset: props.onSaveGradientPreset,
     onDeleteGradientPreset: props.onDeleteGradientPreset,

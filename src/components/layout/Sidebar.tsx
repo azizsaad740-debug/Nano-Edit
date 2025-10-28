@@ -142,7 +142,7 @@ const Sidebar = (props: SidebarProps) => {
     setGradientToolState: props.setGradientToolState,
     onLayerUpdate: props.onLayerUpdate,
     onLayerCommit: props.onLayerCommit,
-    onLayerPropertyCommit: props.onLayerCommit,
+    onLayerPropertyCommit: props.onLayerPropertyCommit, // FIX 2: Pass the full signature here
     foregroundColor: props.foregroundColor,
     onForegroundColorChange: props.onForegroundColorChange,
     backgroundColor: props.backgroundColor,
