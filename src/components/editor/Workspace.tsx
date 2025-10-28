@@ -1,19 +1,40 @@
-// Assuming the original code was inside a JSX element, likely a div or canvas wrapper.
-// The previous fix attempt was an incomplete snippet. Restoring the context:
+"use client";
 
-// ... (inside the main JSX return of Workspace component, around line 783)
-<div
-  ref={workspaceRef}
-  className={cn(
-    "relative w-full h-full overflow-hidden",
-    // ... other classes
-  )}
-  onMouseDown={handleWorkspaceMouseDown}
-  onMouseMove={handleWorkspaceMouseMove}
-  onMouseUp={handleWorkspaceMouseUp}
-  onWheel={handleWheel}
-  onMouseEnter={() => setIsMouseOverImage(true)} // FIX 3, 4, 5, 6, 7, 8, 47, 48, 49, 50, 51, 52
-  onMouseLeave={() => setIsMouseOverImage(false)}
->
-// ...
-</div>
+import * as React from "react";
+import { cn } from "@/lib/utils"; // Import cn utility
+
+interface WorkspaceProps {
+  workspaceRef: React.RefObject<HTMLDivElement>;
+  handleWorkspaceMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleWorkspaceMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleWorkspaceMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
+  handleWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
+  setIsMouseOverImage: (isOver: boolean) => void;
+}
+
+export const Workspace: React.FC<WorkspaceProps> = ({
+  workspaceRef,
+  handleWorkspaceMouseDown,
+  handleWorkspaceMouseMove,
+  handleWorkspaceMouseUp,
+  handleWheel,
+  setIsMouseOverImage,
+}) => {
+  return (
+    <div
+      ref={workspaceRef}
+      className={cn(
+        "relative w-full h-full overflow-hidden",
+        // ... other classes
+      )}
+      onMouseDown={handleWorkspaceMouseDown}
+      onMouseMove={handleWorkspaceMouseMove}
+      onMouseUp={handleWorkspaceMouseUp}
+      onWheel={handleWheel}
+      onMouseEnter={() => setIsMouseOverImage(true)}
+      onMouseLeave={() => setIsMouseOverImage(false)}
+    >
+      {/* Placeholder for image and layers */}
+    </div>
+  );
+};
