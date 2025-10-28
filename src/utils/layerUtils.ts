@@ -143,7 +143,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     ctx.restore();
 
   } else if (layer.type === 'vector-shape') {
-    const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points } = layer;
+    const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points, starPoints, lineThickness } = layer;
     
     const layerWidth = (width ?? 10) / 100 * imageDimensions.width;
     const layerHeight = (height ?? 10) / 100 * imageDimensions.height;
@@ -156,7 +156,11 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     // Set fill and stroke styles
     ctx.fillStyle = fillColor || 'transparent';
     ctx.strokeStyle = strokeColor || 'transparent';
-    ctx.lineWidth = strokeWidth || 0;
+    
+    // Determine line width based on shape type
+    const isLineShape = shapeType === 'line' || shapeType === 'arrow';
+    ctx.lineWidth = isLineShape ? (lineThickness || strokeWidth || 5) : (strokeWidth || 0);
+    ctx.lineCap = isLineShape ? 'round' : 'butt';
 
     // Draw shape relative to the transformed origin (which is the top-left corner of the bounding box)
     if (shapeType === 'rect') {
@@ -178,7 +182,7 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     } else if (shapeType === 'circle') {
       const radius = Math.min(layerWidth, layerHeight) / 2;
       ctx.arc(layerWidth / 2, layerHeight / 2, radius, 0, 2 * Math.PI);
-    } else if (shapeType === 'triangle' || shapeType === 'polygon') {
+    } else if (shapeType === 'triangle' || shapeType === 'polygon' || shapeType === 'custom') {
       const polygonPoints = points || [];
       if (polygonPoints.length > 1) {
         // Points are stored as percentages (0-100) relative to the layer's bounding box
@@ -188,10 +192,54 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
         }
         ctx.closePath();
       }
+    } else if (shapeType === 'star') {
+        const numPoints = starPoints || 5;
+        const outerRadius = Math.min(layerWidth, layerHeight) / 2;
+        const innerRadius = outerRadius / 2.5;
+        const centerX = layerWidth / 2;
+        const centerY = layerHeight / 2;
+
+        for (let i = 0; i < numPoints * 2; i++) {
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const angle = (Math.PI / numPoints) * i - Math.PI / 2; // Start pointing up
+            const px = centerX + radius * Math.cos(angle);
+            const py = centerY + radius * Math.sin(angle);
+            if (i === 0) {
+                ctx.moveTo(px, py);
+            } else {
+                ctx.lineTo(px, py);
+            }
+        }
+        ctx.closePath();
+    } else if (isLineShape) {
+        // Line runs from (0, layerHeight/2) to (layerWidth, layerHeight/2)
+        const lineW = lineThickness || strokeWidth || 5;
+        const startX = 0;
+        const startY = layerHeight / 2;
+        const endX = layerWidth;
+        const endY = layerHeight / 2;
+        
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        
+        if (shapeType === 'arrow') {
+            // Draw arrowhead at the end point (endX, endY)
+            const headLength = lineW * 3;
+            const headWidth = lineW * 2;
+            
+            // Draw the arrowhead path separately (as part of the same path for stroke)
+            ctx.moveTo(endX, endY);
+            ctx.lineTo(endX - headLength, endY - headWidth / 2);
+            ctx.lineTo(endX - headLength, endY + headWidth / 2);
+            ctx.closePath();
+        }
     }
     
     if (fillColor && fillColor !== 'none') ctx.fill();
-    if (strokeWidth && strokeWidth > 0 && strokeColor && strokeColor !== 'none') ctx.stroke();
+    // Stroke if stroke is defined and width > 0
+    if (ctx.lineWidth > 0 && strokeColor && strokeColor !== 'none') {
+        ctx.stroke();
+    }
 
     ctx.restore();
 

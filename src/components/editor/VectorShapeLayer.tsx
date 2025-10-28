@@ -58,12 +58,15 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     cursor: isMovable && !isPointEditable ? "grab" : "default",
   };
 
+  // Use general strokeWidth for non-line shapes, and lineThickness for line/arrow
+  const finalStrokeWidth = (shapeType === 'line' || shapeType === 'arrow') ? (lineThickness || strokeWidth || 5) : (strokeWidth || 0);
+
   const svgProps = {
     width: "100%",
     height: "100%",
     fill: fillColor || "none",
     stroke: strokeColor || "none",
-    strokeWidth: strokeWidth || 0,
+    strokeWidth: finalStrokeWidth,
   };
 
   const renderShape = () => {
@@ -86,9 +89,10 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
         
         for (let i = 0; i < numPoints * 2; i++) {
           const radius = i % 2 === 0 ? outerRadius : innerRadius;
-          const angle = (Math.PI / numPoints) * i;
-          const x = 50 + radius * Math.sin(angle);
-          const y = 50 - radius * Math.cos(angle);
+          // Adjust angle calculation to start pointing up
+          const angle = (Math.PI / numPoints) * i - Math.PI / 2; 
+          const x = 50 + radius * Math.cos(angle);
+          const y = 50 + radius * Math.sin(angle);
           starPath.push({ x, y });
         }
         
@@ -96,25 +100,22 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
         return <polygon points={starSvgPoints} />;
         
       case "line":
-        // Line is drawn from (0, 50%) to (100%, 50%) relative to the bounding box
-        // We use strokeLinecap="round" to make it look like a thick line
+        // Line uses strokeWidth defined in svgProps (which is lineThickness)
         return (
           <line 
             x1="0%" 
             y1="50%" 
             x2="100%" 
             y2="50%" 
-            stroke={strokeColor || "currentColor"} 
-            strokeWidth={lineThickness || 5} 
             strokeLinecap="round"
             fill="none"
           />
         );
       case "arrow":
-        // Simple arrow path (stub, complex arrows require more points)
-        // Draw a line and a simple arrowhead
-        const thickness = lineThickness || 5;
-        const arrowHeadSize = thickness * 3;
+        // Arrow uses strokeWidth defined in svgProps (which is lineThickness)
+        const arrowThickness = finalStrokeWidth;
+        const arrowHeadLength = arrowThickness * 3; // Arrowhead length is 3x thickness (in viewBox units)
+        
         return (
           <g>
             <line 
@@ -122,14 +123,14 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
               y1="50%" 
               x2="100%" 
               y2="50%" 
-              stroke={strokeColor || "currentColor"} 
-              strokeWidth={thickness} 
               strokeLinecap="round"
               fill="none"
             />
+            {/* Arrowhead at 100% x, 50% y. Points: tip, bottom-back, top-back */}
             <polygon 
-              points={`100,50 ${100 - arrowHeadSize},${50 - arrowHeadSize / 2} ${100 - arrowHeadSize},${50 + arrowHeadSize / 2}`}
+              points={`100,50 ${100 - arrowHeadLength},${50 + arrowHeadLength / 2} ${100 - arrowHeadLength},${50 - arrowHeadLength / 2}`}
               fill={strokeColor || "currentColor"}
+              stroke="none"
             />
           </g>
         );
