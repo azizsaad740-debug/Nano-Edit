@@ -48,8 +48,11 @@ export const useEditorState = (
   const fileInfo = activeProject.fileInfo || initialFileInfo;
   const exifData = activeProject.exifData || initialExifData;
   const history = activeProject.history || [initialHistoryItem];
+  
+  // Ensure layers is always an array
+  const layers = Array.isArray(activeProject.layers) ? activeProject.layers : initialLayerState;
+  
   const currentHistoryIndex = activeProject.currentHistoryIndex || 0;
-  const layers = activeProject.layers || initialLayerState;
   const selectedLayerId = activeProject.selectedLayerId || null;
   const aspect = activeProject.aspect;
   const selectionPath = activeProject.selectionPath;
@@ -889,7 +892,7 @@ export const useEditorState = (
     saveSmartObjectChanges,
     isSmartObjectEditorOpen,
     smartObjectEditingId,
-    moveSelectedLayer: updateLayer, // Simple move is handled by updateLayer
+    moveSelectedLayer,
     groupLayers,
     toggleGroupExpanded,
     removeLayerMask,
