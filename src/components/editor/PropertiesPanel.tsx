@@ -13,14 +13,11 @@ import {
 } from "@/types/editor";
 import { LayerOptions } from "./LayerOptions";
 import { BrushOptions } from "./BrushOptions";
-import { ShapeOptions } from "./ShapeOptions";
+import ShapeOptions from "./ShapeOptions"; // Fixed Error 9
 import { GradientOptions } from "./GradientOptions";
 import { AdjustmentOptions } from "./AdjustmentOptions";
 import { BlurBrushOptions } from "./BlurBrushOptions";
 import { TextOptions } from "./TextOptions";
-
-// Re-import TextLayerData locally for clarity, relying on ambient declaration from editor.ts
-type TextLayerData = Layer['textLayerData'];
 
 
 interface PropertiesPanelProps {
@@ -86,8 +83,9 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
     }
   };
 
-  const handleLayerPropertyCommit = (historyName: string) => {
+  const handleLayerPropertyCommitWrapper = (historyName: string) => {
     if (selectedLayer) {
+      // This wrapper is used by LayerOptions/LayerGeneralProperties for simple commits
       onLayerPropertyCommit(selectedLayer.id, historyName);
     }
   };
@@ -99,7 +97,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
       case 'text':
         return (
           <TextOptions
-            layer={selectedLayer as Layer & TextLayerData}
+            layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
             onLayerCommit={handleLayerCommit}
             systemFonts={systemFonts}
@@ -107,7 +105,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             onOpenFontManager={onOpenFontManager}
           />
         );
-      case 'vector-shape': // Corrected from 'shape'
+      case 'vector-shape':
         return (
           <ShapeOptions
             layer={selectedLayer}
@@ -134,12 +132,12 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
             onLayerCommit={handleLayerCommit}
-            onLayerPropertyCommit={handleLayerPropertyCommit}
+            imgRef={imgRef}
           />
         );
       case 'drawing':
       case 'image':
-      case 'smart-object': // Corrected from 'smartObject'
+      case 'smart-object':
       case 'group':
       default:
         return (
@@ -167,7 +165,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
           <LayerOptions
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
-            onLayerPropertyCommit={handleLayerPropertyCommit}
+            onLayerPropertyCommit={handleLayerPropertyCommitWrapper}
           />
         )}
 

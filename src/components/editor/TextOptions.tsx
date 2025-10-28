@@ -36,17 +36,16 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
-// Re-import types locally for clarity, relying on ambient declaration from editor.ts
-type TextLayerData = Layer['textLayerData'];
-type TextAlignment = Layer['textAlignment'];
+// Use properties directly from Layer, relying on updated types/editor.ts
+type TextAlignment = Layer['textAlign'];
 type TextTransform = Layer['textTransform'];
 type TextDecoration = Layer['textDecoration'];
 type TextWarpData = Layer['textWarp'];
 
 
 interface TextOptionsProps {
-  layer: Layer & TextLayerData;
-  onLayerUpdate: (updates: Partial<TextLayerData>) => void;
+  layer: Layer;
+  onLayerUpdate: (updates: Partial<Layer>) => void;
   onLayerCommit: (historyName: string) => void;
   systemFonts: string[];
   customFonts: string[];
@@ -72,7 +71,7 @@ const TEXT_ALIGNMENTS: { value: TextAlignment; icon: React.ElementType; label: s
   { value: 'justify', icon: AlignJustify, label: 'Justify' },
 ];
 
-const TEXT_VERTICAL_ALIGNMENTS: { value: TextLayerData['verticalAlignment']; icon: React.ElementType; label: string }[] = [
+const TEXT_VERTICAL_ALIGNMENTS: { value: Layer['verticalAlignment']; icon: React.ElementType; label: string }[] = [
   { value: 'top', icon: ChevronUp, label: 'Align Top' },
   { value: 'middle', icon: TextCursor, label: 'Align Middle' },
   { value: 'bottom', icon: ChevronDown, label: 'Align Bottom' },
@@ -111,13 +110,20 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
 }) => {
   const allFonts = React.useMemo(() => [...systemFonts, ...customFonts].sort(), [systemFonts, customFonts]);
 
-  const handleCommit = (key: keyof TextLayerData, historyName: string) => {
+  const handleCommit = (key: keyof Layer, historyName: string) => {
     onLayerCommit(historyName);
   };
 
-  const handleSelectChange = (key: keyof TextLayerData, value: string, historyName: string) => {
-    onLayerUpdate({ [key]: value } as Partial<TextLayerData>);
+  const handleSelectChange = (key: keyof Layer, value: string | number | boolean, historyName: string) => {
+    onLayerUpdate({ [key]: value });
     onLayerCommit(historyName);
+  };
+
+  const handleToggleStyle = (key: 'fontWeight' | 'fontStyle', value: 'bold' | 'italic') => {
+    const currentValue = layer[key];
+    const newValue = currentValue === value ? 'normal' : value;
+    onLayerUpdate({ [key]: newValue });
+    onLayerCommit(`Toggle ${key} to ${newValue}`);
   };
 
   const handleEffectEnabledChange = (
@@ -222,12 +228,14 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
               <div className="w-20 space-y-1">
                 <Label htmlFor="fillColor">Color</Label>
                 <ColorPicker
-                  color={layer.fillColor}
-                  onChange={(color) => onLayerUpdate({ fillColor: color })}
+                  color={layer.color}
+                  onChange={(color) => onLayerUpdate({ color: color })}
                   onCommit={() => onLayerCommit('Change Text Color')}
                 />
               </div>
             </div>
+
+            <Separator />
 
             {/* 3. Character Styles (Bold, Italic, Underline, Strikethrough) */}
             <div className="flex items-center justify-between">
@@ -365,8 +373,8 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
               <ToggleGroup
                 type="single"
                 size="sm"
-                value={layer.textAlignment}
-                onValueChange={(value: TextAlignment) => value && handleSelectChange('textAlignment', value, `Align Text ${value}`)}
+                value={layer.textAlign}
+                onValueChange={(value: TextAlignment) => value && handleSelectChange('textAlign', value, `Align Text ${value}`)}
                 className="justify-start"
               >
                 <TooltipProvider delayDuration={0}>
@@ -391,7 +399,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 type="single"
                 size="sm"
                 value={layer.verticalAlignment}
-                onValueChange={(value: TextLayerData['verticalAlignment']) => value && handleSelectChange('verticalAlignment', value, `Vertical Align Text ${value}`)}
+                onValueChange={(value: Layer['verticalAlignment']) => value && handleSelectChange('verticalAlignment', value, `Vertical Align Text ${value}`)}
                 className="justify-start"
               >
                 <TooltipProvider delayDuration={0}>
@@ -583,7 +591,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
             <div className="space-y-1">
               <Label htmlFor="textWarpType">Text Warping Style</Label>
               <Select
-                value={layer.textWarp.type}
+                value={layer.textWarp?.type}
                 onValueChange={(value: TextWarpData['type']) => onLayerUpdate({ textWarp: { ...layer.textWarp, type: value } })}
               >
                 <SelectTrigger id="textWarpType">
@@ -597,7 +605,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
               </Select>
             </div>
 
-            {layer.textWarp.type !== 'none' && (
+            {layer.textWarp?.type !== 'none' && (
               <div className="space-y-3">
                 <div className="space-y-1">
                   <Label>Bend ({layer.textWarp.bend}%)</Label>
@@ -646,7 +654,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="ligatures"
-                    checked={layer.openTypeFeatures.ligatures}
+                    checked={layer.openTypeFeatures?.ligatures}
                     onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, ligatures: !!checked } })}
                   />
                   <label htmlFor="ligatures" className="text-sm font-medium leading-none">Ligatures</label>
@@ -654,7 +662,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="swashes"
-                    checked={layer.openTypeFeatures.swashes}
+                    checked={layer.openTypeFeatures?.swashes}
                     onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, swashes: !!checked } })}
                   />
                   <label htmlFor="swashes" className="text-sm font-medium leading-none">Swashes</label>
@@ -662,7 +670,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="fractions"
-                    checked={layer.openTypeFeatures.fractions}
+                    checked={layer.openTypeFeatures?.fractions}
                     onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, fractions: !!checked } })}
                   />
                   <label htmlFor="fractions" className="text-sm font-medium leading-none">Fractions</label>
@@ -670,7 +678,7 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="stylisticSet"
-                    checked={layer.openTypeFeatures.stylisticSet > 0}
+                    checked={layer.openTypeFeatures?.stylisticSet > 0}
                     onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, stylisticSet: checked ? 1 : 0 } })}
                   />
                   <label htmlFor="stylisticSet" className="text-sm font-medium leading-none">Stylistic Sets</label>

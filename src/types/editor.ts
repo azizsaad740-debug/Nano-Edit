@@ -69,6 +69,21 @@ export const initialCurvesState = {
   b: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
 };
 
+export interface TextWarpData {
+  type: 'none' | 'arc' | 'arch' | 'bulge' | 'shell' | 'wave' | 'fish' | 'rise' | 'fisheye' | 'inflate' | 'squeeze' | 'twist' | 'custom';
+  bend: number; // -100 to 100
+  horizontalDistortion: number;
+  verticalDistortion: number;
+  customPath?: string; // For custom warping
+}
+
+export interface OpenTypeFeatures {
+  ligatures: boolean;
+  swashes: boolean;
+  stylisticSet: number;
+  fractions: boolean;
+}
+
 export interface Layer {
   id: string;
   name: string;
@@ -102,6 +117,22 @@ export interface Layer {
   stroke?: Stroke; // For 'text'
   backgroundColor?: string; // For 'text' background
   padding?: number; // For 'text' background padding
+  
+  // NEW TEXT PROPERTIES
+  verticalAlignment?: 'top' | 'middle' | 'bottom';
+  indentation?: number;
+  spaceBefore?: number;
+  spaceAfter?: number;
+  hyphenate?: boolean;
+  wordSpacing?: number;
+  baselineShift?: number;
+  textTransform?: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
+  textDecoration?: 'none' | 'underline' | 'line-through';
+  isSuperscript?: boolean;
+  isSubscript?: boolean;
+  openTypeFeatures?: OpenTypeFeatures;
+  textWarp?: TextWarpData;
+
 
   shapeType?: 'rect' | 'circle' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'custom'; // For 'vector-shape'
   fillColor?: string; // For 'vector-shape'

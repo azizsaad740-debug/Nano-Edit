@@ -14,14 +14,14 @@ import { RotateCcw } from "lucide-react";
 
 type AdjustmentType = AdjustmentLayerData['type'];
 
-interface AdjustmentPropertiesProps {
+interface AdjustmentLayerControlsProps {
   layer: Layer;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   imgRef: React.RefObject<HTMLImageElement>;
 }
 
-const AdjustmentProperties = ({ layer, onUpdate, onCommit, imgRef }: AdjustmentPropertiesProps) => {
+const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef }: AdjustmentLayerControlsProps) => {
   if (!layer || layer.type !== 'adjustment' || !layer.adjustmentData) {
     return <p className="text-sm text-muted-foreground">Select an adjustment layer to edit its properties.</p>;
   }
@@ -215,4 +215,4 @@ const AdjustmentProperties = ({ layer, onUpdate, onCommit, imgRef }: AdjustmentP
   );
 };
 
-export default AdjustmentProperties;
+export default AdjustmentLayerControls;

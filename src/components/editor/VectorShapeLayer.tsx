@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, Point } from "@/types/editor";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
