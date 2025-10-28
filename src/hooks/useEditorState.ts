@@ -30,48 +30,47 @@ import {
 const deepCloneState = (state: EditState): EditState => JSON.parse(JSON.stringify(state));
 
 export const useEditorState = (
-  activeProject: any, // Project type from useProjectManager
-  handleProjectUpdate: (updates: Partial<typeof activeProject>) => void,
-  handleHistoryUpdate: (history: HistoryItem[], currentHistoryIndex: number, layers: Layer[]) => void,
-  handleLayerUpdate: (layers: Layer[], historyName?: string) => void,
-  initialImage: string | null,
-  initialDimensions: { width: number; height: number } | null,
-  initialFileInfo: { name: string; size: number } | null,
-  initialExifData: any | null,
   imgRef: React.RefObject<HTMLImageElement>,
 ) => {
   const { stabilityApiKey } = useSettings();
 
-  // --- Core State from Project Manager ---
-  const image = activeProject.image || initialImage;
-  const dimensions = activeProject.dimensions || initialDimensions;
-  const fileInfo = activeProject.fileInfo || initialFileInfo;
-  const exifData = activeProject.exifData || initialExifData;
-  const history = activeProject.history || [initialHistoryItem];
-  
-  // Ensure layers is always an array
-  const layers = Array.isArray(activeProject.layers) ? activeProject.layers : initialLayerState;
-  
-  const currentHistoryIndex = activeProject.currentHistoryIndex || 0;
-  const selectedLayerId = activeProject.selectedLayerId || null;
-  const aspect = activeProject.aspect;
-  const selectionPath = activeProject.selectionPath;
-  const selectionMaskDataUrl = activeProject.selectionMaskDataUrl;
-  const foregroundColor = activeProject.foregroundColor;
-  const backgroundColor = activeProject.backgroundColor;
-  const gradientToolState = activeProject.gradientToolState;
-  const brushStateInternal = activeProject.brushStateInternal;
-  const selectedShapeType = activeProject.selectedShapeType;
-  const activeTool = activeProject.activeTool;
-  const selectiveBlurAmount = activeProject.selectiveBlurAmount;
-  const selectiveBlurMask = activeProject.selectiveBlurMask; // NEW: Selective blur mask
+  // --- Core State Management ---
+  const [image, setImage] = useState<string | null>(null);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
+  const [exifData, setExifData] = useState<any | null>(null);
+  const [aspect, setAspect] = useState<number | undefined>(undefined);
+  const [pendingCrop, setPendingCrop] = useState<Crop | undefined>(undefined);
+  const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
+  const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null);
+  const [foregroundColor, setForegroundColor] = useState("#000000");
+  const [backgroundColor, setBackgroundColor] = useState("#FFFFFF");
+  const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
+  const [brushStateInternal, setBrushStateInternal] = useState<Omit<BrushState, 'color'>>(initialBrushState);
+  const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect');
+  const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
+  const [selectiveBlurAmount, setSelectiveBlurAmount] = useState(50);
+  const [selectiveBlurMask, setSelectiveBlurMask] = useState<string | null>(null);
+
+  // --- History State ---
+  const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const [layers, setLayers] = useState<Layer[]>(initialLayerState);
 
   // The current EditState is derived from the active history item
   const currentState: EditState = useMemo(() => {
     return history[currentHistoryIndex]?.state || initialEditState;
   }, [history, currentHistoryIndex]);
 
-  // --- State Setters for Project Manager ---
+  // --- History Actions ---
+
+  const handleHistoryUpdate = useCallback((newHistory: HistoryItem[], newIndex: number, newLayers: Layer[]) => {
+    setHistory(newHistory);
+    setCurrentHistoryIndex(newIndex);
+    setLayers(newLayers);
+    // Sync crop state from history
+    setPendingCrop(newHistory[newIndex].state.crop);
+  }, []);
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     // This function is used for temporary changes (e.g., slider dragging)
@@ -80,22 +79,28 @@ export const useEditorState = (
       ...newHistory[currentHistoryIndex],
       state: { ...currentState, ...updates },
     };
-    handleHistoryUpdate(newHistory, currentHistoryIndex, layers);
-  }, [currentState, history, currentHistoryIndex, layers, handleHistoryUpdate]);
+    setHistory(newHistory);
+  }, [currentState, history, currentHistoryIndex]);
 
   const recordHistory = useCallback((name: string, state: EditState, layers: Layer[]) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     const newHistoryIndex = newHistory.length;
     const newHistoryItem: HistoryItem = { name, state: deepCloneState(state), layers: JSON.parse(JSON.stringify(layers)) };
-    handleHistoryUpdate([...newHistory, newHistoryItem], newHistoryIndex, layers);
-  }, [history, currentHistoryIndex, handleHistoryUpdate]);
-
-  // --- Active Tool Management (Defined early to resolve hoisting issues) ---
-  const setActiveTool = useCallback((tool: ActiveTool | null) => {
-    handleProjectUpdate({ activeTool: tool });
-  }, [handleProjectUpdate]);
+    setHistory([...newHistory, newHistoryItem]);
+    setCurrentHistoryIndex(newHistoryIndex);
+  }, [history, currentHistoryIndex]);
 
   // --- Layer Management Hook Integration ---
+  const handleLayerUpdate = useCallback((newLayersOrUpdater: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => {
+    setLayers(prev => {
+      const newLayers = typeof newLayersOrUpdater === 'function' ? newLayersOrUpdater(prev) : newLayersOrUpdater;
+      if (historyName) {
+        recordHistory(historyName, currentState, newLayers);
+      }
+      return newLayers;
+    });
+  }, [currentState, recordHistory]);
+
   const {
     layers: managedLayers,
     selectedLayerId: managedSelectedLayerId,
@@ -139,8 +144,8 @@ export const useEditorState = (
     handleToggleVisibility,
     handleDrawingStrokeEnd,
     applySelectionAsMask: applySelectionAsMaskFromLayers,
-    canUndoLayers, // Corrected destructuring name
-    canRedoLayers, // Corrected destructuring name
+    canUndoLayers,
+    canRedoLayers,
   } = useLayers({
     currentEditState: currentState,
     recordHistory,
@@ -150,16 +155,19 @@ export const useEditorState = (
     gradientToolState,
     activeTool,
     layers,
-    setLayers: handleLayerUpdate, // Pass the project manager's layer update function
+    setLayers: handleLayerUpdate,
     selectedLayerId,
-    setSelectedLayerId: (id) => handleProjectUpdate({ selectedLayerId: id }),
+    setSelectedLayerId,
     history,
     currentHistoryIndex,
     foregroundColor,
     backgroundColor,
     selectedShapeType,
     selectionMaskDataUrl,
-    clearSelectionState: () => handleProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null }),
+    clearSelectionState: () => {
+      setSelectionPath(null);
+      setSelectionMaskDataUrl(null);
+    },
   });
 
   // Function to commit temporary layer changes and record history
@@ -174,31 +182,54 @@ export const useEditorState = (
       const newIndex = currentHistoryIndex - 1;
       const prevItem = history[newIndex];
       handleHistoryUpdate(history, newIndex, prevItem.layers);
-      handleProjectUpdate({ selectedLayerId: null });
+      setSelectedLayerId(null);
       showSuccess(`Undo: ${prevItem.name}`);
     }
-  }, [currentHistoryIndex, history, handleHistoryUpdate, handleProjectUpdate]);
+  }, [currentHistoryIndex, history, handleHistoryUpdate, setSelectedLayerId]);
 
   const handleRedo = useCallback(() => {
     if (currentHistoryIndex < history.length - 1) {
       const newIndex = currentHistoryIndex + 1;
       const nextItem = history[newIndex];
       handleHistoryUpdate(history, newIndex, nextItem.layers);
-      handleProjectUpdate({ selectedLayerId: null });
+      setSelectedLayerId(null);
       showSuccess(`Redo: ${nextItem.name}`);
     }
-  }, [currentHistoryIndex, history, handleHistoryUpdate, handleProjectUpdate]);
+  }, [currentHistoryIndex, history, handleHistoryUpdate, setSelectedLayerId]);
 
   const jumpToHistory = useCallback((index: number) => {
     if (index >= 0 && index < history.length) {
       const targetItem = history[index];
       handleHistoryUpdate(history, index, targetItem.layers);
-      handleProjectUpdate({ selectedLayerId: null });
+      setSelectedLayerId(null);
       showSuccess(`Jumped to: ${targetItem.name}`);
     }
-  }, [history, handleHistoryUpdate, handleProjectUpdate]);
+  }, [history, handleHistoryUpdate, setSelectedLayerId]);
 
   // --- File/Project Management ---
+
+  const resetProjectState = useCallback(() => {
+    setImage(null);
+    setDimensions(null);
+    setFileInfo(null);
+    setExifData(null);
+    setAspect(undefined);
+    setPendingCrop(undefined);
+    setSelectionPath(null);
+    setSelectionMaskDataUrl(null);
+    setForegroundColor("#000000");
+    setBackgroundColor("#FFFFFF");
+    setGradientToolState(initialGradientToolState);
+    setBrushStateInternal(initialBrushState);
+    setSelectedShapeType('rect');
+    setActiveTool(null);
+    setSelectiveBlurAmount(50);
+    setSelectiveBlurMask(null);
+    setHistory([initialHistoryItem]);
+    setCurrentHistoryIndex(0);
+    setLayers(initialLayerState);
+    setSelectedLayerId(null);
+  }, [setSelectedLayerId]);
 
   const handleFileSelect = useCallback(async (file: File, importInSameProject: boolean) => {
     const toastId = showLoading("Loading image...");
@@ -237,32 +268,26 @@ export const useEditorState = (
         // Replace the background layer
         const updatedLayers = layers.map(l => l.id === 'background' ? newLayer : l);
         recordHistory(`Import Image: ${file.name}`, currentState, updatedLayers);
-        handleProjectUpdate({
-          image: dataUrl,
-          dimensions: newDimensions,
-          fileInfo: newFileInfo,
-          exifData,
-          aspect: newDimensions.width / newDimensions.height,
-          layers: updatedLayers,
-        });
+        setImage(dataUrl);
+        setDimensions(newDimensions);
+        setFileInfo(newFileInfo);
+        setExifData(exifData);
+        setAspect(newDimensions.width / newDimensions.height);
+        setLayers(updatedLayers);
       } else {
-        // New project/tab (handled by Index.tsx, just update state)
+        // New project
+        resetProjectState();
         const newLayers = [newLayer];
         const newHistoryItem: HistoryItem = { name: `Load Image: ${file.name}`, state: initialEditState, layers: newLayers };
-        handleProjectUpdate({
-          image: dataUrl,
-          dimensions: newDimensions,
-          fileInfo: newFileInfo,
-          exifData,
-          aspect: newDimensions.width / newDimensions.height,
-          history: [newHistoryItem],
-          currentHistoryIndex: 0,
-          layers: newLayers,
-          selectedLayerId: null,
-          pendingCrop: undefined,
-          selectionPath: null,
-          selectionMaskDataUrl: null,
-        });
+        
+        setImage(dataUrl);
+        setDimensions(newDimensions);
+        setFileInfo(newFileInfo);
+        setExifData(exifData);
+        setAspect(newDimensions.width / newDimensions.height);
+        setHistory([newHistoryItem]);
+        setCurrentHistoryIndex(0);
+        setLayers(newLayers);
       }
 
       dismissToast(toastId);
@@ -272,7 +297,7 @@ export const useEditorState = (
       console.error("File load error:", error);
       showError("Failed to load image file.");
     }
-  }, [currentState, layers, recordHistory, handleProjectUpdate]);
+  }, [currentState, layers, recordHistory, resetProjectState]);
 
   const handleUrlImageLoad = useCallback(async (url: string, importInSameProject: boolean) => {
     const toastId = showLoading("Loading image from URL...");
@@ -339,22 +364,16 @@ export const useEditorState = (
 
     const newHistoryItem: HistoryItem = { name: `New Project ${width}x${height}`, state: initialEditState, layers: newLayers };
     
-    handleProjectUpdate({
-      image: dataUrl,
-      dimensions: newDimensions,
-      fileInfo: newFileInfo,
-      exifData: null,
-      aspect: width / height,
-      history: [newHistoryItem],
-      currentHistoryIndex: 0,
-      layers: newLayers,
-      selectedLayerId: null,
-      pendingCrop: undefined,
-      selectionPath: null,
-      selectionMaskDataUrl: null,
-    });
+    resetProjectState();
+    setImage(dataUrl);
+    setDimensions(newDimensions);
+    setFileInfo(newFileInfo);
+    setAspect(width / height);
+    setHistory([newHistoryItem]);
+    setCurrentHistoryIndex(0);
+    setLayers(newLayers);
     showSuccess("New project created.");
-  }, [handleProjectUpdate]);
+  }, [resetProjectState]);
 
   const handleNewFromClipboard = useCallback(async (importInSameProject: boolean) => {
     try {
@@ -411,20 +430,18 @@ export const useEditorState = (
 
       const newDimensions = { width: img.naturalWidth, height: img.naturalHeight };
       
-      handleProjectUpdate({
-        image: projectData.sourceImage,
-        dimensions: newDimensions,
-        fileInfo: projectData.fileInfo,
-        exifData: null, // EXIF data is not saved in project file
-        aspect: newDimensions.width / newDimensions.height,
-        history: projectData.history,
-        currentHistoryIndex: projectData.currentHistoryIndex,
-        layers: lastLayers,
-        selectedLayerId: null,
-        pendingCrop: lastState.crop,
-        selectionPath: null,
-        selectionMaskDataUrl: null,
-      });
+      resetProjectState();
+      setImage(projectData.sourceImage);
+      setDimensions(newDimensions);
+      setFileInfo(projectData.fileInfo);
+      setAspect(newDimensions.width / newDimensions.height);
+      setHistory(projectData.history);
+      setCurrentHistoryIndex(projectData.currentHistoryIndex);
+      setLayers(lastLayers);
+      setPendingCrop(lastState.crop);
+      setSelectedLayerId(null);
+      setSelectionPath(null);
+      setSelectionMaskDataUrl(null);
 
       dismissToast(toastId);
       showSuccess(`Project "${projectData.fileInfo?.name}" loaded successfully.`);
@@ -433,7 +450,7 @@ export const useEditorState = (
       console.error("Project load error:", error);
       showError(error.message || "Failed to load project file.");
     }
-  }, [handleProjectUpdate]);
+  }, [resetProjectState]);
 
   // --- Edit Controls Handlers ---
 
@@ -559,8 +576,7 @@ export const useEditorState = (
   }, [currentState, layers, recordHistory, updateCurrentState]);
 
   // --- Crop Handlers ---
-  const [pendingCrop, setPendingCrop] = useState<Crop | undefined>(currentState.crop); 
-
+  
   useEffect(() => {
     // Sync pendingCrop when history changes
     setPendingCrop(currentState.crop);
@@ -571,10 +587,8 @@ export const useEditorState = (
     const newState = { ...currentState, crop: pendingCrop };
     updateCurrentState(newState);
     recordHistory("Apply Crop", newState, layers);
-    // Fix TS Error 1: Remove access to pendingCrop.aspect
-    // handleProjectUpdate({ aspect: pendingCrop.aspect }); 
     setActiveTool(null);
-  }, [currentState, pendingCrop, layers, recordHistory, handleProjectUpdate, setActiveTool, updateCurrentState]);
+  }, [currentState, pendingCrop, layers, recordHistory, setActiveTool, updateCurrentState]);
 
   const cancelCrop = useCallback(() => {
     setPendingCrop(currentState.crop);
@@ -609,20 +623,21 @@ export const useEditorState = (
 
   // --- Color Tool Handlers ---
   const handleForegroundColorChange = useCallback((color: string) => {
-    handleProjectUpdate({ foregroundColor: color });
-  }, [handleProjectUpdate]);
+    setForegroundColor(color);
+  }, []);
 
   const handleBackgroundColorChange = useCallback((color: string) => {
-    handleProjectUpdate({ backgroundColor: color });
-  }, [handleProjectUpdate]);
+    setBackgroundColor(color);
+  }, []);
 
   const handleSwapColors = useCallback(() => {
-    handleProjectUpdate({ foregroundColor: backgroundColor, backgroundColor: foregroundColor }); 
-  }, [foregroundColor, backgroundColor, handleProjectUpdate]);
+    setForegroundColor(backgroundColor);
+    setBackgroundColor(foregroundColor);
+  }, [foregroundColor, backgroundColor]);
 
   const handleColorPick = useCallback((color: string) => {
-    handleProjectUpdate({ foregroundColor: color });
-  }, [handleProjectUpdate]);
+    setForegroundColor(color);
+  }, []);
 
   // --- Generative Fill Handler ---
   const applyGenerativeResult = useCallback((resultUrl: string, maskDataUrl: string | null) => {
@@ -651,46 +666,39 @@ export const useEditorState = (
     // Insert immediately above the background layer (index 1)
     const updatedLayers = [layers[0], newLayer, ...layers.slice(1)];
     
-    handleProjectUpdate({ layers: updatedLayers, selectedLayerId: newLayer.id });
+    setLayers(updatedLayers);
+    setSelectedLayerId(newLayer.id);
     recordHistory("Apply Generative Fill", currentState, updatedLayers);
-    handleProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
+    setSelectionPath(null);
+    setSelectionMaskDataUrl(null);
     showSuccess("Generative fill applied as a new layer.");
-  }, [dimensions, layers, currentState, recordHistory, handleProjectUpdate]);
+  }, [dimensions, layers, currentState, recordHistory, setLayers, setSelectedLayerId, setSelectionPath, setSelectionMaskDataUrl]);
 
   // --- Selection/Masking Handlers ---
-  const setSelectionPath = useCallback((path: Point[] | null) => {
-    handleProjectUpdate({ selectionPath: path, selectionMaskDataUrl: null });
-  }, [handleProjectUpdate]);
+  const clearSelectionState = useCallback(() => {
+    setSelectionPath(null);
+    setSelectionMaskDataUrl(null);
+  }, []);
 
   const handleSelectionBrushStroke = useCallback((strokeDataUrl: string, operation: 'add' | 'subtract') => {
-    // This function is complex as it needs to merge the stroke onto the existing mask.
-    // For now, we treat the stroke as the new mask if no mask exists, or merge it if one does.
-    
-    // Since this is a complex canvas operation, we'll simplify it for now:
-    // If no mask exists, the stroke becomes the mask.
-    // If a mask exists, we assume the stroke is merged onto it (stub).
-    
     if (!selectionMaskDataUrl) {
-      handleProjectUpdate({ selectionMaskDataUrl: strokeDataUrl, selectionPath: null });
+      setSelectionMaskDataUrl(strokeDataUrl);
+      setSelectionPath(null);
       showSuccess("Selection mask created.");
     } else {
-      // In a real app, we would merge strokeDataUrl onto selectionMaskDataUrl using canvas composite operations.
-      // For now, we just update the mask to the new stroke (simplification).
-      handleProjectUpdate({ selectionMaskDataUrl: strokeDataUrl, selectionPath: null });
+      // Stub: In a real app, we would merge strokeDataUrl onto selectionMaskDataUrl using canvas composite operations.
+      setSelectionMaskDataUrl(strokeDataUrl);
+      setSelectionPath(null);
       showSuccess("Selection mask updated (stub merge).");
     }
-  }, [selectionMaskDataUrl, handleProjectUpdate]);
+  }, [selectionMaskDataUrl, setSelectionMaskDataUrl, setSelectionPath]);
 
   const clearSelectionMask = useCallback(() => {
-    handleProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null });
+    clearSelectionState();
     showSuccess("Selection cleared.");
-  }, [handleProjectUpdate]);
+  }, [clearSelectionState]);
 
   const applyMaskToSelectionPath = useCallback(() => {
-    // This function is used when the lasso path is finalized and needs to be converted to a mask.
-    // Since the lasso path is already stored in selectionPath, we need a utility to convert it.
-    // This utility is defined in src/utils/maskToPolygon.ts and src/utils/maskUtils.ts
-    // For now, we rely on the Workspace component to call convertSelectionPathToMask when needed.
     showError("Use 'Refine Selection' to convert Lasso path to a mask first.");
   }, []);
 
@@ -701,40 +709,38 @@ export const useEditorState = (
     }
     const toastId = showLoading("Refining selection...");
     try {
-      // We use maskToPolygon to get a simplified path, but here we need the actual mask data URL.
       const { polygonToMaskDataUrl } = await import("@/utils/maskUtils");
       const maskDataUrl = await polygonToMaskDataUrl(selectionPath, dimensions.width, dimensions.height);
       
-      handleProjectUpdate({ selectionMaskDataUrl: maskDataUrl, selectionPath: null });
+      setSelectionMaskDataUrl(maskDataUrl);
+      setSelectionPath(null);
       dismissToast(toastId);
       showSuccess("Selection refined to mask.");
     } catch (error) {
       dismissToast(toastId);
       showError("Failed to refine selection.");
     }
-  }, [selectionPath, dimensions, handleProjectUpdate]);
+  }, [selectionPath, dimensions, setSelectionMaskDataUrl, setSelectionPath]);
 
   // --- Selective Blur Handlers ---
   const handleSelectiveBlurStrengthChange = useCallback((value: number) => {
-    handleProjectUpdate({ selectiveBlurAmount: value });
-  }, [handleProjectUpdate]);
+    setSelectiveBlurAmount(value);
+  }, []);
 
   const handleSelectiveBlurStrengthCommit = useCallback((value: number) => {
     recordHistory(`Set Selective Blur Strength to ${value}%`, currentState, layers);
   }, [currentState, layers, recordHistory]);
 
   const handleSelectiveBlurStroke = useCallback((strokeDataUrl: string, operation: 'add' | 'subtract') => {
-    // This stroke is applied to the selectiveBlurMask
     if (!selectiveBlurMask) {
-      handleProjectUpdate({ selectiveBlurMask: strokeDataUrl });
+      setSelectiveBlurMask(strokeDataUrl);
       showSuccess("Selective blur mask created.");
     } else {
-      // In a real app, we would merge strokeDataUrl onto selectiveBlurMask using canvas composite operations.
-      // For now, we just update the mask to the new stroke (simplification).
-      handleProjectUpdate({ selectiveBlurMask: strokeDataUrl });
+      // Stub: In a real app, we would merge strokeDataUrl onto selectiveBlurMask using canvas composite operations.
+      setSelectiveBlurMask(strokeDataUrl);
       showSuccess("Selective blur mask updated (stub merge).");
     }
-  }, [selectiveBlurMask, handleProjectUpdate]);
+  }, [selectiveBlurMask, setSelectiveBlurMask]);
 
   // --- Template Loading ---
   const loadTemplateData = useCallback((template: { data: { editState: Partial<EditState>, layers: Layer[], dimensions: { width: number, height: number } } }) => {
@@ -750,49 +756,24 @@ export const useEditorState = (
 
     const newHistoryItem: HistoryItem = { name: `Apply Template: ${template.data.editState.selectedFilter || 'Custom'}`, state: newState, layers: templateLayers };
     
-    handleProjectUpdate({
-      dimensions: templateDimensions,
-      aspect: templateDimensions.width / templateDimensions.height,
-      history: [newHistoryItem],
-      currentHistoryIndex: 0,
-      layers: templateLayers,
-      selectedLayerId: null,
-      pendingCrop: newState.crop,
-      selectionPath: null,
-      selectionMaskDataUrl: null,
-    });
+    setDimensions(templateDimensions);
+    setAspect(templateDimensions.width / templateDimensions.height);
+    setHistory([newHistoryItem]);
+    setCurrentHistoryIndex(0);
+    setLayers(templateLayers);
+    setSelectedLayerId(null);
+    setPendingCrop(newState.crop);
+    setSelectionPath(null);
+    setSelectionMaskDataUrl(null);
+    
     showSuccess("Template applied.");
-  }, [image, handleProjectUpdate]);
-
-  // Check for template data in session storage on initial load
-  useEffect(() => {
-    const templateDataString = sessionStorage.getItem('nanoedit-template-data');
-    if (templateDataString) {
-      try {
-        const templateData: { data: { editState: Partial<EditState>, layers: Layer[], dimensions: { width: number, height: number } } } = JSON.parse(templateDataString);
-        loadTemplateData(templateData);
-        sessionStorage.removeItem('nanoedit-template-data');
-      } catch (e) {
-        console.error("Failed to parse template data from session storage:", e);
-        showError("Failed to load template data.");
-      }
-    }
-  }, [loadTemplateData]);
+  }, [image, setDimensions, setAspect, setHistory, setCurrentHistoryIndex, setLayers, setSelectedLayerId, setPendingCrop, setSelectionPath, setSelectionMaskDataUrl]);
 
   // --- Brush State Management ---
   const brushState: BrushState = useMemo(() => ({
     ...brushStateInternal,
-    color: foregroundColor, // Include foregroundColor as the brush color
+    color: foregroundColor,
   }), [brushStateInternal, foregroundColor]);
-
-  const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
-    handleProjectUpdate({ brushStateInternal: { ...brushStateInternal, ...updates } });
-  }, [brushStateInternal, handleProjectUpdate]);
-
-  // --- Shape Type Management ---
-  const setSelectedShapeType = useCallback((type: Layer['shapeType'] | null) => {
-    handleProjectUpdate({ selectedShapeType: type });
-  }, [handleProjectUpdate]);
 
   // --- Public Interface ---
   return {
@@ -823,14 +804,15 @@ export const useEditorState = (
     handleNewFromClipboard,
     handleSaveProject,
     handleLoadProject,
-    loadImageData: handleFileSelect, // Alias for compatibility
+    loadImageData: handleFileSelect,
+    setDimensions, // Exposed for Workspace image load handler
 
     // History Actions
     handleUndo,
     handleRedo,
     jumpToHistory,
-    canUndo: canUndoLayers, // Corrected property name
-    canRedo: canRedoLayers, // Corrected property name
+    canUndo: canUndoLayers,
+    canRedo: canRedoLayers,
     recordHistory,
 
     // Edit State Management
@@ -860,7 +842,7 @@ export const useEditorState = (
     setPendingCrop,
     applyCrop,
     cancelCrop,
-    setAspect: (aspect: number | undefined) => handleProjectUpdate({ aspect }),
+    setAspect,
 
     // Download/Copy
     handleDownload,
@@ -878,13 +860,13 @@ export const useEditorState = (
     // Layer Management (from useLayers)
     layers: managedLayers,
     selectedLayerId: managedSelectedLayerId,
-    setSelectedLayer: (id) => handleProjectUpdate({ selectedLayerId: id }),
+    setSelectedLayer: setSelectedLayerId,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
-    commitTemporaryLayerChange, // <-- ADDED
+    commitTemporaryLayerChange,
     reorderLayers,
     createSmartObject,
     openSmartObjectEditor,
@@ -909,7 +891,7 @@ export const useEditorState = (
     handleConvertSmartObjectToLayers,
     handleExportSmartObjectContents,
     handleArrangeLayer,
-    handleToggleVisibility, // TS Error 2 Fix: Explicitly return this property
+    handleToggleVisibility,
     addTextLayer: (coords) => handleAddTextLayer(coords, foregroundColor),
     addDrawingLayer: handleAddDrawingLayer,
     handleAddLayerFromBackground,
@@ -922,9 +904,9 @@ export const useEditorState = (
     // Tool State
     setActiveTool,
     brushState,
-    setBrushState,
+    setBrushState: setBrushStateInternal,
     gradientToolState,
-    setGradientToolState: (state) => handleProjectUpdate({ gradientToolState: state }),
+    setGradientToolState,
     setSelectedShapeType,
 
     // Selection/Masking

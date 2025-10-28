@@ -59,17 +59,12 @@ interface HeaderProps {
   onNewProjectClick: () => void;
   onNewFromClipboard: (importInSameProject: boolean) => void;
   onSaveProject: () => void;
-  onOpenProject: (importInSameProject: boolean) => void;
+  onOpenProject: () => void; // Simplified signature
   onToggleFullscreen: () => void;
   isFullscreen: boolean;
   onSyncProject: () => void;
-  setOpenProjectSettings: (open: boolean) => void; // NEW prop
-  // Multi-project props
-  projects: { id: string; name: string }[];
-  activeProjectId: string;
-  setActiveProjectId: (id: string) => void;
-  createNewTab: (name?: string) => void;
-  closeProject: (id: string) => void;
+  setOpenProjectSettings: (open: boolean) => void;
+  // Multi-project props removed
   children: React.ReactNode;
 }
 
@@ -93,12 +88,7 @@ const Header = ({
   onToggleFullscreen,
   isFullscreen,
   onSyncProject,
-  setOpenProjectSettings, // NEW prop
-  projects,
-  activeProjectId,
-  setActiveProjectId,
-  createNewTab,
-  closeProject,
+  setOpenProjectSettings,
   children,
 }: HeaderProps) => {
   const [isHoveringPreview, setIsHoveringPreview] = React.useState(false);
@@ -128,44 +118,7 @@ const Header = ({
 
   return (
     <header className="flex flex-col border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 shrink-0">
-      {/* Tab Bar */}
-      <div className="flex items-center h-10 border-b px-2 overflow-x-auto overflow-y-hidden">
-        {projects.map((project) => (
-          <div
-            key={project.id}
-            className={cn(
-              "flex items-center h-full px-3 text-sm cursor-pointer border-r border-border/50 transition-colors",
-              project.id === activeProjectId
-                ? "bg-accent text-accent-foreground font-medium"
-                : "bg-background hover:bg-muted/50 text-muted-foreground"
-            )}
-            onClick={() => setActiveProjectId(project.id)}
-          >
-            <span className="truncate max-w-[150px]">{project.name}</span>
-            {projects.length > 1 && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 ml-2 shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeProject(project.id);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-        ))}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 ml-2 shrink-0"
-          onClick={() => createNewTab()}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Tab Bar REMOVED */}
 
       {/* Main Control Bar */}
       <div className="flex items-center justify-between h-16 px-4">
@@ -184,21 +137,13 @@ const Header = ({
                 New Project
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => onOpenProject(false)}>
+              <DropdownMenuItem onClick={() => onOpenProject()}>
                 <FolderOpen className="h-4 w-4 mr-2" />
-                Open Image/Project in New Tab
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onOpenProject(true)} disabled={!hasImage}>
-                <FolderOpen className="h-4 w-4 mr-2" />
-                Import in Same Project
+                Open Image/Project
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => onNewFromClipboard(false)}>
                 <ClipboardPaste className="h-4 w-4 mr-2" />
-                New from Clipboard (New Tab)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onNewFromClipboard(true)} disabled={!hasImage}>
-                <ClipboardPaste className="h-4 w-4 mr-2" />
-                Import from Clipboard (Same Project)
+                New from Clipboard
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onSaveProject} disabled={!hasImage}>
@@ -208,7 +153,7 @@ const Header = ({
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onGenerateClick}>
                 <Sparkles className="h-4 w-4 mr-2" />
-                Generate New Image (New Tab)
+                Generate New Image
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setOpenImport(true)}>
                 <FilePlus2 className="h-4 w-4 mr-2" />

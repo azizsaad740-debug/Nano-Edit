@@ -39,20 +39,9 @@ import type { TemplateData } from "../types/template";
 import { downloadSelectionAsImage } from "@/utils/imageUtils";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
-import { useProjectManager } from "@/hooks/useProjectManager";
 import { useFontManager } from "@/hooks/useFontManager";
 
 const Index = () => {
-  const {
-    projects,
-    activeProjectId,
-    activeProject,
-    setActiveProjectId,
-    updateActiveProject,
-    createNewTab,
-    closeProject,
-  } = useProjectManager();
-
   const { geminiApiKey } = useSettings();
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
@@ -73,10 +62,10 @@ const Index = () => {
   const openProjectInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   
-  // --- Zoom/Pan State (Lifted from Workspace) ---
+  // --- Zoom/Pan State ---
   const [zoom, setZoom] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
-  const fitScreenRef = useRef<(() => void) | null>(null); // Ref to hold internal fit logic
+  const fitScreenRef = useRef<(() => void) | null>(null);
 
   const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
   const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
@@ -85,50 +74,13 @@ const Index = () => {
     if (fitScreenRef.current) {
       fitScreenRef.current();
     } else {
-      // Fallback if ref isn't set yet
       setZoom(1);
       setPanOffset({ x: 0, y: 0 });
     }
   }, []);
   // --- End Zoom/Pan State ---
 
-  // --- Project State Management ---
-  const handleProjectUpdate = useCallback((updates: Partial<typeof activeProject>) => {
-    updateActiveProject(updates);
-  }, [updateActiveProject]);
-
-  const handleHistoryUpdate = useCallback((history, currentHistoryIndex, layers) => {
-    updateActiveProject({ history, currentHistoryIndex, layers });
-  }, [updateActiveProject]);
-
-  const handleLayerUpdate = useCallback((layers, historyName) => {
-    if (historyName) {
-      const newState = activeProject?.history[activeProject.currentHistoryIndex].state;
-      if (newState) {
-        // This path is used by useLayers when committing a change (e.g., rename, delete, reorder)
-        // We need to ensure the history is updated correctly.
-        const newHistory = activeProject.history.slice(0, activeProject.currentHistoryIndex + 1);
-        const newHistoryIndex = newHistory.length;
-        const newHistoryItem = { name: historyName, state: newState, layers: layers };
-        updateActiveProject({ history: [...newHistory, newHistoryItem], currentHistoryIndex: newHistoryIndex, layers });
-      }
-    } else {
-      // This path is used by useLayers for temporary updates (e.g., dragging)
-      updateActiveProject({ layers });
-    }
-  }, [activeProject, updateActiveProject]);
-
-  const editorState = useEditorState(
-    activeProject || projects[0], // Fallback to first project if activeProject is null (shouldn't happen)
-    handleProjectUpdate,
-    handleHistoryUpdate,
-    handleLayerUpdate,
-    activeProject?.image || null,
-    activeProject?.dimensions || null,
-    activeProject?.fileInfo || null,
-    activeProject?.exifData || null,
-    imgRef,
-  );
+  const editorState = useEditorState(imgRef);
 
   const {
     image,
@@ -148,6 +100,8 @@ const Index = () => {
     handleNewFromClipboard,
     handleSaveProject,
     handleLoadProject,
+    setDimensions, // Exposed setter
+    setAspect, // Exposed setter
     handleAdjustmentChange,
     handleAdjustmentCommit,
     handleEffectChange,
@@ -176,7 +130,6 @@ const Index = () => {
     jumpToHistory,
     handleDownload,
     handleCopy,
-    setAspect,
     applyPreset,
     recordHistory,
     layers,
@@ -253,32 +206,19 @@ const Index = () => {
   } = editorState;
 
   // --- Local Functions ---
-  const handleOpenProjectClick = (importInSameProject: boolean) => {
+  const handleOpenProjectClick = () => {
     openProjectInputRef.current?.click();
-    openProjectInputRef.current?.setAttribute('data-import-mode', importInSameProject ? 'same' : 'new');
   };
 
   const handleProjectFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    const importMode = event.target.getAttribute('data-import-mode') === 'same';
     
     if (file) {
       if (file.name.endsWith('.nanoedit')) {
-        if (importMode && image) {
-          showError("Cannot import a .nanoedit project into an existing project. Please open it in a new tab.");
-          return;
-        }
         handleLoadProject(file);
       } else {
-        if (!importMode) {
-          // Open in new tab
-          const newProject = createNewTab(file?.name || "New Image");
-          setActiveProjectId(newProject.id);
-          handleFileSelect(file, false);
-        } else {
-          // Import in same project
-          handleFileSelect(file, true);
-        }
+        // Load image directly into the single project
+        handleFileSelect(file, false);
       }
     }
     if (event.target) {
@@ -333,7 +273,6 @@ const Index = () => {
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', onFullscreenChange);
-      // Ensure cleanup of hotkeys if needed, though useHotkeys handles its own cleanup
     };
   }, []);
 
@@ -355,9 +294,7 @@ const Index = () => {
         if (items[i].type.indexOf("image") !== -1) {
           const blob = items[i].getAsFile();
           if (blob) {
-            // Paste image in new tab
-            const newProject = createNewTab("Pasted Image");
-            setActiveProjectId(newProject.id);
+            // Paste image directly
             handleFileSelect(blob, false);
             event.preventDefault();
             return;
@@ -369,9 +306,7 @@ const Index = () => {
       if (pastedText) {
         try {
           new URL(pastedText);
-          // Paste URL in new tab
-          const newProject = createNewTab("Pasted URL");
-          setActiveProjectId(newProject.id);
+          // Paste URL directly
           handleUrlImageLoad(pastedText, false);
           event.preventDefault();
         } catch (_) {
@@ -384,7 +319,7 @@ const Index = () => {
     return () => {
       document.removeEventListener("paste", handlePaste);
     };
-  }, [handleFileSelect, handleUrlImageLoad, createNewTab, setActiveProjectId]);
+  }, [handleFileSelect, handleUrlImageLoad]);
 
   const { adjustments, effects, grading, channels, curves, selectedFilter, transforms, crop, frame, hslAdjustments, colorMode } = currentState;
 
@@ -517,7 +452,11 @@ const Index = () => {
       const newDimensions = { width: updates.width, height: updates.height };
       
       // 1. Update dimensions in project state
-      updateActiveProject({ dimensions: newDimensions });
+      if (dimensions) {
+        // Since dimensions are managed internally in useEditorState now, we update them directly
+        // and rely on the next history record to capture the state.
+        setDimensions(newDimensions);
+      }
       
       // 2. Record history change for color mode
       if (updates.colorMode) {
@@ -593,17 +532,11 @@ const Index = () => {
         onNewProjectClick={() => setOpenNewProject(true)}
         onNewFromClipboard={(importInSameProject) => handleNewFromClipboard(importInSameProject)}
         onSaveProject={handleSaveProject}
-        onOpenProject={(importInSameProject) => handleOpenProjectClick(importInSameProject)}
+        onOpenProject={() => handleOpenProjectClick()}
         onToggleFullscreen={handleToggleFullscreen}
         isFullscreen={isFullscreen}
         onSyncProject={handleSyncProject}
         setOpenProjectSettings={setOpenProjectSettings}
-        // Multi-project props
-        projects={projects}
-        activeProjectId={activeProjectId}
-        setActiveProjectId={setActiveProjectId}
-        createNewTab={createNewTab}
-        closeProject={closeProject}
       >
         <div className="flex-1 flex items-center justify-center px-4">
           {(activeTool === "lasso" && hasActiveSelection) || (activeTool === "selectionBrush" && hasActiveSelection) || (hasActiveSelection && activeTool !== 'selectionBrush') ? (
@@ -671,29 +604,16 @@ const Index = () => {
             <div className="h-full p-4 md:p-6 lg:p-8 overflow-auto">
               <Workspace
                 image={image}
-                onFileSelect={(file) => {
-                  const newProject = createNewTab(file?.name || "New Image");
-                  setActiveProjectId(newProject.id);
-                  handleFileSelect(file, false);
-                }}
-                onSampleSelect={(url) => {
-                  const newProject = createNewTab("Sample Image");
-                  setActiveProjectId(newProject.id);
-                  handleUrlImageLoad(url, false);
-                }}
-                onUrlSelect={(url) => {
-                  const newProject = createNewTab("URL Image");
-                  setActiveProjectId(newProject.id);
-                  handleUrlImageLoad(url, false);
-                }}
+                onFileSelect={(file) => handleFileSelect(file, false)}
+                onSampleSelect={(url) => handleUrlImageLoad(url, false)}
+                onUrlSelect={(url) => handleUrlImageLoad(url, false)}
                 onImageLoad={() => {
-                  if (imgRef.current && activeProject) {
+                  if (imgRef.current && dimensions) {
                     const { naturalWidth, naturalHeight } = imgRef.current;
-                    if (naturalWidth > 0 && naturalHeight > 0) {
-                      updateActiveProject({ 
-                        dimensions: { width: naturalWidth, height: naturalHeight },
-                        aspect: naturalWidth / naturalHeight,
-                      });
+                    if (naturalWidth > 0 && naturalHeight > 0 && (naturalWidth !== dimensions.width || naturalHeight !== dimensions.height)) {
+                      // Update dimensions if the image loaded is different from the current state (e.g., placeholder replaced)
+                      setDimensions({ width: naturalWidth, height: naturalHeight });
+                      setAspect(naturalWidth / naturalHeight);
                     }
                   }
                 }}
@@ -782,11 +702,7 @@ const Index = () => {
       <GenerateImageDialog
         open={openGenerateImage}
         onOpenChange={setOpenGenerateImage}
-        onGenerate={(url) => {
-          const newProject = createNewTab("Generated Image");
-          setActiveProjectId(newProject.id);
-          handleGeneratedImageLoad(url);
-        }}
+        onGenerate={(url) => handleGeneratedImageLoad(url)}
         apiKey={geminiApiKey}
         imageNaturalDimensions={dimensions}
       />
@@ -794,11 +710,7 @@ const Index = () => {
       <NewProjectDialog
         open={openNewProject}
         onOpenChange={setOpenNewProject}
-        onNewProject={(settings) => {
-          const newProject = createNewTab(settings.width + 'x' + settings.height);
-          setActiveProjectId(newProject.id);
-          handleNewProject(settings);
-        }}
+        onNewProject={(settings) => handleNewProject(settings)}
       />
       <ProjectSettingsDialog
         open={openProjectSettings}
