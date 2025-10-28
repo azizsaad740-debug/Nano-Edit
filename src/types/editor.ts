@@ -108,7 +108,7 @@ export interface Layer {
   fontSize?: number; // For 'text'
   color?: string; // For 'text'
   fontFamily?: string; // For 'text'
-  fontWeight?: 'normal' | 'bold' | 'lighter' | 'bolder' | string; // For 'text'
+  fontWeight?: 'normal' | 'bold' | 'lighter' | 'bolder' | string | number; // For 'text'
   fontStyle?: 'normal' | 'italic'; // For 'text'
   textAlign?: 'left' | 'center' | 'right' | 'justify'; // For 'text'
   letterSpacing?: number; // For 'text'
