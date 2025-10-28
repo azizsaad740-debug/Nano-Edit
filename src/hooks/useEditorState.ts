@@ -106,8 +106,8 @@ export const useEditorState = (
 
   const {
     layers: managedLayers,
-    selectedLayerId: managedSelectedLayerId,
-    setSelectedLayerId,
+    // selectedLayerId: managedSelectedLayerId, // Removed conflicting destructuring
+    // setSelectedLayerId, // Removed conflicting destructuring
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
