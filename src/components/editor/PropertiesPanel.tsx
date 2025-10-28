@@ -10,7 +10,6 @@ import {
   ActiveTool,
   BrushState,
   GradientToolState,
-  TextLayerData,
 } from "@/types/editor";
 import { LayerOptions } from "./LayerOptions";
 import { BrushOptions } from "./BrushOptions";
@@ -19,6 +18,10 @@ import { GradientOptions } from "./GradientOptions";
 import { AdjustmentOptions } from "./AdjustmentOptions";
 import { BlurBrushOptions } from "./BlurBrushOptions";
 import { TextOptions } from "./TextOptions";
+
+// Re-import TextLayerData locally for clarity, relying on ambient declaration from editor.ts
+type TextLayerData = Layer['textLayerData'];
+
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | null;
@@ -104,7 +107,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
             onOpenFontManager={onOpenFontManager}
           />
         );
-      case 'shape':
+      case 'vector-shape': // Corrected from 'shape'
         return (
           <ShapeOptions
             layer={selectedLayer}
@@ -136,7 +139,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
         );
       case 'drawing':
       case 'image':
-      case 'smartObject':
+      case 'smart-object': // Corrected from 'smartObject'
+      case 'group':
       default:
         return (
           <Card className="w-full">
@@ -147,7 +151,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
               <p className="text-sm text-muted-foreground">
                 {selectedLayer.type === 'image' && 'This is an image layer. Use the main sidebar for global adjustments.'}
                 {selectedLayer.type === 'drawing' && 'This is a drawing layer. Use the brush tool for editing.'}
-                {selectedLayer.type === 'smartObject' && 'This is a Smart Object. Double-click to edit contents.'}
+                {selectedLayer.type === 'smart-object' && 'This is a Smart Object. Double-click to edit contents.'}
               </p>
             </CardContent>
           </Card>

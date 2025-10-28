@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Layer, TextLayerData, TextAlignment, TextTransform, TextDecoration, TextWarpData } from "@/types/editor";
+import { Layer } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -20,15 +20,29 @@ import {
   Type,
   ChevronDown,
   ChevronUp,
-  Columns,
-  TextCursorInput,
   TextCursor,
+  Settings,
+  ArrowLeft,
+  ArrowRight,
+  ArrowDownUp,
+  CornerDownLeft,
+  RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
+
+// Re-import types locally for clarity, relying on ambient declaration from editor.ts
+type TextLayerData = Layer['textLayerData'];
+type TextAlignment = Layer['textAlignment'];
+type TextTransform = Layer['textTransform'];
+type TextDecoration = Layer['textDecoration'];
+type TextWarpData = Layer['textWarp'];
+
 
 interface TextOptionsProps {
   layer: Layer & TextLayerData;
@@ -97,14 +111,6 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
 }) => {
   const allFonts = React.useMemo(() => [...systemFonts, ...customFonts].sort(), [systemFonts, customFonts]);
 
-  const handleNumericChange = (key: keyof TextLayerData, value: string, historyName: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue)) {
-      onLayerUpdate({ [key]: numValue } as Partial<TextLayerData>);
-      // Debounce commit or commit on blur/enter
-    }
-  };
-
   const handleCommit = (key: keyof TextLayerData, historyName: string) => {
     onLayerCommit(historyName);
   };
@@ -114,26 +120,23 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
     onLayerCommit(historyName);
   };
 
-  const handleToggleStyle = (key: 'fontWeight' | 'fontStyle' | 'textDecoration', value: string) => {
-    let updates: Partial<TextLayerData> = {};
-    let historyName = '';
-
-    if (key === 'fontWeight') {
-      const isBold = layer.fontWeight === 'bold' || layer.fontWeight === 700;
-      updates.fontWeight = isBold ? 'normal' : 'bold';
-      historyName = isBold ? 'Remove Bold' : 'Apply Bold';
-    } else if (key === 'fontStyle') {
-      const isItalic = layer.fontStyle === 'italic';
-      updates.fontStyle = isItalic ? 'normal' : 'italic';
-      historyName = isItalic ? 'Remove Italic' : 'Apply Italic';
-    } else if (key === 'textDecoration') {
-      const isUnderline = layer.textDecoration === 'underline';
-      updates.textDecoration = isUnderline ? 'none' : 'underline';
-      historyName = isUnderline ? 'Remove Underline' : 'Apply Underline';
+  const handleEffectEnabledChange = (
+    effect: 'backgroundColor' | 'stroke' | 'textShadow',
+    enabled: boolean
+  ) => {
+    if (enabled) {
+      const defaultValues = {
+        backgroundColor: layer.backgroundColor || '#000000',
+        stroke: layer.stroke || { color: '#000000', width: 2 },
+        textShadow: layer.textShadow || { color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 2, offsetY: 2 },
+      };
+      onLayerUpdate({ [effect]: defaultValues[effect] });
+    } else {
+      const updates: Partial<Layer> = { [effect]: undefined };
+      if (effect === 'backgroundColor') updates.padding = 0;
+      onLayerUpdate(updates);
     }
-
-    onLayerUpdate(updates);
-    onLayerCommit(historyName);
+    onLayerCommit(`Toggle Text Effect: ${effect}`);
   };
 
   const isBoldActive = layer.fontWeight === 'bold' || layer.fontWeight === 700;
@@ -142,308 +145,570 @@ export const TextOptions: React.FC<TextOptionsProps> = ({
   const isStrikethroughActive = layer.textDecoration === 'line-through';
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-base">Text Properties</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 1. Font Family & Size */}
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="fontFamily">Font Family</Label>
-            <Select
-              value={layer.fontFamily}
-              onValueChange={(value) => handleSelectChange('fontFamily', value, `Change Font to ${value}`)}
-            >
-              <SelectTrigger id="fontFamily">
-                <SelectValue placeholder="Select Font" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {allFonts.map((font) => (
-                  <SelectItem key={font} value={font} style={{ fontFamily: font }}>
-                    {font}
-                  </SelectItem>
-                ))}
-                <Separator className="my-1" />
-                <Button variant="ghost" className="w-full justify-start" onClick={onOpenFontManager}>
-                  Manage Fonts...
-                </Button>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-20 space-y-1">
-            <Label htmlFor="fontSize">Size</Label>
-            <Input
-              id="fontSize"
-              type="number"
-              value={layer.fontSize}
-              onChange={(e) => onLayerUpdate({ fontSize: parseFloat(e.target.value) || 0 })}
-              onBlur={() => handleCommit('fontSize', `Change Font Size to ${layer.fontSize}`)}
-              className="h-9"
-            />
-          </div>
-        </div>
+    <div className="space-y-4">
+      <div className="grid gap-2">
+        <Label htmlFor="content">Text Content</Label>
+        <Input
+          id="content"
+          value={layer.content || ""}
+          onChange={(e) => onLayerUpdate({ content: e.target.value })}
+          onBlur={() => handleCommit('content', "Edit Text Content")}
+          className="h-10"
+        />
+      </div>
 
-        {/* 2. Font Weight/Style & Color */}
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <Label htmlFor="fontWeight">Weight</Label>
-            <Select
-              value={String(layer.fontWeight)}
-              onValueChange={(value) => handleSelectChange('fontWeight', value, `Change Font Weight`)}
-            >
-              <SelectTrigger id="fontWeight">
-                <SelectValue placeholder="Select Weight" />
-              </SelectTrigger>
-              <SelectContent>
-                {FONT_WEIGHTS.map((weight) => (
-                  <SelectItem key={weight.value} value={weight.value}>
-                    {weight.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-20 space-y-1">
-            <Label htmlFor="fillColor">Color</Label>
-            <ColorPicker
-              color={layer.fillColor}
-              onChange={(color) => onLayerUpdate({ fillColor: color })}
-              onCommit={() => onLayerCommit('Change Text Color')}
-            />
-          </div>
-        </div>
-
-        {/* 3. Character Styles (Bold, Italic, Underline, Strikethrough) */}
-        <div className="flex items-center justify-between">
-          <Label>Styles</Label>
-          <ToggleGroup type="multiple" size="sm" value={[
-            isBoldActive ? 'bold' : '',
-            isItalicActive ? 'italic' : '',
-            isUnderlineActive ? 'underline' : '',
-            isStrikethroughActive ? 'strikethrough' : '',
-          ].filter(Boolean)}>
-            <TooltipProvider delayDuration={0}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ToggleGroupItem value="bold" aria-label="Toggle bold" onClick={() => handleToggleStyle('fontWeight', 'bold')}>
-                    <Bold className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </TooltipTrigger>
-                <TooltipContent>Bold</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ToggleGroupItem value="italic" aria-label="Toggle italic" onClick={() => handleToggleStyle('fontStyle', 'italic')}>
-                    <Italic className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </TooltipTrigger>
-                <TooltipContent>Italic</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ToggleGroupItem value="underline" aria-label="Toggle underline" onClick={() => handleSelectChange('textDecoration', isUnderlineActive ? 'none' : 'underline', isUnderlineActive ? 'Remove Underline' : 'Apply Underline')}>
-                    <Underline className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </TooltipTrigger>
-                <TooltipContent>Underline</TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough" onClick={() => handleSelectChange('textDecoration', isStrikethroughActive ? 'none' : 'line-through', isStrikethroughActive ? 'Remove Strikethrough' : 'Apply Strikethrough')}>
-                    <Strikethrough className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </TooltipTrigger>
-                <TooltipContent>Strikethrough</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </ToggleGroup>
-        </div>
-
-        <Separator />
-
-        {/* 4. Spacing (Leading/Line Height, Tracking/Letter Spacing) */}
-        <div className="space-y-3">
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="lineHeight">Leading (Line Height)</Label>
-              <Input
-                id="lineHeight"
-                type="number"
-                step="0.1"
-                value={layer.lineHeight}
-                onChange={(e) => onLayerUpdate({ lineHeight: parseFloat(e.target.value) || 0 })}
-                onBlur={() => handleCommit('lineHeight', `Change Leading to ${layer.lineHeight}`)}
-                className="h-9"
-              />
-            </div>
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="letterSpacing">Tracking (Letter Spacing)</Label>
-              <Input
-                id="letterSpacing"
-                type="number"
-                step="0.1"
-                value={layer.letterSpacing}
-                onChange={(e) => onLayerUpdate({ letterSpacing: parseFloat(e.target.value) || 0 })}
-                onBlur={() => handleCommit('letterSpacing', `Change Tracking to ${layer.letterSpacing}`)}
-                className="h-9"
-              />
-            </div>
-          </div>
-          
-          {/* Baseline Shift & Kerning (Word Spacing) */}
-          <div className="flex gap-4">
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="baselineShift">Baseline Shift</Label>
-              <Input
-                id="baselineShift"
-                type="number"
-                step="1"
-                value={layer.baselineShift}
-                onChange={(e) => onLayerUpdate({ baselineShift: parseFloat(e.target.value) || 0 })}
-                onBlur={() => handleCommit('baselineShift', `Change Baseline Shift`)}
-                className="h-9"
-              />
-            </div>
-            <div className="flex-1 space-y-1">
-              <Label htmlFor="wordSpacing">Kerning (Word Spacing)</Label>
-              <Input
-                id="wordSpacing"
-                type="number"
-                step="1"
-                value={layer.wordSpacing}
-                onChange={(e) => onLayerUpdate({ wordSpacing: parseFloat(e.target.value) || 0 })}
-                onBlur={() => handleCommit('wordSpacing', `Change Kerning`)}
-                className="h-9"
-              />
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* 5. Alignment */}
-        <div className="space-y-3">
-          <Label>Paragraph Alignment</Label>
-          <ToggleGroup
-            type="single"
-            size="sm"
-            value={layer.textAlignment}
-            onValueChange={(value: TextAlignment) => value && handleSelectChange('textAlignment', value, `Align Text ${value}`)}
-            className="justify-start"
-          >
-            <TooltipProvider delayDuration={0}>
-              {TEXT_ALIGNMENTS.map(item => (
-                <Tooltip key={item.value}>
-                  <TooltipTrigger asChild>
-                    <ToggleGroupItem value={item.value} aria-label={item.label}>
-                      <item.icon className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </TooltipTrigger>
-                  <TooltipContent>{item.label}</TooltipContent>
-                </Tooltip>
-              ))}
-            </TooltipProvider>
-          </ToggleGroup>
-          
-          <Label className="mt-3 block">Vertical Alignment (Area Type)</Label>
-          <ToggleGroup
-            type="single"
-            size="sm"
-            value={layer.verticalAlignment}
-            onValueChange={(value: TextLayerData['verticalAlignment']) => value && handleSelectChange('verticalAlignment', value, `Vertical Align Text ${value}`)}
-            className="justify-start"
-          >
-            <TooltipProvider delayDuration={0}>
-              {TEXT_VERTICAL_ALIGNMENTS.map(item => (
-                <Tooltip key={item.value}>
-                  <TooltipTrigger asChild>
-                    <ToggleGroupItem value={item.value} aria-label={item.label}>
-                      <item.icon className="h-4 w-4" />
-                    </ToggleGroupItem>
-                  </TooltipTrigger>
-                  <TooltipContent>{item.label}</TooltipContent>
-                </Tooltip>
-              ))}
-            </TooltipProvider>
-          </ToggleGroup>
-        </div>
-
-        <Separator />
-
-        {/* 6. Advanced/Complex Features (Placeholders) */}
-        <div className="space-y-4">
-          <Label className="font-semibold">Advanced Typography</Label>
-          
-          {/* Text Transform (All Caps, etc.) */}
-          <div className="space-y-1">
-            <Label htmlFor="textTransform">Text Case</Label>
-            <Select
-              value={layer.textTransform}
-              onValueChange={(value: TextTransform) => handleSelectChange('textTransform', value, `Change Text Case`)}
-            >
-              <SelectTrigger id="textTransform">
-                <SelectValue placeholder="Normal" />
-              </SelectTrigger>
-              <SelectContent>
-                {TEXT_TRANSFORMS.map(item => (
-                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Text Warping */}
-          <div className="space-y-1">
-            <Label htmlFor="textWarpType">Text Warping Style</Label>
-            <Select
-              value={layer.textWarp.type}
-              onValueChange={(value: TextWarpData['type']) => onLayerUpdate({ textWarp: { ...layer.textWarp, type: value } })}
-            >
-              <SelectTrigger id="textWarpType">
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[200px]">
-                {TEXT_WARP_STYLES.map(item => (
-                  <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {layer.textWarp.type !== 'none' && (
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <Label>Bend ({layer.textWarp.bend}%)</Label>
-                <Slider
-                  min={-100}
-                  max={100}
-                  step={1}
-                  value={[layer.textWarp.bend]}
-                  onValueChange={([value]) => onLayerUpdate({ textWarp: { ...layer.textWarp, bend: value } })}
-                  onValueCommit={() => onLayerCommit(`Change Text Warp Bend`)}
+      <Accordion type="multiple" className="w-full" defaultValue={['character']}>
+        {/* CHARACTER PANEL */}
+        <AccordionItem value="character">
+          <AccordionTrigger className="font-semibold">Character</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            {/* Font Family & Size */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="fontFamily">Font Family</Label>
+                <Select
+                  value={layer.fontFamily}
+                  onValueChange={(value) => handleSelectChange('fontFamily', value, `Change Font to ${value}`)}
+                >
+                  <SelectTrigger id="fontFamily">
+                    <SelectValue placeholder="Select Font" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {allFonts.map((font) => (
+                      <SelectItem key={font} value={font} style={{ fontFamily: font }}>
+                        {font}
+                      </SelectItem>
+                    ))}
+                    <Separator className="my-1" />
+                    <Button variant="ghost" className="w-full justify-start" onClick={onOpenFontManager}>
+                      <Settings className="h-4 w-4 mr-2" /> Manage Fonts...
+                    </Button>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-20 space-y-1">
+                <Label htmlFor="fontSize">Size</Label>
+                <Input
+                  id="fontSize"
+                  type="number"
+                  value={layer.fontSize}
+                  onChange={(e) => onLayerUpdate({ fontSize: parseFloat(e.target.value) || 0 })}
+                  onBlur={() => handleCommit('fontSize', `Change Font Size to ${layer.fontSize}`)}
+                  className="h-9"
                 />
               </div>
-              {/* Placeholder for other warp controls (Distortion, Custom Path) */}
             </div>
-          )}
 
-          {/* OpenType Features (Placeholder) */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="ligatures"
-              checked={layer.openTypeFeatures.ligatures}
-              onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, ligatures: !!checked } })}
-            />
-            <label
-              htmlFor="ligatures"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Use Ligatures
-            </label>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+            {/* Font Weight/Style & Color */}
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1">
+                <Label htmlFor="fontWeight">Weight</Label>
+                <Select
+                  value={String(layer.fontWeight)}
+                  onValueChange={(value) => handleSelectChange('fontWeight', value, `Change Font Weight`)}
+                >
+                  <SelectTrigger id="fontWeight">
+                    <SelectValue placeholder="Select Weight" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FONT_WEIGHTS.map((weight) => (
+                      <SelectItem key={weight.value} value={weight.value}>
+                        {weight.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-20 space-y-1">
+                <Label htmlFor="fillColor">Color</Label>
+                <ColorPicker
+                  color={layer.fillColor}
+                  onChange={(color) => onLayerUpdate({ fillColor: color })}
+                  onCommit={() => onLayerCommit('Change Text Color')}
+                />
+              </div>
+            </div>
+
+            {/* 3. Character Styles (Bold, Italic, Underline, Strikethrough) */}
+            <div className="flex items-center justify-between">
+              <Label>Styles</Label>
+              <ToggleGroup type="multiple" size="sm" value={[
+                isBoldActive ? 'bold' : '',
+                isItalicActive ? 'italic' : '',
+                isUnderlineActive ? 'underline' : '',
+                isStrikethroughActive ? 'strikethrough' : '',
+              ].filter(Boolean)}>
+                <TooltipProvider delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="bold" aria-label="Toggle bold" onClick={() => handleToggleStyle('fontWeight', 'bold')}>
+                        <Bold className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>Bold</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="italic" aria-label="Toggle italic" onClick={() => handleToggleStyle('fontStyle', 'italic')}>
+                        <Italic className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>Italic</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="underline" aria-label="Toggle underline" onClick={() => handleSelectChange('textDecoration', isUnderlineActive ? 'none' : 'underline', isUnderlineActive ? 'Remove Underline' : 'Apply Underline')}>
+                        <Underline className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>Underline</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="strikethrough" aria-label="Toggle strikethrough" onClick={() => handleSelectChange('textDecoration', isStrikethroughActive ? 'none' : 'line-through', isStrikethroughActive ? 'Remove Strikethrough' : 'Apply Strikethrough')}>
+                        <Strikethrough className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>Strikethrough</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </ToggleGroup>
+            </div>
+
+            <Separator />
+
+            {/* Spacing Controls (Leading, Tracking, Kerning, Baseline Shift) */}
+            <div className="grid grid-cols-2 gap-2">
+              <TextControl 
+                icon={ChevronUp} 
+                value={layer.lineHeight || 1.2} 
+                onChange={(v: number) => onLayerUpdate({ lineHeight: v })}
+                onCommit={() => handleCommit('lineHeight', `Change Leading`)}
+                unit="x"
+                min={0.5}
+                max={3.0}
+                step={0.1}
+                placeholder="1.2"
+                label="Leading"
+              />
+              <TextControl 
+                icon={ArrowDownUp} 
+                value={layer.letterSpacing || 0} 
+                onChange={(v: number) => onLayerUpdate({ letterSpacing: v })}
+                onCommit={() => handleCommit('letterSpacing', `Change Tracking`)}
+                unit="px"
+                min={-10}
+                max={50}
+                step={0.5}
+                placeholder="0"
+                label="Tracking"
+              />
+              <TextControl 
+                icon={Type} 
+                value={layer.wordSpacing || 0} 
+                onChange={(v: number) => onLayerUpdate({ wordSpacing: v })}
+                onCommit={() => handleCommit('wordSpacing', `Change Kerning`)}
+                unit="px"
+                min={-10}
+                max={50}
+                step={0.5}
+                placeholder="0"
+                label="Kerning"
+              />
+              <TextControl 
+                icon={TextCursor} 
+                value={layer.baselineShift || 0} 
+                onChange={(v: number) => onLayerUpdate({ baselineShift: v })}
+                onCommit={() => handleCommit('baselineShift', `Change Baseline Shift`)}
+                unit="pt"
+                min={-50}
+                max={50}
+                step={1}
+                placeholder="0"
+                label="Baseline Shift"
+              />
+            </div>
+            
+            {/* Scale (V/H) - Stubbed */}
+            <div className="grid grid-cols-2 gap-2">
+              <TextControl 
+                icon={ArrowRight} 
+                value={100} 
+                onChange={() => {}}
+                onCommit={() => {}}
+                unit="%"
+                placeholder="100"
+                disabled
+                label="Horizontal Scale (Stub)"
+              />
+              <TextControl 
+                icon={ArrowDownUp} 
+                value={100} 
+                onChange={() => {}}
+                onCommit={() => {}}
+                unit="%"
+                placeholder="100"
+                disabled
+                label="Vertical Scale (Stub)"
+              />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* PARAGRAPH PANEL */}
+        <AccordionItem value="paragraph">
+          <AccordionTrigger className="font-semibold">Paragraph</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            {/* Horizontal Alignment */}
+            <div className="space-y-2">
+              <Label>Horizontal Alignment</Label>
+              <ToggleGroup
+                type="single"
+                size="sm"
+                value={layer.textAlignment}
+                onValueChange={(value: TextAlignment) => value && handleSelectChange('textAlignment', value, `Align Text ${value}`)}
+                className="justify-start"
+              >
+                <TooltipProvider delayDuration={0}>
+                  {TEXT_ALIGNMENTS.map(item => (
+                    <Tooltip key={item.value}>
+                      <TooltipTrigger asChild>
+                        <ToggleGroupItem value={item.value} aria-label={item.label}>
+                          <item.icon className="h-4 w-4" />
+                        </ToggleGroupItem>
+                      </TooltipTrigger>
+                      <TooltipContent>{item.label}</TooltipContent>
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
+              </ToggleGroup>
+            </div>
+            
+            {/* Vertical Alignment (Area Type) */}
+            <div className="space-y-2">
+              <Label>Vertical Alignment (Area Type)</Label>
+              <ToggleGroup
+                type="single"
+                size="sm"
+                value={layer.verticalAlignment}
+                onValueChange={(value: TextLayerData['verticalAlignment']) => value && handleSelectChange('verticalAlignment', value, `Vertical Align Text ${value}`)}
+                className="justify-start"
+              >
+                <TooltipProvider delayDuration={0}>
+                  {TEXT_VERTICAL_ALIGNMENTS.map(item => (
+                    <Tooltip key={item.value}>
+                      <TooltipTrigger asChild>
+                        <ToggleGroupItem value={item.value} aria-label={item.label}>
+                          <item.icon className="h-4 w-4" />
+                        </ToggleGroupItem>
+                      </TooltipTrigger>
+                      <TooltipContent>{item.label}</TooltipContent>
+                    </Tooltip>
+                  ))}
+                </TooltipProvider>
+              </ToggleGroup>
+            </div>
+
+            <Separator />
+
+            {/* Indentation & Spacing (Stubbed) */}
+            <div className="grid grid-cols-2 gap-2">
+              <TextControl 
+                icon={CornerDownLeft} 
+                value={layer.indentation || 0} 
+                onChange={(v: number) => onLayerUpdate({ indentation: v })}
+                onCommit={() => handleCommit('indentation', `Change Indentation`)}
+                unit="px"
+                disabled
+                placeholder="0"
+                label="Indentation (Stub)"
+              />
+              <div className="flex flex-col gap-2">
+                <TextControl 
+                  icon={ChevronUp} 
+                  value={layer.spaceBefore || 0} 
+                  onChange={(v: number) => onLayerUpdate({ spaceBefore: v })}
+                  onCommit={() => handleCommit('spaceBefore', `Change Space Before`)}
+                  unit="px"
+                  disabled
+                  placeholder="0"
+                  label="Space Before (Stub)"
+                />
+                <TextControl 
+                  icon={ChevronDown} 
+                  value={layer.spaceAfter || 0} 
+                  onChange={(v: number) => onLayerUpdate({ spaceAfter: v })}
+                  onCommit={() => handleCommit('spaceAfter', `Change Space After`)}
+                  unit="px"
+                  disabled
+                  placeholder="0"
+                  label="Space After (Stub)"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="hyphenate"
+                checked={layer.hyphenate}
+                onCheckedChange={(checked) => onLayerUpdate({ hyphenate: !!checked })}
+                disabled
+              />
+              <label
+                htmlFor="hyphenate"
+                className="text-sm font-medium leading-none text-muted-foreground"
+              >
+                Hyphenate (Stub)
+              </label>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* EFFECTS & WARPING PANEL */}
+        <AccordionItem value="effects">
+          <AccordionTrigger className="font-semibold">Effects & Warping</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            
+            {/* Text Case / Transform */}
+            <div className="space-y-1">
+              <Label htmlFor="textTransform">Text Case</Label>
+              <Select
+                value={layer.textTransform}
+                onValueChange={(value: TextTransform) => handleSelectChange('textTransform', value, `Change Text Case`)}
+              >
+                <SelectTrigger id="textTransform">
+                  <SelectValue placeholder="Normal" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TEXT_TRANSFORMS.map(item => (
+                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            {/* Background */}
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="bg-enabled">Background</Label>
+                <div className="flex items-center space-x-2">
+                  <Input id="bg-color" type="color" className="p-1 h-8 w-8" value={layer.backgroundColor || '#000000'} onChange={(e) => onLayerUpdate({ backgroundColor: e.target.value })} onBlur={() => handleEffectEnabledChange('backgroundColor', !!layer.backgroundColor)} />
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEffectEnabledChange('backgroundColor', !layer.backgroundColor)}>
+                    <RotateCcw className={cn("h-3 w-3", !layer.backgroundColor && "opacity-30")} />
+                  </Button>
+                </div>
+              </div>
+              {layer.backgroundColor && (
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="bg-padding">Padding</Label>
+                    <span className="text-sm text-muted-foreground">{layer.padding}px</span>
+                  </div>
+                  <Slider id="bg-padding" min={0} max={100} step={1} value={[layer.padding || 0]} onValueChange={([v]) => onLayerUpdate({ padding: v })} onValueCommit={() => handleCommit('padding', 'Change Text Padding')} />
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Stroke */}
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="stroke-enabled">Stroke</Label>
+                <div className="flex items-center space-x-2">
+                  <Input id="stroke-color" type="color" className="p-1 h-8 w-8" value={layer.stroke?.color || '#000000'} onChange={(e) => onLayerUpdate({ stroke: { ...layer.stroke!, color: e.target.value } })} onBlur={() => handleEffectEnabledChange('stroke', !!layer.stroke)} />
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEffectEnabledChange('stroke', !layer.stroke)}>
+                    <RotateCcw className={cn("h-3 w-3", !layer.stroke && "opacity-30")} />
+                  </Button>
+                </div>
+              </div>
+              {layer.stroke && (
+                <div className="grid gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="stroke-width">Width</Label>
+                    <span className="text-sm text-muted-foreground">{layer.stroke.width}px</span>
+                  </div>
+                  <Slider id="stroke-width" min={0} max={20} step={0.5} value={[layer.stroke.width]} onValueChange={([v]) => onLayerUpdate({ stroke: { ...layer.stroke!, width: v } })} onValueCommit={() => handleCommit('stroke', 'Change Text Stroke Width')} />
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Shadow */}
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="shadow-enabled">Shadow</Label>
+                <div className="flex items-center space-x-2">
+                  <Input id="shadow-color" type="color" className="p-1 h-8 w-8" value={layer.textShadow?.color || '#000000'} onChange={(e) => onLayerUpdate({ textShadow: { ...layer.textShadow!, color: e.target.value } })} onBlur={() => handleEffectEnabledChange('textShadow', !!layer.textShadow)} />
+                  <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleEffectEnabledChange('textShadow', !layer.textShadow)}>
+                    <RotateCcw className={cn("h-3 w-3", !layer.textShadow && "opacity-30")} />
+                  </Button>
+                </div>
+              </div>
+              {layer.textShadow && (
+                <>
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="shadow-blur">Blur</Label>
+                      <span className="text-sm text-muted-foreground">{layer.textShadow.blur}px</span>
+                    </div>
+                    <Slider id="shadow-blur" min={0} max={50} step={1} value={[layer.textShadow.blur]} onValueChange={([v]) => onLayerUpdate({ textShadow: { ...layer.textShadow!, blur: v } })} onValueCommit={() => handleCommit('textShadow', 'Change Text Shadow Blur')} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="shadow-offset-x">Offset X</Label>
+                        <span className="text-sm text-muted-foreground">{layer.textShadow.offsetX}px</span>
+                      </div>
+                      <Slider id="shadow-offset-x" min={-50} max={50} step={1} value={[layer.textShadow.offsetX]} onValueChange={([v]) => onLayerUpdate({ textShadow: { ...layer.textShadow!, offsetX: v } })} onValueCommit={() => handleCommit('textShadow', 'Change Text Shadow Offset X')} />
+                    </div>
+                    <div className="grid gap-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="shadow-offset-y">Offset Y</Label>
+                        <span className="text-sm text-muted-foreground">{layer.textShadow.offsetY}px</span>
+                      </div>
+                      <Slider id="shadow-offset-y" min={-50} max={50} step={1} value={[layer.textShadow.offsetY]} onValueChange={([v]) => onLayerUpdate({ textShadow: { ...layer.textShadow!, offsetY: v } })} onValueCommit={() => handleCommit('textShadow', 'Change Text Shadow Offset Y')} />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Text Warping */}
+            <div className="space-y-1">
+              <Label htmlFor="textWarpType">Text Warping Style</Label>
+              <Select
+                value={layer.textWarp.type}
+                onValueChange={(value: TextWarpData['type']) => onLayerUpdate({ textWarp: { ...layer.textWarp, type: value } })}
+              >
+                <SelectTrigger id="textWarpType">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {TEXT_WARP_STYLES.map(item => (
+                    <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {layer.textWarp.type !== 'none' && (
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label>Bend ({layer.textWarp.bend}%)</Label>
+                  <Slider
+                    min={-100}
+                    max={100}
+                    step={1}
+                    value={[layer.textWarp.bend]}
+                    onValueChange={([value]) => onLayerUpdate({ textWarp: { ...layer.textWarp, bend: value } })}
+                    onValueCommit={() => onLayerCommit(`Change Text Warp Bend`)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <Label>H Distortion ({layer.textWarp.horizontalDistortion || 0}%)</Label>
+                    <Slider
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={[layer.textWarp.horizontalDistortion || 0]}
+                      onValueChange={([value]) => onLayerUpdate({ textWarp: { ...layer.textWarp, horizontalDistortion: value } })}
+                      onValueCommit={() => onLayerCommit(`Change Text Warp H Distortion`)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>V Distortion ({layer.textWarp.verticalDistortion || 0}%)</Label>
+                    <Slider
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={[layer.textWarp.verticalDistortion || 0]}
+                      onValueChange={([value]) => onLayerUpdate({ textWarp: { ...layer.textWarp, verticalDistortion: value } })}
+                      onValueCommit={() => onLayerCommit(`Change Text Warp V Distortion`)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* OpenType Features (Placeholder) */}
+            <div className="space-y-2">
+              <Label className="font-semibold">OpenType Features (Stub)</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="ligatures"
+                    checked={layer.openTypeFeatures.ligatures}
+                    onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, ligatures: !!checked } })}
+                  />
+                  <label htmlFor="ligatures" className="text-sm font-medium leading-none">Ligatures</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="swashes"
+                    checked={layer.openTypeFeatures.swashes}
+                    onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, swashes: !!checked } })}
+                  />
+                  <label htmlFor="swashes" className="text-sm font-medium leading-none">Swashes</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="fractions"
+                    checked={layer.openTypeFeatures.fractions}
+                    onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, fractions: !!checked } })}
+                  />
+                  <label htmlFor="fractions" className="text-sm font-medium leading-none">Fractions</label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="stylisticSet"
+                    checked={layer.openTypeFeatures.stylisticSet > 0}
+                    onCheckedChange={(checked) => onLayerUpdate({ openTypeFeatures: { ...layer.openTypeFeatures, stylisticSet: checked ? 1 : 0 } })}
+                  />
+                  <label htmlFor="stylisticSet" className="text-sm font-medium leading-none">Stylistic Sets</label>
+                </div>
+              </div>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
   );
 };
+
+// Helper component for icon buttons with text/value inputs (defined outside for reuse)
+const TextControl = ({ icon: Icon, value, onChange, onCommit, unit = 'pt', min = 0, max = 100, step = 1, placeholder = '0', disabled = false, label }: any) => (
+  <TooltipProvider delayDuration={0}>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex items-center border rounded-md h-8">
+          <Button variant="ghost" size="icon" className="h-full w-8 p-1 shrink-0" disabled={disabled}>
+            <Icon className="h-4 w-4" />
+          </Button>
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => onChange(e)}
+            onBlur={onCommit}
+            min={min}
+            max={max}
+            step={step}
+            placeholder={placeholder}
+            className="h-full flex-1 border-y-0 border-x border-input rounded-none text-xs text-center p-0"
+            disabled={disabled}
+          />
+          <span className="text-xs text-muted-foreground px-1.5 shrink-0">{unit}</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  </TooltipProvider>
+);

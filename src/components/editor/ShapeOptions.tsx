@@ -18,7 +18,7 @@ export const ShapeOptions: React.FC<ShapeOptionsProps> = ({
   onLayerCommit,
 }) => {
   // Assuming layer is a ShapeLayerData type for actual implementation
-  const isShape = layer.type === 'shape';
+  const isShape = layer.type === 'vector-shape';
 
   if (!isShape) return null;
 
