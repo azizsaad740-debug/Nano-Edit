@@ -200,8 +200,8 @@ export const SmartObjectEditor = ({
                     gradientToolState={dummyGradientToolState}
                     setGradientToolState={dummySetGradientToolState as any}
                     onLayerUpdate={handleLayerUpdate}
-                    onLayerCommit={handleLayerCommit}
-                    onLayerPropertyCommit={handleLayerPropertyCommit}
+                    onLayerCommit={handleLayerCommit as (layerId: string, historyName: string) => void}
+                    onLayerPropertyCommit={handleLayerPropertyCommit as (layerId: string, historyName: string) => void}
                     gradientPresets={dummyPresets}
                     onSaveGradientPreset={dummyOnSaveGradientPreset}
                     onDeleteGradientPreset={dummyOnDeleteGradientPreset}

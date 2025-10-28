@@ -1,50 +1,50 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BrushOptions } from "@/components/editor/BrushOptions";
-import TextProperties from "@/components/editor/TextProperties";
-import ShapeProperties from "@/components/editor/ShapeProperties";
-import GradientProperties from "@/components/editor/GradientProperties";
-import AdjustmentProperties from "@/components/editor/AdjustmentProperties";
-import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
-import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
-import LayerGeneralProperties from "./LayerGeneralProperties";
-import type { Layer, ActiveTool, BrushState, GradientToolState, EditState } from "@/types/editor";
-import type { GradientPreset } from "@/hooks/useGradientPresets";
-
-type HslColorKey = keyof EditState['hslAdjustments'];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import {
+  Layer,
+  ActiveTool,
+  BrushState,
+  GradientToolState,
+  TextLayerData,
+} from "@/types/editor";
+import { LayerOptions } from "./LayerOptions";
+import { BrushOptions } from "./BrushOptions";
+import { ShapeOptions } from "./ShapeOptions";
+import { GradientOptions } from "./GradientOptions";
+import { AdjustmentOptions } from "./AdjustmentOptions";
+import { BlurBrushOptions } from "./BlurBrushOptions";
+import { TextOptions } from "./TextOptions";
 
 interface PropertiesPanelProps {
-  selectedLayer: Layer | undefined;
+  selectedLayer: Layer | null;
   activeTool: ActiveTool | null;
   brushState: BrushState;
-  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void; // Updated type
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
   gradientToolState: GradientToolState;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
-  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
-  onLayerCommit: (id: string) => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
-  gradientPresets: GradientPreset[];
+  onLayerUpdate: (layerId: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (layerId: string, historyName: string) => void;
+  onLayerPropertyCommit: (layerId: string, historyName: string) => void;
+  gradientPresets: { id: string; name: string; state: GradientToolState }[];
   onSaveGradientPreset: (name: string, state: GradientToolState) => void;
-  onDeleteGradientPreset: (name: string) => void;
-  foregroundColor: string; // New prop
-  setForegroundColor: (color: string) => void; // New prop
-  // Selective Blur Props
-  selectiveBlurStrength: number; // NEW prop
-  onSelectiveBlurStrengthChange: (value: number) => void; // NEW prop
-  onSelectiveBlurStrengthCommit: (value: number) => void; // NEW prop
-  // Fonts
-  systemFonts: string[]; // NEW prop
-  customFonts: string[]; // NEW prop
-  onOpenFontManager: () => void; // NEW prop
-  // Image Ref for Curves/Histogram
-  imgRef: React.RefObject<HTMLImageElement>; // NEW prop
+  onDeleteGradientPreset: (id: string) => void;
+  foregroundColor: string;
+  setForegroundColor: (color: string) => void;
+  selectiveBlurStrength: number;
+  onSelectiveBlurStrengthChange: (value: number) => void;
+  onSelectiveBlurStrengthCommit: (value: number) => void;
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
+  imgRef: React.RefObject<HTMLImageElement>;
 }
 
-export const PropertiesPanel = ({
+export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
   selectedLayer,
   activeTool,
   brushState,
@@ -57,112 +57,163 @@ export const PropertiesPanel = ({
   gradientPresets,
   onSaveGradientPreset,
   onDeleteGradientPreset,
-  foregroundColor, // Destructure new props
+  foregroundColor,
   setForegroundColor,
-  selectiveBlurStrength, // Destructure NEW props
+  selectiveBlurStrength,
   onSelectiveBlurStrengthChange,
   onSelectiveBlurStrengthCommit,
-  systemFonts, // Destructure NEW props
+  systemFonts,
   customFonts,
   onOpenFontManager,
-  imgRef, // Destructure NEW prop
-}: PropertiesPanelProps) => {
-  const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush';
-  const isBlurBrushTool = activeTool === 'blurBrush';
-  const isGradientTool = activeTool === 'gradient';
+  imgRef,
+}) => {
+  const isBrushActive = activeTool === 'brush' || activeTool === 'eraser';
+  const isBlurBrushActive = activeTool === 'blurBrush';
+  const isAnyBrushActive = isBrushActive || isBlurBrushActive;
+
+  const handleLayerUpdate = (updates: Partial<Layer>) => {
+    if (selectedLayer) {
+      onLayerUpdate(selectedLayer.id, updates);
+    }
+  };
+
+  const handleLayerCommit = (historyName: string) => {
+    if (selectedLayer) {
+      onLayerCommit(selectedLayer.id, historyName);
+    }
+  };
+
+  const handleLayerPropertyCommit = (historyName: string) => {
+    if (selectedLayer) {
+      onLayerPropertyCommit(selectedLayer.id, historyName);
+    }
+  };
+
+  const renderLayerSpecificOptions = () => {
+    if (!selectedLayer) return null;
+
+    switch (selectedLayer.type) {
+      case 'text':
+        return (
+          <TextOptions
+            layer={selectedLayer as Layer & TextLayerData}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            systemFonts={systemFonts}
+            customFonts={customFonts}
+            onOpenFontManager={onOpenFontManager}
+          />
+        );
+      case 'shape':
+        return (
+          <ShapeOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+          />
+        );
+      case 'gradient':
+        return (
+          <GradientOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            gradientToolState={gradientToolState}
+            setGradientToolState={setGradientToolState}
+            gradientPresets={gradientPresets}
+            onSaveGradientPreset={onSaveGradientPreset}
+            onDeleteGradientPreset={onDeleteGradientPreset}
+          />
+        );
+      case 'adjustment':
+        return (
+          <AdjustmentOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            onLayerPropertyCommit={handleLayerPropertyCommit}
+          />
+        );
+      case 'drawing':
+      case 'image':
+      case 'smartObject':
+      default:
+        return (
+          <Card className="w-full">
+            <CardHeader>
+              <CardTitle className="text-base">Layer Content</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground">
+                {selectedLayer.type === 'image' && 'This is an image layer. Use the main sidebar for global adjustments.'}
+                {selectedLayer.type === 'drawing' && 'This is a drawing layer. Use the brush tool for editing.'}
+                {selectedLayer.type === 'smartObject' && 'This is a Smart Object. Double-click to edit contents.'}
+              </p>
+            </CardContent>
+          </Card>
+        );
+    }
+  };
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base">Properties</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col min-h-0 pt-0">
-        <ScrollArea className="flex-1 pr-3 pb-2">
-          {isGradientTool ? (
-            <GradientToolOptions
-              gradientToolState={gradientToolState}
-              setGradientToolState={setGradientToolState}
-              gradientPresets={gradientPresets}
-              onApplyGradientPreset={(preset) => setGradientToolState(preset.state)}
-              onSaveGradientPreset={onSaveGradientPreset}
-              onDeleteGradientPreset={onDeleteGradientPreset}
-            />
-          ) : selectedLayer ? (
-            <Accordion type="multiple" className="w-full" defaultValue={['general', 'layer-specific']}>
-              
-              {/* General Layer Properties */}
-              <AccordionItem value="general">
-                <AccordionTrigger>General Properties</AccordionTrigger>
-                <AccordionContent>
-                  <LayerGeneralProperties
-                    layer={selectedLayer}
-                    onUpdate={onLayerUpdate}
-                    onCommit={onLayerCommit}
-                  />
-                </AccordionContent>
-              </AccordionItem>
+    <ScrollArea className="h-full p-4">
+      <div className="space-y-4">
+        {/* 1. Layer Options (Always visible if a layer is selected) */}
+        {selectedLayer && (
+          <LayerOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerPropertyCommit={handleLayerPropertyCommit}
+          />
+        )}
 
-              {/* Layer Specific Properties */}
-              {selectedLayer.type === 'text' && (
-                <AccordionItem value="layer-specific">
-                  <AccordionTrigger>Text Properties</AccordionTrigger>
-                  <AccordionContent>
-                    <TextProperties
-                      layer={selectedLayer}
-                      onUpdate={onLayerUpdate}
-                      onCommit={onLayerCommit}
-                      systemFonts={systemFonts}
-                      customFonts={customFonts}
-                      onOpenFontManager={onOpenFontManager}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-              {selectedLayer.type === 'vector-shape' && (
-                <AccordionItem value="layer-specific">
-                  <AccordionTrigger>Shape Properties</AccordionTrigger>
-                  <AccordionContent>
-                    <ShapeProperties
-                      layer={selectedLayer}
-                      onUpdate={onLayerUpdate}
-                      onCommit={onLayerCommit}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-              {selectedLayer.type === 'gradient' && (
-                <AccordionItem value="layer-specific">
-                  <AccordionTrigger>Gradient Properties</AccordionTrigger>
-                  <AccordionContent>
-                    <GradientProperties
-                      layer={selectedLayer}
-                      onUpdate={onLayerUpdate}
-                      onCommit={onLayerCommit}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-              {selectedLayer.type === 'adjustment' && (
-                <AccordionItem value="layer-specific">
-                  <AccordionTrigger>Adjustment Controls</AccordionTrigger>
-                  <AccordionContent>
-                    <AdjustmentProperties
-                      layer={selectedLayer}
-                      onUpdate={onLayerUpdate}
-                      onCommit={onLayerCommit}
-                      imgRef={imgRef}
-                    />
-                  </AccordionContent>
-                </AccordionItem>
-              )}
-            </Accordion>
-          ) : (
-            <p className="text-sm text-muted-foreground text-center pt-4">
-              Select a layer or an active tool to view its properties.
-            </p>
-          )}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+        {/* 2. Layer Specific Content Options */}
+        {selectedLayer && renderLayerSpecificOptions()}
+
+        {/* 3. Tool Options (Only visible if a brush tool is active) */}
+        {isAnyBrushActive && (
+          <>
+            <Separator />
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="text-base">Tool Options</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isBrushActive && (
+                  <BrushOptions
+                    activeTool={activeTool as "brush" | "eraser"}
+                    brushSize={brushState.size}
+                    setBrushSize={(size) => setBrushState({ size })}
+                    brushOpacity={brushState.opacity}
+                    setBrushOpacity={(opacity) => setBrushState({ opacity })}
+                    foregroundColor={foregroundColor}
+                    setForegroundColor={setForegroundColor}
+                    brushHardness={brushState.hardness}
+                    setBrushHardness={(hardness) => setBrushState({ hardness })}
+                    brushSmoothness={brushState.smoothness}
+                    setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
+                    brushShape={brushState.shape}
+                    setBrushShape={(shape) => setBrushState({ shape })}
+                  />
+                )}
+                {isBlurBrushActive && (
+                  <BlurBrushOptions
+                    selectiveBlurStrength={selectiveBlurStrength}
+                    onStrengthChange={onSelectiveBlurStrengthChange}
+                    onStrengthCommit={onSelectiveBlurStrengthCommit}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {!selectedLayer && !isAnyBrushActive && (
+          <div className="text-center py-10 text-muted-foreground">
+            Select a layer or an active tool to view properties.
+          </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 };
