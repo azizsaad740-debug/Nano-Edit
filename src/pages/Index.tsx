@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { SlidersHorizontal } from "lucide-react";
-import EditorControls from "@/components/layout/EditorControls";
+import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets } from "@/hooks/usePresets";
 import { useSettings } from "@/hooks/useSettings";
@@ -165,22 +165,22 @@ const Index = () => {
     setSelectedLayer,
     addTextLayer,
     addDrawingLayer,
-    handleAddLayerFromBackground, // NEW
-    handleLayerFromSelection, // NEW
+    handleAddLayerFromBackground,
+    handleLayerFromSelection,
     addShapeLayer,
     addGradientLayer,
     addAdjustmentLayer,
-    handleToggleVisibility: toggleLayerVisibilityFn, // Corrected destructuring name
+    handleToggleVisibility: toggleLayerVisibilityFn,
     renameLayer,
     deleteLayer,
-    handleDeleteHiddenLayers, // NEW
-    duplicateLayer, // Now accepts ID
+    handleDeleteHiddenLayers,
+    duplicateLayer,
     mergeLayerDown,
     rasterizeLayer,
-    handleRasterizeSmartObject, // NEW
-    handleConvertSmartObjectToLayers, // NEW
-    handleExportSmartObjectContents, // NEW
-    handleArrangeLayer, // NEW
+    handleRasterizeSmartObject,
+    handleConvertSmartObjectToLayers,
+    handleExportSmartObjectContents,
+    handleArrangeLayer,
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -194,8 +194,8 @@ const Index = () => {
     isSmartObjectEditorOpen,
     smartObjectEditingId,
     moveSelectedLayer,
-    groupLayers: groupLayersFn, // Renamed to avoid redeclaration
-    toggleGroupExpanded: toggleGroupExpandedFn, // Renamed to avoid redeclaration
+    groupLayers: groupLayersFn,
+    toggleGroupExpanded: toggleGroupExpandedFn,
     activeTool,
     setActiveTool,
     brushState,
@@ -212,7 +212,7 @@ const Index = () => {
     applyMaskToSelectionPath,
     convertSelectionPathToMask,
     handleSelectiveBlurStroke,
-    selectiveBlurAmount: selectiveBlurStrengthState, // Corrected destructuring name
+    selectiveBlurAmount: selectiveBlurStrengthState,
     handleSelectiveBlurStrengthChange,
     handleSelectiveBlurStrengthCommit,
     selectedShapeType,
@@ -230,6 +230,10 @@ const Index = () => {
     handleDrawingStrokeEnd,
     loadImageData,
     invertLayerMask,
+    zoom,
+    handleZoomIn,
+    handleZoomOut,
+    handleFitScreen,
   } = editorState;
 
   // --- Local Functions ---
@@ -372,6 +376,7 @@ const Index = () => {
 
   const sidebarProps = {
     hasImage: !!image,
+    // Global Adjustment Props
     adjustments,
     onAdjustmentChange: handleAdjustmentChange,
     onAdjustmentCommit: handleAdjustmentCommit,
@@ -384,8 +389,6 @@ const Index = () => {
     hslAdjustments,
     onHslAdjustmentChange: handleHslAdjustmentChange,
     onHslAdjustmentCommit: handleHslAdjustmentCommit,
-    channels,
-    onChannelChange: handleChannelChange,
     curves,
     onCurvesChange: handleCurvesChange,
     onCurvesCommit: handleCurvesCommit,
@@ -397,13 +400,6 @@ const Index = () => {
     onRotationCommit: handleRotationCommit,
     onAspectChange: setAspect,
     aspect,
-    history,
-    currentHistoryIndex,
-    onHistoryJump: jumpToHistory,
-    dimensions,
-    fileInfo,
-    exifData,
-    imgRef,
     presets,
     onApplyPreset: applyPreset,
     onSavePreset: () => setIsSavingPreset(true),
@@ -412,81 +408,88 @@ const Index = () => {
     onFramePresetChange: handleFramePresetChange,
     onFramePropertyChange: handleFramePropertyChange,
     onFramePropertyCommit: handleFramePropertyCommit,
-    // layers
+    // History Props
+    history,
+    currentHistoryIndex,
+    onHistoryJump: jumpToHistory,
+    onUndo: handleUndo,
+    onRedo: handleRedo,
+    canUndo: canUndo(),
+    canRedo: canRedo(),
+    // Info Props
+    dimensions,
+    fileInfo,
+    exifData,
+    imgRef,
+    colorMode,
+    // Navigator Props
+    zoom,
+    onZoomIn: handleZoomIn,
+    onZoomOut: handleZoomOut,
+    onFitScreen: handleFitScreen,
+    // Channels Props
+    channels,
+    onChannelChange: handleChannelChange,
+    // Layer props
     layers,
-    addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
-    addDrawingLayer,
-    onAddLayerFromBackground: handleAddLayerFromBackground, // NEW
-    onLayerFromSelection: handleLayerFromSelection, // NEW
-    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
-    addGradientLayer,
-    onAddAdjustmentLayer: addAdjustmentLayer, // NEW
-    onDuplicateLayer: duplicateLayer, // Now accepts ID
-    onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
-    onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
-    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(selectedLayerId), // FIX 3
-    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(selectedLayerId), // FIX 4
-    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(selectedLayerId), // FIX 5
-    onDeleteHiddenLayers: handleDeleteHiddenLayers, // NEW
-    onArrangeLayer: handleArrangeLayer, // FIX 6
-    onReorder: reorderLayers,
-    toggleLayerVisibility: toggleLayerVisibilityFn, // FIX Error 106: Use the function from editorState
-    renameLayer, // FIX 11
-    deleteLayer, // FIX 11
-    // selection
     selectedLayerId,
     onSelectLayer: setSelectedLayer,
-    // layer editing
-    onLayerUpdate: updateLayer,
-    onLayerCommit: commitLayerChange,
+    onReorder: reorderLayers,
+    toggleLayerVisibility: toggleLayerVisibilityFn,
+    renameLayer,
+    deleteLayer,
+    onDuplicateLayer: duplicateLayer,
+    onMergeLayerDown: () => selectedLayerId && mergeLayerDown(selectedLayerId),
+    onRasterizeLayer: () => selectedLayerId && rasterizeLayer(selectedLayerId),
+    onCreateSmartObject: createSmartObject,
+    onOpenSmartObject: openSmartObjectEditor,
     onLayerPropertyCommit: handleLayerPropertyCommit,
     onLayerOpacityChange: handleLayerOpacityChange,
     onLayerOpacityCommit: handleLayerOpacityCommit,
-    // smart objects
-    onCreateSmartObject: createSmartObject,
-    onOpenSmartObject: openSmartObjectEditor,
-    // Shape tool
+    addTextLayer: () => addTextLayer({ x: 50, y: 50 }),
+    addDrawingLayer,
+    onAddLayerFromBackground: handleAddLayerFromBackground,
+    onLayerFromSelection: handleLayerFromSelection,
+    addShapeLayer: (coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight),
+    addGradientLayer,
+    onAddAdjustmentLayer: addAdjustmentLayer,
     selectedShapeType,
-    // Tool state
-    activeTool,
-    // Brush state
-    brushState,
-    setBrushState,
-    handleColorPick,
-    // Gradient tool state
-    gradientToolState,
-    setGradientToolState,
-    // Gradient Presets
-    gradientPresets,
-    onSaveGradientPreset: saveGradientPreset,
-    onDeleteGradientPreset: deleteGradientPreset,
-    // Grouping
-    groupLayers: (layerIds) => groupLayersFn(layerIds), // Use renamed function
-    toggleGroupExpanded: toggleGroupExpandedFn, // Use renamed function
-    // Foreground/Background Colors
-    foregroundColor,
-    setForegroundColor: handleForegroundColorChange,
-    // Selective Blur Props
-    selectiveBlurStrength: selectiveBlurStrengthState, // FIX Error 107: Use the state variable
-    onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange,
-    onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit,
-    // Layer Masking
-    hasActiveSelection,
-    onApplySelectionAsMask: applySelectionAsMask,
+    groupLayers: (layerIds) => groupLayersFn(layerIds),
+    toggleGroupExpanded: toggleGroupExpandedFn,
     onRemoveLayerMask: removeLayerMask,
     onInvertLayerMask: invertLayerMask,
     onToggleClippingMask: () => selectedLayerId && toggleClippingMask(selectedLayerId),
     onToggleLayerLock: (id: string) => toggleLayerLock(id),
-    // Drawing stroke end handler from useLayers
-    handleDrawingStrokeEnd,
+    onDeleteHiddenLayers: handleDeleteHiddenLayers,
+    onRasterizeSmartObject: () => selectedLayerId && handleRasterizeSmartObject(selectedLayerId),
+    onConvertSmartObjectToLayers: () => selectedLayerId && handleConvertSmartObjectToLayers(selectedLayerId),
+    onExportSmartObjectContents: () => selectedLayerId && handleExportSmartObjectContents(selectedLayerId),
+    onArrangeLayer: handleArrangeLayer,
+    // Tool state
+    activeTool,
+    brushState,
+    setBrushState,
+    handleColorPick,
+    gradientToolState,
+    setGradientToolState,
+    // Selection/Masking
+    hasActiveSelection,
+    onApplySelectionAsMask: applySelectionAsMask,
+    // Selective Blur
+    selectiveBlurStrength: selectiveBlurStrengthState,
+    onSelectiveBlurStrengthChange: handleSelectiveBlurStrengthChange,
+    onSelectiveBlurStrengthCommit: handleSelectiveBlurStrengthCommit,
     // Fonts
     systemFonts,
     customFonts,
     onOpenFontManager: () => setOpenFontManager(true),
+    // Color
+    foregroundColor,
+    onForegroundColorChange: handleForegroundColorChange,
+    backgroundColor,
+    onBackgroundColorChange: handleBackgroundColorChange,
+    onSwapColors: handleSwapColors,
   };
-
-  
-  const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
 
   const handleProjectSettingsUpdate = (updates: { width?: number; height?: number; colorMode?: 'RGB' | 'CMYK' | 'Grayscale' }) => {
     if (updates.width && updates.height) {
@@ -511,6 +514,45 @@ const Index = () => {
       recordHistory(`Change Color Mode to ${updates.colorMode}`, { ...currentState, colorMode: updates.colorMode }, layers);
     }
   };
+  
+  const globalAdjustmentsProps = {
+    hasImage: sidebarProps.hasImage,
+    adjustments: sidebarProps.adjustments,
+    onAdjustmentChange: sidebarProps.onAdjustmentChange,
+    onAdjustmentCommit: sidebarProps.onAdjustmentCommit,
+    effects: sidebarProps.effects,
+    onEffectChange: sidebarProps.onEffectChange,
+    onEffectCommit: sidebarProps.onEffectCommit,
+    grading: sidebarProps.grading,
+    onGradingChange: sidebarProps.onGradingChange,
+    onGradingCommit: sidebarProps.onGradingCommit,
+    hslAdjustments: sidebarProps.hslAdjustments,
+    onHslAdjustmentChange: sidebarProps.onHslAdjustmentChange,
+    onHslAdjustmentCommit: sidebarProps.onHslAdjustmentCommit,
+    curves: sidebarProps.curves,
+    onCurvesChange: sidebarProps.onCurvesChange,
+    onCurvesCommit: sidebarProps.onCurvesCommit,
+    onFilterChange: sidebarProps.onFilterChange,
+    selectedFilter: sidebarProps.selectedFilter,
+    onTransformChange: sidebarProps.onTransformChange,
+    rotation: sidebarProps.rotation,
+    onRotationChange: sidebarProps.onRotationChange,
+    onRotationCommit: sidebarProps.onRotationCommit,
+    onAspectChange: sidebarProps.onAspectChange,
+    aspect: sidebarProps.aspect,
+    presets: sidebarProps.presets,
+    onApplyPreset: sidebarProps.onApplyPreset,
+    onSavePreset: sidebarProps.onSavePreset,
+    onDeletePreset: sidebarProps.onDeletePreset,
+    frame: sidebarProps.frame,
+    onFramePresetChange: sidebarProps.onFramePresetChange,
+    onFramePropertyChange: sidebarProps.onFramePropertyChange,
+    onFramePropertyCommit: sidebarProps.onFramePropertyCommit,
+    imgRef: sidebarProps.imgRef,
+  };
+
+  
+  const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
@@ -523,8 +565,8 @@ const Index = () => {
         onTogglePreview={setIsPreviewingOriginal}
         onUndo={handleUndo}
         onRedo={handleRedo}
-        canUndo={canUndo()} // FIX Error 108: Call the function
-        canRedo={canRedo()} // FIX Error 109: Call the function
+        canUndo={canUndo()}
+        canRedo={canRedo()}
         setOpenSettings={setOpenSettings}
         setOpenImport={setOpenImport}
         onGenerateClick={() => setOpenGenerateImage(true)}
@@ -580,7 +622,7 @@ const Index = () => {
                 <SheetTitle>Edit Image</SheetTitle>
               </SheetHeader>
               <div className="py-4">
-                <EditorControls {...sidebarProps} />
+                <GlobalAdjustmentsPanel {...globalAdjustmentsProps} />
               </div>
             </SheetContent>
           </Sheet>

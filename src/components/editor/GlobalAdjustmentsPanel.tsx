@@ -20,8 +20,6 @@ import {
   SlidersHorizontal,
   Crop as CropIcon,
   Wand2,
-  History as HistoryIcon,
-  Info as InfoIcon,
   Image as ImageIcon,
 } from "lucide-react";
 
@@ -29,21 +27,20 @@ import LightingAdjustments from "@/components/editor/LightingAdjustments";
 import Filters from "@/components/editor/Filters";
 import Transform from "@/components/editor/Transform";
 import Crop from "@/components/editor/Crop";
-import History from "@/components/editor/History";
-import ColorGrading from "@/components/editor/ColorGrading";
-import Info from "@/components/editor/Info";
 import Presets from "@/components/editor/Presets";
 import Effects from "@/components/editor/Effects";
-import HslAdjustments from "@/components/editor/HslAdjustments"; // NEW Import
-import React from "react";
-import type { Preset } from "@/hooks/usePresets";
-import type { Point, EditState, HslAdjustment } from "@/types/editor";
+import HslAdjustments from "@/components/editor/HslAdjustments";
+import ColorGrading from "@/components/editor/ColorGrading";
 import Frames from "@/components/editor/Frames";
 import Curves from "@/components/editor/Curves";
 
+import React from "react";
+import type { Preset } from "@/hooks/usePresets";
+import type { Point, EditState, HslAdjustment } from "@/types/editor";
+
 type HslColorKey = keyof EditState['hslAdjustments'];
 
-interface EditorControlsProps {
+interface GlobalAdjustmentsPanelProps {
   hasImage: boolean;
   adjustments: {
     brightness: number;
@@ -69,9 +66,9 @@ interface EditorControlsProps {
   };
   onGradingChange: (gradingType: string, value: number) => void;
   onGradingCommit: (gradingType: string, value: number) => void;
-  hslAdjustments: EditState['hslAdjustments']; // NEW prop
-  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
-  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void; // UPDATED signature
+  hslAdjustments: EditState['hslAdjustments'];
+  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
   curves: EditState['curves'];
   onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
   onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
@@ -83,13 +80,6 @@ interface EditorControlsProps {
   onRotationCommit: (value: number) => void;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
-  history: { name: string }[];
-  currentHistoryIndex: number;
-  onHistoryJump: (index: number) => void;
-  dimensions: { width: number; height: number } | null;
-  fileInfo: { name: string; size: number } | null;
-  imgRef: React.RefObject<HTMLImageElement>;
-  exifData: any;
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
   onSavePreset: () => void;
@@ -98,9 +88,10 @@ interface EditorControlsProps {
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
+  imgRef: React.RefObject<HTMLImageElement>;
 }
 
-const EditorControls = (props: EditorControlsProps) => {
+const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
   const {
     hasImage,
     adjustments,
@@ -112,27 +103,20 @@ const EditorControls = (props: EditorControlsProps) => {
     grading,
     onGradingChange,
     onGradingCommit,
-    hslAdjustments, // NEW prop
-    onHslAdjustmentChange, // NEW prop
-    onHslAdjustmentCommit, // NEW prop
+    hslAdjustments,
+    onHslAdjustmentChange,
+    onHslAdjustmentCommit,
     curves,
     onCurvesChange,
     onCurvesCommit,
     onFilterChange,
     selectedFilter,
     onTransformChange,
-    rotation, // Destructure rotation
-    onRotationChange, // Destructure onRotationChange
-    onRotationCommit, // Destructure onRotationCommit
+    rotation,
+    onRotationChange,
+    onRotationCommit,
     onAspectChange,
     aspect,
-    history,
-    currentHistoryIndex,
-    onHistoryJump,
-    dimensions,
-    fileInfo,
-    imgRef,
-    exifData,
     presets,
     onApplyPreset,
     onSavePreset,
@@ -164,7 +148,7 @@ const EditorControls = (props: EditorControlsProps) => {
               </TabsTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Adjust</p>
+              <p>Adjustments</p>
             </TooltipContent>
           </Tooltip>
 
@@ -186,29 +170,7 @@ const EditorControls = (props: EditorControlsProps) => {
               </TabsTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Effects</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <TabsTrigger value="history" className="h-10 flex-1">
-                <HistoryIcon className="h-5 w-5" />
-              </TabsTrigger>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>History</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <TabsTrigger value="info" className="h-10 flex-1">
-                <InfoIcon className="h-5 w-5" />
-              </TabsTrigger>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Info</p>
+              <p>Effects & Presets</p>
             </TooltipContent>
           </Tooltip>
         </TabsList>
@@ -234,7 +196,7 @@ const EditorControls = (props: EditorControlsProps) => {
                 curves={curves}
                 onChange={onCurvesChange}
                 onCommit={onCurvesCommit}
-                imgRef={imgRef}
+                imgRef={props.imgRef}
               />
             </AccordionContent>
           </AccordionItem>
@@ -327,18 +289,8 @@ const EditorControls = (props: EditorControlsProps) => {
           </AccordionItem>
         </Accordion>
       </TabsContent>
-
-      {/* History tab */}
-      <TabsContent value="history" className="mt-4">
-        <History history={history} currentIndex={currentHistoryIndex} onJump={onHistoryJump} />
-      </TabsContent>
-
-      {/* Info tab */}
-      <TabsContent value="info" className="mt-4">
-        <Info dimensions={dimensions} fileInfo={fileInfo} imgRef={imgRef} exifData={exifData} />
-      </TabsContent>
     </Tabs>
   );
 };
 
-export default EditorControls;
+export default GlobalAdjustmentsPanel;

@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { Layer } from "@/types/editor";
+import type { Layer } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import AdjustmentLayerControls from "./AdjustmentLayerControls"; // Import the renamed component
+import AdjustmentLayerControls from "./AdjustmentLayerControls";
 import LayerGeneralProperties from "./LayerGeneralProperties";
 
 interface AdjustmentOptionsProps {
