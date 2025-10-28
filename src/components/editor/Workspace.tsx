@@ -279,10 +279,14 @@ const Workspace = (props: WorkspaceProps) => {
 
   // Expose internal fit logic via ref
   React.useEffect(() => {
-    fitScreenRef.current = handleFitScreenInternal;
-    return () => {
-      fitScreenRef.current = null;
-    };
+    if (fitScreenRef) {
+      fitScreenRef.current = handleFitScreenInternal;
+      return () => {
+        if (fitScreenRef) {
+          fitScreenRef.current = null;
+        }
+      };
+    }
   }, [handleFitScreenInternal, fitScreenRef]);
 
   useEffect(() => {
