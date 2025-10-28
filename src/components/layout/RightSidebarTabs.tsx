@@ -21,6 +21,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Preset } from "@/hooks/usePresets";
+import type { GradientPreset } from "@/hooks/useGradientPresets"; // NEW Import
 import type { Point, EditState, HslAdjustment, Layer, BrushState, GradientToolState, ActiveTool, HslColorKey } from "@/types/editor";
 
 // Import Panel Components
@@ -46,7 +47,6 @@ interface RightSidebarTabsProps {
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
   onLayerUpdate: (layerId: string, updates: Partial<Layer>) => void;
   onLayerCommit: (layerId: string, historyName: string) => void;
-  // FIX 1: Correct signature for onLayerPropertyCommit
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; 
   foregroundColor: string;
   onForegroundColorChange: (color: string) => void;
@@ -117,10 +117,10 @@ interface RightSidebarTabsProps {
   // Channels Props
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
-  // Dummy Props for PropertiesPanel
-  gradientPresets: any[];
+  // Gradient Presets (UPDATED)
+  gradientPresets: GradientPreset[];
   onSaveGradientPreset: (name: string, state: GradientToolState) => void;
-  onDeleteGradientPreset: (id: string) => void;
+  onDeleteGradientPreset: (name: string) => void;
 }
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
@@ -141,7 +141,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onRasterizeLayer: props.onRasterizeLayer,
     onCreateSmartObject: props.onCreateSmartObject,
     onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerPropertyCommit, // FIXED: Using the correct prop
+    onLayerPropertyCommit: props.onLayerPropertyCommit, // CORRECTED: Passing the full signature
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
     onAddTextLayer: props.addTextLayer,
@@ -301,7 +301,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             <PropertiesPanel {...propertiesPanelProps} />
           </TabsContent>
           
-          {/* FIX 2: Manually map props for HistoryPanel */}
+          {/* Auxiliary Panels */}
           <TabsContent value="history">
             <HistoryPanel 
               history={auxiliaryPanelProps.history}
@@ -321,7 +321,6 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             <InfoPanel {...auxiliaryPanelProps} />
           </TabsContent>
           
-          {/* FIX 3: Manually map props for NavigatorPanel, deriving image URL */}
           <TabsContent value="navigator">
             <NavigatorPanel 
               image={props.hasImage ? props.imgRef.current?.src || null : null}
