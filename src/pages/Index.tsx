@@ -744,7 +744,7 @@ const Index = () => {
                 panOffset={panOffset}
                 setPanOffset={setPanOffset}
                 onZoomIn={handleZoomIn}
-                onZoomOut={onZoomOut}
+                onZoomOut={handleZoomOut}
                 onFitScreen={handleFitScreen}
                 fitScreenRef={fitScreenRef}
               />

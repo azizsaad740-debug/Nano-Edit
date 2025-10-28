@@ -70,6 +70,31 @@ export const BrushOptions: React.FC<BrushOptionsProps> = ({
           onValueChange={([value]) => setBrushHardness(value)}
         />
       </div>
+      <div className="space-y-1">
+        <Label>Smoothness ({brushSmoothness}%)</Label>
+        <Slider
+          min={0}
+          max={100}
+          step={1}
+          value={[brushSmoothness]}
+          onValueChange={([value]) => setBrushSmoothness(value)}
+        />
+      </div>
+      <div className="space-y-1">
+        <Label>Shape</Label>
+        <Select
+          value={brushShape}
+          onValueChange={(value) => setBrushShape(value as 'circle' | 'square')}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select shape" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="circle">Circle</SelectItem>
+            <SelectItem value="square">Square</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
       {activeTool === 'brush' && (
         <div className="space-y-1">
           <Label>Color</Label>

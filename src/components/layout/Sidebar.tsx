@@ -214,8 +214,8 @@ const Sidebar = (props: SidebarProps) => {
     onLayerPropertyCommit: props.onLayerPropertyCommit,
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
-    addTextLayer: props.addTextLayer, // ADDED
-    addDrawingLayer: props.addDrawingLayer, // ADDED
+    onAddTextLayer: props.addTextLayer, // ADDED
+    onAddDrawingLayer: props.addDrawingLayer, // ADDED
     onAddLayerFromBackground: props.onAddLayerFromBackground, // ADDED
     onLayerFromSelection: props.onLayerFromSelection, // ADDED
     onAddShapeLayer: props.addShapeLayer, // ADDED
