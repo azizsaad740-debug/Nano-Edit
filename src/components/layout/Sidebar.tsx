@@ -5,10 +5,7 @@ import {
 } from "@/components/ui/resizable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel"; // Renamed import
-import LayersPanel from "../editor/LayersPanel";
-import AuxiliaryPanel from "./AuxiliaryPanel"; // NEW Import
-import { PropertiesPanel } from "../editor/PropertiesPanel"; // NEW Import
-import { Separator } from "@/components/ui/separator";
+import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs"; // NEW Import
 import type { Preset } from "@/hooks/usePresets";
 import type { Point, EditState, HslAdjustment, Layer, BrushState, GradientToolState, ActiveTool, HslColorKey } from "@/types/editor";
 import React from "react";
@@ -127,28 +124,30 @@ interface SidebarProps {
   backgroundColor: string;
   onBackgroundColorChange: (color: string) => void;
   onSwapColors: () => void;
-  activeTool: ActiveTool | null; // FIX Error 1
-  onLayerUpdate: (id: string, updates: Partial<Layer>) => void; // ADDED
-  onLayerCommit: (id: string, historyName: string) => void; // ADDED
+  activeTool: ActiveTool | null;
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string, historyName: string) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
-  // Props needed for PropertiesPanel
-  const propertiesPanelProps = {
+  // Props needed for RightSidebarTabs
+  const rightSidebarTabsProps = {
+    hasImage: props.hasImage,
+    // Properties Panel Props
     selectedLayer: props.layers.find(l => l.id === props.selectedLayerId) || null,
-    activeTool: props.activeTool, // FIX Error 1
+    activeTool: props.activeTool,
     brushState: props.brushState,
     setBrushState: props.setBrushState,
     gradientToolState: props.gradientToolState,
     setGradientToolState: props.setGradientToolState,
-    onLayerUpdate: props.onLayerUpdate, // (id, updates) => void
-    onLayerCommit: props.onLayerCommit, // (id, name) => void // FIX Error 2
-    onLayerPropertyCommit: props.onLayerCommit, // (id, name) => void // FIX Error 2
-    gradientPresets: [], // Not passed down here, handled by Index.tsx
-    onSaveGradientPreset: () => {},
-    onDeleteGradientPreset: () => {},
+    onLayerUpdate: props.onLayerUpdate,
+    onLayerCommit: props.onLayerCommit,
+    onLayerPropertyCommit: props.onLayerCommit,
     foregroundColor: props.foregroundColor,
-    setForegroundColor: props.onForegroundColorChange,
+    onForegroundColorChange: props.onForegroundColorChange,
+    backgroundColor: props.backgroundColor,
+    onBackgroundColorChange: props.onBackgroundColorChange,
+    onSwapColors: props.onSwapColors,
     selectiveBlurStrength: props.selectiveBlurStrength,
     onSelectiveBlurStrengthChange: props.onSelectiveBlurStrengthChange,
     onSelectiveBlurStrengthCommit: props.onSelectiveBlurStrengthCommit,
@@ -158,6 +157,65 @@ const Sidebar = (props: SidebarProps) => {
     imgRef: props.imgRef,
     onRemoveLayerMask: props.onRemoveLayerMask,
     onInvertLayerMask: props.onInvertLayerMask,
+    gradientPresets: [], // Placeholder, actual presets are managed in Index.tsx
+    onSaveGradientPreset: () => {},
+    onDeleteGradientPreset: () => {},
+    // Layers Panel Props
+    layers: props.layers,
+    selectedLayerId: props.selectedLayerId,
+    onSelectLayer: props.onSelectLayer,
+    onReorder: props.onReorder,
+    toggleLayerVisibility: props.toggleLayerVisibility,
+    renameLayer: props.renameLayer,
+    deleteLayer: props.deleteLayer,
+    onDuplicateLayer: props.onDuplicateLayer,
+    onMergeLayerDown: props.onMergeLayerDown,
+    onRasterizeLayer: props.onRasterizeLayer,
+    onCreateSmartObject: props.onCreateSmartObject,
+    onOpenSmartObject: props.onOpenSmartObject,
+    onLayerOpacityChange: props.onLayerOpacityChange,
+    onLayerOpacityCommit: props.onLayerOpacityCommit,
+    addTextLayer: props.addTextLayer,
+    addDrawingLayer: props.addDrawingLayer,
+    onAddLayerFromBackground: props.onAddLayerFromBackground,
+    onLayerFromSelection: props.onLayerFromSelection,
+    addShapeLayer: props.addShapeLayer,
+    addGradientLayer: props.addGradientLayer,
+    onAddAdjustmentLayer: props.onAddAdjustmentLayer,
+    selectedShapeType: props.selectedShapeType,
+    groupLayers: props.groupLayers,
+    toggleGroupExpanded: props.toggleGroupExpanded,
+    onToggleClippingMask: props.onToggleClippingMask,
+    onToggleLayerLock: props.onToggleLayerLock,
+    onDeleteHiddenLayers: props.onDeleteHiddenLayers,
+    onRasterizeSmartObject: props.onRasterizeSmartObject,
+    onConvertSmartObjectToLayers: props.onConvertSmartObjectToLayers,
+    onExportSmartObjectContents: props.onExportSmartObjectContents,
+    onArrangeLayer: props.onArrangeLayer,
+    hasActiveSelection: props.hasActiveSelection,
+    onApplySelectionAsMask: props.onApplySelectionAsMask,
+    // History Props
+    history: props.history,
+    currentHistoryIndex: props.currentHistoryIndex,
+    onHistoryJump: props.onHistoryJump,
+    onUndo: props.onUndo,
+    onRedo: props.onRedo,
+    canUndo: props.canUndo,
+    canRedo: props.canRedo,
+    // Info Props
+    dimensions: props.dimensions,
+    fileInfo: props.fileInfo,
+    exifData: props.exifData,
+    colorMode: props.colorMode,
+    // Navigator Props
+    zoom: props.zoom,
+    onZoomIn: props.onZoomIn,
+    onZoomOut: props.onZoomOut,
+    onFitScreen: props.onFitScreen,
+    // Channels Props
+    channels: props.channels,
+    onChannelChange: props.onChannelChange,
+    // Brushes/Adjustments Props are passed through auxiliary panel props
   };
 
   // Props needed for GlobalAdjustmentsPanel
@@ -197,77 +255,6 @@ const Sidebar = (props: SidebarProps) => {
     imgRef: props.imgRef,
   };
 
-  // Props needed for LayersPanel
-  const layersPanelProps = {
-    layers: props.layers,
-    selectedLayerId: props.selectedLayerId,
-    onSelectLayer: props.onSelectLayer,
-    onReorder: props.onReorder,
-    toggleLayerVisibility: props.toggleLayerVisibility,
-    renameLayer: props.renameLayer,
-    deleteLayer: props.deleteLayer,
-    onDuplicateLayer: props.onDuplicateLayer,
-    onMergeLayerDown: props.onMergeLayerDown,
-    onRasterizeLayer: props.onRasterizeLayer,
-    onCreateSmartObject: props.onCreateSmartObject,
-    onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerPropertyCommit,
-    onLayerOpacityChange: props.onLayerOpacityChange,
-    onLayerOpacityCommit: props.onLayerOpacityCommit,
-    onAddTextLayer: props.addTextLayer, // ADDED
-    onAddDrawingLayer: props.addDrawingLayer, // ADDED
-    onAddLayerFromBackground: props.onAddLayerFromBackground, // ADDED
-    onLayerFromSelection: props.onLayerFromSelection, // ADDED
-    onAddShapeLayer: props.addShapeLayer, // ADDED
-    onAddGradientLayer: props.addGradientLayer, // ADDED
-    onAddAdjustmentLayer: props.onAddAdjustmentLayer, // ADDED
-    selectedShapeType: props.selectedShapeType,
-    groupLayers: props.groupLayers,
-    toggleGroupExpanded: props.toggleGroupExpanded,
-    onRemoveLayerMask: props.onRemoveLayerMask,
-    onInvertLayerMask: props.onInvertLayerMask,
-    onToggleClippingMask: props.onToggleClippingMask,
-    onToggleLayerLock: props.onToggleLayerLock,
-    onDeleteHiddenLayers: props.onDeleteHiddenLayers,
-    onRasterizeSmartObject: props.onRasterizeSmartObject,
-    onConvertSmartObjectToLayers: props.onConvertSmartObjectToLayers,
-    onExportSmartObjectContents: props.onExportSmartObjectContents,
-    onArrangeLayer: props.onArrangeLayer,
-    hasActiveSelection: props.hasActiveSelection,
-    onApplySelectionAsMask: props.onApplySelectionAsMask,
-  };
-
-  // Props needed for AuxiliaryPanel
-  const auxiliaryPanelProps = {
-    hasImage: props.hasImage,
-    history: props.history,
-    currentHistoryIndex: props.currentHistoryIndex,
-    onHistoryJump: props.onHistoryJump,
-    onUndo: props.onUndo,
-    onRedo: props.onRedo,
-    canUndo: props.canUndo,
-    canRedo: props.canRedo,
-    foregroundColor: props.foregroundColor,
-    onForegroundColorChange: props.onForegroundColorChange,
-    backgroundColor: props.backgroundColor,
-    onBackgroundColorChange: props.onBackgroundColorChange,
-    onSwapColors: props.onSwapColors,
-    dimensions: props.dimensions,
-    fileInfo: props.fileInfo,
-    imgRef: props.imgRef,
-    exifData: props.exifData,
-    colorMode: props.colorMode,
-    zoom: props.zoom,
-    onZoomIn: props.onZoomIn,
-    onZoomOut: props.onZoomOut,
-    onFitScreen: props.onFitScreen,
-    channels: props.channels,
-    onChannelChange: props.onChannelChange,
-    brushState: props.brushState,
-    setBrushState: props.setBrushState,
-    onAddAdjustmentLayer: props.onAddAdjustmentLayer,
-  };
-
   return (
     <div className="flex flex-col h-full border-l bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <ResizablePanelGroup direction="vertical">
@@ -285,49 +272,13 @@ const Sidebar = (props: SidebarProps) => {
 
         <ResizableHandle withHandle />
 
-        {/* Middle Panel: Properties */}
-        <ResizablePanel defaultSize={35} minSize={20}>
+        {/* Bottom Panel: Properties, Layers, and Auxiliary Tabs */}
+        <ResizablePanel defaultSize={65} minSize={40}>
           <Card className="flex flex-col h-full border-none shadow-none">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Properties</CardTitle>
-            </CardHeader>
-            <div className="p-0 h-full overflow-y-auto flex flex-col">
-              <PropertiesPanel {...propertiesPanelProps} />
-            </div>
+            <CardContent className="flex-1 p-0 h-full">
+              <RightSidebarTabs {...rightSidebarTabsProps} />
+            </CardContent>
           </Card>
-        </ResizablePanel>
-
-        <ResizableHandle withHandle />
-
-        {/* Bottom Panel: Layers & Auxiliary Tabs */}
-        <ResizablePanel defaultSize={30} minSize={20}>
-          <ResizablePanelGroup direction="horizontal">
-            {/* Layers Panel (Left side of bottom section) */}
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <Card className="flex flex-col h-full border-none shadow-none">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Layers</CardTitle>
-                </CardHeader>
-                <div className="p-4 h-full overflow-y-auto flex flex-col">
-                  {props.hasImage && <LayersPanel {...layersPanelProps} />}
-                </div>
-              </Card>
-            </ResizablePanel>
-            
-            <ResizableHandle withHandle />
-
-            {/* Auxiliary Panel (Right side of bottom section) */}
-            <ResizablePanel defaultSize={50} minSize={20}>
-              <Card className="flex flex-col h-full border-none shadow-none">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Auxiliary</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1 overflow-y-auto">
-                  <AuxiliaryPanel {...auxiliaryPanelProps} />
-                </CardContent>
-              </Card>
-            </ResizablePanel>
-          </ResizablePanelGroup>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
