@@ -45,9 +45,9 @@ interface LayersPanelProps {
   selectedLayerId: string | null;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
-  onToggleVisibility: (id: string) => void;
-  onRename: (id: string, newName: string) => void;
-  onDelete: (id: string) => void;
+  toggleLayerVisibility: (id: string) => void; // Renamed from onToggleVisibility
+  renameLayer: (id: string, newName: string) => void; // Renamed from onRename
+  deleteLayer: (id: string) => void; // Renamed from onDelete
   onDuplicateLayer: (id: string) => void;
   onMergeLayerDown: (id: string) => void;
   onRasterizeLayer: (id: string) => void;
@@ -85,9 +85,9 @@ const LayersPanel = (props: LayersPanelProps) => {
     selectedLayerId,
     onSelectLayer,
     onReorder,
-    onToggleVisibility,
-    onRename,
-    onDelete,
+    toggleLayerVisibility, // Renamed
+    renameLayer, // Renamed
+    deleteLayer, // Renamed
     onDuplicateLayer,
     onMergeLayerDown,
     onRasterizeLayer,
@@ -145,7 +145,7 @@ const LayersPanel = (props: LayersPanelProps) => {
 
   const confirmRename = (id: string) => {
     if (tempName.trim() && tempName !== selectedLayer?.name) {
-      onRename(id, tempName.trim());
+      renameLayer(id, tempName.trim());
     }
     setEditingId(null);
   };
@@ -202,7 +202,7 @@ const LayersPanel = (props: LayersPanelProps) => {
                 startRename={startRename}
                 confirmRename={confirmRename}
                 cancelRename={cancelRename}
-                onToggleVisibility={onToggleVisibility}
+                onToggleVisibility={toggleLayerVisibility}
                 selectedLayerIds={selectedLayerIds}
                 onSelectLayer={onSelectLayer}
                 onToggleGroupExpanded={toggleGroupExpanded}
@@ -283,7 +283,7 @@ const LayersPanel = (props: LayersPanelProps) => {
           onAddDrawingLayer={onAddDrawingLayer}
           onAddShapeLayer={onAddShapeLayer}
           onAddGradientLayer={onAddGradientLayer}
-          onDeleteLayer={() => selectedLayerId && onDelete(selectedLayerId)}
+          onDeleteLayer={() => selectedLayerId && deleteLayer(selectedLayerId)}
           onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
           onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}
           onRasterizeLayer={() => selectedLayerId && onRasterizeLayer(selectedLayerId)}

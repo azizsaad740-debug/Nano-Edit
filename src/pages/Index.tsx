@@ -72,6 +72,25 @@ const Index = () => {
   
   const openProjectInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
+  
+  // --- Zoom/Pan State (Lifted from Workspace) ---
+  const [zoom, setZoom] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const fitScreenRef = useRef<(() => void) | null>(null); // Ref to hold internal fit logic
+
+  const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
+  const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
+
+  const handleFitScreen = useCallback(() => {
+    if (fitScreenRef.current) {
+      fitScreenRef.current();
+    } else {
+      // Fallback if ref isn't set yet
+      setZoom(1);
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, []);
+  // --- End Zoom/Pan State ---
 
   // --- Project State Management ---
   const handleProjectUpdate = useCallback((updates: Partial<typeof activeProject>) => {
@@ -186,6 +205,7 @@ const Index = () => {
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
+    commitTemporaryLayerChange,
     reorderLayers,
     createSmartObject,
     openSmartObjectEditor,
@@ -230,11 +250,10 @@ const Index = () => {
     handleDrawingStrokeEnd,
     loadImageData,
     invertLayerMask,
-    zoom,
-    handleZoomIn,
-    handleZoomOut,
-    handleFitScreen,
   } = editorState;
+
+  // Runtime Error Fix: layers.find is not a function
+  const smartObjectToEdit = (layers || []).find(layer => layer.id === smartObjectEditingId) || null;
 
   // --- Local Functions ---
   const handleOpenProjectClick = (importInSameProject: boolean) => {
@@ -489,6 +508,9 @@ const Index = () => {
     backgroundColor,
     onBackgroundColorChange: handleBackgroundColorChange,
     onSwapColors: handleSwapColors,
+    // New functions for PropertiesPanel compatibility
+    onLayerUpdate: updateLayer, // (id, updates) => void
+    onLayerCommit: commitTemporaryLayerChange, // (id, name) => void
   };
 
   const handleProjectSettingsUpdate = (updates: { width?: number; height?: number; colorMode?: 'RGB' | 'CMYK' | 'Grayscale' }) => {
@@ -552,7 +574,7 @@ const Index = () => {
   };
 
   
-  const smartObjectToEdit = layers.find(layer => layer.id === smartObjectEditingId) || null;
+  const smartObjectToEdit = (layers || []).find(layer => layer.id === smartObjectEditingId) || null;
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
@@ -718,6 +740,15 @@ const Index = () => {
                 foregroundColor={foregroundColor}
                 backgroundColor={backgroundColor}
                 onDrawingStrokeEnd={handleDrawingStrokeEnd}
+                // Pass zoom/pan state and handlers
+                zoom={zoom}
+                setZoom={setZoom}
+                panOffset={panOffset}
+                setPanOffset={setPanOffset}
+                onZoomIn={handleZoomIn}
+                onZoomOut={handleZoomOut}
+                onFitScreen={handleFitScreen}
+                fitScreenRef={fitScreenRef}
               />
             </div>
           </ResizablePanel>

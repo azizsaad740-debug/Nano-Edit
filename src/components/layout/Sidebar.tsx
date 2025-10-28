@@ -127,20 +127,23 @@ interface SidebarProps {
   backgroundColor: string;
   onBackgroundColorChange: (color: string) => void;
   onSwapColors: () => void;
+  activeTool: ActiveTool | null; // FIX Error 1
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void; // ADDED
+  onLayerCommit: (id: string, historyName: string) => void; // ADDED
 }
 
 const Sidebar = (props: SidebarProps) => {
   // Props needed for PropertiesPanel
   const propertiesPanelProps = {
     selectedLayer: props.layers.find(l => l.id === props.selectedLayerId) || null,
-    activeTool: props.activeTool,
+    activeTool: props.activeTool, // FIX Error 1
     brushState: props.brushState,
     setBrushState: props.setBrushState,
     gradientToolState: props.gradientToolState,
     setGradientToolState: props.setGradientToolState,
-    onLayerUpdate: (id: string, updates: Partial<Layer>) => props.onLayerPropertyCommit(id, updates, "Temporary Layer Edit"),
-    onLayerCommit: props.onLayerPropertyCommit,
-    onLayerPropertyCommit: props.onLayerPropertyCommit,
+    onLayerUpdate: props.onLayerUpdate, // (id, updates) => void
+    onLayerCommit: props.onLayerCommit, // (id, name) => void // FIX Error 2
+    onLayerPropertyCommit: props.onLayerCommit, // (id, name) => void // FIX Error 2
     gradientPresets: [], // Not passed down here, handled by Index.tsx
     onSaveGradientPreset: () => {},
     onDeleteGradientPreset: () => {},

@@ -159,6 +159,12 @@ export const useEditorState = (
     clearSelectionState: () => handleProjectUpdate({ selectionPath: null, selectionMaskDataUrl: null }),
   });
 
+  // Function to commit temporary layer changes and record history
+  const commitTemporaryLayerChange = useCallback((id: string, historyName: string) => {
+    commitLayerChange(id); // Commits the temporary state
+    recordHistory(historyName, currentState, layers); // Records history
+  }, [commitLayerChange, recordHistory, currentState, layers]);
+
   // --- History Actions ---
   const handleUndo = useCallback(() => {
     if (currentHistoryIndex > 0) {
@@ -874,6 +880,7 @@ export const useEditorState = (
     handleLayerPropertyCommit,
     handleLayerOpacityChange,
     handleLayerOpacityCommit,
+    commitTemporaryLayerChange, // <-- ADDED
     reorderLayers,
     createSmartObject,
     openSmartObjectEditor,

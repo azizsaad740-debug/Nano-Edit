@@ -81,6 +81,15 @@ interface WorkspaceProps {
   foregroundColor: string; // New prop
   backgroundColor: string; // New prop
   onDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // NEW: Prop for drawing layer commit
+  // NEW Zoom/Pan Props
+  zoom: number;
+  setZoom: React.Dispatch<React.SetStateAction<number>>;
+  panOffset: { x: number; y: number };
+  setPanOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onFitScreen: () => void;
+  fitScreenRef: React.MutableRefObject<(() => void) | null>; // NEW Ref prop
 }
 
 // New component for drawing shape preview
@@ -218,13 +227,21 @@ const Workspace = (props: WorkspaceProps) => {
     foregroundColor, // Destructure foregroundColor
     backgroundColor, // Destructure backgroundColor
     onDrawingStrokeEnd, // NEW: Destructure onDrawingStrokeEnd
+    // Destructure NEW Zoom/Pan Props
+    zoom,
+    setZoom,
+    panOffset,
+    setPanOffset,
+    onZoomIn,
+    onZoomOut,
+    onFitScreen,
+    fitScreenRef, // NEW Destructure
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageContainerRef = useRef<HTMLDivElement>(null);
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [zoom, setZoom] = useState(1);
-  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  // REMOVED internal zoom/pan state
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
@@ -243,10 +260,8 @@ const Workspace = (props: WorkspaceProps) => {
   const [gradientStartCoords, setGradientStartCoords] = useState<Point | null>(null);
   const [gradientCurrentCoords, setGradientCurrentCoords] = useState<Point | null>(null);
 
-  const handleZoomIn = useCallback(() => setZoom(z => Math.min(z + 0.1, 5)), []);
-  const handleZoomOut = useCallback(() => setZoom(z => Math.max(z - 0.1, 0.1)), []);
-
-  const handleFitScreen = useCallback(() => {
+  // UPDATE handleFitScreen to use external setters
+  const handleFitScreenInternal = useCallback(() => {
     if (!imgRef.current || !workspaceContainerRef.current) return;
     const { naturalWidth, naturalHeight } = imgRef.current;
     const { clientWidth: containerWidth, clientHeight: containerHeight } = workspaceContainerRef.current;
@@ -260,12 +275,21 @@ const Workspace = (props: WorkspaceProps) => {
       setZoom(newZoom);
     }
     setPanOffset({ x: 0, y: 0 });
-  }, [imgRef, zoom]);
+  }, [imgRef, zoom, setZoom, setPanOffset]); // Dependencies updated
+
+  // Expose internal fit logic via ref
+  React.useEffect(() => {
+    fitScreenRef.current = handleFitScreenInternal;
+    return () => {
+      fitScreenRef.current = null;
+    };
+  }, [handleFitScreenInternal, fitScreenRef]);
 
   useEffect(() => {
     if (image) {
       const img = imgRef.current;
-      const onImgLoad = () => setTimeout(handleFitScreen, 100);
+      // Use the internal fit screen logic on load
+      const onImgLoad = () => setTimeout(handleFitScreenInternal, 100); 
       if (img) {
         img.addEventListener('load', onImgLoad, { once: true });
         if (img.complete) onImgLoad();
@@ -275,7 +299,7 @@ const Workspace = (props: WorkspaceProps) => {
       setZoom(1);
       setPanOffset({ x: 0, y: 0 });
     }
-  }, [image, handleFitScreen, imgRef]);
+  }, [image, handleFitScreenInternal, imgRef, setZoom, setPanOffset]); // Dependencies updated
   
   // Effect to track previous brush tool when eyedropper is activated
   useEffect(() => {
@@ -472,9 +496,9 @@ const Workspace = (props: WorkspaceProps) => {
 
   useHotkeys('space', () => { isSpaceDownRef.current = true; }, { keydown: true });
   useHotkeys('space', () => { isSpaceDownRef.current = false; setIsPanning(false); }, { keyup: true });
-  useHotkeys("+, =", handleZoomIn, { preventDefault: true });
-  useHotkeys("-", handleZoomOut, { preventDefault: true });
-  useHotkeys("f", handleFitScreen, { preventDefault: true });
+  useHotkeys("+, =", onZoomIn, { preventDefault: true });
+  useHotkeys("-", onZoomOut, { preventDefault: true });
+  useHotkeys("f", onFitScreen, { preventDefault: true });
 
   const triggerFileInput = () => fileInputRef.current?.click();
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => onFileSelect(event.target.files?.[0]);
@@ -901,9 +925,9 @@ const Workspace = (props: WorkspaceProps) => {
           </div>
           <WorkspaceControls 
             zoom={zoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onFitScreen={handleFitScreen}
+            onZoomIn={onZoomIn}
+            onZoomOut={onZoomOut}
+            onFitScreen={onFitScreen}
           />
         </>
       ) : (

@@ -12,6 +12,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { Button } from "@/components/ui/button";
 import { X, Undo2, Redo2, Save } from "lucide-react";
 import * as React from "react";
+import { showError } from "@/utils/toast";
 
 interface SmartObjectEditorProps {
   smartObject: Layer;
@@ -120,6 +121,14 @@ export const SmartObjectEditor = ({
   const dummyOnSelectiveBlurStrengthCommit = React.useCallback((value: number) => {
     // No operation needed in Smart Object context
   }, []);
+  
+  // NEW: Dummy Masking Props (Fix Error 4)
+  const dummyOnRemoveLayerMask = React.useCallback((id: string) => {
+    showError("Mask removal is not supported in Smart Object Editor (Stub).");
+  }, []);
+  const dummyOnInvertLayerMask = React.useCallback((id: string) => {
+    showError("Mask inversion is not supported in Smart Object Editor (Stub).");
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-background z-50 flex flex-col">
@@ -214,6 +223,8 @@ export const SmartObjectEditor = ({
                     customFonts={customFonts}
                     onOpenFontManager={onOpenFontManager}
                     imgRef={imgRef}
+                    onRemoveLayerMask={dummyOnRemoveLayerMask}
+                    onInvertLayerMask={dummyOnInvertLayerMask}
                   />
                 </div>
               </ResizablePanel>
