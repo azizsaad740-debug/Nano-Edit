@@ -14,7 +14,7 @@ interface VectorShapeLayerProps {
   onCommit: (id: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
-  zoom: number; // NEW
+  zoom: number;
 }
 
 const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: VectorShapeLayerProps) => {
@@ -115,8 +115,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
         );
       case "arrow":
         // Arrow uses strokeWidth defined in svgProps (which is lineThickness)
-        const arrowThickness = finalStrokeWidth;
-        const arrowHeadLength = arrowThickness * 3; // Arrowhead length is 3x thickness (in viewBox units)
+        const arrowHeadSize = 5; // 5% of the layer's dimension for the arrowhead length (relative to 100x100 viewBox)
         
         return (
           <g>
@@ -130,7 +129,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
             />
             {/* Arrowhead at 100% x, 50% y. Points: tip, bottom-back, top-back */}
             <polygon 
-              points={`100,50 ${100 - arrowHeadLength},${50 + arrowHeadLength / 2} ${100 - arrowHeadLength},${50 - arrowHeadLength / 2}`}
+              points={`100,50 ${100 - arrowHeadSize},${50 + arrowHeadSize / 2} ${100 - arrowHeadSize},${50 - arrowHeadSize / 2}`}
               fill={strokeColor || "currentColor"}
               stroke="none"
             />
