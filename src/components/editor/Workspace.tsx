@@ -20,13 +20,13 @@ import { ChannelFilter } from "./ChannelFilter";
 import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
 import { SmartObjectLayer } from "./SmartObjectLayer";
-import VectorShapeLayer from "./VectorShapeLayer"; // Import VectorShapeLayer
-import GroupLayer from "./GroupLayer"; // Import GroupLayer
-import GradientLayer from "./GradientLayer"; // Import GradientLayer
-import { GradientPreviewCanvas } from "./GradientPreviewCanvas"; // Import GradientPreviewCanvas
-import { SelectionMaskOverlay } from "./SelectionMaskOverlay"; // Import SelectionMaskOverlay
-import { SelectiveBlurFilter } from "./SelectiveBlurFilter"; // NEW Import
-import { HslFilter } from "./HslFilter"; // NEW Import
+import VectorShapeLayer from "./VectorShapeLayer";
+import GroupLayer from "./GroupLayer";
+import GradientLayer from "./GradientLayer";
+import { GradientPreviewCanvas } from "./GradientPreviewCanvas";
+import { SelectionMaskOverlay } from "./SelectionMaskOverlay";
+import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
+import { HslFilter } from "./HslFilter";
 import * as React from "react";
 
 interface WorkspaceProps {
@@ -35,7 +35,7 @@ interface WorkspaceProps {
   onSampleSelect: (url: string) => void;
   onUrlSelect: (url: string) => void;
   onImageLoad: () => void;
-  currentState: EditState; // ADDED currentState prop
+  currentState: EditState;
   adjustments: EditState['adjustments'];
   effects: EditState['effects'];
   grading: EditState['grading'];
@@ -52,36 +52,35 @@ interface WorkspaceProps {
   aspect: number | undefined;
   imgRef: React.RefObject<HTMLImageElement>;
   isPreviewingOriginal: boolean;
-  activeTool?: ActiveTool | null; // ADDED blurBrush
+  activeTool?: ActiveTool | null;
   layers: Layer[];
   onAddTextLayer: (coords: { x: number; y: number }) => void;
   onAddDrawingLayer: () => string;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void; // Added onAddShapeLayer
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: (options?: {
     x: number; y: number; width: number; height: number; rotation: number;
     gradientType: Layer['gradientType']; gradientColors: string[]; gradientStops: number[];
     gradientAngle: number; gradientCenterX: number; gradientCenterY: number;
     gradientRadius: number; gradientFeather: number; gradientInverted: boolean;
-  }) => void; // Updated onAddGradientLayer signature
+  }) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string) => void;
   selectedLayerId: string | null;
   brushState: BrushState;
-  gradientToolState: GradientToolState; // Added gradientToolState
+  gradientToolState: GradientToolState;
   selectionPath: Point[] | null;
-  selectionMaskDataUrl: string | null; // New prop
+  selectionMaskDataUrl: string | null;
   onSelectionChange: (path: Point[]) => void;
-  onSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // New prop
-  onSelectiveBlurStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // UPDATED: Removed blurAmount
+  onSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
+  onSelectiveBlurStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
   handleColorPick: (color: string) => void;
-  imageNaturalDimensions: { width: number; height: number; } | null; // Pass natural dimensions
-  selectedShapeType: Layer['shapeType'] | null; // New prop for selected shape type
-  setSelectedLayer: (id: string | null) => void; // Added setSelectedLayer
-  setActiveTool: (tool: ActiveTool | null) => void; // Added setActiveTool
-  foregroundColor: string; // New prop
-  backgroundColor: string; // New prop
-  onDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // NEW: Prop for drawing layer commit
-  // NEW Zoom/Pan Props
+  imageNaturalDimensions: { width: number; height: number; } | null;
+  selectedShapeType: Layer['shapeType'] | null;
+  setSelectedLayer: (id: string | null) => void;
+  setActiveTool: (tool: ActiveTool | null) => void;
+  foregroundColor: string;
+  backgroundColor: string;
+  onDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   panOffset: { x: number; y: number };
@@ -89,7 +88,7 @@ interface WorkspaceProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitScreen: () => void;
-  fitScreenRef: React.MutableRefObject<(() => void) | null>; // NEW Ref prop
+  fitScreenRef: React.MutableRefObject<(() => void) | null>;
 }
 
 // New component for drawing shape preview
@@ -186,7 +185,7 @@ const Workspace = (props: WorkspaceProps) => {
     onSampleSelect,
     onUrlSelect,
     onImageLoad,
-    currentState, // Destructure currentState
+    currentState,
     adjustments,
     effects,
     grading,
@@ -207,27 +206,26 @@ const Workspace = (props: WorkspaceProps) => {
     layers,
     onAddTextLayer,
     onAddDrawingLayer,
-    onAddShapeLayer, // Destructure onAddShapeLayer
-    onAddGradientLayer, // Destructure onAddGradientLayer
+    onAddShapeLayer,
+    onAddGradientLayer,
     onLayerUpdate,
     onLayerCommit,
     selectedLayerId,
     brushState,
-    gradientToolState, // Destructure gradientToolState
+    gradientToolState,
     selectionPath,
-    selectionMaskDataUrl, // Destructure
+    selectionMaskDataUrl,
     onSelectionChange,
     onSelectionBrushStrokeEnd,
-    onSelectiveBlurStrokeEnd, // Destructure UPDATED prop
+    onSelectiveBlurStrokeEnd,
     handleColorPick,
     imageNaturalDimensions,
-    selectedShapeType, // Destructure selectedShapeType
-    setSelectedLayer, // Destructure setSelectedLayer
-    setActiveTool, // Destructure setActiveTool
-    foregroundColor, // Destructure foregroundColor
-    backgroundColor, // Destructure backgroundColor
-    onDrawingStrokeEnd, // NEW: Destructure onDrawingStrokeEnd
-    // Destructure NEW Zoom/Pan Props
+    selectedShapeType,
+    setSelectedLayer,
+    setActiveTool,
+    foregroundColor,
+    backgroundColor,
+    onDrawingStrokeEnd,
     zoom,
     setZoom,
     panOffset,
@@ -235,19 +233,17 @@ const Workspace = (props: WorkspaceProps) => {
     onZoomIn,
     onZoomOut,
     onFitScreen,
-    fitScreenRef, // NEW Destructure
+    fitScreenRef,
   } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const layerContainerRef = useRef<HTMLDivElement>(null); // Renamed ref for the container holding layers/canvases
   const workspaceContainerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  // REMOVED internal zoom/pan state
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const isSpaceDownRef = useRef(false);
-  const [isMouseOverImage, setIsMouseOverImage] = useState(false); // New state for mouse over image
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   
-  // NEW: State to store the previous brush tool when eyedropper is active
   const [previousBrushTool, setPreviousBrushTool] = useState<"brush" | "eraser" | "selectionBrush" | "blurBrush" | null>(null);
 
   // Shape drawing state
@@ -260,7 +256,7 @@ const Workspace = (props: WorkspaceProps) => {
   const [gradientStartCoords, setGradientStartCoords] = useState<Point | null>(null);
   const [gradientCurrentCoords, setGradientCurrentCoords] = useState<Point | null>(null);
 
-  // UPDATE handleFitScreen to use external setters
+  // --- Zoom/Pan Logic ---
   const handleFitScreenInternal = useCallback(() => {
     if (!imgRef.current || !workspaceContainerRef.current) return;
     const { naturalWidth, naturalHeight } = imgRef.current;
@@ -275,10 +271,9 @@ const Workspace = (props: WorkspaceProps) => {
       setZoom(newZoom);
     }
     setPanOffset({ x: 0, y: 0 });
-  }, [imgRef, zoom, setZoom, setPanOffset]); // Dependencies updated
+  }, [imgRef, zoom, setZoom, setPanOffset]);
 
-  // Expose internal fit logic via ref
-  React.useEffect(() => {
+  useEffect(() => {
     if (fitScreenRef) {
       fitScreenRef.current = handleFitScreenInternal;
       return () => {
@@ -292,7 +287,6 @@ const Workspace = (props: WorkspaceProps) => {
   useEffect(() => {
     if (image) {
       const img = imgRef.current;
-      // Use the internal fit screen logic on load
       const onImgLoad = () => setTimeout(handleFitScreenInternal, 100); 
       if (img) {
         img.addEventListener('load', onImgLoad, { once: true });
@@ -307,30 +301,28 @@ const Workspace = (props: WorkspaceProps) => {
         setPanOffset({ x: 0, y: 0 });
       }
     }
-  }, [image, handleFitScreenInternal, imgRef, setZoom, setPanOffset]); // Dependencies updated
+  }, [image, handleFitScreenInternal, imgRef, setZoom, setPanOffset]);
   
-  // Effect to track previous brush tool when eyedropper is activated
   useEffect(() => {
     if (activeTool === 'eyedropper') {
       if (previousBrushTool === null && (props.activeTool === 'brush' || props.activeTool === 'eraser' || props.activeTool === 'selectionBrush' || props.activeTool === 'blurBrush')) {
         setPreviousBrushTool(props.activeTool);
       }
     } else if (previousBrushTool !== null && (props.activeTool !== 'brush' && props.activeTool !== 'eraser' && props.activeTool !== 'selectionBrush' && props.activeTool !== 'blurBrush')) {
-      // Clear previous brush tool if we switch to a non-eyedropper, non-brush tool
       setPreviousBrushTool(null);
     }
   }, [activeTool, props.activeTool, previousBrushTool]);
 
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!image || !imageContainerRef.current || !imageNaturalDimensions) return;
+    if (!image || !layerContainerRef.current || !imageNaturalDimensions) return;
 
     // Prioritize drawing tools
     if (activeTool === 'shape') {
       setIsDrawingShape(true);
       setShapeStartCoords({ x: e.clientX, y: e.clientY });
       setShapeCurrentCoords({ x: e.clientX, y: e.clientY });
-      e.preventDefault(); // Prevent other actions like panning
+      e.preventDefault();
       return;
     } else if (activeTool === 'gradient') {
       setIsDrawingGradient(true);
@@ -339,8 +331,6 @@ const Workspace = (props: WorkspaceProps) => {
       e.preventDefault();
       return;
     } else if ((activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush')) {
-      // LiveBrushCanvas handles its own pointer events, so we don't need to do anything here
-      // Prevent default context menu on right click for mask tools
       if (e.button === 2) e.preventDefault();
       return;
     }
@@ -371,14 +361,14 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!image || !imageContainerRef.current || !imageNaturalDimensions) return;
+    if (!image || !layerContainerRef.current || !imageNaturalDimensions) return;
 
     if (isPanning) {
       setIsPanning(false);
     } else if (isDrawingShape && shapeStartCoords && shapeCurrentCoords) {
       setIsDrawingShape(false);
 
-      const containerRect = imageContainerRef.current.getBoundingClientRect();
+      const containerRect = layerContainerRef.current.getBoundingClientRect();
       const scaleX = imageNaturalDimensions.width / containerRect.width;
       const scaleY = imageNaturalDimensions.height / containerRect.height;
 
@@ -395,7 +385,7 @@ const Workspace = (props: WorkspaceProps) => {
       const width_px = maxX_px - minX_px;
       const height_px = maxY_px - minY_px;
 
-      if (width_px > 1 && height_px > 1 && selectedShapeType) { // Ensure a minimum size
+      if (width_px > 1 && height_px > 1 && selectedShapeType) {
         const centerX_percent = ((minX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
         const centerY_percent = ((minY_px + height_px / 2) / imageNaturalDimensions.height) * 100;
         const width_percent = (width_px / imageNaturalDimensions.width) * 100;
@@ -407,14 +397,14 @@ const Workspace = (props: WorkspaceProps) => {
           width_percent,
           height_percent
         );
-        setActiveTool(null); // Deactivate shape tool after drawing
+        setActiveTool(null);
       }
       setShapeStartCoords(null);
       setShapeCurrentCoords(null);
     } else if (isDrawingGradient && gradientStartCoords && gradientCurrentCoords) {
       setIsDrawingGradient(false);
 
-      const containerRect = imageContainerRef.current.getBoundingClientRect();
+      const containerRect = layerContainerRef.current.getBoundingClientRect();
       const scaleX = imageNaturalDimensions.width / containerRect.width;
       const scaleY = imageNaturalDimensions.height / containerRect.height;
 
@@ -431,7 +421,7 @@ const Workspace = (props: WorkspaceProps) => {
       const width_px = maxX_px - minX_px;
       const height_px = maxY_px - minY_px;
 
-      if (width_px > 1 && height_px > 1) { // Ensure a minimum size
+      if (width_px > 1 && height_px > 1) {
         const centerX_percent = ((minX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
         const centerY_percent = ((minY_px + height_px / 2) / imageNaturalDimensions.height) * 100;
         const width_percent = (width_px / imageNaturalDimensions.width) * 100;
@@ -444,7 +434,6 @@ const Workspace = (props: WorkspaceProps) => {
 
         if (gradientToolState.type === 'linear') {
           gradientAngle = Math.atan2(endY_px - startY_px, endX_px - startX_px) * (180 / Math.PI);
-          // Adjust angle to be 0-360 and relative to vertical for consistency with CSS gradients
           gradientAngle = (gradientAngle + 90 + 360) % 360;
         } else if (gradientToolState.type === 'radial') {
           radialCenterX = ((startX_px + width_px / 2) / imageNaturalDimensions.width) * 100;
@@ -457,7 +446,7 @@ const Workspace = (props: WorkspaceProps) => {
           y: centerY_percent,
           width: width_percent,
           height: height_percent,
-          rotation: 0, // Gradients don't have a direct rotation property, angle handles it
+          rotation: 0,
           gradientType: gradientToolState.type,
           gradientColors: gradientToolState.colors,
           gradientStops: gradientToolState.stops,
@@ -468,7 +457,7 @@ const Workspace = (props: WorkspaceProps) => {
           gradientFeather: gradientToolState.feather,
           gradientInverted: gradientToolState.inverted,
         });
-        setActiveTool(null); // Deactivate gradient tool after drawing
+        setActiveTool(null);
       }
       setGradientStartCoords(null);
       setGradientCurrentCoords(null);
@@ -520,17 +509,16 @@ const Workspace = (props: WorkspaceProps) => {
   };
 
   const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!imageContainerRef.current || !imgRef.current || !imageNaturalDimensions) {
-      setSelectedLayer(null); // Deselect if no image or dimensions
+    if (!layerContainerRef.current || !imgRef.current || !imageNaturalDimensions) {
+      setSelectedLayer(null);
       return;
     }
 
-    // If a drawing tool is active, don't deselect layers on click
     if (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'shape' || activeTool === 'gradient' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') {
       return;
     }
 
-    const rect = imageContainerRef.current.getBoundingClientRect();
+    const rect = layerContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
 
@@ -541,21 +529,17 @@ const Workspace = (props: WorkspaceProps) => {
     const nativeClickY = clickY * scaleY;
 
     let layerClicked = false;
-    // Recursive function to check for layer clicks within groups
     const checkLayerClick = (layersToCheck: Layer[]): boolean => {
-      // Iterate in reverse order to check top-most layers first
       for (let i = layersToCheck.length - 1; i >= 0; i--) {
         const layer = layersToCheck[i];
-        if (!layer.visible || layer.type === 'image' || layer.type === 'drawing') continue; // Skip background and drawing layers for direct click selection
+        if (!layer.visible || layer.type === 'image' || layer.type === 'drawing') continue;
 
         if (layer.type === 'group' && layer.children && layer.expanded) {
-          // If it's an expanded group, check its children first
           if (checkLayerClick(layer.children)) {
-            return true; // Child layer was clicked
+            return true;
           }
         }
 
-        // For text, vector shapes, smart objects, and gradients, check if the click is within their transformed bounds
         const layerX_percent = layer.x ?? 50;
         const layerY_percent = layer.y ?? 50;
         let layerWidth_percent = layer.width ?? 10;
@@ -567,7 +551,7 @@ const Workspace = (props: WorkspaceProps) => {
         let layerHeight_px = (layerHeight_percent / 100) * imageNaturalDimensions.height;
 
         if (layer.type === 'text') {
-          const approxCharWidth = (layer.fontSize || 48) * 0.6; // Rough estimate
+          const approxCharWidth = (layer.fontSize || 48) * 0.6;
           layerWidth_px = (layer.content?.length || 1) * approxCharWidth;
           layerHeight_px = (layer.fontSize || 48) * 1.2;
         } else if (layer.type === 'smart-object' && layer.smartObjectData) {
@@ -578,7 +562,6 @@ const Workspace = (props: WorkspaceProps) => {
           layerHeight_px = (layer.height ?? 100) / 100 * imageNaturalDimensions.height;
         }
 
-        // Adjust for center origin (x,y are center for text/vector shapes/smart objects/groups/gradients)
         const minX = layerX_px - layerWidth_px / 2;
         const minY = layerY_px - layerHeight_px / 2;
         const maxX = layerX_px + layerWidth_px / 2;
@@ -587,9 +570,8 @@ const Workspace = (props: WorkspaceProps) => {
         if (nativeClickX >= minX && nativeClickX <= maxX && nativeClickY >= minY && nativeClickY <= maxY) {
           setSelectedLayer(layer.id);
           layerClicked = true;
-          e.stopPropagation(); // Prevent deselecting if a layer was clicked
+          e.stopPropagation();
           
-          // If a layer is clicked, deactivate text tool if it was active
           if (activeTool === 'text') {
             setActiveTool(null);
           }
@@ -601,15 +583,13 @@ const Workspace = (props: WorkspaceProps) => {
 
     layerClicked = checkLayerClick(layers);
 
-    // If no layer was clicked, deselect any active layer
     if (!layerClicked) {
       setSelectedLayer(null);
     }
 
-    // Handle tool-specific clicks if no layer was selected
     if (activeTool === 'text') {
       onAddTextLayer({ x: (nativeClickX / imageNaturalDimensions.width) * 100, y: (nativeClickY / imageNaturalDimensions.height) * 100 });
-      setActiveTool(null); // Deactivate text tool after adding layer
+      setActiveTool(null);
     } else if (activeTool === 'eyedropper') {
       const canvas = document.createElement('canvas');
       const img = imgRef.current;
@@ -626,9 +606,8 @@ const Workspace = (props: WorkspaceProps) => {
       
       handleColorPick(hexColor);
       
-      // Restore previous brush tool, or default to 'brush'
       setActiveTool(previousBrushTool || 'brush');
-      setPreviousBrushTool(null); // Clear stored tool
+      setPreviousBrushTool(null);
     }
   };
 
@@ -639,7 +618,6 @@ const Workspace = (props: WorkspaceProps) => {
   const isCurveSet = JSON.stringify(curves.all) !== JSON.stringify([{ x: 0, y: 0 }, { x: 255, y: 255 }]);
   const hasAdvancedEffects = effects.blur > 0 || effects.hueShift !== 0 || effects.sharpen > 0 || effects.clarity > 0;
   
-  // Check if any HSL adjustment is active to apply the SVG filter
   const isHslActive = Object.values(currentState.hslAdjustments).some(hsl => hsl.hue !== 0 || hsl.saturation !== 100 || hsl.luminance !== 0);
   
   const blurFilterUrl = (currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0) ? ' url(#selective-blur-filter)' : '';
@@ -648,18 +626,15 @@ const Workspace = (props: WorkspaceProps) => {
   const curvesFilter = isCurveSet ? ' url(#curves-filter)' : '';
   const channelFilter = areAllChannelsVisible ? '' : ' url(#channel-filter)';
   const advancedEffectsFilter = hasAdvancedEffects ? ' url(#advanced-effects-filter)' : '';
-  const hslFilter = isHslActive ? ' url(#hsl-filter)' : ''; // NEW HSL filter URL
+  const hslFilter = isHslActive ? ' url(#hsl-filter)' : '';
   
-  // Apply color mode filters
   let colorModeFilter = '';
   if (currentState.colorMode === 'Grayscale') {
     colorModeFilter = ' grayscale(1)';
   } else if (currentState.colorMode === 'CMYK') {
-    // Simple CMYK simulation: invert colors and apply a slight yellow tint
     colorModeFilter = ' invert(1) hue-rotate(180deg) sepia(0.1) saturate(1.1)';
   }
 
-  // Apply all filters, including the new blur filter and color mode filter
   const imageFilterStyle = isPreviewingOriginal ? {} : { filter: `${baseFilter}${advancedEffectsFilter}${curvesFilter}${channelFilter}${hslFilter}${blurFilterUrl}${colorModeFilter}` };
 
   const imageStyle: React.CSSProperties = { ...imageFilterStyle, visibility: isBackgroundVisible ? 'visible' : 'hidden' };
@@ -689,11 +664,11 @@ const Workspace = (props: WorkspaceProps) => {
   const cropCursor = 'crosshair';
   const shapeCursor = 'crosshair';
   const gradientCursor = 'crosshair';
-  const selectionBrushCursor = 'crosshair'; // Default for selection brush
+  const selectionBrushCursor = 'crosshair';
 
   const brushSize = brushState.size;
   const brushBorderColor = activeTool === 'eraser' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
-  const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : foregroundColor; // Use foregroundColor
+  const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : foregroundColor;
   const brushBorderWidth = 1;
 
   const dynamicBrushCursor = createBrushCursor(brushSize, brushFillColor, brushBorderColor, brushBorderWidth, brushState.shape);
@@ -705,7 +680,7 @@ const Workspace = (props: WorkspaceProps) => {
     if (isPanning) return 'grabbing';
     if (isSpaceDownRef.current) return 'grab';
 
-    if (isMouseOverImage) { // Apply tool-specific cursors only when over the image
+    if (isMouseOverImage) {
       switch (activeTool) {
         case 'lasso': return lassoCursor;
         case 'brush': return dynamicBrushCursor;
@@ -717,22 +692,21 @@ const Workspace = (props: WorkspaceProps) => {
         case 'move': return moveToolCursor;
         case 'gradient': return gradientCursor;
         case 'selectionBrush': return selectionBrushCursor;
-        case 'blurBrush': return dynamicBrushCursor; // Use dynamic brush cursor for blur brush
+        case 'blurBrush': return dynamicBrushCursor;
         default: return 'default';
       }
     }
-    return 'default'; // Default cursor when not over the image
+    return 'default';
   }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
-    // Render layers in array order (bottom layer in array is rendered first in DOM)
     return layersToRender.map((layer) => {
       if (!layer.visible) return null;
       
       const layerProps = {
         key: layer.id,
         layer: layer,
-        containerRef: imageContainerRef,
+        containerRef: layerContainerRef,
         onUpdate: onLayerUpdate,
         onCommit: onLayerCommit,
         isSelected: layer.id === selectedLayerId,
@@ -773,8 +747,8 @@ const Workspace = (props: WorkspaceProps) => {
           <GroupLayer
             {...layerProps}
             parentDimensions={imageNaturalDimensions}
-            renderChildren={renderWorkspaceLayers} // Pass recursive renderer
-            globalSelectedLayerId={selectedLayerId} // Pass global selected ID
+            renderChildren={renderWorkspaceLayers}
+            globalSelectedLayerId={selectedLayerId}
           />
         );
       }
@@ -788,7 +762,6 @@ const Workspace = (props: WorkspaceProps) => {
       className={cn(
         "flex items-center justify-center h-full w-full bg-muted/20 rounded-lg relative transition-all overflow-hidden",
         isDragging && "border-2 border-dashed border-primary ring-4 ring-primary/20",
-        // Apply cursor-none only when mouse is over image and tool is active
         (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') && isMouseOverImage && 'cursor-none',
       )}
       style={{ 
@@ -808,8 +781,8 @@ const Workspace = (props: WorkspaceProps) => {
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />
       <EffectsFilters effects={effects} />
-      <HslFilter hslAdjustments={currentState.hslAdjustments} /> {/* NEW HSL Filter */}
-      {currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0 && ( // NEW: Render selective blur filter definition
+      <HslFilter hslAdjustments={currentState.hslAdjustments} />
+      {currentState.selectiveBlurMask && currentState.selectiveBlurAmount > 0 && (
         <SelectiveBlurFilter
           maskDataUrl={currentState.selectiveBlurMask}
           blurAmount={currentState.selectiveBlurAmount}
@@ -825,8 +798,12 @@ const Workspace = (props: WorkspaceProps) => {
       {image ? (
         <>
           <div 
-            className="transition-transform duration-200" 
-            style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})` }}
+            // This div applies the zoom and pan offset
+            className="relative origin-center"
+            style={{ 
+              transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoom})`,
+              transformOrigin: 'center center',
+            }}
           >
             <div className="relative max-w-full max-h-full p-4">
               {activeTool === 'crop' && (
@@ -853,11 +830,9 @@ const Workspace = (props: WorkspaceProps) => {
                   >
                     <div style={wrapperTransformStyle}>
                       <div 
-                        ref={imageContainerRef} 
+                        ref={layerContainerRef} // This is the container for layers/canvases
                         className="relative" 
                         style={containerStyle}
-                        onMouseEnter={() => setIsMouseOverImage(true)} 
-                        onMouseLeave={() => setIsMouseOverImage(false)} 
                       >
                         <img
                           ref={imgRef}
@@ -869,9 +844,9 @@ const Workspace = (props: WorkspaceProps) => {
                           crossOrigin="anonymous"
                         />
                         
-                        {renderWorkspaceLayers(layers)} {/* Render layers bottom-to-top */}
+                        {renderWorkspaceLayers(layers)}
 
-                        {activeTool === 'lasso' && ( // Render SelectionCanvas after layers
+                        {activeTool === 'lasso' && (
                           <SelectionCanvas 
                             imageRef={imgRef}
                             selectionPath={selectionPath}
@@ -879,19 +854,18 @@ const Workspace = (props: WorkspaceProps) => {
                           />
                         )}
 
-                        {(activeTool === 'lasso' || activeTool === 'selectionBrush') && selectionMaskDataUrl && ( // Render SelectionMaskOverlay for both lasso and selectionBrush
+                        {(activeTool === 'lasso' || activeTool === 'selectionBrush') && selectionMaskDataUrl && (
                           <SelectionMaskOverlay
                             maskDataUrl={selectionMaskDataUrl}
                             imageNaturalDimensions={imageNaturalDimensions}
                           />
                         )}
 
-                        {/* Check for brush tools */}
                         {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') && (
                           <LiveBrushCanvas
                             brushState={brushState}
                             imageRef={imgRef}
-                            onDrawEnd={onDrawingStrokeEnd} // Use the dedicated drawing stroke end handler
+                            onDrawEnd={onDrawingStrokeEnd}
                             activeTool={activeTool}
                             selectedLayerId={selectedLayerId}
                             onAddDrawingLayer={onAddDrawingLayer}
@@ -903,24 +877,24 @@ const Workspace = (props: WorkspaceProps) => {
                             backgroundColor={backgroundColor}
                           />
                         )}
-                        {isDrawingShape && shapeStartCoords && shapeCurrentCoords && imageContainerRef.current && (
+                        {isDrawingShape && shapeStartCoords && shapeCurrentCoords && layerContainerRef.current && (
                           <ShapePreviewCanvas
                             start={shapeStartCoords}
                             current={shapeCurrentCoords}
                             shapeType={selectedShapeType || 'rect'}
-                            containerRect={imageContainerRef.current.getBoundingClientRect()}
+                            containerRect={layerContainerRef.current.getBoundingClientRect()}
                             imageNaturalDimensions={imageNaturalDimensions}
                             fillColor="#3B82F6"
                             strokeColor="#FFFFFF"
                             strokeWidth={2}
                           />
                         )}
-                        {isDrawingGradient && gradientStartCoords && gradientCurrentCoords && imageContainerRef.current && (
+                        {isDrawingGradient && gradientStartCoords && gradientCurrentCoords && layerContainerRef.current && (
                           <GradientPreviewCanvas
                             start={gradientStartCoords}
                             current={gradientCurrentCoords}
                             gradientToolState={gradientToolState}
-                            containerRect={imageContainerRef.current.getBoundingClientRect()}
+                            containerRect={layerContainerRef.current.getBoundingClientRect()}
                             imageNaturalDimensions={imageNaturalDimensions}
                           />
                         )}

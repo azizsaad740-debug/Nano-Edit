@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 import type { EditState, HslColorKey } from "@/types/editor";
-import { Globe } from "lucide-react";
+import { Globe, Palette } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 interface HslColorSelectorProps {
   selectedColor: HslColorKey;
   onSelect: (color: HslColorKey) => void;
+  customColor: string; // New prop for custom color hex
 }
 
 const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
@@ -17,14 +18,20 @@ const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
   { key: 'aqua', name: 'Aqua', color: '#06B6D4' },
   { key: 'blue', name: 'Blue', color: '#3B82F6' },
   { key: 'purple', name: 'Purple', color: '#A855F7' },
-  { key: 'magenta', name: 'Magenta', color: '#EC4899' },
 ];
 
-export const HslColorSelector = ({ selectedColor, onSelect }: HslColorSelectorProps) => {
+export const HslColorSelector = ({ selectedColor, onSelect, customColor }: HslColorSelectorProps) => {
+  
+  const finalColorOptions = [
+    ...colorOptions,
+    // Use 'magenta' key internally but display it as 'Custom'
+    { key: 'magenta' as HslColorKey, name: 'Custom', color: customColor },
+  ];
+
   return (
     <ScrollArea className="w-full whitespace-nowrap">
       <div className="flex space-x-2 pb-2">
-        {colorOptions.map(({ key, name, color }) => (
+        {finalColorOptions.map(({ key, name, color }) => (
           <button
             key={key}
             type="button"
@@ -44,6 +51,7 @@ export const HslColorSelector = ({ selectedColor, onSelect }: HslColorSelectorPr
               style={{ backgroundColor: key === 'global' ? 'transparent' : color }}
             >
               {key === 'global' && <Globe className="h-4 w-4 text-muted-foreground" />}
+              {key === 'magenta' && selectedColor !== 'magenta' && <Palette className="h-4 w-4 text-muted-foreground" />}
             </div>
             {name}
           </button>

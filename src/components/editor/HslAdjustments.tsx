@@ -6,6 +6,7 @@ import type { EditState, HslAdjustment, HslColorKey } from "@/types/editor";
 import { HslColorSelector } from "./HslColorSelector";
 import React from "react";
 import { cn } from "@/lib/utils";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 interface HslAdjustmentsProps {
   hslAdjustments: EditState['hslAdjustments'];
@@ -15,6 +16,7 @@ interface HslAdjustmentsProps {
 
 const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit }: HslAdjustmentsProps) => {
   const [selectedColor, setSelectedColor] = React.useState<HslColorKey>('global');
+  const [customColor, setCustomColor] = React.useState('#EC4899'); // Default magenta color for custom slot
   
   const currentAdjustment = hslAdjustments[selectedColor];
 
@@ -71,7 +73,28 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
 
   return (
     <div className="space-y-4">
-      <HslColorSelector selectedColor={selectedColor} onSelect={setSelectedColor} />
+      <HslColorSelector 
+        selectedColor={selectedColor} 
+        onSelect={setSelectedColor} 
+        customColor={customColor}
+      />
+
+      {selectedColor === 'magenta' && (
+        <div className="grid gap-2 pt-2">
+          <Label htmlFor="custom-color-picker">Custom Hue Reference</Label>
+          <div className="flex items-center gap-2">
+            <ColorPicker
+              color={customColor}
+              onChange={setCustomColor}
+              onCommit={() => {}}
+            />
+            <span className="text-sm text-muted-foreground">{customColor.toUpperCase()}</span>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            This color is used as a visual reference for the 'Custom' slot. The HSL adjustments below are applied to the 'magenta' hue range internally.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4 pt-2">
         {/* Hue Slider */}
