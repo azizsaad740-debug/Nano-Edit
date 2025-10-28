@@ -56,6 +56,9 @@ export const useEditorState = (
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [layers, setLayers] = useState<Layer[]>(initialLayerState);
+  
+  // FIX: Define selectedLayerId state here
+  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null); 
 
   // The current EditState is derived from the active history item
   const currentState: EditState = useMemo(() => {
@@ -156,8 +159,8 @@ export const useEditorState = (
     activeTool,
     layers,
     setLayers: handleLayerUpdate,
-    selectedLayerId,
-    setSelectedLayerId,
+    selectedLayerId, // Now defined
+    setSelectedLayerId, // Now defined
     history,
     currentHistoryIndex,
     foregroundColor,
@@ -774,6 +777,11 @@ export const useEditorState = (
     ...brushStateInternal,
     color: foregroundColor,
   }), [brushStateInternal, foregroundColor]);
+  
+  // FIX: Create a wrapper function for setBrushStateInternal to handle partial updates
+  const setBrushState = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
+    setBrushStateInternal(prev => ({ ...prev, ...updates }));
+  }, []);
 
   // --- Public Interface ---
   return {
@@ -859,8 +867,8 @@ export const useEditorState = (
 
     // Layer Management (from useLayers)
     layers: managedLayers,
-    selectedLayerId: managedSelectedLayerId,
-    setSelectedLayer: setSelectedLayerId,
+    selectedLayerId, // Use state variable
+    setSelectedLayer: setSelectedLayerId, // Use state setter
     updateLayer,
     commitLayerChange,
     handleLayerPropertyCommit,
@@ -904,7 +912,7 @@ export const useEditorState = (
     // Tool State
     setActiveTool,
     brushState,
-    setBrushState: setBrushStateInternal,
+    setBrushState, // Use the wrapped setter
     gradientToolState,
     setGradientToolState,
     setSelectedShapeType,
