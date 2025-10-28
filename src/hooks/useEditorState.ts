@@ -37,7 +37,7 @@ export const useEditorState = (
   // --- Core State Management ---
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(fileInfo);
   const [exifData, setExifData] = useState<any | null>(null);
   const [aspect, setAspect] = useState<number | undefined>(undefined);
   const [pendingCrop, setPendingCrop] = useState<Crop | undefined>(undefined);
@@ -51,6 +51,7 @@ export const useEditorState = (
   const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState(50);
   const [selectiveBlurMask, setSelectiveBlurMask] = useState<string | null>(null);
+  const [customHslColor, setCustomHslColor] = useState(initialEditState.customHslColor); // NEW
 
   // --- History State ---
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
@@ -73,6 +74,7 @@ export const useEditorState = (
     setLayers(newLayers);
     // Sync crop state from history
     setPendingCrop(newHistory[newIndex].state.crop);
+    setCustomHslColor(newHistory[newIndex].state.customHslColor); // Sync custom color
   }, []);
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
@@ -88,10 +90,11 @@ export const useEditorState = (
   const recordHistory = useCallback((name: string, state: EditState, layers: Layer[]) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     const newHistoryIndex = newHistory.length;
-    const newHistoryItem: HistoryItem = { name, state: deepCloneState(state), layers: JSON.parse(JSON.stringify(layers)) };
+    const stateToRecord = deepCloneState({ ...state, customHslColor }); // Include customHslColor
+    const newHistoryItem: HistoryItem = { name, state: stateToRecord, layers: JSON.parse(JSON.stringify(layers)) };
     setHistory([...newHistory, newHistoryItem]);
     setCurrentHistoryIndex(newHistoryIndex);
-  }, [history, currentHistoryIndex]);
+  }, [history, currentHistoryIndex, customHslColor]);
 
   // --- Layer Management Hook Integration ---
   const handleLayerUpdate = useCallback((newLayersOrUpdater: Layer[] | ((prev: Layer[]) => Layer[]), historyName?: string) => {
@@ -232,6 +235,7 @@ export const useEditorState = (
     setCurrentHistoryIndex(0);
     setLayers(initialLayerState);
     setSelectedLayerId(null);
+    setCustomHslColor(initialEditState.customHslColor); // RESET CUSTOM HSL COLOR
   }, [setSelectedLayerId]);
 
   const handleFileSelect = useCallback(async (file: File, importInSameProject: boolean) => {
@@ -445,6 +449,7 @@ export const useEditorState = (
       setSelectedLayerId(null);
       setSelectionPath(null);
       setSelectionMaskDataUrl(null);
+      setCustomHslColor(lastState.customHslColor || initialEditState.customHslColor); // Load custom color
 
       dismissToast(toastId);
       showSuccess(`Project "${projectData.fileInfo?.name}" loaded successfully.`);
@@ -497,7 +502,7 @@ export const useEditorState = (
     const newChannels = { ...currentState.channels, [channel]: value };
     updateCurrentState({ channels: newChannels });
     recordHistory(`Toggle Channel ${channel.toUpperCase()}`, { ...currentState, channels: newChannels }, layers);
-  }, [currentState, layers, recordHistory, updateCurrentState]);
+  }, [currentState.channels, layers, recordHistory, updateCurrentState]);
 
   const handleCurvesChange = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
     updateCurrentState({ curves: { ...currentState.curves, [channel]: points } });
@@ -803,6 +808,8 @@ export const useEditorState = (
     selectionMaskDataUrl,
     selectiveBlurAmount,
     selectiveBlurMask,
+    customHslColor, // NEW
+    setCustomHslColor, // NEW
 
     // Project/File actions
     handleFileSelect,

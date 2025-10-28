@@ -22,6 +22,7 @@ interface GroupLayerProps {
   activeTool: ActiveTool | null;
   renderChildren: (layers: Layer[]) => React.ReactNode; // Function to recursively render children
   globalSelectedLayerId: string | null; // New prop to track global selection
+  zoom: number; // NEW
 }
 
 const GroupLayer = ({
@@ -34,6 +35,7 @@ const GroupLayer = ({
   activeTool,
   renderChildren,
   globalSelectedLayerId, // Destructure new prop
+  zoom, // NEW
 }: GroupLayerProps) => {
   const {
     layerRef,
@@ -49,6 +51,7 @@ const GroupLayer = ({
     parentDimensions,
     activeTool,
     isSelected,
+    zoom, // PASS ZOOM
   });
 
   if (!layer.visible || layer.type !== "group" || !layer.children || !parentDimensions) return null;
@@ -117,6 +120,7 @@ const GroupLayer = ({
               },
               isSelected: globalSelectedLayerId === child.id, // Use globalSelectedLayerId for highlighting
               activeTool: activeTool,
+              zoom: zoom, // PASS ZOOM
             };
 
             if (!child.visible) return null;

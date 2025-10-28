@@ -335,8 +335,8 @@ const Workspace = (props: WorkspaceProps) => {
       return;
     }
 
-    // Then handle panning if no drawing tool is active
-    if ((isSpaceDownRef.current || e.button === 1 || activeTool === 'move')) {
+    // Panning override using Spacebar or Middle Mouse Button (e.button === 1)
+    if (isSpaceDownRef.current || e.button === 1) {
       e.preventDefault();
       setIsPanning(true);
       panStartRef.current = { x: e.clientX - panOffset.x, y: e.clientY - panOffset.y };
@@ -666,7 +666,7 @@ const Workspace = (props: WorkspaceProps) => {
   const gradientCursor = 'crosshair';
   const selectionBrushCursor = 'crosshair';
 
-  const brushSize = brushState.size;
+  const brushSize = brushState.size * zoom; // Scale brush size by zoom for visual cursor
   const brushBorderColor = activeTool === 'eraser' ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.8)';
   const brushFillColor = activeTool === 'eraser' ? 'rgba(255,255,255,0.1)' : foregroundColor;
   const brushBorderWidth = 1;
@@ -697,7 +697,7 @@ const Workspace = (props: WorkspaceProps) => {
       }
     }
     return 'default';
-  }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape]);
+  }, [image, isPanning, isSpaceDownRef, isMouseOverImage, activeTool, lassoCursor, dynamicBrushCursor, dynamicEraserCursor, textCursor, cropCursor, eyedropperCursor, shapeCursor, moveToolCursor, gradientCursor, selectionBrushCursor, brushState.shape, zoom]);
 
   const renderWorkspaceLayers = (layersToRender: Layer[]) => {
     return layersToRender.map((layer) => {
@@ -711,6 +711,7 @@ const Workspace = (props: WorkspaceProps) => {
         onCommit: onLayerCommit,
         isSelected: layer.id === selectedLayerId,
         activeTool: activeTool,
+        zoom: zoom, // PASS ZOOM HERE
       };
 
       if (layer.type === 'text') {
@@ -749,6 +750,7 @@ const Workspace = (props: WorkspaceProps) => {
             parentDimensions={imageNaturalDimensions}
             renderChildren={renderWorkspaceLayers}
             globalSelectedLayerId={selectedLayerId}
+            zoom={zoom} // PASS ZOOM HERE
           />
         );
       }
@@ -777,6 +779,8 @@ const Workspace = (props: WorkspaceProps) => {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
+      onMouseEnter={() => setIsMouseOverImage(true)}
+      onMouseLeave={() => setIsMouseOverImage(false)}
     >
       <ChannelFilter channels={channels} />
       <CurvesFilter curves={curves} />

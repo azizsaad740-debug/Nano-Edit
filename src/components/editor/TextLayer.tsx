@@ -14,9 +14,10 @@ interface TextLayerProps {
   onCommit: (id: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
+  zoom: number; // NEW
 }
 
-export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool }: TextLayerProps) => {
+export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: TextLayerProps) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     type: "text",
     activeTool,
     isSelected,
+    zoom, // PASS ZOOM
   });
 
   // Editing logic

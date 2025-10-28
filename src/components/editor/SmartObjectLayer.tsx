@@ -16,6 +16,7 @@ interface SmartObjectLayerProps {
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
+  zoom: number; // NEW
 }
 
 export const SmartObjectLayer = ({
@@ -26,6 +27,7 @@ export const SmartObjectLayer = ({
   isSelected,
   parentDimensions,
   activeTool,
+  zoom, // NEW
 }: SmartObjectLayerProps) => {
   const [renderedDataUrl, setRenderedDataUrl] = React.useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export const SmartObjectLayer = ({
     parentDimensions,
     activeTool,
     isSelected,
+    zoom, // PASS ZOOM
   });
 
   // Render the smart object's content to a canvas

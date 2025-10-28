@@ -13,6 +13,7 @@ interface UseLayerTransformProps {
   parentDimensions?: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
   isSelected: boolean;
+  zoom: number; // NEW
 }
 
 export const useLayerTransform = ({
@@ -25,6 +26,7 @@ export const useLayerTransform = ({
   parentDimensions,
   activeTool,
   isSelected,
+  zoom, // NEW
 }: UseLayerTransformProps) => {
   const layerRef = React.useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = React.useState(false);
@@ -68,14 +70,15 @@ export const useLayerTransform = ({
     const dx = e.clientX - dragStartPos.current.x;
     const dy = e.clientY - dragStartPos.current.y;
 
-    const dxPercent = (dx / containerRect.width) * 100;
-    const dyPercent = (dy / containerRect.height) * 100;
+    // FIX: Divide screen delta by zoom factor to get movement relative to the unscaled container.
+    const dxPercent = (dx / zoom / containerRect.width) * 100;
+    const dyPercent = (dy / zoom / containerRect.height) * 100;
 
     onUpdate(layer.id, {
       x: dragStartPos.current.initialX + dxPercent,
       y: dragStartPos.current.initialY + dyPercent,
     });
-  }, [isDragging, containerRef, layer.id, onUpdate]);
+  }, [isDragging, containerRef, layer.id, onUpdate, zoom]);
 
   const handleDragMouseUp = React.useCallback(() => {
     if (isDragging) {
@@ -104,10 +107,9 @@ export const useLayerTransform = ({
     const dx = e.clientX - pointDragStartInfo.current.x;
     const dy = e.clientY - pointDragStartInfo.current.y;
 
-    // Calculate movement relative to the layer's current size (which is defined by layer.width/height in %)
-    // We need to convert pixel movement (dx, dy) into percentage movement relative to the layer's bounding box (0-100)
-    const dxPercent = (dx / layerRect.width) * 100;
-    const dyPercent = (dy / layerRect.height) * 100;
+    // FIX: Divide screen delta by zoom factor to get movement relative to the unscaled layer.
+    const dxPercent = (dx / zoom / layerRect.width) * 100;
+    const dyPercent = (dy / zoom / layerRect.height) * 100;
 
     const newPoints = pointDragStartInfo.current.initialPoints.map((p, i) => {
       if (i === isDraggingPoint) {
@@ -124,7 +126,7 @@ export const useLayerTransform = ({
     });
 
     onUpdate(layer.id, { points: newPoints });
-  }, [isDraggingPoint, layer.id, layer.points, onUpdate, type]);
+  }, [isDraggingPoint, layer.id, layer.points, onUpdate, type, zoom]);
 
   const handlePointDragMouseUp = React.useCallback(() => {
     if (isDraggingPoint !== null) {
@@ -175,8 +177,12 @@ export const useLayerTransform = ({
     const dx = e.clientX - resizeStartInfo.current.x;
     const dy = e.clientY - resizeStartInfo.current.y;
 
-    const dxPercent = (dx / containerRect.width) * 100;
-    const dyPercent = (dy / containerRect.height) * 100;
+    // FIX: Divide screen delta by zoom factor
+    const dxCorrected = dx / zoom;
+    const dyCorrected = dy / zoom;
+
+    const dxPercent = (dxCorrected / containerRect.width) * 100;
+    const dyPercent = (dyCorrected / containerRect.height) * 100;
 
     let newWidth = resizeStartInfo.current.initialWidth;
     let newHeight = resizeStartInfo.current.initialHeight;
@@ -187,10 +193,10 @@ export const useLayerTransform = ({
       // For text, resize changes font size
       let change = 0;
       switch (resizeStartInfo.current.handle) {
-        case "top-left": change = -(dx + dy); break;
-        case "top-right": change = dx - dy; break;
-        case "bottom-left": change = -dx + dy; break;
-        case "bottom-right": change = dx + dy; break;
+        case "top-left": change = -(dxCorrected + dyCorrected); break;
+        case "top-right": change = dxCorrected - dyCorrected; break;
+        case "bottom-left": change = -dxCorrected + dyCorrected; break;
+        case "bottom-right": change = dxCorrected + dyCorrected; break;
       }
       const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.initialHeight + (change * 0.5)));
       onUpdate(layer.id, { fontSize: newFontSize });
@@ -264,7 +270,7 @@ export const useLayerTransform = ({
         y: newY,
       });
     }
-  }, [isResizing, containerRef, layer.id, onUpdate, type, smartObjectData]);
+  }, [isResizing, containerRef, layer.id, onUpdate, type, smartObjectData, zoom]);
 
   const handleResizeMouseUp = React.useCallback(() => {
     if (isResizing) {

@@ -12,11 +12,12 @@ interface HslAdjustmentsProps {
   hslAdjustments: EditState['hslAdjustments'];
   onAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
   onAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  customColor: string; // NEW
+  setCustomColor: (color: string) => void; // NEW
 }
 
-const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit }: HslAdjustmentsProps) => {
+const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit, customColor, setCustomColor }: HslAdjustmentsProps) => {
   const [selectedColor, setSelectedColor] = React.useState<HslColorKey>('global');
-  const [customColor, setCustomColor] = React.useState('#EC4899'); // Default magenta color for custom slot
   
   const currentAdjustment = hslAdjustments[selectedColor];
 
@@ -86,7 +87,7 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
             <ColorPicker
               color={customColor}
               onChange={setCustomColor}
-              onCommit={() => {}}
+              onCommit={() => onAdjustmentCommit('magenta', 'hue', currentAdjustment.hue)} // Commit when color changes
             />
             <span className="text-sm text-muted-foreground">{customColor.toUpperCase()}</span>
           </div>
@@ -131,8 +132,11 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
         )}
       </div>
       
-      <p className="text-xs text-muted-foreground pt-2">
-        Note: Per-color HSL adjustments are currently applied globally using the selected color's settings. Full per-color masking is not yet implemented.
+      <p className={cn("text-xs pt-2", selectedColor !== 'global' ? 'text-orange-500' : 'text-muted-foreground')}>
+        {selectedColor !== 'global' 
+          ? "Warning: Per-color adjustments are currently applied globally due to filter limitations. Only the 'Global' channel is fully supported by the current filter implementation."
+          : "Adjustments are applied globally via SVG filters."
+        }
       </p>
     </div>
   );

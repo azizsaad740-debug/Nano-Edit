@@ -127,6 +127,8 @@ interface SidebarProps {
   activeTool: ActiveTool | null;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
+  customHslColor: string; // NEW
+  setCustomHslColor: (color: string) => void; // NEW
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -160,6 +162,8 @@ const Sidebar = (props: SidebarProps) => {
     gradientPresets: [], // Placeholder, actual presets are managed in Index.tsx
     onSaveGradientPreset: () => {},
     onDeleteGradientPreset: () => {},
+    customHslColor: props.customHslColor, // NEW
+    setCustomHslColor: props.setCustomHslColor, // NEW
     // Layers Panel Props
     layers: props.layers,
     selectedLayerId: props.selectedLayerId,
@@ -253,6 +257,8 @@ const Sidebar = (props: SidebarProps) => {
     onFramePropertyChange: props.onFramePropertyChange,
     onFramePropertyCommit: props.onFramePropertyCommit,
     imgRef: props.imgRef,
+    customHslColor: props.customHslColor, // NEW
+    setCustomHslColor: props.setCustomHslColor, // NEW
   };
 
   return (

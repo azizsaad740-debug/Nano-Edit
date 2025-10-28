@@ -203,6 +203,8 @@ const Index = () => {
     handleDrawingStrokeEnd,
     loadImageData,
     invertLayerMask,
+    customHslColor, // NEW
+    setCustomHslColor, // NEW
   } = editorState;
 
   // --- Local Functions ---
@@ -444,6 +446,9 @@ const Index = () => {
     // New functions for PropertiesPanel compatibility
     onLayerUpdate: updateLayer, // (id, updates) => void
     onLayerCommit: commitTemporaryLayerChange, // (id, name) => void
+    // HSL Custom Color
+    customHslColor, // NEW
+    setCustomHslColor, // NEW
   };
 
   const handleProjectSettingsUpdate = (updates: { width?: number; height?: number; colorMode?: 'RGB' | 'CMYK' | 'Grayscale' }) => {
@@ -508,6 +513,8 @@ const Index = () => {
     onFramePropertyChange: sidebarProps.onFramePropertyChange,
     onFramePropertyCommit: sidebarProps.onFramePropertyCommit,
     imgRef: sidebarProps.imgRef,
+    customHslColor: sidebarProps.customHslColor, // NEW
+    setCustomHslColor: sidebarProps.setCustomHslColor, // NEW
   };
 
   

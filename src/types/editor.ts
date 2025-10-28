@@ -227,6 +227,7 @@ export interface EditState {
   colorMode: 'RGB' | 'CMYK' | 'Grayscale';
   selectiveBlurMask: string | null; // Data URL of the mask for selective blur
   selectiveBlurAmount: number; // 0 to 100 (max blur strength)
+  customHslColor: string; // NEW
 }
 
 export interface BrushState {
@@ -294,6 +295,7 @@ export const initialEditState: EditState = {
   colorMode: 'RGB',
   selectiveBlurMask: null,
   selectiveBlurAmount: 50,
+  customHslColor: '#EC4899', // NEW default
 };
 
 export const initialLayerState: Layer[] = [

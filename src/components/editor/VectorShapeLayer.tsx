@@ -14,9 +14,10 @@ interface VectorShapeLayerProps {
   onCommit: (id: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
+  zoom: number; // NEW
 }
 
-const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool }: VectorShapeLayerProps) => {
+const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: VectorShapeLayerProps) => {
   const {
     layerRef,
     handleDragMouseDown,
@@ -32,6 +33,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     type: "vector-shape",
     activeTool,
     isSelected,
+    zoom, // PASS ZOOM
   });
 
   if (!layer.visible || layer.type !== "vector-shape") return null;
