@@ -36,7 +36,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
 
   if (!layer.visible || layer.type !== "vector-shape") return null;
 
-  const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points } = layer;
+  const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points, starPoints, lineThickness } = layer;
 
   const defaultWidth = 10; // Default percentage width
   const defaultHeight = 10; // Default percentage height
@@ -45,7 +45,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
   const currentHeight = height ?? defaultHeight;
 
   const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
-  const isPointEditable = isSelected && (shapeType === 'polygon' || shapeType === 'triangle');
+  const isPointEditable = isSelected && (shapeType === 'polygon' || shapeType === 'triangle' || shapeType === 'custom');
 
   const style: React.CSSProperties = {
     left: `${x ?? 50}%`,
@@ -74,9 +74,65 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
         return <circle cx="50%" cy="50%" r="50%" />;
       case "triangle":
       case "polygon":
+      case "custom":
         const polygonPoints = points || [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}];
         const svgPoints = polygonPoints.map(p => `${p.x}% ${p.y}%`).join(" ");
         return <polygon points={svgPoints} />;
+      case "star":
+        const numPoints = starPoints || 5;
+        const outerRadius = 50;
+        const innerRadius = outerRadius / 2.5;
+        const starPath: Point[] = [];
+        
+        for (let i = 0; i < numPoints * 2; i++) {
+          const radius = i % 2 === 0 ? outerRadius : innerRadius;
+          const angle = (Math.PI / numPoints) * i;
+          const x = 50 + radius * Math.sin(angle);
+          const y = 50 - radius * Math.cos(angle);
+          starPath.push({ x, y });
+        }
+        
+        const starSvgPoints = starPath.map(p => `${p.x}% ${p.y}%`).join(" ");
+        return <polygon points={starSvgPoints} />;
+        
+      case "line":
+        // Line is drawn from (0, 50%) to (100%, 50%) relative to the bounding box
+        // We use strokeLinecap="round" to make it look like a thick line
+        return (
+          <line 
+            x1="0%" 
+            y1="50%" 
+            x2="100%" 
+            y2="50%" 
+            stroke={strokeColor || "currentColor"} 
+            strokeWidth={lineThickness || 5} 
+            strokeLinecap="round"
+            fill="none"
+          />
+        );
+      case "arrow":
+        // Simple arrow path (stub, complex arrows require more points)
+        // Draw a line and a simple arrowhead
+        const thickness = lineThickness || 5;
+        const arrowHeadSize = thickness * 3;
+        return (
+          <g>
+            <line 
+              x1="0%" 
+              y1="50%" 
+              x2="100%" 
+              y2="50%" 
+              stroke={strokeColor || "currentColor"} 
+              strokeWidth={thickness} 
+              strokeLinecap="round"
+              fill="none"
+            />
+            <polygon 
+              points={`100,50 ${100 - arrowHeadSize},${50 - arrowHeadSize / 2} ${100 - arrowHeadSize},${50 + arrowHeadSize / 2}`}
+              fill={strokeColor || "currentColor"}
+            />
+          </g>
+        );
       default:
         return null;
     }

@@ -103,12 +103,14 @@ export interface Layer {
   backgroundColor?: string; // For 'text' background
   padding?: number; // For 'text' background padding
 
-  shapeType?: 'rect' | 'circle' | 'triangle' | 'polygon'; // For 'vector-shape'
+  shapeType?: 'rect' | 'circle' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'custom'; // For 'vector-shape'
   fillColor?: string; // For 'vector-shape'
   strokeColor?: string; // For 'vector-shape'
   strokeWidth?: number; // For 'vector-shape'
   borderRadius?: number; // For 'vector-shape' (percentage of min(width, height))
-  points?: Point[]; // For 'polygon' or 'triangle'
+  points?: Point[]; // For 'polygon', 'triangle', 'star', 'arrow', 'custom'
+  starPoints?: number; // Number of points for a star
+  lineThickness?: number; // Thickness for line/arrow (in pixels or percentage)
 
   gradientType?: 'linear' | 'radial'; // For 'gradient'
   gradientColors?: string[]; // For 'gradient'

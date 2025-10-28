@@ -18,6 +18,10 @@ import {
   Palette, // Import Palette icon for Gradient
   Paintbrush, // New icon for selection brush
   Droplet, // Icon for Blur Brush
+  Star, // NEW: Star icon
+  Minus, // NEW: Line icon
+  ArrowRight, // NEW: Arrow icon
+  PenTool, // NEW: Custom Path icon
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -70,6 +74,10 @@ const shapeSubTools: { name: string; icon: React.ElementType; type: Layer['shape
   { name: "Rectangle", icon: RectangleHorizontal, type: "rect" },
   { name: "Circle", icon: Circle, type: "circle" },
   { name: "Triangle", icon: Triangle, type: "triangle" },
+  { name: "Star", icon: Star, type: "star" }, // NEW
+  { name: "Line", icon: Minus, type: "line" }, // NEW
+  { name: "Arrow", icon: ArrowRight, type: "arrow" }, // NEW
+  { name: "Custom Path", icon: PenTool, type: "custom" }, // NEW
 ];
 
 export const ToolsPanel = ({ 
