@@ -300,8 +300,12 @@ const Workspace = (props: WorkspaceProps) => {
         return () => img.removeEventListener('load', onImgLoad);
       }
     } else {
-      setZoom(1);
-      setPanOffset({ x: 0, y: 0 });
+      if (typeof setZoom === 'function') {
+        setZoom(1);
+      }
+      if (typeof setPanOffset === 'function') {
+        setPanOffset({ x: 0, y: 0 });
+      }
     }
   }, [image, handleFitScreenInternal, imgRef, setZoom, setPanOffset]); // Dependencies updated
   

@@ -252,9 +252,6 @@ const Index = () => {
     invertLayerMask,
   } = editorState;
 
-  // Runtime Error Fix: layers.find is not a function
-  const smartObjectToEdit = (layers || []).find(layer => layer.id === smartObjectEditingId) || null;
-
   // --- Local Functions ---
   const handleOpenProjectClick = (importInSameProject: boolean) => {
     openProjectInputRef.current?.click();
@@ -486,6 +483,7 @@ const Index = () => {
     onArrangeLayer: handleArrangeLayer,
     // Tool state
     activeTool,
+    setActiveTool,
     brushState,
     setBrushState,
     handleColorPick,
@@ -746,7 +744,7 @@ const Index = () => {
                 panOffset={panOffset}
                 setPanOffset={setPanOffset}
                 onZoomIn={handleZoomIn}
-                onZoomOut={handleZoomOut}
+                onZoomOut={onZoomOut}
                 onFitScreen={handleFitScreen}
                 fitScreenRef={fitScreenRef}
               />

@@ -214,13 +214,13 @@ const Sidebar = (props: SidebarProps) => {
     onLayerPropertyCommit: props.onLayerPropertyCommit,
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
-    addTextLayer: props.addTextLayer,
-    addDrawingLayer: props.addDrawingLayer,
-    onAddLayerFromBackground: props.onAddLayerFromBackground,
-    onLayerFromSelection: props.onLayerFromSelection,
-    addShapeLayer: props.addShapeLayer,
-    addGradientLayer: props.addGradientLayer,
-    onAddAdjustmentLayer: props.onAddAdjustmentLayer,
+    addTextLayer: props.addTextLayer, // ADDED
+    addDrawingLayer: props.addDrawingLayer, // ADDED
+    onAddLayerFromBackground: props.onAddLayerFromBackground, // ADDED
+    onLayerFromSelection: props.onLayerFromSelection, // ADDED
+    onAddShapeLayer: props.addShapeLayer, // ADDED
+    onAddGradientLayer: props.addGradientLayer, // ADDED
+    onAddAdjustmentLayer: props.onAddAdjustmentLayer, // ADDED
     selectedShapeType: props.selectedShapeType,
     groupLayers: props.groupLayers,
     toggleGroupExpanded: props.toggleGroupExpanded,
