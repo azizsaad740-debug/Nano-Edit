@@ -5,6 +5,7 @@ import { Layer, GradientToolState } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import GradientLayerProperties from "./GradientLayerProperties"; // Import the renamed component
 
 interface GradientOptionsProps {
   layer: Layer;
@@ -21,6 +22,8 @@ export const GradientOptions: React.FC<GradientOptionsProps> = ({
   layer,
   onLayerUpdate,
   onLayerCommit,
+  // The following props are for tool defaults/presets, not layer editing, 
+  // but we keep them in the interface for consistency if needed later.
   gradientToolState,
   setGradientToolState,
   gradientPresets,
@@ -32,16 +35,19 @@ export const GradientOptions: React.FC<GradientOptionsProps> = ({
   if (!isGradient) return null;
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-base">Gradient Properties</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Controls for gradient layers will appear here.
-        </p>
-        <Button size="sm" disabled>Edit Gradient</Button>
-      </CardContent>
-    </Card>
+    <div className="space-y-4">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="text-base">Gradient Properties</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <GradientLayerProperties
+            layer={layer}
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 };

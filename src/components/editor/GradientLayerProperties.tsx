@@ -17,28 +17,28 @@ import { Button } from "@/components/ui/button";
 import { Plus, Minus, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 
-interface GradientPropertiesProps {
+interface GradientLayerPropertiesProps {
   layer: Layer;
-  onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onUpdate: (updates: Partial<Layer>) => void;
+  onCommit: (historyName: string) => void;
 }
 
-const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesProps) => {
+const GradientLayerProperties = ({ layer, onUpdate, onCommit }: GradientLayerPropertiesProps) => {
   if (!layer || layer.type !== 'gradient') {
     return <p className="text-sm text-muted-foreground">Select a gradient layer to edit its properties.</p>;
   }
 
   const handleUpdate = (updates: Partial<Layer>) => {
-    onUpdate(layer.id, updates);
+    onUpdate(updates);
   };
 
-  const handleCommit = () => {
-    onCommit(layer.id);
+  const handleCommit = (name: string) => {
+    onCommit(name);
   };
 
   const handleGradientTypeChange = (newType: Layer['gradientType']) => {
     handleUpdate({ gradientType: newType });
-    handleCommit();
+    handleCommit(`Change Gradient Type to ${newType}`);
   };
 
   const handleColorChange = (index: number, newColor: string) => {
@@ -62,7 +62,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
     newStops.splice(newStops.length - 1, 0, 0.5); // Middle stop
     
     handleUpdate({ gradientColors: newColors, gradientStops: newStops });
-    handleCommit();
+    handleCommit("Add Gradient Color Stop");
   };
 
   const handleRemoveColor = (index: number) => {
@@ -70,29 +70,33 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
     const newColors = (layer.gradientColors || []).filter((_, i) => i !== index);
     const newStops = (layer.gradientStops || []).filter((_, i) => i !== index);
     handleUpdate({ gradientColors: newColors, gradientStops: newStops });
-    handleCommit();
+    handleCommit("Remove Gradient Color Stop");
   };
 
   const handleAngleChange = (newAngle: number) => {
     handleUpdate({ gradientAngle: newAngle });
   };
 
+  const handleAngleCommit = (newAngle: number) => {
+    handleCommit(`Set Gradient Angle to ${newAngle}°`);
+  };
+
   const handleInvertChange = (inverted: boolean) => {
     handleUpdate({ gradientInverted: inverted });
-    handleCommit();
+    handleCommit(inverted ? "Invert Gradient" : "Uninvert Gradient");
   };
 
   const handleFeatherChange = (newFeather: number) => {
     handleUpdate({ gradientFeather: newFeather });
   };
 
-  const handleFeatherCommit = () => {
-    handleCommit();
+  const handleFeatherCommit = (newFeather: number) => {
+    handleCommit(`Set Gradient Feather to ${newFeather}%`);
   };
 
   const handleResetFeather = () => {
     handleUpdate({ gradientFeather: 0 });
-    handleCommit();
+    handleCommit("Reset Gradient Feather");
   };
 
   const handleRadialCenterChange = (axis: 'x' | 'y', value: number) => {
@@ -100,8 +104,24 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
     else handleUpdate({ gradientCenterY: value });
   };
 
+  const handleRadialCenterCommit = (axis: 'x' | 'y', value: number) => {
+    handleCommit(`Set Radial Center ${axis.toUpperCase()} to ${value}%`);
+  };
+
   const handleRadialRadiusChange = (value: number) => {
     handleUpdate({ gradientRadius: value });
+  };
+
+  const handleRadialRadiusCommit = (value: number) => {
+    handleCommit(`Set Radial Radius to ${value}%`);
+  };
+
+  const handleDimensionChange = (key: 'width' | 'height' | 'x' | 'y' | 'rotation', value: number) => {
+    handleUpdate({ [key]: value });
+  };
+
+  const handleDimensionCommit = (key: 'width' | 'height' | 'x' | 'y' | 'rotation', value: number) => {
+    handleCommit(`Change Layer ${key}`);
   };
 
   return (
@@ -132,7 +152,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                 className="p-1 h-10 w-12"
                 value={color}
                 onChange={(e) => handleColorChange(index, e.target.value)}
-                onBlur={handleCommit}
+                onBlur={() => handleCommit("Change Gradient Color")}
               />
               <Slider
                 min={0}
@@ -140,7 +160,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                 step={1}
                 value={[((layer.gradientStops?.[index] ?? index / ((layer.gradientColors?.length || 1) - 1)) * 100)]}
                 onValueChange={([v]) => handleStopChange(index, v)}
-                onValueCommit={handleCommit}
+                onValueCommit={() => handleCommit("Change Gradient Stop Position")}
                 className="flex-1"
               />
               <span className="w-10 text-right text-sm text-muted-foreground">{Math.round((layer.gradientStops?.[index] ?? index / ((layer.gradientColors?.length || 1) - 1)) * 100)}%</span>
@@ -170,7 +190,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
             step={1}
             value={[layer.gradientAngle || 90]}
             onValueChange={([v]) => handleAngleChange(v)}
-            onValueCommit={handleCommit}
+            onValueCommit={([v]) => handleAngleCommit(v)}
           />
         </div>
       )}
@@ -190,7 +210,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                 step={1}
                 value={[layer.gradientCenterX || 50]}
                 onValueChange={([v]) => handleRadialCenterChange('x', v)}
-                onValueCommit={handleCommit}
+                onValueCommit={([v]) => handleRadialCenterCommit('x', v)}
               />
             </div>
             <div className="grid gap-2">
@@ -205,7 +225,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                 step={1}
                 value={[layer.gradientCenterY || 50]}
                 onValueChange={([v]) => handleRadialCenterChange('y', v)}
-                onValueCommit={handleCommit}
+                onValueCommit={([v]) => handleRadialCenterCommit('y', v)}
               />
             </div>
           </div>
@@ -221,7 +241,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
               step={1}
               value={[layer.gradientRadius || 50]}
               onValueChange={([v]) => handleRadialRadiusChange(v)}
-              onValueCommit={handleCommit}
+              onValueCommit={([v]) => handleRadialRadiusCommit(v)}
             />
           </div>
         </div>
@@ -254,7 +274,7 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
           step={1}
           value={[layer.gradientFeather || 0]}
           onValueChange={([v]) => handleFeatherChange(v)}
-          onValueCommit={handleFeatherCommit}
+          onValueCommit={([v]) => handleFeatherCommit(v)}
         />
       </div>
 
@@ -274,8 +294,8 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                   max={100}
                   step={0.1}
                   value={[layer.width || 100]}
-                  onValueChange={([v]) => handleUpdate({ width: v })}
-                  onValueCommit={handleCommit}
+                  onValueChange={([v]) => handleDimensionChange("width", v)}
+                  onValueCommit={([v]) => handleDimensionCommit("width", v)}
                 />
               </div>
               <div className="grid gap-2">
@@ -289,8 +309,8 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                   max={100}
                   step={0.1}
                   value={[layer.height || 100]}
-                  onValueChange={([v]) => handleUpdate({ height: v })}
-                  onValueCommit={handleCommit}
+                  onValueChange={([v]) => handleDimensionChange("height", v)}
+                  onValueCommit={([v]) => handleDimensionCommit("height", v)}
                 />
               </div>
             </div>
@@ -306,8 +326,8 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                   max={100}
                   step={0.1}
                   value={[layer.x || 50]}
-                  onValueChange={([v]) => handleUpdate({ x: v })}
-                  onValueCommit={handleCommit}
+                  onValueChange={([v]) => handleDimensionChange("x", v)}
+                  onValueCommit={([v]) => handleDimensionCommit("x", v)}
                 />
               </div>
               <div className="grid gap-2">
@@ -321,8 +341,8 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                   max={100}
                   step={0.1}
                   value={[layer.y || 50]}
-                  onValueChange={([v]) => handleUpdate({ y: v })}
-                  onValueCommit={handleCommit}
+                  onValueChange={([v]) => handleDimensionChange("y", v)}
+                  onValueCommit={([v]) => handleDimensionCommit("y", v)}
                 />
               </div>
             </div>
@@ -337,8 +357,8 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
                 max={180}
                 step={1}
                 value={[layer.rotation || 0]}
-                onValueChange={([v]) => handleUpdate({ rotation: v })}
-                onValueCommit={handleCommit}
+                onValueChange={([v]) => handleDimensionChange("rotation", v)}
+                onValueCommit={([v]) => handleDimensionCommit("rotation", v)}
               />
             </div>
           </AccordionContent>
@@ -348,4 +368,4 @@ const GradientProperties = ({ layer, onUpdate, onCommit }: GradientPropertiesPro
   );
 };
 
-export default GradientProperties;
+export default GradientLayerProperties;
