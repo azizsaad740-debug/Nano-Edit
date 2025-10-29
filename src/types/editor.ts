@@ -1,6 +1,6 @@
 export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush";
 
-export interface Dimensions { // Added Dimensions
+export interface Dimensions {
   width: number;
   height: number;
 }

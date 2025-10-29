@@ -243,6 +243,10 @@ export const Index = () => {
     selectedShapeType,
     selectionMaskDataUrl,
     clearSelectionState,
+    selectiveBlurAmount,
+    setSelectiveBlurAmount,
+    customHslColor,
+    setCustomHslColor,
   });
 
   // --- Individual Adjustment Hooks (for Global Adjustments Panel) ---
@@ -429,7 +433,7 @@ export const Index = () => {
       return null;
     }
     if (layer.type === 'text') {
-      return <TextLayer {...layerProps} systemFonts={systemFonts} customFonts={customFonts} />;
+      return <TextLayer {...layerProps} />;
     }
     if (layer.type === 'drawing') {
       return <DrawingLayer {...layerProps} />;
@@ -456,36 +460,6 @@ export const Index = () => {
     }
     return null;
   };
-
-  // --- Main JSX Return ---
-
-  // If Smart Object Editor is open, render it instead of the main editor
-  if (isSmartObjectEditorOpen && smartObjectEditingId) {
-    const smartObjectLayer = layers.find(l => l.id === smartObjectEditingId);
-    if (smartObjectLayer && smartObjectLayer.type === 'smart-object' && smartObjectLayer.smartObjectData) {
-      return (
-        <SmartObjectEditor
-          layer={smartObjectLayer}
-          onClose={closeSmartObjectEditor}
-          onSave={saveSmartObjectChanges}
-          foregroundColor={foregroundColor}
-          backgroundColor={backgroundColor}
-          selectedShapeType={selectedShapeType}
-          brushState={brushState}
-          gradientToolState={gradientToolState}
-          setBrushState={setBrushState}
-          setGradientToolState={setGradientToolState}
-          setActiveTool={setActiveTool}
-          setSelectedShapeType={setSelectedShapeType}
-          zoom={zoom}
-          setZoom={setZoom}
-          handleZoomIn={handleZoomIn}
-          handleZoomOut={handleZoomOut}
-          handleFitScreen={handleFitScreen}
-        />
-      );
-    }
-  }
 
   const selectedLayer = layers.find(l => l.id === selectedLayerId);
 
