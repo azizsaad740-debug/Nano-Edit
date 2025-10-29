@@ -1,17 +1,34 @@
 "use client";
 
 import * as React from "react";
-import { TabsContent } from "@/components/ui/tabs"; // FIX 56, 64
-import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
+import { TabsContent } from "@/components/ui/tabs";
+import type { Layer, ActiveTool, BrushState, GradientToolState, EditState, HslAdjustment } from "@/types/editor";
 import { TextOptions } from "./TextOptions";
-import { AdjustmentOptions } from "./AdjustmentOptions"; // FIX 57
-// ... (other imports)
+import { AdjustmentOptions } from "./AdjustmentOptions";
+import LayerGeneralProperties from "./LayerGeneralProperties";
+import ShapeOptions from "./ShapeOptions";
+import GradientOptions from "./GradientOptions";
+import MaskProperties from "./MaskProperties";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { GradientPreset } from "@/hooks/useGradientPresets";
 
-// Assuming PropertiesPanel is a functional component:
+type HslColorKey = keyof EditState['hslAdjustments'];
+
 interface PropertiesPanelProps {
-  // ... (all existing props)
-  customHslColor: string; // Added in previous turn
-  setCustomHslColor: (color: string) => void; // Added in previous turn
+  selectedLayer: Layer | undefined;
+  imgRef: React.RefObject<HTMLImageElement>;
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
+  onLayerCommit: (id: string, historyName: string) => void;
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
+  gradientToolState: GradientToolState;
+  setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
+  gradientPresets: GradientPreset[];
+  onSaveGradientPreset: (name: string, state: GradientToolState) => void;
+  onDeleteGradientPreset: (name: string) => void;
+  customHslColor: string;
+  setCustomHslColor: (color: string) => void;
 }
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
@@ -30,20 +47,79 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
     }
   };
 
-  // ... (rest of the component logic)
+  if (!selectedLayer) return null;
 
-  // ... (around line 231)
-  {selectedLayer?.type === 'adjustment' && (
-    <TabsContent value="adjustment" className="mt-4">
-        <AdjustmentOptions
-            layer={selectedLayer} // FIX 58
-            onLayerUpdate={handleLayerUpdate} // FIX 59
-            onLayerCommit={handleLayerCommit} // FIX 60
-            imgRef={imgRef} // FIX 61
-            customHslColor={props.customHslColor} // FIX 62
-            setCustomHslColor={props.setCustomHslColor} // FIX 63
+  const isTextLayer = selectedLayer.type === 'text';
+  const isShapeLayer = selectedLayer.type === 'vector-shape';
+  const isGradientLayer = selectedLayer.type === 'gradient';
+  const isAdjustmentLayer = selectedLayer.type === 'adjustment';
+  const hasMask = !!selectedLayer.maskDataUrl;
+
+  return (
+    <TabsContent value="properties" className="w-full">
+      <div className="space-y-4">
+        {/* General Properties (Opacity, Blend Mode, Fill) */}
+        <LayerGeneralProperties
+          layer={selectedLayer}
+          onUpdate={props.onLayerUpdate}
+          onCommit={props.onLayerCommit}
         />
+
+        {/* Layer Type Specific Options */}
+        {isTextLayer && (
+          <TextOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            systemFonts={props.systemFonts}
+            customFonts={props.customFonts}
+            onOpenFontManager={props.onOpenFontManager}
+          />
+        )}
+
+        {isShapeLayer && (
+          <ShapeOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+          />
+        )}
+
+        {isGradientLayer && (
+          <GradientOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            gradientToolState={props.gradientToolState}
+            setGradientToolState={props.setGradientToolState}
+            gradientPresets={props.gradientPresets}
+            onSaveGradientPreset={props.onSaveGradientPreset}
+            onDeleteGradientPreset={props.onDeleteGradientPreset}
+          />
+        )}
+
+        {isAdjustmentLayer && (
+          <AdjustmentOptions
+            layer={selectedLayer}
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+            imgRef={imgRef}
+            customHslColor={props.customHslColor}
+            setCustomHslColor={props.setCustomHslColor}
+          />
+        )}
+
+        {/* Mask Properties */}
+        {hasMask && (
+          <MaskProperties
+            layer={selectedLayer}
+            onRemoveMask={() => {}} // Placeholder, actual logic is in useLayers
+            onInvertMask={() => {}} // Placeholder, actual logic is in useLayers
+            onLayerUpdate={handleLayerUpdate}
+            onLayerCommit={handleLayerCommit}
+          />
+        )}
+      </div>
     </TabsContent>
-  )}
-  // ...
+  );
 };
