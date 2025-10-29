@@ -39,8 +39,15 @@ export const useKeyboardShortcuts = ({
   onDeselect: () => void;
 }) => {
   // Tool selection shortcuts
-  useHotkeys('m', () => setActiveTool('move'), { preventDefault: true });
-  useHotkeys('l', () => setActiveTool('lasso'), { preventDefault: true });
+  useHotkeys('v', () => setActiveTool('move'), { preventDefault: true }); // Move Tool
+  useHotkeys('m', () => setActiveTool('marqueeRect'), { preventDefault: true }); // Marquee Tool (Rectangular)
+  useHotkeys('shift+m', () => setActiveTool('marqueeEllipse'), { preventDefault: true }); // Marquee Tool (Elliptical)
+  useHotkeys('l', () => setActiveTool('lasso'), { preventDefault: true }); // Lasso Tool (Freehand)
+  useHotkeys('shift+l', () => setActiveTool('lassoPoly'), { preventDefault: true }); // Polygonal Lasso (Stub)
+  useHotkeys('w', () => setActiveTool('quickSelect'), { preventDefault: true }); // Quick Selection Tool
+  useHotkeys('shift+w', () => setActiveTool('magicWand'), { preventDefault: true }); // Magic Wand Tool
+  useHotkeys('a', () => setActiveTool('objectSelect'), { preventDefault: true }); // Object Selection Tool
+  
   useHotkeys('b', () => setActiveTool('brush'), { preventDefault: true });
   useHotkeys('e', () => setActiveTool('eraser'), { preventDefault: true });
   useHotkeys('s', () => setActiveTool('selectionBrush'), { preventDefault: true });

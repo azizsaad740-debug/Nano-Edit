@@ -1,4 +1,4 @@
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush";
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | "marqueeRect" | "marqueeEllipse" | "marqueeRow" | "marqueeCol" | "lassoPoly" | "lassoMagnetic" | "quickSelect" | "magicWand" | "objectSelect";
 
 export interface Dimensions {
   width: number;
