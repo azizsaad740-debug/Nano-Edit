@@ -54,7 +54,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     top: `${y ?? 50}%`,
     width: `${currentWidth}%`,
     height: `${currentHeight}%`,
-    transform: `translate(-50%, -50%) rotateZ(${rotation || 0}deg)`,
+    transform: `translate(-50%, -50%) rotateZ(${rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
     cursor: isMovable && !isPointEditable ? "grab" : "default",

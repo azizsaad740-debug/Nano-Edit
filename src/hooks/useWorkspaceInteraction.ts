@@ -25,6 +25,7 @@ export const useWorkspaceInteraction = (
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
   const [gradientStart, setGradientStart] = React.useState<Point | null>(null);
   const [gradientCurrent, setGradientCurrent] = React.useState<Point | null>(null);
+  const [cloneSourcePoint, setCloneSourcePoint] = React.useState<Point | null>(null); // NEW: Clone source point (in image pixels)
   
   // Use refs for marquee drawing state to avoid re-creating handlers constantly
   const marqueeStartRef = React.useRef<Point | null>(null);
@@ -188,20 +189,10 @@ export const useWorkspaceInteraction = (
       // Use the floodFillToMaskDataUrl stub to generate a mask based on tolerance
       const maskUrl = await floodFillToMaskDataUrl(clickPoint, dimensions, tolerance);
       
-      // We need to pass the mask and the color to the parent logic to apply the fill
-      // Since we don't have a direct fill function here, we rely on the parent hook
-      // to handle the actual layer modification (which will be implemented next).
-      
       // For now, we just show the mask as a selection feedback
       setSelectionMaskDataUrl(maskUrl);
       setSelectionPath(null);
       showSuccess(`Paint Bucket fill area selected (Tolerance: ${tolerance}).`);
-      
-      // In a real implementation, this would trigger a floodFill operation on the selected layer
-      // or a new layer, using the foreground color and the generated mask.
-      
-      // Since we don't have the full flood fill logic, we'll rely on the parent hook
-      // to detect the tool and the mask being set, and then apply the fill.
       
     } catch (error) {
       showError("Failed to simulate Paint Bucket fill.");
@@ -222,6 +213,15 @@ export const useWorkspaceInteraction = (
     
     const screenPoint: Point = { x: e.clientX, y: e.clientY };
 
+    // --- Stamp Tool Alt+Click to set source ---
+    if ((activeTool === 'cloneStamp' || activeTool === 'patternStamp') && (e.altKey || e.metaKey)) {
+      setCloneSourcePoint(clickPoint);
+      showSuccess("Clone source set.");
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
     if (activeTool === 'gradient') {
       setGradientStart(screenPoint);
       setGradientCurrent(screenPoint);
@@ -241,12 +241,12 @@ export const useWorkspaceInteraction = (
       }
     } else if (activeTool === 'magicWand' || activeTool === 'quickSelect') { // Handle Magic Wand and Quick Select
       handleMagicWandClick(clickPoint);
-    } else if (activeTool === 'objectSelect') { // NEW: Object Select
+    } else if (activeTool === 'objectSelect') { // Object Select
       handleObjectSelectClick();
-    } else if (activeTool === 'paintBucket') { // NEW: Paint Bucket
+    } else if (activeTool === 'paintBucket') { // Paint Bucket
       handlePaintBucketClick(clickPoint);
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick, setCloneSourcePoint]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {
@@ -329,5 +329,6 @@ export const useWorkspaceInteraction = (
     handleWorkspaceMouseDown,
     handleWorkspaceMouseMove,
     handleWorkspaceMouseUp,
+    cloneSourcePoint, // EXPOSED
   };
 };

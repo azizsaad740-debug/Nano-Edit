@@ -93,7 +93,7 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
     top: `${layer.y ?? 50}%`,
     width: `${currentWidthPercent}%`,
     height: `${currentHeightPercent}%`,
-    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg)`,
+    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
     cursor: isMovable ? "grab" : "default",

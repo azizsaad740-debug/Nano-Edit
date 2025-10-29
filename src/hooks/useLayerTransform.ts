@@ -1,6 +1,6 @@
 "use client";
 
-import type { Layer, ActiveTool, Point } from "@/types/editor";
+import type { Layer, ActiveTool } from "@/types/editor";
 import * as React from "react";
 
 interface UseLayerTransformProps {

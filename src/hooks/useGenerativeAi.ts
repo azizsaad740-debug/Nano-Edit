@@ -30,6 +30,8 @@ export const useGenerativeAi = (
       blendMode: 'normal',
       dataUrl: resultUrl,
       isLocked: true,
+      x: 50, y: 50, width: 100, height: 100, rotation: 0,
+      scaleX: 1, scaleY: 1, // ADDED
     };
     
     setImage(resultUrl);
@@ -61,6 +63,7 @@ export const useGenerativeAi = (
       blendMode: 'normal',
       // Ensure layer covers the whole canvas for fill operation
       x: 50, y: 50, width: 100, height: 100, rotation: 0,
+      scaleX: 1, scaleY: 1, // ADDED
     });
     
     commitLayerChange(newLayerId);

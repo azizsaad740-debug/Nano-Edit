@@ -118,7 +118,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
       style={{
         left: `${layer.x ?? 50}%`,
         top: `${layer.y ?? 50}%`,
-        transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg)`,
+        transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
         cursor: isEditing ? "text" : (isMovable ? "grab" : "default"),
         mixBlendMode: layer.blendMode as any || 'normal',
       }}

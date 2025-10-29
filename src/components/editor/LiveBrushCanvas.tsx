@@ -7,15 +7,16 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string, layerId: string) => void;
-  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush" | "quickSelect" | "magicWand";
+  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush" | "quickSelect" | "magicWand" | "patternStamp" | "cloneStamp"; // ADDED stamp tools
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
   layers: Layer[];
   isSelectionBrush: boolean;
   onSelectionBrushStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  onSelectiveBlurStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void; // Renamed from onBlurBrushStrokeEnd
+  onSelectiveBlurStrokeEnd?: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
   foregroundColor: string;
   backgroundColor: string;
+  cloneSourcePoint?: Point | null; // NEW
 }
 
 export const LiveBrushCanvas = ({
@@ -28,9 +29,10 @@ export const LiveBrushCanvas = ({
   layers,
   isSelectionBrush,
   onSelectionBrushStrokeEnd,
-  onSelectiveBlurStrokeEnd, // Destructure using the correct name
+  onSelectiveBlurStrokeEnd,
   foregroundColor,
   backgroundColor,
+  cloneSourcePoint, // NEW
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const contextRef = React.useRef<CanvasRenderingContext2D | null>(null);
@@ -39,9 +41,11 @@ export const LiveBrushCanvas = ({
   const animationFrameIdRef = React.useRef<number | null>(null);
   const activeDrawingLayerIdRef = React.useRef<string | null>(null);
   const currentOperationRef = React.useRef<'add' | 'subtract'>('add'); // Track current operation
+  const strokeStartPointRef = React.useRef<Point | null>(null); // NEW: Start point of the current stroke (in image pixels)
 
   const isBlurBrush = activeTool === 'blurBrush';
   const isQuickOrMagicWand = activeTool === 'quickSelect' || activeTool === 'magicWand';
+  const isStampTool = activeTool === 'patternStamp' || activeTool === 'cloneStamp';
 
   const getCoords = React.useCallback((e: MouseEvent): { x: number; y: number; pressure?: number } | null => {
     if (!imageRef.current) return null;
@@ -94,6 +98,13 @@ export const LiveBrushCanvas = ({
       ctx.fillStyle = 'rgba(0,0,0,1)';
       ctx.shadowColor = 'rgba(0,0,0,1)';
       ctx.globalAlpha = brushState.opacity / 100; // Use brush opacity for eraser transparency
+    } else if (isStampTool) {
+      // Stamp tools use source-over, but the drawing logic is different (cloning)
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = brushState.opacity / 100;
+      ctx.strokeStyle = 'transparent'; // Stroke is handled by image drawing
+      ctx.fillStyle = 'transparent';
+      ctx.shadowColor = 'transparent';
     } else { // brush tool
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = foregroundColor; // Use foregroundColor directly
@@ -101,7 +112,7 @@ export const LiveBrushCanvas = ({
       ctx.shadowColor = foregroundColor;
       ctx.globalAlpha = brushState.opacity / 100;
     }
-  }, [brushState, activeTool, isSelectionBrush, isBlurBrush, foregroundColor]);
+  }, [brushState, activeTool, isSelectionBrush, isBlurBrush, foregroundColor, isStampTool]);
 
   const drawPath = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number; pressure?: number }>, shape: 'circle' | 'square', size: number) => {
     if (points.length < 1) return;
@@ -130,14 +141,68 @@ export const LiveBrushCanvas = ({
     ctx.stroke(); // Draw the continuous line
   }, [brushState.shape, brushState.size]);
 
+  const drawStamp = React.useCallback((ctx: CanvasRenderingContext2D, points: Array<{ x: number; y: number }>, sourcePoint: Point, imageElement: HTMLImageElement) => {
+    if (points.length < 1) return;
+
+    // Calculate the offset from the source point to the start of the stroke
+    const startPoint = points[0];
+    const offsetX = sourcePoint.x - startPoint.x;
+    const offsetY = sourcePoint.y - startPoint.y;
+
+    // Use a temporary canvas to draw the brush shape and clip the cloned image
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = ctx.canvas.width;
+    tempCanvas.height = ctx.canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
+
+    // Draw the source image offset by the calculated amount
+    tempCtx.drawImage(imageElement, offsetX, offsetY);
+
+    // Now, use the brush path to clip the cloned image onto the main canvas
+    ctx.save();
+    
+    // Apply brush shape as a clip path (simplified: just draw the brush shape)
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = brushState.opacity / 100;
+    
+    // Draw the cloned image onto the main canvas, clipped by the brush shape
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i];
+      const radius = brushState.size / 2;
+      
+      // 1. Create a clip path for the brush shape at point p
+      ctx.save();
+      ctx.beginPath();
+      if (brushState.shape === 'circle') {
+        ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+      } else {
+        ctx.rect(p.x - radius, p.y - radius, brushState.size, brushState.size);
+      }
+      ctx.clip();
+      
+      // 2. Draw the offset source image inside the clip path
+      ctx.drawImage(imageElement, offsetX, offsetY);
+      
+      ctx.restore();
+    }
+    
+    ctx.restore();
+  }, [brushState.size, brushState.opacity, brushState.shape]);
+
+
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
-    if (!ctx) return;
+    if (!ctx || !imageRef.current) return;
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
     if (isSelectionBrush || isBlurBrush || isQuickOrMagicWand) {
       // No live drawing on this canvas for mask brushes or single-click tools.
+    } else if (isStampTool && activeTool === 'cloneStamp' && cloneSourcePoint) {
+      // Clone Stamp Live Preview (Draws the cloned area onto the live canvas)
+      applyBrushSettings(ctx, 'add');
+      drawStamp(ctx, pathPointsRef.current, cloneSourcePoint, imageRef.current);
     } else {
       // For regular brush/eraser, draw live preview
       applyBrushSettings(ctx, 'add'); // Live preview always draws based on foreground/tool settings
@@ -147,7 +212,7 @@ export const LiveBrushCanvas = ({
     if (isDrawingRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
     }
-  }, [drawPath, isSelectionBrush, isBlurBrush, isQuickOrMagicWand, applyBrushSettings, brushState.shape, brushState.size]);
+  }, [drawPath, isSelectionBrush, isBlurBrush, isQuickOrMagicWand, applyBrushSettings, brushState.shape, brushState.size, isStampTool, activeTool, cloneSourcePoint, drawStamp, imageRef]);
 
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
@@ -160,7 +225,7 @@ export const LiveBrushCanvas = ({
     const operation = e.button === 2 ? 'subtract' : 'add';
     currentOperationRef.current = operation;
 
-    if (!isSelectionBrush && !isBlurBrush) { 
+    if (!isSelectionBrush && !isBlurBrush && !isStampTool) { 
       // Regular brush/eraser: ensure we have a drawing layer
       const selectedLayer = layers.find(l => l.id === selectedLayerId);
       if (selectedLayer && selectedLayer.type === 'drawing') {
@@ -171,12 +236,21 @@ export const LiveBrushCanvas = ({
       } else {
         return; // Do nothing if no drawing layer is selected and tool is not brush/eraser
       }
+    } else if (isStampTool) {
+      // Stamp tools always draw onto a new drawing layer if none is selected, or the selected one.
+      const selectedLayer = layers.find(l => l.id === selectedLayerId);
+      if (selectedLayer && selectedLayer.type === 'drawing') {
+        activeDrawingLayerIdRef.current = selectedLayerId;
+      } else {
+        activeDrawingLayerIdRef.current = onAddDrawingLayer();
+      }
     }
 
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
+    strokeStartPointRef.current = coords; // Record start point for stamp offset
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush, isBlurBrush, activeTool, isQuickOrMagicWand]);
+  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush, isBlurBrush, activeTool, isQuickOrMagicWand, isStampTool]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -205,14 +279,21 @@ export const LiveBrushCanvas = ({
       const operation = currentOperationRef.current;
       
       applyBrushSettings(offscreenCtx, operation);
-      drawPath(offscreenCtx, pathPointsRef.current, brushState.shape, brushState.size);
+      
+      if (isStampTool && activeTool === 'cloneStamp' && cloneSourcePoint) {
+        // Clone Stamp: Draw the final cloned image onto the offscreen canvas
+        drawStamp(offscreenCtx, pathPointsRef.current, cloneSourcePoint, imageRef.current);
+      } else {
+        // Regular brush/eraser/mask brush
+        drawPath(offscreenCtx, pathPointsRef.current, brushState.shape, brushState.size);
+      }
 
       if (isSelectionBrush && onSelectionBrushStrokeEnd) {
         onSelectionBrushStrokeEnd(offscreenCanvas.toDataURL(), operation);
       } else if (isBlurBrush && onSelectiveBlurStrokeEnd) { 
         onSelectiveBlurStrokeEnd(offscreenCanvas.toDataURL(), operation); 
       } else if (activeDrawingLayerIdRef.current) {
-        // Regular brush/eraser uses onDrawEnd (which is handleDrawingStrokeEnd from useLayers)
+        // Regular brush/eraser/stamp uses onDrawEnd (which is handleDrawingStrokeEnd from useLayers)
         onDrawEnd(offscreenCanvas.toDataURL(), activeDrawingLayerIdRef.current);
       }
     } else {
@@ -221,8 +302,9 @@ export const LiveBrushCanvas = ({
 
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
+    strokeStartPointRef.current = null;
     activeDrawingLayerIdRef.current = null; 
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, brushState.shape, brushState.size, isQuickOrMagicWand]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, brushState.shape, brushState.size, isQuickOrMagicWand, isStampTool, activeTool, cloneSourcePoint, drawStamp]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;

@@ -46,6 +46,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
     handleSelectionBrushStrokeEnd, // NEW
     handleSelectiveBlurStrokeEnd, // NEW
     marqueeStart, marqueeCurrent, // NEW
+    cloneSourcePoint, // NEW
   } = logic;
 
   // --- Render Layer Logic ---
@@ -165,12 +166,12 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               {layers.slice(1).map(renderLayer)}
 
               {/* Live Brush/Eraser/Selection Canvas */}
-              {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'quickSelect') && (
+              {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'quickSelect' || activeTool === 'cloneStamp' || activeTool === 'patternStamp') && (
                 <LiveBrushCanvas
                   brushState={brushState}
                   imageRef={imgRef}
                   onDrawEnd={handleDrawingStrokeEnd}
-                  activeTool={activeTool}
+                  activeTool={activeTool as any}
                   selectedLayerId={selectedLayerId}
                   onAddDrawingLayer={handleAddDrawingLayer}
                   layers={layers}
@@ -179,6 +180,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
                   onSelectiveBlurStrokeEnd={handleSelectiveBlurStrokeEnd} // Use merged handler
                   foregroundColor={foregroundColor}
                   backgroundColor={backgroundColor}
+                  cloneSourcePoint={cloneSourcePoint} // ADDED
                 />
               )}
 

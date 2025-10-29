@@ -178,6 +178,8 @@ export const useSmartObjectLayers = ({
       content: "New Text",
       x: 50,
       y: 50,
+      width: 50, // ADDED
+      height: 10, // ADDED
       fontSize: 48,
       color: foregroundColor,
       fontFamily: "Roboto",
@@ -187,6 +189,8 @@ export const useSmartObjectLayers = ({
       fontStyle: "normal",
       textAlign: "center",
       rotation: 0,
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
       letterSpacing: 0,
       padding: 10,
       lineHeight: 1.2,
@@ -224,6 +228,8 @@ export const useSmartObjectLayers = ({
       width: 100,
       height: 100,
       rotation: 0,
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
       isLocked: false,
     };
     const updated = [...safeLayers, newLayer];
@@ -249,6 +255,8 @@ export const useSmartObjectLayers = ({
       width: 10,
       height: 10,
       rotation: 0,
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
       opacity: 100,
       blendMode: 'normal',
       shapeType: selectedShapeType,
@@ -279,6 +287,8 @@ export const useSmartObjectLayers = ({
       width: 100,
       height: 100,
       rotation: 0,
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
       gradientType: 'linear',
       gradientColors: [foregroundColor, backgroundColor],
       gradientStops: [0, 1],

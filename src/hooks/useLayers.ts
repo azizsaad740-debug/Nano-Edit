@@ -1,15 +1,14 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
 import type { Layer, EditState, ActiveTool, Point, BrushState } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
-import { rasterizeEditedImageWithMask } from "@/utils/imageUtils"; // FIX 54
+import { rasterizeEditedImageWithMask, downloadImage } from "@/utils/imageUtils"; // ADDED imports
 import { invertMaskDataUrl, polygonToMaskDataUrl } from "@/utils/maskUtils";
 import { maskToPolygon } from "@/utils/maskToPolygon";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
-import { downloadImage } from "@/utils/imageUtils";
 
 interface UseLayersProps {
   layers: Layer[];
@@ -23,6 +22,7 @@ interface UseLayersProps {
   backgroundColor: string;
   selectedShapeType: Layer['shapeType'] | null;
   selectionMaskDataUrl: string | null;
+  setSelectionMaskDataUrl: (url: string | null) => void; // ADDED
   clearSelectionState: () => void;
   brushState: BrushState;
   activeTool: ActiveTool | null; // Added activeTool
@@ -104,9 +104,11 @@ const getMutableContainer = (tree: Layer[], path: Layer[]): Layer[] => {
 export const useLayers = ({
   layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
   recordHistory, currentEditState, foregroundColor, backgroundColor,
-  selectedShapeType, selectionMaskDataUrl, clearSelectionState,
+  selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
   brushState, activeTool, // Destructure activeTool
 }: UseLayersProps) => {
+  
+  const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]); // ADDED
 
   // --- Core Layer Operations ---
 
@@ -725,7 +727,7 @@ export const useLayers = ({
 
 
   return {
-    smartObjectEditingId: useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]),
+    smartObjectEditingId,
     openSmartObjectEditor: useCallback((id: string) => { setSelectedLayerId(id); }, [setSelectedLayerId]),
     closeSmartObjectEditor: useCallback(() => { setSelectedLayerId(null); }, [setSelectedLayerId]),
     saveSmartObjectChanges,

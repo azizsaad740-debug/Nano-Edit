@@ -63,6 +63,7 @@ export const useEditorLogic = (
     handleWorkspaceMouseDown,
     handleWorkspaceMouseMove,
     handleWorkspaceMouseUp,
+    cloneSourcePoint, // NEW
   } = useWorkspaceInteraction(
     workspaceRef,
     imgRef,
@@ -173,7 +174,7 @@ export const useEditorLogic = (
   } = useLayers({
     layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
     recordHistory, currentEditState, foregroundColor, backgroundColor,
-    selectedShapeType, selectionMaskDataUrl, clearSelectionState,
+    selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
     brushState, activeTool, // Pass activeTool
   });
 
@@ -278,6 +279,7 @@ export const useEditorLogic = (
     // Workspace Interaction
     workspaceZoom, handleWheel, handleFitScreen, handleZoomIn, handleZoomOut, isMouseOverImage, setIsMouseOverImage,
     gradientStart, gradientCurrent, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
+    cloneSourcePoint, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,

@@ -7,6 +7,8 @@ const mockTemplateData: TemplateProjectData = {
     {
       ...initialLayerState[0],
       dataUrl: "https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=1920&q=80",
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
     },
     {
       id: 'text-1',
@@ -16,6 +18,8 @@ const mockTemplateData: TemplateProjectData = {
       content: 'NANO EDIT',
       x: 50,
       y: 30,
+      width: 50,
+      height: 10,
       fontSize: 120,
       color: '#FFFFFF',
       fontFamily: 'Montserrat',
@@ -25,6 +29,8 @@ const mockTemplateData: TemplateProjectData = {
       fontStyle: 'normal',
       textAlign: 'center',
       rotation: 0,
+      scaleX: 1, // ADDED
+      scaleY: 1, // ADDED
       letterSpacing: 5,
       lineHeight: 1.2,
       isLocked: false,
@@ -59,6 +65,8 @@ const mockTemplates: CommunityTemplate[] = [
         {
           ...initialLayerState[0],
           dataUrl: "https://images.unsplash.com/photo-1542228263-4d5345cf082f?w=1080&q=80",
+          scaleX: 1, // ADDED
+          scaleY: 1, // ADDED
         },
         {
           id: 'shape-1',
@@ -70,6 +78,8 @@ const mockTemplates: CommunityTemplate[] = [
           width: 30,
           height: 30,
           rotation: 0,
+          scaleX: 1, // ADDED
+          scaleY: 1, // ADDED
           opacity: 80,
           blendMode: 'multiply',
           shapeType: 'circle',
