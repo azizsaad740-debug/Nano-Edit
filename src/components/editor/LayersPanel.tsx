@@ -34,7 +34,7 @@ import {
   SlidersHorizontal,
   Sun,
 } from "lucide-react";
-import type { Layer, Point } from "@/types/editor";
+import type { Layer, Point, ShapeType } from "@/types/editor";
 import LayerItem from "./LayerItem";
 import { LayerControls } from "./LayerControls";
 import { LayerActions } from "./LayerActions";
@@ -56,14 +56,14 @@ interface LayersPanelProps {
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
-  onAddTextLayer: (coords: Point) => void; // UPDATED SIGNATURE
+  onAddTextLayer: (coords: Point, color: string) => void; // UPDATED SIGNATURE
   onAddDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
   hasActiveSelection: boolean;
@@ -159,7 +159,9 @@ const LayersPanel = (props: LayersPanelProps) => {
     const defaultCoords = { x: 50, y: 50 }; 
     
     if (type === 'text') {
-      onAddTextLayer(defaultCoords);
+      // Pass foregroundColor as the default color (assuming it's available in Index.tsx scope)
+      // We call the prop function with default coords, and Index.tsx will inject the color.
+      onAddTextLayer(defaultCoords, 'currentColorPlaceholder'); 
     } else if (type === 'drawing') {
       onAddDrawingLayer();
     } else if (type === 'shape') {
@@ -309,7 +311,7 @@ const LayersPanel = (props: LayersPanelProps) => {
           selectedShapeType={selectedShapeType}
           groupLayers={() => groupLayers(selectedLayerIds)}
           hasActiveSelection={hasActiveSelection}
-          onApplySelectionAsMask={onApplySelectionAsMask}
+          onApplySelectionAsMask={applySelectionAsMask}
           onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
           onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
           onDeleteHiddenLayers={onDeleteHiddenLayers}

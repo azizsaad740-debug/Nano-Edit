@@ -31,7 +31,7 @@ import { downloadImage, rasterizeEditedImageWithMask } from '@/utils/imageUtils'
 import { upscaleImageApi } from '@/utils/stabilityApi';
 import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
-import { initialEditState, initialLayerState, initialHistoryItem } from '@/types/editor';
+import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState } from '@/types/editor';
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -44,6 +44,7 @@ export const useEditorLogic = () => {
     selectiveBlurAmount, setSelectiveBlurAmount, customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     workspaceRef, imgRef, zoom, setZoom, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
     cloneSourcePoint, setCloneSourcePoint,
+    setSelectedLayerId, clearSelectionState, updateCurrentState,
     ...rest
   } = state;
 
@@ -54,12 +55,28 @@ export const useEditorLogic = () => {
   );
 
   const { handleProjectSettingsUpdate } = useProjectSettings(
-    currentEditState, state.updateCurrentState, recordHistory, layers, dimensions, state.setDimensions
+    currentEditState, updateCurrentState, recordHistory, layers, dimensions, state.setDimensions
   );
+  
+  const {
+    smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
+    updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+    handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
+    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
+    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
+    handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
+    applySelectionAsMask, handleSelectionBrushStrokeEnd,
+  } = useLayers({
+    layers, setLayers: state.setLayers, selectedLayerId: state.selectedLayerId, setSelectedLayerId: state.setSelectedLayerId, dimensions,
+    recordHistory, currentEditState, foregroundColor, backgroundColor,
+    selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl: state.setSelectionMaskDataUrl, clearSelectionState: state.clearSelectionState,
+    brushState, activeTool,
+  });
 
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
     state.geminiApiKey, image, dimensions, state.setImage, state.setDimensions, state.setFileInfo, layers,
-    rest.handleAddDrawingLayer, rest.updateLayer, rest.commitLayerChange, state.clearSelectionState, state.setIsGenerateOpen, state.setIsGenerativeFillOpen
+    handleAddDrawingLayer, updateLayer, commitLayerChange, state.clearSelectionState, rest.setIsGenerateOpen, rest.setIsGenerativeFillOpen
   );
 
   const handleExport = async (options: ExportOptionsType) => {
@@ -78,7 +95,8 @@ export const useEditorLogic = () => {
         toast.dismiss(toastId);
         const upscaleToastId = showLoading(`Upscaling image to ${options.upscale}x... (Stability AI)`);
         try {
-          const upscaledImage = await upscaleImageApi(finalBase64, state.stabilityApiKey, options.upscale);
+          // Cast options.upscale to 2 | 4 since we checked options.upscale > 1
+          const upscaledImage = await upscaleImageApi(finalBase64, state.stabilityApiKey, options.upscale as 2 | 4);
           downloadImage(upscaledImage, filename, options.format, options.quality);
           showSuccess("Upscale and export complete.");
         } catch (error) {
@@ -97,46 +115,41 @@ export const useEditorLogic = () => {
     }
   };
 
-  // ... (rest of the logic hook definitions)
-
   const { crop: cropState, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
   
   const { transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset: applyTransformPreset } = useTransform(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
 
   const { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, onFilterChange, applyPreset: applyAdjustmentsPreset } = useAdjustments(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
 
   const { effects, onEffectChange, onEffectCommit, applyPreset: applyEffectsPreset } = useEffects(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
 
   const { grading, onGradingChange, onGradingCommit, applyPreset: applyGradingPreset } = useColorGrading(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
 
   const { hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, applyPreset: applyHslPreset } = useHslAdjustments(
-    currentEditState, state.updateCurrentState, recordHistory, layers
+    currentEditState, updateCurrentState, recordHistory, layers
   );
 
-  const { curves, onCurvesChange, onCurvesCommit, applyPreset: applyCurvesPreset } = useCurves({
-    currentEditState, state.updateCurrentState, recordHistory, layers
-  });
+  const useCurvesProps = { currentEditState, updateCurrentState, recordHistory, layers };
+  const { curves, onCurvesChange, onCurvesCommit, applyPreset: applyCurvesPreset } = useCurves(useCurvesProps);
 
-  const { channels, onChannelChange, applyPreset: applyChannelsPreset } = useChannels({
-    currentEditState, state.updateCurrentState, recordHistory, layers
-  });
+  const useChannelsProps = { currentEditState, updateCurrentState, recordHistory, layers };
+  const { channels, onChannelChange, applyPreset: applyChannelsPreset } = useChannels(useChannelsProps);
 
-  const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame({
-    currentEditState, state.updateCurrentState, recordHistory, layers
-  });
+  const useFrameProps = { currentEditState, updateCurrentState, recordHistory, layers };
+  const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame(useFrameProps);
 
   const { selectiveBlurMask, handleSelectiveBlurStrokeEnd, applyPreset: applySelectiveBlurPreset } = useSelectiveBlur(
-    currentEditState, state.updateCurrentState, recordHistory, layers, dimensions
+    currentEditState, updateCurrentState, recordHistory, layers, dimensions
   );
 
   const { presets, savePreset, deletePreset } = usePresets();
@@ -146,7 +159,7 @@ export const useEditorLogic = () => {
     applyEffectsPreset(preset.state);
     applyGradingPreset(preset.state);
     applyHslPreset(preset.state);
-    applyCurvesPreset(preset.state);
+    applyCurvesPreset(preset.state.curves || initialCurvesState);
     applyTransformPreset(preset.state);
     applyCropPreset(preset.state);
     applyFramePreset(preset.state);
@@ -183,6 +196,11 @@ export const useEditorLogic = () => {
     setBackgroundColor(temp);
   }, [foregroundColor, backgroundColor, setForegroundColor, setBackgroundColor]);
 
+  const handleMarqueeSelectionComplete = useCallback(async (start: Point, end: Point) => {
+    // Placeholder logic to satisfy the interface
+    console.log("Marquee selection complete:", start, end);
+  }, []);
+
   const {
     zoom: workspaceZoom,
     setZoom: setWorkspaceZoom,
@@ -198,9 +216,9 @@ export const useEditorLogic = () => {
     handleWorkspaceMouseMove,
     handleWorkspaceMouseUp,
   } = useWorkspaceInteraction(
-    workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl, state.clearSelectionState,
-    gradientToolState, state.setSelectedLayerId, layers, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
-    rest.onMarqueeSelectionComplete, currentEditState, setCloneSourcePoint
+    workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState,
+    gradientToolState, setSelectedLayerId, layers, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
+    handleMarqueeSelectionComplete, currentEditState, setCloneSourcePoint
   );
 
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;
@@ -209,18 +227,28 @@ export const useEditorLogic = () => {
     ...state,
     // Core State
     hasImage: !!image,
+    selectedLayer: layers.find(l => l.id === state.selectedLayerId),
     // History
     undo, redo, canUndo, canRedo,
-    // Layer Management
-    ...rest,
+    // Layer Management (from useLayers)
+    smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
+    updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+    handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
+    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
+    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
+    handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
+    applySelectionAsMask, handleSelectionBrushStrokeEnd,
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,
     curves, onCurvesChange, onCurvesCommit, selectedFilter, onFilterChange, channels, onChannelChange,
     transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
-    crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
+    crop: cropState, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,
+    // Gradient Presets (from useEditorState)
+    gradientPresets: rest.gradientPresets, saveGradientPreset: rest.saveGradientPreset, deleteGradientPreset: rest.deleteGradientPreset,
     // Project & IO
     handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleExport, handleCopy, handleProjectSettingsUpdate,
     // AI
@@ -231,9 +259,6 @@ export const useEditorLogic = () => {
     hasActiveSelection,
     // Tools
     handleBrushToolChange, handleTextToolChange, handleShapeToolChange, handleGradientToolChange, handleEyedropperToolChange, handleMoveToolChange, handleLassoToolChange,
-    handleDrawingStrokeEnd: rest.handleDrawingStrokeEnd,
-    handleSelectionBrushStrokeEnd: rest.handleSelectionBrushStrokeEnd,
-    handleLayerDelete: rest.handleLayerDelete,
     handleSwapColors,
     ToolsPanel: require('@/components/layout/LeftSidebar').default, // Re-exporting the component reference
   };

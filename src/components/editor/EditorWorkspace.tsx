@@ -4,6 +4,7 @@ import * as React from "react";
 import ReactCrop, { type Crop } from "react-image-crop";
 import { cn } from "@/lib/utils";
 import type { Layer, EditState, ActiveTool, BrushState, Point, GradientToolState } from "@/types/editor";
+import { isImageOrDrawingLayer } from "@/types/editor"; // Import type guard
 import { Workspace } from "./Workspace";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { TextLayer } from "./TextLayer";
@@ -22,6 +23,8 @@ import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
 import { AdjustmentLayer } from "./AdjustmentLayer";
+import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import missing utility
+import { showError } from "@/utils/toast"; // Import missing utility
 
 interface EditorWorkspaceProps {
   workspaceRef: React.RefObject<HTMLDivElement>;
@@ -188,7 +191,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
 
   // Find the background layer (image or drawing)
   const backgroundLayer = layers.find(l => l.id === 'background');
-  const backgroundSrc = backgroundLayer?.dataUrl || image;
+  const backgroundSrc = (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) ? backgroundLayer.dataUrl : image;
 
   return (
     <div className="flex-1 relative bg-muted/50 overflow-hidden">

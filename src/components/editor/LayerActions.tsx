@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
-import type { Layer, SmartObjectLayerData } from "@/types/editor";
+import type { Layer, SmartObjectLayerData, ShapeType } from "@/types/editor";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface LayerActionsProps {
@@ -12,7 +12,7 @@ interface LayerActionsProps {
   selectedLayerIds: string[];
   onAddTextLayer: () => void;
   onAddDrawingLayer: () => void;
-  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number) => void;
   onAddGradientLayer: () => void;
   onDeleteLayer: () => void;
   onDuplicateLayer: () => void;
@@ -20,7 +20,7 @@ interface LayerActionsProps {
   onRasterizeLayer: () => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
   groupLayers: () => void;
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;

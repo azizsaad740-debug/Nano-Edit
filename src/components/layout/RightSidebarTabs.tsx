@@ -28,7 +28,9 @@ import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
 import InfoPanel from "@/components/auxiliary/InfoPanel";
 import { ChannelsPanel } from "@/components/editor/ChannelsPanel";
-import type { Layer, EditState, HslColorKey, HslAdjustment, GradientToolState, FrameState, Point, BrushState, SelectionSettings, ActiveTool } from "@/types/editor";
+import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel"; // ADDED IMPORT
+import { GradientOptions } from "@/components/editor/GradientOptions"; // ADDED IMPORT
+import type { Layer, EditState, HslColorKey, HslAdjustment, GradientToolState, FrameState, Point, BrushState, SelectionSettings, ActiveTool, ShapeType } from "@/types/editor";
 
 interface RightSidebarTabsProps {
   // Layer Props
@@ -54,10 +56,10 @@ interface RightSidebarTabsProps {
   addDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  addShapeLayer: (coords: Point, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => void;
+  addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number) => void;
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
   groupLayers: (layerIds: string[]) => void;
   toggleGroupExpanded: (id: string) => void;
   onRemoveLayerMask: (id: string) => void;
@@ -152,11 +154,9 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const isShapeToolActive = activeTool === 'shape';
   const isGradientToolActive = activeTool === 'gradient';
   const isCropToolActive = activeTool === 'crop';
-  const isBrushToolActive = activeTool === 'brush';
-  const isEraserToolActive = activeTool === 'eraser';
-  const isPencilToolActive = activeTool === 'pencil';
-  const isSelectionBrushActive = activeTool === 'selectionBrush';
-  const isBlurBrushActive = activeTool === 'blurBrush';
+  const isBrushToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil';
+  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush';
+  const isGradientToolActiveOnly = activeTool === 'gradient'; // Use this for tool options
   const isPaintBucketActive = activeTool === 'paintBucket';
   const isStampToolActive = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
@@ -169,7 +169,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     if (isBrushToolActive || isEraserToolActive) {
       return (
         <BrushOptions
-          activeTool={activeTool as 'brush' | 'eraser'}
+          activeTool={activeTool as 'brush' | 'eraser' | 'pencil'}
           brushSize={brushState.size}
           setBrushSize={(size) => setBrushState({ size })}
           brushOpacity={brushState.opacity}
@@ -207,10 +207,11 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       );
     }
 
-    if (isSelectionBrushActive) {
+    if (isSelectionBrushToolActive) {
+      // Use BrushOptions for selection brush size/hardness/opacity
       return (
         <BrushOptions
-          activeTool="brush" // Use brush options for size/hardness/opacity
+          activeTool="brush" 
           brushSize={brushState.size}
           setBrushSize={(size) => setBrushState({ size })}
           brushOpacity={brushState.opacity}
@@ -269,6 +270,19 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         />
       );
     }
+    
+    if (isGradientToolActiveOnly) {
+      return (
+        <GradientToolOptions
+          gradientToolState={props.gradientToolState}
+          setGradientToolState={props.setGradientToolState}
+          gradientPresets={props.gradientPresets}
+          onApplyGradientPreset={(preset) => props.setGradientToolState(preset.state)}
+          onSaveGradientPreset={props.onSaveGradientPreset}
+          onDeleteGradientPreset={props.onDeleteGradientPreset}
+        />
+      );
+    }
 
     if (isSelectionToolActive) {
       return (
@@ -293,8 +307,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       return (
         <TextOptions
           layer={selectedLayer}
-          onLayerUpdate={(updates) => props.onLayerUpdate(selectedLayer.id, updates)}
-          onLayerCommit={(name) => props.onLayerCommit(selectedLayer.id, name)}
+          onLayerUpdate={handleLayerUpdate}
+          onLayerCommit={handleLayerCommit}
           systemFonts={props.systemFonts}
           customFonts={props.customFonts}
           onOpenFontManager={props.onOpenFontManager}
@@ -306,15 +320,15 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       return (
         <ShapeOptions
           layer={selectedLayer}
-          onLayerUpdate={(updates) => props.onLayerUpdate(selectedLayer.id, updates)}
-          onLayerCommit={(name) => props.onLayerCommit(selectedLayer.id, name)}
+          onLayerUpdate={handleLayerUpdate}
+          onLayerCommit={handleLayerCommit}
         />
       );
     }
     
     if (isGradientToolActive && selectedLayer?.type === 'gradient') {
       return (
-        <GradientToolOptions
+        <GradientOptions // FIX: Use GradientOptions for layer properties
           layer={selectedLayer}
           onLayerUpdate={(updates) => props.onLayerUpdate(selectedLayer.id, updates)}
           onLayerCommit={(name) => props.onLayerCommit(selectedLayer.id, name)}

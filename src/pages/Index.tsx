@@ -44,7 +44,7 @@ export const Index = () => {
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
-    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleSelectionBrushStrokeEnd,
@@ -76,7 +76,7 @@ export const Index = () => {
     marqueeStart, marqueeCurrent,
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
     clearSelectionState,
-    setIsPreviewingOriginal,
+    isPreviewingOriginal, setIsPreviewingOriginal,
     
     // Refs/External
     workspaceRef, imgRef,
@@ -240,7 +240,7 @@ export const Index = () => {
           handleFitScreen={handleFitScreen}
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
-          isPreviewingOriginal={setIsPreviewingOriginal}
+          isPreviewingOriginal={isPreviewingOriginal}
         />
 
         {/* Right Sidebar (Adjustments, Layers, Info) */}
@@ -253,7 +253,7 @@ export const Index = () => {
             selectedLayer={selectedLayer}
             layers={layers}
             imgRef={imgRef}
-            onSelectLayer={onSelectLayer}
+            onSelectLayer={onSelectLayerFromLogic}
             onReorder={reorderLayers}
             toggleLayerVisibility={handleToggleVisibility}
             renameLayer={renameLayer}

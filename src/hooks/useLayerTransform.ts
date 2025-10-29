@@ -28,7 +28,7 @@ export const useLayerTransform = ({
   zoom,
 }: UseLayerTransformProps) => {
   const layerRef = useRef<HTMLDivElement>(null);
-  const dragStartInfo = useRef<{ x: number; y: initialX: number; initialY: number; initialWidth: number; initialHeight: number; initialRotation: number }>({ x: 0, y: 0, initialX: 0, initialY: 0, initialWidth: 0, initialHeight: 0, initialRotation: 0 });
+  const dragStartInfo = useRef<{ x: number; y: number; initialX: number; initialY: number; initialWidth: number; initialHeight: number; initialRotation: number }>({ x: 0, y: 0, initialX: 0, initialY: 0, initialWidth: 0, initialHeight: 0, initialRotation: 0 });
   const resizeStartInfo = useRef<{ x: number; y: number; initialWidth: number; initialHeight: number; initialX: number; initialY: number; position: string }>({ x: 0, y: 0, initialWidth: 0, initialHeight: 0, initialX: 0, initialY: 0, position: '' });
   const rotateStartInfo = useRef<{ x: number; y: number; initialRotation: number }>({ x: 0, y: 0, initialRotation: 0 });
   

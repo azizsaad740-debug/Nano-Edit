@@ -112,7 +112,7 @@ const GroupLayer = ({
                 // This update needs to go up to the parent useLayers hook
                 // to modify the children array of this group layer
                 onUpdate(groupLayer.id, {
-                  children: groupLayer.children?.map(c => c.id === id ? { ...c, ...updates } : c)
+                  children: groupLayer.children?.map(c => c.id === id ? { ...c, ...updates } : c) as Layer[]
                 });
               },
               onCommit: (id: string) => {

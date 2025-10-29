@@ -100,7 +100,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
 
     switch (type) {
       case 'brightness':
-        updates.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100 };
+        updates.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100, grain: 0 };
         name = "Reset Brightness/Contrast";
         break;
       case 'curves':

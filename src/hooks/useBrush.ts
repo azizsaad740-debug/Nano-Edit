@@ -3,7 +3,7 @@ import type { ActiveTool, BrushState } from '@/types/editor';
 
 export const useBrush = (
   setActiveTool: (tool: ActiveTool | null) => void,
-  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void,
+  setBrushState: React.Dispatch<React.SetStateAction<BrushState>>,
   brushState: BrushState,
   foregroundColor: string,
 ) => {

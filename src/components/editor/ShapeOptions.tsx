@@ -44,7 +44,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
     let updates: Partial<VectorShapeLayerData> = { shapeType: newShapeType };
     
     // Reset specific properties based on new type
-    updates.borderRadius = 0;
+    updates.borderRadius = undefined;
     updates.starPoints = undefined;
     updates.lineThickness = undefined;
     updates.points = undefined;

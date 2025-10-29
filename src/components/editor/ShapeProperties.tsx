@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Layer } from "@/types/editor";
+import type { Layer, ShapeType } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Edit, Plus, Trash2 } from "lucide-react";
@@ -36,7 +36,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
     onCommit(layer.id);
   };
 
-  const handleShapeTypeChange = (newShapeType: Layer['shapeType']) => {
+  const handleShapeTypeChange = (newShapeType: ShapeType) => {
     let updates: Partial<Layer> = { shapeType: newShapeType };
     if (newShapeType === 'triangle') {
       updates.points = [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}]; // Default triangle points
@@ -180,7 +180,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
         </div>
       )}
       
-      <Accordion type="multiple" className="w-full pt-2 border-t" defaultValue={['dimensions']}>
+      <Accordion type="multiple" collapsible className="w-full pt-2 border-t" defaultValue={['dimensions']}>
         <AccordionItem value="path-editing">
           <AccordionTrigger>Path Editing</AccordionTrigger>
           <AccordionContent className="space-y-4">
