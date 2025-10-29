@@ -29,10 +29,11 @@ import {
   ArrowDownToLine,
   ArrowUp,
   ArrowDown,
+  Wand2,
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LayersPanel from "@/components/editor/LayersPanel";
-import PropertiesPanel from "@/components/editor/PropertiesPanel";
+import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent"; // Updated import
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
@@ -44,10 +45,10 @@ import type { GradientPreset } from "@/hooks/useGradientPresets";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import LayerGeneralProperties from "@/components/editor/LayerGeneralProperties";
-import TextOptions from "@/components/editor/TextOptions";
+import { TextOptions } from "@/components/editor/TextOptions";
 import ShapeOptions from "@/components/editor/ShapeOptions";
-import GradientOptions from "@/components/editor/GradientOptions";
-import AdjustmentOptions from "@/components/editor/AdjustmentOptions";
+import { GradientOptions } from "@/components/editor/GradientOptions";
+import { AdjustmentOptions } from "@/components/editor/AdjustmentOptions";
 import MaskProperties from "@/components/editor/MaskProperties";
 
 type HslColorKey = keyof EditState['hslAdjustments'];
@@ -154,11 +155,6 @@ interface RightSidebarTabsProps {
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const { selectedLayer } = props;
   const selectedLayerId = selectedLayer?.id;
-  const isTextLayer = selectedLayer?.type === 'text';
-  const isShapeLayer = selectedLayer?.type === 'vector-shape';
-  const isGradientLayer = selectedLayer?.type === 'gradient';
-  const isAdjustmentLayer = selectedLayer?.type === 'adjustment';
-  const hasMask = !!selectedLayer?.maskDataUrl;
   const isBrushTool = props.activeTool === 'brush' || props.activeTool === 'eraser';
   const isSelectionBrushTool = props.activeTool === 'selectionBrush';
   const isBlurBrushTool = props.activeTool === 'blurBrush';
@@ -181,13 +177,13 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onRasterizeLayer: props.onRasterizeLayer,
     onCreateSmartObject: props.onCreateSmartObject,
     onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerPropertyCommit,
+    onLayerPropertyCommit: props.onLayerCommit, // Pass the commit function directly
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
-    onAddTextLayer: () => props.addTextLayer(),
-    onAddDrawingLayer: () => props.addDrawingLayer(),
-    onAddShapeLayer: (coords: { x: number; y: number }, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => props.addShapeLayer(coords, shapeType, initialWidth, initialHeight),
-    onAddGradientLayer: () => props.addGradientLayer(),
+    onAddTextLayer: props.addTextLayer,
+    onAddDrawingLayer: props.addDrawingLayer,
+    onAddShapeLayer: props.addShapeLayer,
+    onAddGradientLayer: props.addGradientLayer,
     onAddAdjustmentLayer: props.onAddAdjustmentLayer,
     onAddLayerFromBackground: props.onAddLayerFromBackground,
     onLayerFromSelection: props.onLayerFromSelection,
@@ -207,8 +203,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onApplySelectionAsMask: props.onApplySelectionAsMask,
   };
 
-  // Props for PropertiesPanel
-  const propertiesPanelProps = {
+  // Props for LayerPropertiesContent
+  const propertiesContentProps = {
     selectedLayer,
     imgRef: props.imgRef,
     onLayerUpdate: props.onLayerUpdate,
@@ -223,6 +219,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onDeleteGradientPreset: props.onDeleteGradientPreset,
     customHslColor: props.customHslColor,
     setCustomHslColor: props.setCustomHslColor,
+    onRemoveLayerMask: props.onRemoveLayerMask, // Pass mask handlers
+    onInvertLayerMask: props.onInvertLayerMask, // Pass mask handlers
   };
 
   // Props for GlobalAdjustmentsPanel
@@ -288,7 +286,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           </TabsContent>
 
           <TabsContent value="properties">
-            {selectedLayer && <PropertiesPanel {...propertiesPanelProps} />}
+            {selectedLayer && <LayerPropertiesContent {...propertiesContentProps} />}
           </TabsContent>
 
           <TabsContent value="adjustments">
