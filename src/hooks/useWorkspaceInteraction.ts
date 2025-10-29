@@ -178,6 +178,37 @@ export const useWorkspaceInteraction = (
     }
   }, [dimensions, workspaceRef, imgRef, setSelectionMaskDataUrl, setSelectionPath, activeTool]);
 
+  const handlePaintBucketClick = React.useCallback(async (clickPoint: Point) => {
+    if (!dimensions) return;
+
+    // Stub: Simulate flood fill based on tolerance
+    const tolerance = currentEditState.selectionSettings.tolerance;
+    
+    try {
+      // Use the floodFillToMaskDataUrl stub to generate a mask based on tolerance
+      const maskUrl = await floodFillToMaskDataUrl(clickPoint, dimensions, tolerance);
+      
+      // We need to pass the mask and the color to the parent logic to apply the fill
+      // Since we don't have a direct fill function here, we rely on the parent hook
+      // to handle the actual layer modification (which will be implemented next).
+      
+      // For now, we just show the mask as a selection feedback
+      setSelectionMaskDataUrl(maskUrl);
+      setSelectionPath(null);
+      showSuccess(`Paint Bucket fill area selected (Tolerance: ${tolerance}).`);
+      
+      // In a real implementation, this would trigger a floodFill operation on the selected layer
+      // or a new layer, using the foreground color and the generated mask.
+      
+      // Since we don't have the full flood fill logic, we'll rely on the parent hook
+      // to detect the tool and the mask being set, and then apply the fill.
+      
+    } catch (error) {
+      showError("Failed to simulate Paint Bucket fill.");
+      console.error(error);
+    }
+  }, [dimensions, currentEditState.selectionSettings.tolerance, setSelectionMaskDataUrl, setSelectionPath]);
+
 
   const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!imgRef.current || !dimensions) return;
@@ -212,8 +243,10 @@ export const useWorkspaceInteraction = (
       handleMagicWandClick(clickPoint);
     } else if (activeTool === 'objectSelect') { // NEW: Object Select
       handleObjectSelectClick();
+    } else if (activeTool === 'paintBucket') { // NEW: Paint Bucket
+      handlePaintBucketClick(clickPoint);
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {

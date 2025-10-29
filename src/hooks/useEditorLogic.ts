@@ -174,7 +174,7 @@ export const useEditorLogic = (
     layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
     recordHistory, currentEditState, foregroundColor, backgroundColor,
     selectedShapeType, selectionMaskDataUrl, clearSelectionState,
-    brushState,
+    brushState, activeTool, // Pass activeTool
   });
 
   // --- Image Loading ---

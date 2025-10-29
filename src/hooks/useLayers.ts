@@ -25,6 +25,7 @@ interface UseLayersProps {
   selectionMaskDataUrl: string | null;
   clearSelectionState: () => void;
   brushState: BrushState;
+  activeTool: ActiveTool | null; // Added activeTool
 }
 
 // Helper function to recursively find a layer and its container/path
@@ -104,7 +105,7 @@ export const useLayers = ({
   layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
   recordHistory, currentEditState, foregroundColor, backgroundColor,
   selectedShapeType, selectionMaskDataUrl, clearSelectionState,
-  brushState,
+  brushState, activeTool, // Destructure activeTool
 }: UseLayersProps) => {
 
   // --- Core Layer Operations ---
@@ -661,6 +662,67 @@ export const useLayers = ({
 
     mergeMask();
   }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
+
+  // --- Paint Bucket Logic ---
+  const handlePaintBucketFill = useCallback(async () => {
+    if (activeTool !== 'paintBucket' || !selectionMaskDataUrl || !dimensions) return;
+
+    const targetLayer = layers.find(l => l.id === selectedLayerId);
+    if (!targetLayer || targetLayer.type === 'image' || targetLayer.type === 'adjustment') {
+      showError("Please select a non-background, non-adjustment layer to fill.");
+      clearSelectionState();
+      return;
+    }
+
+    const fillLayerId = targetLayer.id;
+
+    const fillOperation = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // 1. Draw existing content (if any)
+      if (targetLayer.dataUrl) {
+        const existingImg = new Image();
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl!; });
+        ctx.drawImage(existingImg, 0, 0);
+      }
+
+      // 2. Draw the fill color using the mask as a clip
+      const maskImg = new Image();
+      await new Promise(resolve => { maskImg.onload = resolve; maskImg.src = selectionMaskDataUrl; });
+
+      ctx.save();
+      
+      // Use the mask to define the area where the fill color should be drawn
+      ctx.drawImage(maskImg, 0, 0);
+      ctx.globalCompositeOperation = 'source-in'; // Draw new shape only where it overlaps the mask
+      
+      ctx.fillStyle = foregroundColor;
+      ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+      
+      ctx.restore();
+      
+      const newLayerDataUrl = canvas.toDataURL();
+      
+      updateLayer(fillLayerId, { dataUrl: newLayerDataUrl });
+      commitLayerChange(fillLayerId);
+      clearSelectionState();
+      showSuccess("Layer filled successfully.");
+    };
+
+    fillOperation();
+  }, [activeTool, selectionMaskDataUrl, dimensions, layers, selectedLayerId, foregroundColor, updateLayer, commitLayerChange, clearSelectionState]);
+
+  // Watch for selectionMaskDataUrl changes when Paint Bucket is active
+  useEffect(() => {
+    if (activeTool === 'paintBucket' && selectionMaskDataUrl) {
+      handlePaintBucketFill();
+    }
+  }, [activeTool, selectionMaskDataUrl, handlePaintBucketFill]);
+
 
   return {
     smartObjectEditingId: useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]),
