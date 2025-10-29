@@ -252,9 +252,7 @@ export const Index = () => {
     selectionMaskDataUrl,
     clearSelectionState,
     selectiveBlurAmount,
-    setSelectiveBlurAmount,
-    customHslColor,
-    setCustomHslColor,
+    // customHslColor removed
   });
 
   // --- Individual Adjustment Hooks (for Global Adjustments Panel) ---
@@ -364,7 +362,7 @@ export const Index = () => {
 
   // --- Global Preset Application ---
   const handleApplyPreset = useCallback((preset: Preset) => {
-    const { state } = preset;
+    const { state, layers: presetLayers } = preset; // Destructure layers from Preset
     applyAdjustmentsPreset(state);
     applyEffectsPreset(state);
     applyGradingPreset(state);
@@ -378,8 +376,8 @@ export const Index = () => {
     applySelectiveBlurPreset(state);
     
     // Apply layer state if present (stub for complex layer presets)
-    if (state.layers) {
-      setLayers(state.layers);
+    if (presetLayers) {
+      setLayers(presetLayers);
     }
 
     recordHistory(`Apply Preset: ${preset.name}`, currentEditState, layers);

@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
-import type { EditState } from '@/types/editor';
+import { useState, useEffect, useCallback } from "react";
+import type { EditState, Layer } from '@/types/editor';
 import { showSuccess } from '@/utils/toast';
 
 export interface Preset {
   name: string;
   state: Partial<EditState>;
+  layers?: Layer[]; // Added optional layers property
 }
 
 const PRESETS_STORAGE_KEY = 'nanoedit-presets';
@@ -23,9 +24,9 @@ export const usePresets = () => {
     }
   }, []);
 
-  const savePreset = useCallback((name: string, state: EditState) => {
+  const savePreset = useCallback((name: string, state: EditState, layersToSave?: Layer[]) => {
     const { crop, ...stateToSave } = state;
-    const newPreset: Preset = { name, state: stateToSave };
+    const newPreset: Preset = { name, state: stateToSave, layers: layersToSave };
     
     const updatedPresets = [...presets.filter(p => p.name !== name), newPreset].sort((a, b) => a.name.localeCompare(b.name));
     
