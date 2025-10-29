@@ -32,6 +32,7 @@ interface EditorWorkspaceProps {
 
 export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspaceRef, imgRef }) => {
   const {
+    image, // Added image
     hasImage, dimensions, fileInfo, currentEditState, layers, selectedLayerId, activeTool,
     brushState, gradientToolState, foregroundColor, backgroundColor, selectionPath,
     selectionMaskDataUrl, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState,

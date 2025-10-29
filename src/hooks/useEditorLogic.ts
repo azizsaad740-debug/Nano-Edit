@@ -33,6 +33,7 @@ import { useCurves } from "@/hooks/useCurves";
 import { useChannels } from "@/hooks/useChannels";
 import { useSelectiveBlur } from "@/hooks/useSelectiveBlur";
 import { useGenerativeAi } from "@/hooks/useGenerativeAi";
+import { useProjectSettings } from "@/hooks/useProjectSettings";
 import { copyImageToClipboard } from "@/utils/imageUtils";
 import { showError, showSuccess } from "@/utils/toast";
 
@@ -51,6 +52,9 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     selectiveBlurAmount, setSelectiveBlurAmount, customHslColor, setCustomHslColor,
     zoom, setZoom,
   } = coreState;
+  
+  // NEW: Preview state
+  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
 
   // --- External State/Manager Hooks ---
   const { presets, savePreset, deletePreset } = usePresets();
@@ -104,6 +108,9 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl,
     clearSelectionState, gradientToolState, setSelectedLayerId, layers, zoom, setZoom
   );
+  
+  // --- Project Settings Hook ---
+  const projectSettingsActions = useProjectSettings(currentEditState, updateCurrentState, recordHistory, layers, dimensions, setDimensions);
 
   // --- Generative AI Hooks ---
   const generativeAiActions = useGenerativeAi(
@@ -174,6 +181,11 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     hasImage: !!image,
     selectedLayer: layers.find(l => l.id === selectedLayerId),
     
+    // NEW: Expose image ref and preview state
+    imgRef,
+    isPreviewingOriginal,
+    setIsPreviewingOriginal,
+    
     // External Managers
     geminiApiKey, stabilityApiKey, saveApiKey,
     presets, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset,
@@ -186,7 +198,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,
     curves, onCurvesChange, onCurvesCommit,
     selectedFilter, onFilterChange,
-    transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, // <-- EXPOSED TRANSFORM FUNCTIONS
+    transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
     crop, onCropChange, onCropComplete, onAspectChange, aspect,
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     channels, onChannelChange,
@@ -199,9 +211,11 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     ...imageLoaderActions,
     ...exportActions,
     ...generativeAiActions,
+    ...projectSettingsActions, // Expose project settings actions
     
     // Workspace Interaction
     ...workspaceInteraction,
+    workspaceZoom: zoom, // Expose zoom as workspaceZoom
     
     // Consolidated Callbacks
     handleApplyPreset,

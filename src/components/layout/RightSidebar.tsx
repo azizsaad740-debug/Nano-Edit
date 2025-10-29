@@ -8,8 +8,8 @@ interface RightSidebarProps {
 
 export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
   const {
-    hasImage, activeTool, selectedLayer, selectedLayerId, layers, imgRef,
-    onSelectLayer, reorderLayers, handleToggleVisibility, renameLayer, deleteLayer,
+    hasImage, activeTool, selectedLayer, selectedLayerId, layers, imgRef, // Added imgRef
+    onSelectLayer, reorderLayers, handleToggleVisibility, renameLayer, deleteLayer, // Added onSelectLayer
     duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject, openSmartObjectEditor,
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection,
@@ -36,6 +36,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
     systemFonts, customFonts,
     // HSL Custom Color
     customHslColor, setCustomHslColor,
+    // Project Settings
+    handleProjectSettingsUpdate, // Added handleProjectSettingsUpdate
   } = logic;
 
   const selectedLayerIds = selectedLayerId ? [selectedLayerId] : [];

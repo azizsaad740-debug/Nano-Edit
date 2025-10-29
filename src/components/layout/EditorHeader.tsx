@@ -43,6 +43,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     layers,
     handleZoomIn, handleZoomOut, handleFitScreen,
     clearSelectionState,
+    setIsPreviewingOriginal, // Destructure the new property
   } = logic;
 
   // --- Keyboard Shortcuts ---
@@ -72,7 +73,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       onDownloadClick={() => setIsExportOpen(true)}
       onCopy={handleCopy}
       hasImage={hasImage}
-      onTogglePreview={logic.setIsPreviewingOriginal}
+      onTogglePreview={setIsPreviewingOriginal}
       onUndo={undo}
       onRedo={redo}
       canUndo={canUndo}

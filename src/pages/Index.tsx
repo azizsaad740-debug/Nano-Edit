@@ -54,6 +54,7 @@ export const Index = () => {
     smartObjectEditingId, selectedLayer,
     selectionPath, selectionMaskDataUrl,
     handleGenerateImage, handleGenerativeFill,
+    handleProjectSettingsUpdate, // Destructure the new property
   } = logic;
 
   // --- Smart Object Editor State ---
@@ -188,7 +189,7 @@ export const Index = () => {
         onOpenChange={setIsProjectSettingsOpen}
         currentDimensions={dimensions}
         currentColorMode={currentEditState.colorMode}
-        onUpdateSettings={logic.handleProjectSettingsUpdate}
+        onUpdateSettings={handleProjectSettingsUpdate}
       />
     </div>
   );
