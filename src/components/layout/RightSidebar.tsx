@@ -6,17 +6,19 @@ import {
 } from "@/components/ui/resizable";
 import AuxiliaryPanel from "./AuxiliaryPanel";
 import { Card } from "@/components/ui/card";
-import type { EditState, BrushState, ActiveTool, SelectionSettings } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point } from "@/types/editor";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
+import type { Preset } from "@/hooks/usePresets";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface SidebarProps {
   // RightSidebarTabs Props
   hasImage: boolean;
   activeTool: ActiveTool | null;
   selectedLayerId: string | null;
-  selectedLayer: any;
-  layers: any[];
+  selectedLayer: Layer | undefined;
+  layers: Layer[];
   imgRef: React.RefObject<HTMLImageElement>;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
@@ -28,16 +30,16 @@ interface SidebarProps {
   onRasterizeLayer: (id: string) => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
-  onLayerUpdate: (id: string, updates: Partial<any>) => void;
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<any>, historyName: string) => void; // Added full commit signature
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; // Added full commit signature
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
-  addTextLayer: (coords: { x: number; y: number }, color: string) => void;
+  addTextLayer: (coords: Point, color: string) => void;
   addDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  addShapeLayer: (coords: { x: number; y: number }, shapeType?: any, initialWidth?: number, initialHeight?: number) => void;
+  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number) => void;
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
   selectedShapeType: any;
@@ -136,6 +138,10 @@ interface SidebarProps {
   onOpenFontManager: () => void;
   // Clone Source Point
   cloneSourcePoint: Point | null;
+  // Selection Settings
+  selectionSettings: SelectionSettings;
+  onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void;
+  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
 }
 
 const Sidebar = (props: SidebarProps) => {

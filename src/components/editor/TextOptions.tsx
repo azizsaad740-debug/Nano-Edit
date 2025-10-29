@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { Layer, TextLayerData } from "@/types/editor";
+import { Separator } from "@/components/ui/separator";
 
 interface TextOptionsProps {
   layer: Layer;
@@ -128,20 +129,34 @@ export const TextOptions: React.FC<TextOptionsProps> = ({ layer, onLayerUpdate, 
         <div className="grid grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label>Style</Label>
-            <ToggleGroup type="multiple" className="justify-start">
+            <ToggleGroup 
+              type="multiple" 
+              className="justify-start"
+              value={[
+                isBoldActive ? 'bold' : '',
+                isItalicActive ? 'italic' : ''
+              ].filter(Boolean)}
+              onValueChange={(values) => {
+                const isBold = values.includes('bold');
+                const isItalic = values.includes('italic');
+                
+                if (isBold !== isBoldActive) {
+                  handleFontChange('fontWeight', isBold ? 'bold' : 'normal', isBold ? 'Apply Bold' : 'Remove Bold');
+                }
+                if (isItalic !== isItalicActive) {
+                  handleFontChange('fontStyle', isItalic ? 'italic' : 'normal', isItalic ? 'Apply Italic' : 'Remove Italic');
+                }
+              }}
+            >
               <ToggleGroupItem
                 value="bold"
                 aria-label="Toggle bold"
-                pressed={isBoldActive}
-                onClick={() => handleFontChange('fontWeight', isBoldActive ? 'normal' : 'bold', isBoldActive ? 'Remove Bold' : 'Apply Bold')}
               >
                 <Bold className="h-4 w-4" />
               </ToggleGroupItem>
               <ToggleGroupItem
                 value="italic"
                 aria-label="Toggle italic"
-                pressed={isItalicActive}
-                onClick={() => handleFontChange('fontStyle', isItalicActive ? 'normal' : 'italic', isItalicActive ? 'Remove Italic' : 'Apply Italic')}
               >
                 <Italic className="h-4 w-4" />
               </ToggleGroupItem>
@@ -224,7 +239,6 @@ export const TextOptions: React.FC<TextOptionsProps> = ({ layer, onLayerUpdate, 
                   color={layer.backgroundColor || '#00000000'}
                   onChange={(color) => handleUpdate({ backgroundColor: color })}
                   onCommit={() => handleCommit("Change Text Background Color")}
-                  showAlpha
                 />
               </div>
               {/* Padding */}

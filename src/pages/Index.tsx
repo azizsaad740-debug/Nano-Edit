@@ -29,7 +29,7 @@ export const Index = () => {
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
-    selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl,
+    selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, customHslColor, setCustomHslColor,
     selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
@@ -37,6 +37,7 @@ export const Index = () => {
     
     // History
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
+    setCurrentEditState, setLayers, setCurrentHistoryIndex,
     
     // Layer Management
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
@@ -80,6 +81,7 @@ export const Index = () => {
     // Refs/External
     workspaceRef, imgRef,
     systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
+    setZoom,
   } = logic;
 
   const isMobile = useIsMobile();
@@ -377,7 +379,7 @@ export const Index = () => {
             // Selection Settings
             selectionSettings={selectionSettings}
             onSelectionSettingChange={(key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value }))}
-            onSelectionSettingCommit={(key, value) => recordHistory(`Set Selection Setting ${key}`, currentEditState, layers)}
+            onSelectionSettingCommit={(key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers)}
             // Clone Source Point
             cloneSourcePoint={cloneSourcePoint}
             // Layers Panel Component

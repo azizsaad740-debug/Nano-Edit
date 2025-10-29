@@ -34,7 +34,7 @@ import {
   SlidersHorizontal,
   Sun,
 } from "lucide-react";
-import type { Layer } from "@/types/editor";
+import type { Layer, Point } from "@/types/editor";
 import LayerItem from "./LayerItem";
 import { LayerControls } from "./LayerControls";
 import { LayerActions } from "./LayerActions";
@@ -56,7 +56,7 @@ interface LayersPanelProps {
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
-  onAddTextLayer: () => void;
+  onAddTextLayer: (coords: Point) => void; // UPDATED SIGNATURE
   onAddDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
@@ -155,12 +155,15 @@ const LayersPanel = (props: LayersPanelProps) => {
   };
 
   const handleAddLayer = (type: 'text' | 'drawing' | 'shape' | 'gradient' | 'adjustment' | 'from-background' | 'from-selection') => {
+    // Default coordinates for quick add buttons (center of canvas)
+    const defaultCoords = { x: 50, y: 50 }; 
+    
     if (type === 'text') {
-      onAddTextLayer();
+      onAddTextLayer(defaultCoords);
     } else if (type === 'drawing') {
       onAddDrawingLayer();
     } else if (type === 'shape') {
-      onAddShapeLayer({ x: 50, y: 50 }, selectedShapeType || 'rect', 10, 10);
+      onAddShapeLayer(defaultCoords, selectedShapeType || 'rect', 10, 10);
     } else if (type === 'gradient') {
       onAddGradientLayer();
     } else if (type === 'adjustment') {
@@ -223,7 +226,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Type className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Add Text Layer</p></TooltipContent>
+            <TooltipContent>
+              <p>Add Text Layer</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -231,7 +236,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Layers className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Add Empty Layer</p></TooltipContent>
+            <TooltipContent>
+              <p>Add Empty Layer</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -239,7 +246,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Square className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Add Shape Layer</p></TooltipContent>
+            <TooltipContent>
+              <p>Add Shape Layer</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -247,7 +256,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Palette className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Add Gradient Layer</p></TooltipContent>
+            <TooltipContent>
+              <p>Add Gradient Layer</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -255,7 +266,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <SlidersHorizontal className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Add Adjustment Layer</p></TooltipContent>
+            <TooltipContent>
+              <p>Add Adjustment Layer</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -263,7 +276,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Sun className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Layer from Background</p></TooltipContent>
+            <TooltipContent>
+              <p>Layer from Background</p>
+            </TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -271,7 +286,9 @@ const LayersPanel = (props: LayersPanelProps) => {
                 <Layers className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Layer from Selection</p></TooltipContent>
+            <TooltipContent>
+              <p>Layer from Selection</p>
+            </TooltipContent>
           </Tooltip>
         </div>
 
@@ -279,10 +296,10 @@ const LayersPanel = (props: LayersPanelProps) => {
           layers={layers}
           selectedLayer={selectedLayer}
           selectedLayerIds={selectedLayerIds}
-          onAddTextLayer={onAddTextLayer}
-          onAddDrawingLayer={onAddDrawingLayer}
-          onAddShapeLayer={onAddShapeLayer}
-          onAddGradientLayer={onAddGradientLayer}
+          onAddTextLayer={() => handleAddLayer('text')}
+          onAddDrawingLayer={() => handleAddLayer('drawing')}
+          onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => onAddShapeLayer(coords, shapeType, initialWidth, initialHeight)}
+          onAddGradientLayer={() => handleAddLayer('gradient')}
           onDeleteLayer={() => selectedLayerId && deleteLayer(selectedLayerId)}
           onDuplicateLayer={() => selectedLayerId && onDuplicateLayer(selectedLayerId)}
           onMergeLayerDown={() => selectedLayerId && onMergeLayerDown(selectedLayerId)}

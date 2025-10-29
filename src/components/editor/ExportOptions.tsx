@@ -20,16 +20,18 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
+export interface ExportOptionsType {
+  format: string;
+  quality: number;
+  width: number;
+  height: number;
+  upscale: 1 | 2 | 4;
+}
+
 interface ExportOptionsProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onExport: (options: {
-    format: string;
-    quality: number;
-    width: number;
-    height: number;
-    upscale: 1 | 2 | 4;
-  }) => void;
+  onExport: (options: ExportOptionsType) => void;
   dimensions: { width: number; height: number } | null;
 }
 

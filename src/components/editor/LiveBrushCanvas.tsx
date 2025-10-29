@@ -298,7 +298,7 @@ export const LiveBrushCanvas = ({
           height: '100%',
           cursor: isDrawing ? 'none' : cursorStyle,
         }}
-        onMouseDown={startStroke}
+        onMouseDown={(e) => startStroke(e.nativeEvent)}
       />
     </div>
   );

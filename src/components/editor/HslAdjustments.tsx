@@ -71,7 +71,7 @@ const HslAdjustments = ({ hslAdjustments, onAdjustmentChange, onAdjustmentCommit
       <Separator />
 
       {HSL_CONTROLS.map(({ key, label, min, max, unit }) => (
-        <div key={key} className="grid gap-2">
+        <div key={String(key)} className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor={String(key)} className="text-sm">{label}</Label>
             <div className="flex items-center gap-2">
