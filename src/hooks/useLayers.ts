@@ -2,10 +2,10 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
-import type { Layer, EditState, ActiveTool, Point, BrushState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, GroupLayerData } from "@/types/editor";
+import type { Layer, EditState, ActiveTool, Point, BrushState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, GroupLayerData, SmartObjectLayerData, ShapeType } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
-import { rasterizeEditedImageWithMask, downloadImage } from "@/utils/imageUtils"; // ADDED imports
+import { rasterizeEditedImageWithMask, downloadImage } from "@/utils/imageUtils";
 import { invertMaskDataUrl, polygonToMaskDataUrl } from "@/utils/maskUtils";
 import { maskToPolygon } from "@/utils/maskToPolygon";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
@@ -20,12 +20,12 @@ interface UseLayersProps {
   currentEditState: EditState;
   foregroundColor: string;
   backgroundColor: string;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
   selectionMaskDataUrl: string | null;
-  setSelectionMaskDataUrl: (url: string | null) => void; // ADDED
+  setSelectionMaskDataUrl: (url: string | null) => void;
   clearSelectionState: () => void;
   brushState: BrushState;
-  activeTool: ActiveTool | null; // Added activeTool
+  activeTool: ActiveTool | null;
 }
 
 // Helper function to recursively find a layer and its container/path
@@ -67,7 +67,7 @@ const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<La
       }
     }
     return layer;
-  });
+  }) as Layer[];
 };
 
 // Helper function to recursively update a nested container (used for reordering/grouping).
@@ -105,7 +105,7 @@ export const useLayers = ({
   layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
   recordHistory, currentEditState, foregroundColor, backgroundColor,
   selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
-  brushState, activeTool, // Destructure activeTool
+  brushState, activeTool,
 }: UseLayersProps) => {
   
   const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]);
@@ -205,8 +205,8 @@ export const useLayers = ({
             name: `${child.name} Copy`,
           } as Layer;
           
-          if (child.type === 'group' && child.children) {
-            (newChild as GroupLayerData).children = duplicateChildren(child.children);
+          if (child.type === 'group' && (child as GroupLayerData).children) {
+            (newChild as GroupLayerData).children = duplicateChildren((child as GroupLayerData).children);
           }
           return newChild;
         });
@@ -216,10 +216,10 @@ export const useLayers = ({
         ...originalLayer,
         id: uuidv4(),
         name: `${originalLayer.name} Copy`,
-        children: originalLayer.type === 'group' && originalLayer.children 
-          ? duplicateChildren(originalLayer.children)
-          : undefined,
-      };
+        ...(originalLayer.type === 'group' && (originalLayer as GroupLayerData).children ? {
+          children: duplicateChildren((originalLayer as GroupLayerData).children)
+        } : {}),
+      } as Layer;
       
       const updatedContainer = [...location.container.slice(0, location.index + 1), newLayer, ...location.container.slice(location.index + 1)];
       
@@ -409,7 +409,7 @@ export const useLayers = ({
   }, [selectionMaskDataUrl, dimensions, handleAddDrawingLayer, updateLayer, commitLayerChange, clearSelectionState]);
 
 
-  const handleAddShapeLayer = useCallback((coords: Point, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
+  const handleAddShapeLayer = useCallback((coords: Point, shapeType: ShapeType = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
     const newLayer: VectorShapeLayerData = {
       id: uuidv4(),
       type: "vector-shape",
@@ -469,24 +469,24 @@ export const useLayers = ({
   }, [layers, recordHistory, currentEditState, foregroundColor, backgroundColor, setLayers, setSelectedLayerId]);
 
   const addAdjustmentLayer = useCallback((type: 'brightness' | 'curves' | 'hsl' | 'grading') => {
-    const initialData: Partial<AdjustmentLayerData> = {};
+    const initialData: Partial<AdjustmentLayerData['adjustmentData']> = {};
     let name: string;
 
     switch (type) {
       case 'brightness':
-        initialData.adjustmentData = { type: 'brightness', adjustments: { brightness: 100, contrast: 100, saturation: 100 } };
+        initialData.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100 };
         name = "Brightness/Contrast";
         break;
       case 'curves':
-        initialData.adjustmentData = { type: 'curves', curves: initialCurvesState };
+        initialData.curves = initialCurvesState;
         name = "Curves";
         break;
       case 'hsl':
-        initialData.adjustmentData = { type: 'hsl', hslAdjustments: currentEditState.hslAdjustments };
+        initialData.hslAdjustments = currentEditState.hslAdjustments;
         name = "HSL Adjustment";
         break;
       case 'grading':
-        initialData.adjustmentData = { type: 'grading', grading: currentEditState.grading };
+        initialData.grading = currentEditState.grading;
         name = "Color Grading";
         break;
     }
@@ -500,7 +500,7 @@ export const useLayers = ({
       blendMode: 'normal',
       x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
       isLocked: false,
-      ...initialData,
+      adjustmentData: { type, ...initialData },
     } as AdjustmentLayerData;
     const updated = [...layers, newLayer];
     setLayers(updated);
@@ -703,9 +703,9 @@ export const useLayers = ({
       if (!ctx) return;
 
       // 1. Draw existing content (if any)
-      if (targetLayer.dataUrl) {
+      if ((targetLayer as DrawingLayerData).dataUrl) {
         const existingImg = new Image();
-        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl!; });
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = (targetLayer as DrawingLayerData).dataUrl!; });
         ctx.drawImage(existingImg, 0, 0);
       }
 

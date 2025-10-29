@@ -15,7 +15,6 @@ export const useImageLoader = (
   setCurrentEditState: (state: EditState) => void,
   initialEditState: EditState,
   initialLayerState: Layer[],
-  initialHistoryItem: HistoryItem,
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
 ) => {

@@ -1,4 +1,4 @@
-import type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslAdjustmentsState, SelectionSettings, ActiveTool, Point, BlendMode, HslColorKey, NewProjectSettings, AdjustmentLayerData, SmartObjectData } from "@/types/editor.d";
+import type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslAdjustmentsState, SelectionSettings, ActiveTool, Point, BlendMode, HslColorKey, NewProjectSettings, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType } from "@/types/editor.d";
 
 // --- Initial State Constants ---
 
@@ -72,6 +72,7 @@ export const initialSelectionSettings: SelectionSettings = {
   refineContrast: 0,
   refineShiftEdge: 0,
   decontaminateColors: false,
+  edgeDetection: 50,
 };
 
 export const initialEditState: EditState = {
@@ -104,8 +105,8 @@ export const initialEditState: EditState = {
     shadowsColor: '#000000',
     midtonesColor: '#808080',
     highlightsColor: '#FFFFFF',
-    highlightsLuminance: 0,
     shadowsLuminance: 0,
+    highlightsLuminance: 0,
     blending: 50,
   },
   hslAdjustments: initialHslAdjustments,
@@ -148,4 +149,4 @@ export const initialHistoryItem: HistoryItem = {
   layers: initialLayerState,
 };
 
-export type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslColorKey, SelectionSettings, ActiveTool, Point, NewProjectSettings, BlendMode, AdjustmentLayerData, SmartObjectData };
+export type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslColorKey, SelectionSettings, ActiveTool, Point, NewProjectSettings, BlendMode, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType };

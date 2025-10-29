@@ -4,14 +4,14 @@ import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showError } from "@/utils/toast";
-import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
+import type { Layer, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData } from "@/types/editor";
 
 export interface UseSmartObjectLayersProps {
   initialLayers: Layer[];
   smartObjectDimensions: { width: number; height: number };
   foregroundColor: string;
   backgroundColor: string;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
 }
 
 /**
@@ -33,7 +33,7 @@ const recursivelyUpdateLayer = (layers: Layer[], id: string, updates: Partial<La
       }
     }
     return layer;
-  });
+  }) as Layer[];
 };
 
 /**
@@ -170,7 +170,7 @@ export const useSmartObjectLayers = ({
 
   const handleAddTextLayer = useCallback(() => {
     const safeLayers = Array.isArray(layers) ? layers : [];
-    const newLayer: Layer = {
+    const newLayer: TextLayerData = {
       id: uuidv4(),
       type: "text",
       name: `Text ${safeLayers.filter((l) => l.type === "text").length + 1}`,
@@ -215,7 +215,7 @@ export const useSmartObjectLayers = ({
     const transparentDataUrl = canvas.toDataURL();
 
     const safeLayers = Array.isArray(layers) ? layers : [];
-    const newLayer: Layer = {
+    const newLayer: DrawingLayerData = {
       id: uuidv4(),
       type: "drawing",
       name: `Drawing ${safeLayers.filter((l) => l.type === "drawing").length + 1}`,
@@ -245,7 +245,7 @@ export const useSmartObjectLayers = ({
       showError("Please select a shape type first.");
       return;
     }
-    const newLayer: Layer = {
+    const newLayer: VectorShapeLayerData = {
       id: uuidv4(),
       type: "vector-shape",
       name: `${selectedShapeType?.charAt(0).toUpperCase() + selectedShapeType?.slice(1) || 'Shape'} ${safeLayers.filter((l) => l.type === "vector-shape").length + 1}`,
@@ -275,7 +275,7 @@ export const useSmartObjectLayers = ({
 
   const handleAddGradientLayer = useCallback(() => {
     const safeLayers = Array.isArray(layers) ? layers : [];
-    const newLayer: Layer = {
+    const newLayer: GradientLayerData = {
       id: uuidv4(),
       type: "gradient",
       name: `Gradient ${safeLayers.filter((l) => l.type === "gradient").length + 1}`,

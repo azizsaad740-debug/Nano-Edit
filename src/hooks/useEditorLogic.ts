@@ -20,13 +20,13 @@ import { useSelectiveBlur } from "./useSelectiveBlur";
 import { downloadImage, rasterizeEditedImageWithMask } from "@/utils/imageUtils";
 import { upscaleImageApi } from "@/utils/stabilityApi";
 import { showError, showSuccess } from "@/utils/toast";
-import type { ExportOptions } from "@/components/editor/ExportOptions";
-import type { Layer, EditState, HslColorKey, HslAdjustment, Point } from "@/types/editor";
+import type { ExportOptions as ExportOptionsType } from "@/components/editor/ExportOptions";
+import type { Layer, EditState, HslColorKey, HslAdjustment, Point, ShapeType } from "@/types/editor";
 
 export const useEditorLogic = () => {
   const state = useEditorState();
   const {
-    image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
+    image, dimensions, fileInfo, exifData, layers, selectedLayerId,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl,
@@ -60,6 +60,13 @@ export const useEditorLogic = () => {
     
     // Font Manager
     systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
+    
+    // State setters needed for ImageLoader/GenerativeAI
+    setImage: setImageState,
+    setDimensions: setDimensionsState,
+    setFileInfo: setFileInfoState,
+    setExifData: setExifDataState,
+    setCurrentEditState: setCurrentEditStateState,
   } = state;
 
   // --- Global Adjustments Hooks ---
@@ -109,7 +116,7 @@ export const useEditorLogic = () => {
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
-    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
+    handleAddTextLayer: handleAddTextLayerInternal, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer: handleAddShapeLayerInternal, handleAddGradientLayer, addAdjustmentLayer,
     groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
@@ -120,22 +127,27 @@ export const useEditorLogic = () => {
     selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
     brushState, activeTool,
   });
+  
+  // Wrapper functions to match expected signatures in Index.tsx
+  const handleAddTextLayer = (coords: Point) => handleAddTextLayerInternal(coords, foregroundColor);
+  const handleAddShapeLayer = (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number) => handleAddShapeLayerInternal(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor);
+
 
   // --- Image Loading and Project Management ---
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
-    state.setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits,
-    recordHistory, setCurrentEditState, currentEditState, initialLayerState, initialHistoryItem,
+    setImageState, setDimensionsState, setFileInfoState, setExifDataState, setLayers, resetAllEdits,
+    recordHistory, setCurrentEditStateState, currentEditState, initialLayerState, initialHistoryItem,
     setSelectedLayerId, clearSelectionState,
   );
 
   // --- Export and AI ---
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
-    geminiApiKey, image, dimensions, state.setImage, setDimensions, setFileInfo,
+    geminiApiKey, image, dimensions, setImageState, setDimensionsState, setFileInfoState,
     allLayers, handleAddDrawingLayer, updateLayer, commitLayerChange, clearSelectionState,
     setIsGenerateOpen, setIsGenerativeFillOpen,
   );
 
-  const handleExport = async (options: ExportOptions) => {
+  const handleExport = async (options: ExportOptionsType) => {
     if (!dimensions || !image) {
       showError("No image loaded to export.");
       return;
@@ -173,7 +185,7 @@ export const useEditorLogic = () => {
 
   // --- Project Settings ---
   const { handleProjectSettingsUpdate } = useProjectSettings(
-    currentEditState, updateCurrentState, recordHistory, allLayers, dimensions, setDimensions
+    currentEditState, updateCurrentState, recordHistory, allLayers, dimensions, setDimensionsState
   );
 
   // --- Workspace Interaction ---
@@ -219,10 +231,8 @@ export const useEditorLogic = () => {
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
-    handleAddTextLayer: (coords: Point) => handleAddTextLayer(coords, foregroundColor),
-    handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection,
-    handleAddShapeLayer: (coords: Point, shapeType?: Layer['shapeType'], initialWidth?: number, initialHeight?: number) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor),
-    handleAddGradientLayer, addAdjustmentLayer, groupLayers, toggleGroupExpanded,
+    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection,
+    handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer, groupLayers, toggleGroupExpanded,
     handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,

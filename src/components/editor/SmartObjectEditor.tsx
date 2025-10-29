@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Save, Undo2, Redo2, Maximize, Minimize, Expand } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, ShapeType } from "@/types/editor";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
@@ -15,7 +15,7 @@ import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceControls } from "./WorkspaceControls";
-import type { BrushState, GradientToolState } from "@/types/editor";
+import type { BrushState, GradientToolState, SmartObjectLayerData } from "@/types/editor";
 import { SlidersHorizontal, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -26,14 +26,14 @@ interface SmartObjectEditorProps {
   onSave: (updatedLayers: Layer[]) => void;
   foregroundColor: string;
   backgroundColor: string;
-  selectedShapeType: Layer['shapeType'] | null;
+  selectedShapeType: ShapeType | null;
   brushState: BrushState;
   gradientToolState: GradientToolState;
   setBrushState: React.Dispatch<React.SetStateAction<BrushState>>;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
-  activeTool: ActiveTool | null; // Added activeTool prop
+  activeTool: ActiveTool | null;
   setActiveTool: (tool: ActiveTool | null) => void;
-  setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
+  setSelectedShapeType: (type: ShapeType | null) => void;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
   handleZoomIn: () => void;
@@ -52,7 +52,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   gradientToolState,
   setBrushState,
   setGradientToolState,
-  activeTool, // Destructured activeTool
+  activeTool,
   setActiveTool,
   setSelectedShapeType,
   zoom,
@@ -65,7 +65,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   const [isFullscreen, setIsFullscreen] = React.useState(false);
   const isMobile = useIsMobile();
 
-  const { smartObjectData } = smartObjectLayer;
+  const smartObjectData = (smartObjectLayer as SmartObjectLayerData).smartObjectData;
   const smartObjectDimensions = {
     width: smartObjectData?.width || 1000,
     height: smartObjectData?.height || 1000,
@@ -117,8 +117,8 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     handleLayerUpdate(id, updates);
   };
 
-  const handleLayerCommitWrapper = (id: string) => { // FIX 11: Removed historyName argument
-    handleLayerCommit(id); // Smart object layers commit to internal history
+  const handleLayerCommitWrapper = (id: string) => {
+    handleLayerCommit(id);
   };
 
   const handleLayerOpacityChangeWrapper = (opacity: number) => {

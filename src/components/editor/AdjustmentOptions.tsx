@@ -4,7 +4,7 @@ import * as React from "react";
 import type { Layer } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AdjustmentLayerControls from "./AdjustmentLayerControls";
-import LayerGeneralProperties from "./LayerGeneralProperties";
+import { LayerGeneralProperties } from "./LayerGeneralProperties";
 
 interface AdjustmentOptionsProps {
   layer: Layer;

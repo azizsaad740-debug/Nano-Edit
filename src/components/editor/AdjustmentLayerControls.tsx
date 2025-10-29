@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, AdjustmentLayerData, HslAdjustment, EditState, Point, HslColorKey } from "@/types/editor";
+import type { Layer, AdjustmentLayerData, HslAdjustment, EditState, Point, HslColorKey, AdjustmentState, GradingState, HslAdjustmentsState, CurvesState } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import LightingAdjustments from "./LightingAdjustments";
@@ -12,15 +12,15 @@ import { Button } from "@/components/ui/button";
 import { RotateCcw } from "lucide-react";
 
 
-type AdjustmentType = AdjustmentLayerData['type'];
+type AdjustmentType = AdjustmentLayerData['adjustmentData']['type'];
 
 interface AdjustmentLayerControlsProps {
   layer: Layer;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   imgRef: React.RefObject<HTMLImageElement>;
-  customHslColor: string; // NEW
-  setCustomHslColor: (color: string) => void; // NEW
+  customHslColor: string;
+  setCustomHslColor: (color: string) => void;
 }
 
 const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslColor, setCustomHslColor }: AdjustmentLayerControlsProps) => {
@@ -30,7 +30,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
 
   const { adjustmentData } = layer;
 
-  const handleDataUpdate = (updates: Partial<AdjustmentLayerData>) => {
+  const handleDataUpdate = (updates: Partial<AdjustmentLayerData['adjustmentData']>) => {
     onUpdate(layer.id, { adjustmentData: { ...adjustmentData, ...updates } });
   };
 
@@ -39,26 +39,26 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
   };
 
   // --- Brightness/Contrast Handlers ---
-  const handleAdjustmentChange = (key: string, value: number) => {
+  const handleAdjustmentChange = (key: keyof AdjustmentState, value: number) => {
     if (adjustmentData.adjustments) {
       handleDataUpdate({ adjustments: { ...adjustmentData.adjustments, [key]: value } });
     }
   };
 
-  const handleAdjustmentCommit = (key: string, value: number) => {
+  const handleAdjustmentCommit = (key: keyof AdjustmentState, value: number) => {
     if (adjustmentData.adjustments) {
       handleDataCommit();
     }
   };
 
   // --- Color Grading Handlers ---
-  const handleGradingChange = (key: string, value: number) => {
+  const handleGradingChange = (key: keyof GradingState, value: number) => {
     if (adjustmentData.grading) {
       handleDataUpdate({ grading: { ...adjustmentData.grading, [key]: value } });
     }
   };
 
-  const handleGradingCommit = (key: string, value: number) => {
+  const handleGradingCommit = (key: keyof GradingState, value: number) => {
     if (adjustmentData.grading) {
       handleDataCommit();
     }
@@ -67,7 +67,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
   // --- HSL Handlers ---
   const handleHslAdjustmentChange = (color: HslColorKey, key: keyof HslAdjustment, value: number) => {
     if (adjustmentData.hslAdjustments) {
-      const newHsl = { 
+      const newHsl: HslAdjustmentsState = { 
         ...adjustmentData.hslAdjustments, 
         [color]: { ...adjustmentData.hslAdjustments[color], [key]: value } 
       };
@@ -82,25 +82,25 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
   };
 
   // --- Curves Handlers ---
-  const handleCurvesChange = (channel: keyof EditState['curves'], points: Point[]) => {
+  const handleCurvesChange = (channel: keyof CurvesState, points: Point[]) => {
     if (adjustmentData.curves) {
       handleDataUpdate({ curves: { ...adjustmentData.curves, [channel]: points } });
     }
   };
 
-  const handleCurvesCommit = (channel: keyof EditState['curves'], points: Point[]) => {
+  const handleCurvesCommit = (channel: keyof CurvesState, points: Point[]) => {
     if (adjustmentData.curves) {
       handleDataCommit();
     }
   };
 
   const handleResetAdjustment = (type: AdjustmentType) => {
-    let updates: Partial<AdjustmentLayerData> = {};
+    let updates: Partial<AdjustmentLayerData['adjustmentData']> = {};
     let name: string;
 
     switch (type) {
       case 'brightness':
-        updates.adjustments = { brightness: 100, contrast: 100, saturation: 100 };
+        updates.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100 };
         name = "Reset Brightness/Contrast";
         break;
       case 'curves':
@@ -122,7 +122,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
         name = "Reset HSL";
         break;
       case 'grading':
-        updates.grading = { grayscale: 0, sepia: 0, invert: 0 };
+        updates.grading = { grayscale: 0, sepia: 0, invert: 0, shadowsColor: '#000000', midtonesColor: '#808080', highlightsColor: '#FFFFFF', shadowsLuminance: 0, highlightsLuminance: 0, blending: 50 };
         name = "Reset Color Grading";
         break;
       default:
@@ -145,8 +145,8 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
             </div>
             <LightingAdjustments
               adjustments={adjustmentData.adjustments || { brightness: 100, contrast: 100, saturation: 100 }}
-              onAdjustmentChange={handleAdjustmentChange}
-              onAdjustmentCommit={handleAdjustmentCommit}
+              onAdjustmentChange={handleAdjustmentChange as (adjustment: string, value: number) => void}
+              onAdjustmentCommit={handleAdjustmentCommit as (adjustment: string, value: number) => void}
             />
           </div>
         );
@@ -193,8 +193,8 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
             </div>
             <ColorGrading
               grading={adjustmentData.grading || { grayscale: 0, sepia: 0, invert: 0 }}
-              onGradingChange={handleGradingChange}
-              onGradingCommit={handleGradingCommit}
+              onGradingChange={handleGradingChange as (gradingType: string, value: number) => void}
+              onGradingCommit={handleGradingCommit as (gradingType: string, value: number) => void}
             />
           </div>
         );

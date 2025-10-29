@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Layer } from "@/types/editor";
+import type { Layer, GradientLayerData } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Plus, Minus, RotateCcw } from "lucide-react";
@@ -36,7 +36,7 @@ const GradientLayerProperties = ({ layer, onUpdate, onCommit }: GradientLayerPro
     onCommit(name);
   };
 
-  const handleGradientTypeChange = (newType: Layer['gradientType']) => {
+  const handleGradientTypeChange = (newType: GradientLayerData['gradientType']) => {
     handleUpdate({ gradientType: newType });
     handleCommit(`Change Gradient Type to ${newType}`);
   };

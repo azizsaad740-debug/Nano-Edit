@@ -17,6 +17,7 @@ export type ActiveTool =
   | "marqueeRect"
   | "marqueeEllipse"
   | "lassoPoly"
+  | "lassoMagnetic"
   | "quickSelect"
   | "magicWand"
   | "objectSelect"
@@ -160,6 +161,8 @@ export interface FrameState {
   opacity?: number;
 }
 
+export type ShapeType = 'rect' | 'circle' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'custom';
+
 export interface SelectionSettings {
   feather: number;
   antiAlias: boolean;
@@ -179,6 +182,7 @@ export interface SelectionSettings {
   refineContrast: number;
   refineShiftEdge: number;
   decontaminateColors: boolean;
+  edgeDetection: number;
 }
 
 export interface EditState {
@@ -275,7 +279,7 @@ export interface TextLayerData extends BaseLayerData {
 
 export interface VectorShapeLayerData extends BaseLayerData {
   type: 'vector-shape';
-  shapeType: 'rect' | 'circle' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'custom';
+  shapeType: ShapeType;
   fillColor: string;
   strokeColor: string;
   strokeWidth: number;
@@ -343,3 +347,5 @@ export interface HistoryItem {
   state: EditState;
   layers: Layer[];
 }
+
+export type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslColorKey, SelectionSettings, ActiveTool, Point, NewProjectSettings, BlendMode, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType };

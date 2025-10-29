@@ -4,9 +4,9 @@ import * as React from "react";
 import type { Layer, ActiveTool, BrushState, GradientToolState, EditState, HslAdjustment } from "@/types/editor";
 import { TextOptions } from "./TextOptions";
 import { AdjustmentOptions } from "./AdjustmentOptions";
-import LayerGeneralProperties from "./LayerGeneralProperties";
+import { LayerGeneralProperties } from "./LayerGeneralProperties";
 import ShapeOptions from "./ShapeOptions";
-import { GradientOptions } from "./GradientOptions"; // Fixed import
+import { GradientOptions } from "./GradientOptions";
 import MaskProperties from "./MaskProperties";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 
@@ -64,7 +64,6 @@ export const LayerPropertiesContent: React.FC<LayerPropertiesContentProps> = (pr
         onCommit={props.onLayerCommit}
       />
 
-      {/* Layer Type Specific Options */}
       {isTextLayer && (
         <TextOptions
           layer={selectedLayer}

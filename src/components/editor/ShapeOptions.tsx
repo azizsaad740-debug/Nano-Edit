@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, Plus, Trash2, RotateCcw } from "lucide-react";
 import { showError } from "@/utils/toast";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import type { ShapeType, VectorShapeLayerData } from "@/types/editor";
 
 interface ShapeOptionsProps {
   layer: Layer;
@@ -29,7 +30,9 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
     return null;
   }
 
-  const handleUpdate = (updates: Partial<Layer>) => {
+  const shapeLayer = layer as VectorShapeLayerData;
+
+  const handleUpdate = (updates: Partial<VectorShapeLayerData>) => {
     onLayerUpdate(updates);
   };
 
@@ -37,8 +40,8 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
     onLayerCommit(historyName);
   };
 
-  const handleShapeTypeChange = (newShapeType: Layer['shapeType']) => {
-    let updates: Partial<Layer> = { shapeType: newShapeType };
+  const handleShapeTypeChange = (newShapeType: ShapeType) => {
+    let updates: Partial<VectorShapeLayerData> = { shapeType: newShapeType };
     
     // Reset specific properties based on new type
     updates.borderRadius = 0;
@@ -55,7 +58,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
       updates.fillColor = 'none';
       updates.strokeWidth = 2;
     } else if (newShapeType === 'custom' || newShapeType === 'polygon') {
-      updates.points = layer.points || [{x: 20, y: 20}, {x: 80, y: 20}, {x: 80, y: 80}, {x: 20, y: 80}];
+      updates.points = shapeLayer.points || [{x: 20, y: 20}, {x: 80, y: 20}, {x: 80, y: 80}, {x: 20, y: 80}];
     }
     
     handleUpdate(updates);
@@ -63,7 +66,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
   };
 
   const convertToPolygon = () => {
-    if (layer.shapeType === 'rect') {
+    if (shapeLayer.shapeType === 'rect') {
       handleUpdate({ 
         shapeType: 'polygon', 
         points: [
@@ -75,14 +78,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
         borderRadius: 0,
       });
       handleCommit("Convert Rectangle to Polygon");
-    } else if (layer.shapeType === 'circle') {
+    } else if (shapeLayer.shapeType === 'circle') {
       showError("Converting a circle to a polygon requires many points. Please use a rectangle as a starting point.");
     }
   };
 
   const addPoint = () => {
-    if (layer.shapeType !== 'polygon' && layer.shapeType !== 'triangle' && layer.shapeType !== 'custom') return;
-    const points = layer.points || [];
+    if (shapeLayer.shapeType !== 'polygon' && shapeLayer.shapeType !== 'triangle' && shapeLayer.shapeType !== 'custom') return;
+    const points = shapeLayer.points || [];
     if (points.length < 2) return;
 
     // Add a point roughly in the middle of the last segment
@@ -96,8 +99,8 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
   };
 
   const removeLastPoint = () => {
-    if (layer.shapeType !== 'polygon' && layer.shapeType !== 'triangle' && layer.shapeType !== 'custom') return;
-    const points = layer.points || [];
+    if (shapeLayer.shapeType !== 'polygon' && shapeLayer.shapeType !== 'triangle' && shapeLayer.shapeType !== 'custom') return;
+    const points = shapeLayer.points || [];
     if (points.length <= 3) {
       showError("A polygon must have at least 3 points.");
       return;
@@ -107,8 +110,8 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
     handleCommit("Remove Polygon Point");
   };
 
-  const isPolygonEditable = layer.shapeType === 'polygon' || layer.shapeType === 'triangle' || layer.shapeType === 'custom';
-  const isLineShape = layer.shapeType === 'line' || layer.shapeType === 'arrow';
+  const isPolygonEditable = shapeLayer.shapeType === 'polygon' || shapeLayer.shapeType === 'triangle' || shapeLayer.shapeType === 'custom';
+  const isLineShape = shapeLayer.shapeType === 'line' || shapeLayer.shapeType === 'arrow';
   const isFillable = !isLineShape;
 
   return (
@@ -120,7 +123,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
         <div className="grid gap-2">
           <Label htmlFor="shape-type">Shape Type</Label>
           <Select
-            value={layer.shapeType}
+            value={shapeLayer.shapeType}
             onValueChange={handleShapeTypeChange}
           >
             <SelectTrigger id="shape-type">
@@ -148,7 +151,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 id="fill-color"
                 type="color"
                 className="p-1 h-10 w-12"
-                value={layer.fillColor || "#000000"}
+                value={shapeLayer.fillColor || "#000000"}
                 onChange={(e) => handleUpdate({ fillColor: e.target.value })}
                 onBlur={() => handleCommit("Change Fill Color")}
               />
@@ -160,7 +163,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
               id="stroke-color"
               type="color"
               className="p-1 h-10 w-12"
-              value={layer.strokeColor || "#FFFFFF"}
+              value={shapeLayer.strokeColor || "#FFFFFF"}
               onChange={(e) => handleUpdate({ strokeColor: e.target.value })}
               onBlur={() => handleCommit("Change Stroke Color")}
             />
@@ -171,50 +174,50 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="stroke-width">Stroke Width</Label>
-            <span className="text-sm text-muted-foreground">{layer.strokeWidth}px</span>
+            <span className="text-sm text-muted-foreground">{shapeLayer.strokeWidth}px</span>
           </div>
           <Slider
             id="stroke-width"
             min={0}
             max={20}
             step={0.5}
-            value={[layer.strokeWidth || 0]}
+            value={[shapeLayer.strokeWidth || 0]}
             onValueChange={([v]) => handleUpdate({ strokeWidth: v })}
             onValueCommit={() => handleCommit("Change Stroke Width")}
           />
         </div>
 
         {/* Shape Specific Controls */}
-        {layer.shapeType === 'rect' && (
+        {shapeLayer.shapeType === 'rect' && (
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="border-radius">Corner Radius</Label>
-              <span className="text-sm text-muted-foreground">{layer.borderRadius}px</span>
+              <span className="text-sm text-muted-foreground">{shapeLayer.borderRadius}px</span>
             </div>
             <Slider
               id="border-radius"
               min={0}
               max={50}
               step={1}
-              value={[layer.borderRadius || 0]}
+              value={[shapeLayer.borderRadius || 0]}
               onValueChange={([v]) => handleUpdate({ borderRadius: v })}
               onValueCommit={() => handleCommit("Change Corner Radius")}
             />
           </div>
         )}
         
-        {layer.shapeType === 'star' && (
+        {shapeLayer.shapeType === 'star' && (
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="star-points">Star Points</Label>
-              <span className="text-sm text-muted-foreground">{layer.starPoints}</span>
+              <span className="text-sm text-muted-foreground">{shapeLayer.starPoints}</span>
             </div>
             <Slider
               id="star-points"
               min={3}
               max={20}
               step={1}
-              value={[layer.starPoints || 5]}
+              value={[shapeLayer.starPoints || 5]}
               onValueChange={([v]) => handleUpdate({ starPoints: v })}
               onValueCommit={() => handleCommit("Change Star Points")}
             />
@@ -225,14 +228,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="line-thickness">Line Thickness</Label>
-              <span className="text-sm text-muted-foreground">{layer.lineThickness}px</span>
+              <span className="text-sm text-muted-foreground">{shapeLayer.lineThickness}px</span>
             </div>
             <Slider
               id="line-thickness"
               min={1}
               max={50}
               step={1}
-              value={[layer.lineThickness || 5]}
+              value={[shapeLayer.lineThickness || 5]}
               onValueChange={([v]) => handleUpdate({ lineThickness: v })}
               onValueCommit={() => handleCommit("Change Line Thickness")}
             />
@@ -245,7 +248,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
             <AccordionTrigger>Path Editing</AccordionTrigger>
             <AccordionContent className="space-y-4">
               {!isPolygonEditable ? (
-                <Button variant="outline" className="w-full" onClick={convertToPolygon} disabled={layer.shapeType === 'circle'}>
+                <Button variant="outline" className="w-full" onClick={convertToPolygon} disabled={shapeLayer.shapeType === 'circle'}>
                   <Edit className="h-4 w-4 mr-2" /> Convert to Polygon for Point Editing
                 </Button>
               ) : (
@@ -255,7 +258,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                     <Button variant="outline" onClick={addPoint}>
                       <Plus className="h-4 w-4 mr-2" /> Add Point
                     </Button>
-                    <Button variant="outline" onClick={removeLastPoint} disabled={(layer.points?.length || 0) <= 3}>
+                    <Button variant="outline" onClick={removeLastPoint} disabled={(shapeLayer.points?.length || 0) <= 3}>
                       <Trash2 className="h-4 w-4 mr-2" /> Remove Last Point
                     </Button>
                   </div>
@@ -274,14 +277,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="width">Width</Label>
-                    <span className="text-sm text-muted-foreground">{layer.width?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{shapeLayer.width?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="width"
                     min={1}
                     max={100}
                     step={0.1}
-                    value={[layer.width || 10]}
+                    value={[shapeLayer.width || 10]}
                     onValueChange={([v]) => handleUpdate({ width: v })}
                     onValueCommit={() => handleCommit("Change Width")}
                   />
@@ -289,14 +292,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="height">Height</Label>
-                    <span className="text-sm text-muted-foreground">{layer.height?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{shapeLayer.height?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="height"
                     min={1}
                     max={100}
                     step={0.1}
-                    value={[layer.height || 10]}
+                    value={[shapeLayer.height || 10]}
                     onValueChange={([v]) => handleUpdate({ height: v })}
                     onValueCommit={() => handleCommit("Change Height")}
                   />
@@ -306,14 +309,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="x-pos">X Position</Label>
-                    <span className="text-sm text-muted-foreground">{layer.x?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{shapeLayer.x?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="x-pos"
                     min={0}
                     max={100}
                     step={0.1}
-                    value={[layer.x || 50]}
+                    value={[shapeLayer.x || 50]}
                     onValueChange={([v]) => handleUpdate({ x: v })}
                     onValueCommit={() => handleCommit("Change X Position")}
                   />
@@ -321,14 +324,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="y-pos">Y Position</Label>
-                    <span className="text-sm text-muted-foreground">{layer.y?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{shapeLayer.y?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="y-pos"
                     min={0}
                     max={100}
                     step={0.1}
-                    value={[layer.y || 50]}
+                    value={[shapeLayer.y || 50]}
                     onValueChange={([v]) => handleUpdate({ y: v })}
                     onValueCommit={() => handleCommit("Change Y Position")}
                   />
@@ -337,14 +340,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="rotation">Rotation</Label>
-                  <span className="text-sm text-muted-foreground">{layer.rotation}°</span>
+                  <span className="text-sm text-muted-foreground">{shapeLayer.rotation}°</span>
                 </div>
                 <Slider
                   id="rotation"
                   min={-180}
                   max={180}
                   step={1}
-                  value={[layer.rotation || 0]}
+                  value={[shapeLayer.rotation || 0]}
                   onValueChange={([v]) => handleUpdate({ rotation: v })}
                   onValueCommit={() => handleCommit("Change Rotation")}
                 />

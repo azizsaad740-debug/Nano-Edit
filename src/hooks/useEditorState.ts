@@ -16,6 +16,7 @@ import {
   type Dimensions,
   type HistoryItem,
   type SelectionSettings,
+  type ShapeType,
 } from "@/types/editor";
 import { showSuccess, showError, dismissToast } from "@/utils/toast";
 import { useFontManager } from "./useFontManager";
@@ -44,7 +45,7 @@ export const useEditorState = () => {
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [foregroundColor, setForegroundColor] = useState<string>('#000000');
   const [backgroundColor, setBackgroundColor] = useState<string>('#FFFFFF');
-  const [selectedShapeType, setSelectedShapeType] = useState<Layer['shapeType'] | null>('rect');
+  const [selectedShapeType, setSelectedShapeType] = useState<ShapeType | null>('rect');
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
   const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null);
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
