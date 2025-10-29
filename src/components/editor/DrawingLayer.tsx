@@ -19,7 +19,7 @@ interface DrawingLayerProps {
 
 export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: DrawingLayerProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const [isLoaded, setIsLoaded] = React.useState(false);
+  const [contentDimensions, setContentDimensions] = React.useState<{ width: number; height: number } | null>(null);
 
   const {
     layerRef,
@@ -56,34 +56,30 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
       try {
         const contentImage = await loadImage(layer.dataUrl!);
         
+        // Set canvas dimensions to the natural size of the content image
         canvas.width = contentImage.naturalWidth;
         canvas.height = contentImage.naturalHeight;
         
+        setContentDimensions({ width: contentImage.naturalWidth, height: contentImage.naturalHeight });
+        
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Apply layer's blend mode and opacity (handled by parent container style, but we draw opaque content here)
-        // We draw the content image directly. Opacity/BlendMode are applied via CSS/parent container.
+        // Draw the content image directly onto the canvas
         ctx.globalCompositeOperation = 'source-over'; 
         ctx.globalAlpha = 1.0; 
 
         ctx.drawImage(contentImage, 0, 0);
 
-        // Note: Layer mask application is handled in rasterizeLayerToCanvas for final output, 
-        // but for live preview, we rely on the parent container's CSS/SVG filters if needed.
-        // Since this component is primarily for rendering the content of a drawing layer, 
-        // we keep it simple here.
-
-        setIsLoaded(true);
       } catch (error) {
         console.error("Failed to render drawing layer:", error);
-        setIsLoaded(false);
+        setContentDimensions(null);
       }
     };
 
     renderLayer();
   }, [layer.dataUrl]);
 
-  if (!layer.visible || layer.type !== "drawing" || !layer.dataUrl) {
+  if (!layer.visible || layer.type !== "drawing" || !layer.dataUrl || !contentDimensions) {
     return null;
   }
 
@@ -119,8 +115,11 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
         <canvas
           ref={canvasRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          // The canvas element itself is sized to contentDimensions pixels, 
+          // but the CSS ensures it stretches to the parent div's percentage size.
           style={{
-            visibility: isLoaded ? 'visible' : 'hidden',
+            width: '100%',
+            height: '100%',
           }}
         />
 
