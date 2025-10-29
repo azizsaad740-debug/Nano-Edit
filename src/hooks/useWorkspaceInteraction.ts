@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { ActiveTool, Dimensions, GradientToolState, Layer, Point } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
+import { polygonToMaskDataUrl } from '@/utils/maskUtils';
 
 export const useWorkspaceInteraction = (
   workspaceRef: React.RefObject<HTMLDivElement>,
@@ -26,6 +27,9 @@ export const useWorkspaceInteraction = (
   
   // Use refs for marquee drawing state to avoid re-creating handlers constantly
   const marqueeStartRef = React.useRef<Point | null>(null);
+  
+  // Ref for polygonal lasso drawing
+  const polygonalPathRef = React.useRef<Point[]>([]);
 
   React.useEffect(() => {
     setLocalZoom(initialZoom);
@@ -69,38 +73,70 @@ export const useWorkspaceInteraction = (
     }
   }, [handleZoomIn, handleZoomOut]);
 
+  const getPointOnImage = React.useCallback((e: React.MouseEvent<HTMLDivElement> | MouseEvent): Point | null => {
+    if (!imgRef.current || !dimensions) return null;
+    const rect = imgRef.current.getBoundingClientRect();
+    
+    // Check if click is within the image bounds (scaled)
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+      return null;
+    }
+
+    // Calculate coordinates relative to the image (in pixels)
+    const scaleX = dimensions.width / rect.width;
+    const scaleY = dimensions.height / rect.height;
+    
+    return {
+      x: Math.round((e.clientX - rect.left) * scaleX),
+      y: Math.round((e.clientY - rect.top) * scaleY),
+    };
+  }, [imgRef, dimensions]);
+
   const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!imgRef.current || !dimensions) return;
 
-    const rect = imgRef.current.getBoundingClientRect();
-    const isClickOnImage = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
-
-    if (!isClickOnImage) {
+    const clickPoint = getPointOnImage(e);
+    if (!clickPoint) {
       setSelectedLayerId(null);
       clearSelectionState();
       return;
     }
     
-    const clickPoint: Point = { x: e.clientX, y: e.clientY };
+    const screenPoint: Point = { x: e.clientX, y: e.clientY };
 
     if (activeTool === 'gradient') {
-      setGradientStart(clickPoint);
-      setGradientCurrent(clickPoint);
+      setGradientStart(screenPoint);
+      setGradientCurrent(screenPoint);
     } else if (activeTool?.startsWith('marquee')) {
-      marqueeStartRef.current = clickPoint;
-      setMarqueeStart(clickPoint);
-      setMarqueeCurrent(clickPoint);
+      marqueeStartRef.current = screenPoint;
+      setMarqueeStart(screenPoint);
+      setMarqueeCurrent(screenPoint);
       clearSelectionState();
+    } else if (activeTool === 'lassoPoly') {
+      // Polygonal Lasso: Add point on click
+      if (e.button === 0) { // Left click
+        if (polygonalPathRef.current.length === 0) {
+          clearSelectionState();
+        }
+        polygonalPathRef.current.push(clickPoint);
+        setSelectionPath([...polygonalPathRef.current]);
+      }
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {
       setGradientCurrent({ x: e.clientX, y: e.clientY });
     } else if (activeTool?.startsWith('marquee') && marqueeStartRef.current) {
       setMarqueeCurrent({ x: e.clientX, y: e.clientY });
+    } else if (activeTool === 'lassoPoly' && polygonalPathRef.current.length > 0) {
+      // Update the visual path with the current mouse position (screen coordinates)
+      const currentPoint = getPointOnImage(e.nativeEvent);
+      if (currentPoint) {
+        setSelectionPath([...polygonalPathRef.current, currentPoint]);
+      }
     }
-  }, [activeTool, gradientStart, setGradientCurrent, setMarqueeCurrent]);
+  }, [activeTool, gradientStart, setGradientCurrent, setMarqueeCurrent, getPointOnImage, setSelectionPath]);
 
   const handleWorkspaceMouseUp = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart && gradientCurrent) {
@@ -123,6 +159,37 @@ export const useWorkspaceInteraction = (
       setMarqueeCurrent(null);
     }
   }, [activeTool, gradientStart, gradientCurrent, onMarqueeSelectionComplete, clearSelectionState, setMarqueeStart, setMarqueeCurrent]);
+
+  // --- Polygonal Lasso Finalization ---
+  React.useEffect(() => {
+    if (activeTool !== 'lassoPoly') {
+      polygonalPathRef.current = [];
+      return;
+    }
+
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && polygonalPathRef.current.length >= 3) {
+        e.preventDefault();
+        // Finalize selection
+        const finalPath = polygonalPathRef.current;
+        if (dimensions) {
+          const maskUrl = await polygonToMaskDataUrl(finalPath, dimensions.width, dimensions.height);
+          setSelectionMaskDataUrl(maskUrl);
+          setSelectionPath(finalPath); // Keep path for visualization
+          polygonalPathRef.current = [];
+          showSuccess("Polygonal selection finalized.");
+        }
+      } else if (e.key === 'Escape') {
+        polygonalPathRef.current = [];
+        clearSelectionState();
+        showSuccess("Polygonal selection cancelled.");
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [activeTool, dimensions, setSelectionMaskDataUrl, setSelectionPath, clearSelectionState]);
+
 
   return {
     zoom,

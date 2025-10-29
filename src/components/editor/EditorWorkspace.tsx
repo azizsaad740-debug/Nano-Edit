@@ -99,6 +99,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
   };
 
   const isMarqueeToolActive = activeTool?.startsWith('marquee');
+  const isLassoToolActive = activeTool === 'lasso' || activeTool === 'lassoPoly';
 
   return (
     <div className="flex-1 relative bg-muted/50 overflow-hidden">
@@ -182,7 +183,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               )}
 
               {/* Live Lasso Selection Canvas */}
-              {activeTool === 'lasso' && (
+              {isLassoToolActive && (
                 <SelectionCanvas
                   imageRef={imgRef}
                   onSelectionComplete={async (path) => {
@@ -195,6 +196,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
                     }
                   }}
                   selectionPath={selectionPath}
+                  activeTool={activeTool as 'lasso' | 'lassoPoly'}
                 />
               )}
 
@@ -210,7 +212,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               )}
 
               {/* Selection Mask Overlay (for visual feedback) */}
-              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || activeTool === 'lasso' || isMarqueeToolActive) && (
+              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || isLassoToolActive || isMarqueeToolActive) && (
                 <SelectionMaskOverlay
                   maskDataUrl={selectionMaskDataUrl}
                   imageNaturalDimensions={dimensions}
