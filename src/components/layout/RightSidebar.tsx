@@ -20,7 +20,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,
-    curves, onCurvesChange, onCurvesCommit, selectedFilter, onFilterChange, transforms, rotation, onRotationChange, onRotationCommit,
+    curves, onCurvesChange, onCurvesCommit, selectedFilter, onFilterChange, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
     onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,

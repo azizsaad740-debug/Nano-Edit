@@ -80,6 +80,14 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   const { channels, onChannelChange, applyPreset: applyChannelsPreset } = useChannels(currentEditState, updateCurrentState, recordHistory, layers);
   const { selectiveBlurMask, handleSelectiveBlurStrokeEnd, applyPreset: applySelectiveBlurPreset } = useSelectiveBlur(currentEditState, updateCurrentState, recordHistory, layers, dimensions);
 
+  // --- Layer Selection Logic ---
+  const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    // Simplified selection logic: only supports single selection for now
+    // but maintains the signature required by LayersPanel for future multi-select support.
+    setSelectedLayerId(id);
+    clearSelectionState();
+  }, [setSelectedLayerId, clearSelectionState]);
+
   // --- Layer Management Hook ---
   const layerActions = useLayers({
     currentEditState, recordHistory, updateCurrentState, imgRef, imageNaturalDimensions: dimensions,
@@ -206,6 +214,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
 
     // Layer Actions
     ...layerActions,
+    onSelectLayer, // Expose the newly implemented function
     
     // Image/Project Actions
     ...imageLoaderActions,
