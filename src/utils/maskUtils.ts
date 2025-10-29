@@ -1,4 +1,4 @@
-import type { Point } from "@/types/editor";
+import type { Point, Dimensions } from "@/types/editor";
 
 /**
  * Converts a polygonal path into a binary mask data URL.
@@ -81,5 +81,54 @@ export const invertMaskDataUrl = async (
     };
     maskImage.onerror = reject;
     maskImage.src = maskDataUrl;
+  });
+};
+
+/**
+ * Simulates generating a mask using a flood fill/magic wand algorithm.
+ * Since actual pixel analysis is not possible, this stubs a selection area.
+ *
+ * @param clickPoint The starting point of the selection (in image pixels).
+ * @param dimensions The dimensions of the image.
+ * @param tolerance The color tolerance setting (0-255).
+ * @returns A Promise that resolves to a data URL of the binary mask.
+ */
+export const floodFillToMaskDataUrl = async (
+  clickPoint: Point,
+  dimensions: Dimensions,
+  tolerance: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return reject(new Error("Failed to get canvas context."));
+    }
+
+    // STUB: Simulate a selection based on the click point and tolerance.
+    // Higher tolerance means a larger selection (larger radius).
+    
+    const maxRadius = Math.min(dimensions.width, dimensions.height) * 0.3;
+    const radius = maxRadius * (tolerance / 255); // Scale radius by tolerance (0-255)
+    const featherRadius = 30; 
+
+    ctx.save();
+    
+    // 1. Draw the selection shape (white)
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    ctx.arc(clickPoint.x, clickPoint.y, radius, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // 2. Apply feathering (blur)
+    ctx.filter = `blur(${featherRadius}px)`;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(canvas, 0, 0); // Redraw to apply filter
+
+    ctx.restore();
+    
+    resolve(canvas.toDataURL());
   });
 };

@@ -1,7 +1,7 @@
 import * as React from 'react';
-import type { ActiveTool, Dimensions, GradientToolState, Layer, Point } from '@/types/editor';
+import type { ActiveTool, Dimensions, GradientToolState, Layer, Point, EditState } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-import { polygonToMaskDataUrl } from '@/utils/maskUtils';
+import { polygonToMaskDataUrl, floodFillToMaskDataUrl } from '@/utils/maskUtils';
 
 export const useWorkspaceInteraction = (
   workspaceRef: React.RefObject<HTMLDivElement>,
@@ -19,6 +19,7 @@ export const useWorkspaceInteraction = (
   setMarqueeStart: (point: Point | null) => void, // NEW
   setMarqueeCurrent: (point: Point | null) => void, // NEW
   onMarqueeSelectionComplete: (start: Point, end: Point) => void, // NEW
+  currentEditState: EditState, // NEW
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
@@ -92,6 +93,24 @@ export const useWorkspaceInteraction = (
     };
   }, [imgRef, dimensions]);
 
+  const handleMagicWandClick = React.useCallback(async (clickPoint: Point) => {
+    if (!dimensions) return;
+    
+    const tolerance = currentEditState.selectionSettings.tolerance;
+    
+    try {
+      const maskUrl = await floodFillToMaskDataUrl(clickPoint, dimensions, tolerance);
+      setSelectionMaskDataUrl(maskUrl);
+      setSelectionPath(null);
+      // Note: History recording is handled by useEditorLogic
+      showSuccess(`Magic Wand selection created (Tolerance: ${tolerance}).`);
+    } catch (error) {
+      showError("Failed to create Magic Wand selection.");
+      console.error(error);
+    }
+  }, [dimensions, currentEditState.selectionSettings.tolerance, setSelectionMaskDataUrl, setSelectionPath]);
+
+
   const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!imgRef.current || !dimensions) return;
 
@@ -121,8 +140,10 @@ export const useWorkspaceInteraction = (
         polygonalPathRef.current.push(clickPoint);
         setSelectionPath([...polygonalPathRef.current]);
       }
+    } else if (activeTool === 'magicWand') {
+      handleMagicWandClick(clickPoint);
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {

@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 import {
   initialEditState,
+  initialBrushState,
+  initialGradientToolState,
   initialLayerState,
   initialHistoryItem,
   type Layer,
@@ -175,6 +177,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     clearSelectionState, gradientToolState, setSelectedLayerId, layers, zoom, setZoom,
     setMarqueeStart, setMarqueeCurrent,
     handleMarqueeSelectionComplete,
+    currentEditState,
   );
   
   // --- Project Settings Hook ---
