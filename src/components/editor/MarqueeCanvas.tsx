@@ -4,9 +4,10 @@ import type { Point } from "@/types/editor";
 interface MarqueeCanvasProps {
   start: Point;
   current: Point;
+  activeTool: 'marqueeRect' | 'marqueeEllipse'; // Added activeTool
 }
 
-const MarqueeCanvas = ({ start, current }: MarqueeCanvasProps) => {
+const MarqueeCanvas = ({ start, current, activeTool }: MarqueeCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const animationFrameRef = React.useRef<number>(0);
 
@@ -25,18 +26,27 @@ const MarqueeCanvas = ({ start, current }: MarqueeCanvasProps) => {
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 6]);
 
+    ctx.beginPath();
+    
+    if (activeTool === 'marqueeEllipse') {
+      // Draw ellipse: (centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle)
+      ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, 2 * Math.PI);
+    } else {
+      ctx.rect(x, y, w, h);
+    }
+
     // Draw white dashed line
     ctx.strokeStyle = "rgba(255, 255, 255, 1)";
     ctx.lineDashOffset = dashOffset;
-    ctx.strokeRect(x, y, w, h);
+    ctx.stroke();
 
     // Draw black dashed line (offset by half dash length)
     ctx.strokeStyle = "rgba(0, 0, 0, 1)";
     ctx.lineDashOffset = dashOffset + 6;
-    ctx.strokeRect(x, y, w, h);
+    ctx.stroke();
     
     ctx.restore();
-  }, [start, current]);
+  }, [start, current, activeTool]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;

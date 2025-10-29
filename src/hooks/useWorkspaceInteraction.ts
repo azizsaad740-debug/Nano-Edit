@@ -1,7 +1,7 @@
 import * as React from 'react';
 import type { ActiveTool, Dimensions, GradientToolState, Layer, Point, EditState } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-import { polygonToMaskDataUrl, floodFillToMaskDataUrl } from '@/utils/maskUtils';
+import { polygonToMaskDataUrl, floodFillToMaskDataUrl, ellipseToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 
 export const useWorkspaceInteraction = (
   workspaceRef: React.RefObject<HTMLDivElement>,
@@ -110,6 +110,74 @@ export const useWorkspaceInteraction = (
     }
   }, [dimensions, currentEditState.selectionSettings.tolerance, setSelectionMaskDataUrl, setSelectionPath]);
 
+  const handleObjectSelectClick = React.useCallback(async () => {
+    if (!dimensions) return;
+    
+    try {
+      const maskUrl = await objectSelectToMaskDataUrl(dimensions);
+      setSelectionMaskDataUrl(maskUrl);
+      setSelectionPath(null);
+      showSuccess(`Object selection created (AI Stub).`);
+    } catch (error) {
+      showError("Failed to create Object selection.");
+      console.error(error);
+    }
+  }, [dimensions, setSelectionMaskDataUrl, setSelectionPath]);
+
+
+  const handleMarqueeSelectionComplete = React.useCallback(async (start: Point, end: Point) => {
+    if (!dimensions || !workspaceRef.current || !imgRef.current) return;
+
+    const imageRect = imgRef.current.getBoundingClientRect();
+    
+    // Calculate coordinates relative to the image (in pixels)
+    const scaleX = dimensions.width / imageRect.width;
+    const scaleY = dimensions.height / imageRect.height;
+
+    // Convert screen coordinates (start/end) to image pixel coordinates
+    const startX_px = Math.round((start.x - imageRect.left) * scaleX);
+    const startY_px = Math.round((start.y - imageRect.top) * scaleY);
+    const endX_px = Math.round((end.x - imageRect.left) * scaleX);
+    const endY_px = Math.round((end.y - imageRect.top) * scaleY);
+
+    const minX = Math.max(0, Math.min(startX_px, endX_px));
+    const minY = Math.max(0, Math.min(startY_px, endY_px));
+    const maxX = Math.min(dimensions.width, Math.max(startX_px, endX_px));
+    const maxY = Math.min(dimensions.height, Math.max(startY_px, endY_px));
+
+    let maskUrl: string;
+    let historyName: string;
+
+    if (activeTool === 'marqueeEllipse') {
+      maskUrl = await ellipseToMaskDataUrl(
+        { x: minX, y: minY },
+        { x: maxX, y: maxY },
+        dimensions.width,
+        dimensions.height
+      );
+      historyName = "Elliptical Marquee Selection Applied";
+    } else { // Default to Rectangular Marquee
+      const rectPath: Point[] = [
+        { x: minX, y: minY },
+        { x: maxX, y: minY },
+        { x: maxX, y: maxY },
+        { x: minX, y: maxY },
+      ];
+      maskUrl = await polygonToMaskDataUrl(rectPath, dimensions.width, dimensions.height);
+      historyName = "Rectangular Marquee Selection Applied";
+    }
+
+    try {
+      setSelectionMaskDataUrl(maskUrl);
+      setSelectionPath(null); 
+      // Note: History recording is handled by useEditorLogic (parent hook)
+      showSuccess("Selection created.");
+    } catch (error) {
+      showError("Failed to create selection mask.");
+      console.error(error);
+    }
+  }, [dimensions, workspaceRef, imgRef, setSelectionMaskDataUrl, setSelectionPath, activeTool]);
+
 
   const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!imgRef.current || !dimensions) return;
@@ -142,8 +210,10 @@ export const useWorkspaceInteraction = (
       }
     } else if (activeTool === 'magicWand') {
       handleMagicWandClick(clickPoint);
+    } else if (activeTool === 'objectSelect') { // NEW: Object Select
+      handleObjectSelectClick();
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {

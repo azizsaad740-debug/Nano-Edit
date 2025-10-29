@@ -132,3 +132,84 @@ export const floodFillToMaskDataUrl = async (
     resolve(canvas.toDataURL());
   });
 };
+
+/**
+ * Converts an elliptical area defined by two points into a binary mask data URL.
+ *
+ * @param start The starting point of the ellipse bounding box (in image pixels).
+ * @param end The ending point of the ellipse bounding box (in image pixels).
+ * @param width The natural width of the image.
+ * @param height The natural height of the image.
+ * @returns A Promise that resolves to a data URL of the binary mask.
+ */
+export const ellipseToMaskDataUrl = async (
+  start: Point,
+  end: Point,
+  width: number,
+  height: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return reject(new Error("Failed to get canvas context."));
+    }
+
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const w = Math.abs(start.x - end.x);
+    const h = Math.abs(start.y - end.y);
+
+    ctx.fillStyle = 'white';
+    ctx.beginPath();
+    // Draw ellipse: (centerX, centerY, radiusX, radiusY, rotation, startAngle, endAngle)
+    ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, 2 * Math.PI);
+    ctx.fill();
+
+    resolve(canvas.toDataURL());
+  });
+};
+
+/**
+ * Simulates generating a mask using an AI object selection algorithm.
+ *
+ * @param dimensions The dimensions of the image.
+ * @returns A Promise that resolves to a data URL of the binary mask.
+ */
+export const objectSelectToMaskDataUrl = async (
+  dimensions: Dimensions
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return reject(new Error("Failed to get canvas context."));
+    }
+
+    // STUB: Simulate selecting a central object (e.g., a slightly feathered rectangle)
+    const w = dimensions.width * 0.6;
+    const h = dimensions.height * 0.7;
+    const x = dimensions.width * 0.2;
+    const y = dimensions.height * 0.15;
+    const featherRadius = 50; 
+
+    ctx.save();
+    
+    // 1. Draw the selection shape (white)
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, w, h);
+    
+    // 2. Apply feathering (blur)
+    ctx.filter = `blur(${featherRadius}px)`;
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(canvas, 0, 0); // Redraw to apply filter
+
+    ctx.restore();
+    
+    resolve(canvas.toDataURL());
+  });
+};

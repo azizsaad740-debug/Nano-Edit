@@ -165,7 +165,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               {layers.slice(1).map(renderLayer)}
 
               {/* Live Brush/Eraser/Selection Canvas */}
-              {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush') && (
+              {(activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'quickSelect') && (
                 <LiveBrushCanvas
                   brushState={brushState}
                   imageRef={imgRef}
@@ -174,7 +174,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
                   selectedLayerId={selectedLayerId}
                   onAddDrawingLayer={handleAddDrawingLayer}
                   layers={layers}
-                  isSelectionBrush={activeTool === 'selectionBrush'}
+                  isSelectionBrush={activeTool === 'selectionBrush' || activeTool === 'quickSelect'}
                   onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd} // Use merged handler
                   onSelectiveBlurStrokeEnd={handleSelectiveBlurStrokeEnd} // Use merged handler
                   foregroundColor={foregroundColor}
@@ -212,7 +212,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               )}
 
               {/* Selection Mask Overlay (for visual feedback) */}
-              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || isLassoToolActive || isMarqueeToolActive) && (
+              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || activeTool === 'quickSelect' || isLassoToolActive || isMarqueeToolActive || activeTool === 'magicWand' || activeTool === 'objectSelect') && (
                 <SelectionMaskOverlay
                   maskDataUrl={selectionMaskDataUrl}
                   imageNaturalDimensions={dimensions}
@@ -226,6 +226,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               <MarqueeCanvas
                 start={marqueeStart}
                 current={marqueeCurrent}
+                activeTool={activeTool as 'marqueeRect' | 'marqueeEllipse'}
               />
             )}
 

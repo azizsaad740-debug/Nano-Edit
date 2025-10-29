@@ -7,7 +7,7 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string, layerId: string) => void;
-  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush"; // Added blurBrush
+  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush" | "quickSelect";
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
   layers: Layer[];
@@ -127,7 +127,7 @@ export const LiveBrushCanvas = ({
       ctx.lineTo(points[i].x, points[i].y);
     }
     ctx.stroke(); // Draw the continuous line
-  }, []);
+  }, []),
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
