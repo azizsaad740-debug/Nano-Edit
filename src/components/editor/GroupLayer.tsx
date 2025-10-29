@@ -101,9 +101,7 @@ const GroupLayer = ({
         <div style={childrenStyle}>
           {/* Recursively render children layers */}
           {layer.children.map(child => {
-            // Adjust child's position to be relative to the group's top-left corner
-            // The child's (x,y) are already relative to the group's bounding box (0-100%)
-            // So we just need to pass the correct containerRef and parentDimensions
+            // Props wrapper for nested layers
             const childProps = {
               key: child.id,
               layer: child,

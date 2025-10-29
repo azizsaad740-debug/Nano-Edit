@@ -1,16 +1,43 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/types/editor";
+import type { Layer, ActiveTool } from "@/types/editor";
+import { ResizeHandle } from "./ResizeHandle";
+import { cn } from "@/lib/utils";
+import { RotateCw } from "lucide-react";
+import { useLayerTransform } from "@/hooks/useLayerTransform";
 
 interface DrawingLayerProps {
   layer: Layer;
+  containerRef: React.RefObject<HTMLDivElement>;
+  onUpdate: (id: string, updates: Partial<Layer>) => void;
+  onCommit: (id: string) => void;
+  isSelected: boolean;
+  activeTool: ActiveTool | null;
+  zoom: number;
 }
 
-export const DrawingLayer = ({ layer }: DrawingLayerProps) => {
+export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: DrawingLayerProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [isLoaded, setIsLoaded] = React.useState(false);
 
+  const {
+    layerRef,
+    handleDragMouseDown,
+    handleResizeMouseDown,
+    handleRotateMouseDown,
+  } = useLayerTransform({
+    layer,
+    containerRef,
+    onUpdate,
+    onCommit,
+    type: "drawing", // Use 'drawing' type
+    activeTool,
+    isSelected,
+    zoom,
+  });
+
+  // --- Canvas Rendering Logic ---
   React.useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
@@ -32,44 +59,86 @@ export const DrawingLayer = ({ layer }: DrawingLayerProps) => {
         canvas.width = contentImage.naturalWidth;
         canvas.height = contentImage.naturalHeight;
         
-        ctx.clearRect(0, 0, canvas.width, canvas.height); // Ensure canvas is transparent
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        // Apply layer's blend mode and opacity
-        ctx.globalAlpha = (layer.opacity ?? 100) / 100;
-        ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Explicitly set to source-over or layer's blend mode
+        // Apply layer's blend mode and opacity (handled by parent container style, but we draw opaque content here)
+        // We draw the content image directly. Opacity/BlendMode are applied via CSS/parent container.
+        ctx.globalCompositeOperation = 'source-over'; 
+        ctx.globalAlpha = 1.0; 
 
         ctx.drawImage(contentImage, 0, 0);
 
-        // Reset composite operation before applying mask to ensure it's applied correctly
-        ctx.globalCompositeOperation = 'source-over'; 
+        // Note: Layer mask application is handled in rasterizeLayerToCanvas for final output, 
+        // but for live preview, we rely on the parent container's CSS/SVG filters if needed.
+        // Since this component is primarily for rendering the content of a drawing layer, 
+        // we keep it simple here.
 
-        if (layer.maskDataUrl) {
-          const maskImage = await loadImage(layer.maskDataUrl);
-          ctx.globalCompositeOperation = 'destination-in'; // Use mask to clip content
-          ctx.drawImage(maskImage, 0, 0);
-          ctx.globalCompositeOperation = (layer.blendMode || 'source-over') as GlobalCompositeOperation; // Reset to layer's blend mode after mask
-        }
         setIsLoaded(true);
       } catch (error) {
-        console.error("Failed to render drawing layer with mask:", error);
+        console.error("Failed to render drawing layer:", error);
         setIsLoaded(false);
       }
     };
 
     renderLayer();
-  }, [layer.dataUrl, layer.maskDataUrl, layer.opacity, layer.blendMode]);
+  }, [layer.dataUrl]);
 
   if (!layer.visible || layer.type !== "drawing" || !layer.dataUrl) {
     return null;
   }
 
+  const currentWidthPercent = layer.width ?? 100;
+  const currentHeightPercent = layer.height ?? 100;
+
+  const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
+
+  const style: React.CSSProperties = {
+    left: `${layer.x ?? 50}%`,
+    top: `${layer.y ?? 50}%`,
+    width: `${currentWidthPercent}%`,
+    height: `${currentHeightPercent}%`,
+    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg)`,
+    opacity: (layer.opacity ?? 100) / 100,
+    mixBlendMode: layer.blendMode as any || 'normal',
+    cursor: isMovable ? "grab" : "default",
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      className="absolute top-0 left-0 w-full h-full pointer-events-none"
-      style={{
-        visibility: isLoaded ? 'visible' : 'hidden', // Hide until fully loaded and rendered
-      }}
-    />
+    <div
+      ref={layerRef}
+      onMouseDown={handleDragMouseDown}
+      className="absolute"
+      style={style}
+    >
+      <div
+        className={cn(
+          "relative w-full h-full",
+          isSelected && "outline outline-2 outline-primary outline-dashed"
+        )}
+      >
+        <canvas
+          ref={canvasRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+          style={{
+            visibility: isLoaded ? 'visible' : 'hidden',
+          }}
+        />
+
+        {isSelected && (
+          <>
+            <ResizeHandle position="top-left" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="top-right" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="bottom-left" onMouseDown={handleResizeMouseDown} />
+            <ResizeHandle position="bottom-right" onMouseDown={handleResizeMouseDown} />
+            <div
+              className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4 h-8 cursor-[grab] flex items-end justify-center"
+              onMouseDown={handleRotateMouseDown}
+            >
+              <RotateCw className="w-4 h-4 text-primary bg-background rounded-full p-0.5" />
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 };

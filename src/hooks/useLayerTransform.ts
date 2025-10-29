@@ -8,7 +8,7 @@ interface UseLayerTransformProps {
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
-  type: "text" | "smart-object" | "vector-shape" | "group" | "gradient"; // Added 'gradient' type
+  type: "text" | "smart-object" | "vector-shape" | "group" | "gradient" | "drawing";
   smartObjectData?: { width: number; height: number };
   parentDimensions?: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
@@ -154,7 +154,7 @@ export const useLayerTransform = ({
       // For text, resizing changes fontSize, not width/height directly
       // We'll use fontSize as the "initialHeight" for calculation purposes
       initialHeightPercent = layer.fontSize ?? 48; // Use fontSize directly
-    } else if (type === "vector-shape" || type === "group" || type === "gradient") { // Added 'group' and 'gradient' type
+    } else if (type === "vector-shape" || type === "group" || type === "gradient" || type === "drawing") { // Added 'drawing' type
       initialWidthPercent = layer.width ?? 10;
       initialHeightPercent = layer.height ?? 10;
     }
@@ -200,8 +200,8 @@ export const useLayerTransform = ({
       }
       const newFontSize = Math.max(8, Math.round(resizeStartInfo.current.initialHeight + (change * 0.5)));
       onUpdate(layer.id, { fontSize: newFontSize });
-    } else if (type === "smart-object" || type === "vector-shape" || type === "group" || type === "gradient") {
-      // For smart objects, vector shapes, groups, and gradients, resize changes width/height directly, maintaining aspect ratio.
+    } else if (type === "smart-object" || type === "vector-shape" || type === "group" || type === "gradient" || type === "drawing") {
+      // For smart objects, vector shapes, groups, gradients, and drawing layers, resize changes width/height directly, maintaining aspect ratio.
       
       let currentAspect = resizeStartInfo.current.initialWidth / resizeStartInfo.current.initialHeight;
       
