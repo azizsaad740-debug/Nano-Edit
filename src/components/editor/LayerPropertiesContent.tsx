@@ -6,7 +6,7 @@ import { TextOptions } from "./TextOptions";
 import { AdjustmentOptions } from "./AdjustmentOptions";
 import LayerGeneralProperties from "./LayerGeneralProperties";
 import ShapeOptions from "./ShapeOptions";
-import GradientOptions from "./GradientOptions";
+import { GradientOptions } from "./GradientOptions"; // Fixed import
 import MaskProperties from "./MaskProperties";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 

@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import type { Layer, ActiveTool } from "@/types/editor";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
-import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent"; // Updated import
+import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
 import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
@@ -31,6 +31,7 @@ interface SmartObjectEditorProps {
   gradientToolState: GradientToolState;
   setBrushState: React.Dispatch<React.SetStateAction<BrushState>>;
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
+  activeTool: ActiveTool | null; // Added activeTool prop
   setActiveTool: (tool: ActiveTool | null) => void;
   setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
   zoom: number;
@@ -51,6 +52,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   gradientToolState,
   setBrushState,
   setGradientToolState,
+  activeTool, // Destructured activeTool
   setActiveTool,
   setSelectedShapeType,
   zoom,
@@ -115,7 +117,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     handleLayerUpdate(id, updates);
   };
 
-  const handleLayerCommitWrapper = (id: string, historyName: string) => {
+  const handleLayerCommitWrapper = (id: string) => { // FIX 11: Removed historyName argument
     handleLayerCommit(id); // Smart object layers commit to internal history
   };
 

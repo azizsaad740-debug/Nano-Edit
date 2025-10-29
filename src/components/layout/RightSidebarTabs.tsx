@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import LayersPanel from "@/components/editor/LayersPanel";
-import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent"; // Updated import
+import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
@@ -73,6 +73,7 @@ interface RightSidebarTabsProps {
   onOpenSmartObject: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; // Added full commit signature
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   // Layer Creation
@@ -177,7 +178,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onRasterizeLayer: props.onRasterizeLayer,
     onCreateSmartObject: props.onCreateSmartObject,
     onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerCommit, // Pass the commit function directly
+    onLayerPropertyCommit: props.onLayerPropertyCommit, // FIX 3: Use the correct prop name
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
     onAddTextLayer: props.addTextLayer,

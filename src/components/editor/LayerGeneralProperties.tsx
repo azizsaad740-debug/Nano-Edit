@@ -16,7 +16,7 @@ import type { Layer } from "@/types/editor";
 interface LayerGeneralPropertiesProps {
   layer: Layer;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void; // Updated signature
 }
 
 const blendModes = [
@@ -30,13 +30,13 @@ const LayerGeneralProperties = ({ layer, onUpdate, onCommit }: LayerGeneralPrope
     onUpdate(layer.id, updates);
   };
 
-  const handleCommit = () => {
-    onCommit(layer.id);
+  const handleCommit = (historyName: string) => {
+    onCommit(layer.id, historyName);
   };
 
   const handleBlendModeChange = (blendMode: string) => {
     handleUpdate({ blendMode });
-    handleCommit();
+    handleCommit(`Change Blend Mode to ${blendMode}`);
   };
 
   const handleOpacityChange = (value: number) => {
@@ -44,7 +44,7 @@ const LayerGeneralProperties = ({ layer, onUpdate, onCommit }: LayerGeneralPrope
   };
 
   const handleOpacityCommit = ([value]: number[]) => {
-    handleCommit();
+    handleCommit("Change Opacity");
   };
 
   return (

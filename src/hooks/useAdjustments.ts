@@ -17,6 +17,11 @@ export const useAdjustments = (
   const onAdjustmentCommit = useCallback((key: string, value: number) => {
     recordHistory(`Set ${key} to ${value}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
+  
+  const onFilterChange = useCallback((filterValue: string, filterName: string) => {
+    updateCurrentState({ selectedFilter: filterValue });
+    recordHistory(`Apply Filter: ${filterName}`, currentEditState, layers);
+  }, [currentEditState, layers, recordHistory, updateCurrentState]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
     if (state.adjustments) {
@@ -27,5 +32,5 @@ export const useAdjustments = (
     }
   }, [updateCurrentState]);
 
-  return { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, applyPreset };
+  return { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, onFilterChange, applyPreset };
 };

@@ -10,6 +10,7 @@ import {
 import AuxiliaryPanel from "./AuxiliaryPanel";
 import { Card } from "@/components/ui/card";
 import type { EditState, BrushState } from "@/types/editor";
+import { ScrollArea } from "@/components/ui/scroll-area"; // FIX 5, 6, 7, 9: Import ScrollArea
 
 interface SidebarProps {
   // RightSidebarTabs Props
@@ -31,6 +32,7 @@ interface SidebarProps {
   onOpenSmartObject: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<any>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<any>, historyName: string) => void; // Added full commit signature
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   addTextLayer: () => void;
@@ -130,6 +132,10 @@ interface SidebarProps {
   // HSL Custom Color
   customHslColor: string;
   setCustomHslColor: (color: string) => void;
+  // Font Manager Props (FIX 4, 8, 24)
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -165,11 +171,19 @@ const Sidebar = (props: SidebarProps) => {
     onAddAdjustmentLayer: props.onAddAdjustmentLayer,
   };
 
+  const rightSidebarTabsProps = {
+    ...props,
+    // Explicitly pass font props to satisfy RightSidebarTabsProps
+    systemFonts: props.systemFonts,
+    customFonts: props.customFonts,
+    onOpenFontManager: props.onOpenFontManager,
+  };
+
   if (isMobile) {
     return (
       <div className="h-full w-full">
         <Card className="h-full overflow-y-auto">
-          <RightSidebarTabs {...props} />
+          <RightSidebarTabs {...rightSidebarTabsProps} />
         </Card>
       </div>
     );
@@ -188,7 +202,7 @@ const Sidebar = (props: SidebarProps) => {
       <ResizablePanel defaultSize={75} minSize={30}>
         <ScrollArea className="h-full">
           <div className="p-4">
-            <RightSidebarTabs {...props} />
+            <RightSidebarTabs {...rightSidebarTabsProps} />
           </div>
         </ScrollArea>
       </ResizablePanel>

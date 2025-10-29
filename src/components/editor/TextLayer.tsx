@@ -7,17 +7,19 @@ import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
 import { useLayerTransform } from "@/hooks/useLayerTransform";
 
-interface TextLayerProps {
+export interface TextLayerProps { // Exporting interface for Index.tsx
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
   onCommit: (id: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
-  zoom: number; // NEW
+  zoom: number;
+  systemFonts: string[]; // Added
+  customFonts: string[]; // Added
 }
 
-export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: TextLayerProps) => {
+export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom, systemFonts, customFonts }: TextLayerProps) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 
