@@ -92,7 +92,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   const layerActions = useLayers({
     currentEditState, recordHistory, updateCurrentState, imgRef, imageNaturalDimensions: dimensions,
     gradientToolState, activeTool, layers, selectedLayerId, setSelectedLayerId, history, currentHistoryIndex,
-    foregroundColor, backgroundColor, selectedShapeType, selectionMaskDataUrl, clearSelectionState, selectiveBlurAmount,
+    foregroundColor, backgroundColor, selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, selectiveBlurAmount,
     setLayers: (newLayersOrUpdater, historyName) => {
       setLayers(newLayersOrUpdater);
       if (historyName && Array.isArray(newLayersOrUpdater)) {

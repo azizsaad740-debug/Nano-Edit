@@ -93,9 +93,11 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
     selectiveBlurMask,
     selectiveBlurAmount,
   } = options;
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
+  
+  // 1. Setup main canvas dimensions based on crop/rotation
+  const mainCanvas = document.createElement('canvas');
+  const mainCtx = mainCanvas.getContext('2d');
+  if (!mainCtx) return null;
 
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
@@ -115,9 +117,9 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
       };
 
   const { rotation } = transforms;
-  const isSwapped = rotation === 90 || rotation === 270;
-  canvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
-  canvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
+  const isSwapped = rotation === 90 || rotation === 270 || rotation === -90 || rotation === -270;
+  mainCanvas.width = isSwapped ? pixelCrop.height : pixelCrop.width;
+  mainCanvas.height = isSwapped ? pixelCrop.width : pixelCrop.height;
 
   // Determine if any adjustment layers exist to disable global filters
   const hasAdjustmentLayers = layers.some(l => l.type === 'adjustment');
@@ -142,17 +144,15 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
     colorModeFilter = ' invert(1) hue-rotate(180deg) sepia(0.1) saturate(1.1)';
   }
   
-  ctx.filter = colorModeFilter; // Start with color mode filter
-
-  // We need a temporary canvas to hold the accumulated result of layers below the current one.
+  // 2. Setup accumulated canvas (where layers are merged)
   const accumulatedCanvas = document.createElement('canvas');
-  accumulatedCanvas.width = canvas.width;
-  accumulatedCanvas.height = canvas.height;
+  accumulatedCanvas.width = mainCanvas.width;
+  accumulatedCanvas.height = mainCanvas.height;
   const accCtx = accumulatedCanvas.getContext('2d');
   if (!accCtx) return null;
   
-  // We need to store the rasterized content of the layer immediately below the current one
-  // for clipping mask purposes.
+  // This canvas holds the rasterized content of the layer immediately below the current one, 
+  // used as the clipping mask shape.
   let baseLayerCanvas: HTMLCanvasElement | null = null; 
 
   // --- Rasterization Loop (Bottom-Up) ---
@@ -170,7 +170,7 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
       // Apply adjustment effect to the accumulated canvas (accCtx)
       accCtx.save();
       
-      // Apply mask if present
+      // Apply mask if present (Adjustment Layer Masking)
       if (layer.maskDataUrl) {
         const maskImg = new Image();
         await new Promise((res, rej) => {
@@ -179,49 +179,55 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
           maskImg.src = layer.maskDataUrl!;
         });
         
-        // Use the mask to clip the adjustment effect area
-        // 1. Create a temporary canvas with the mask applied to the accumulated content
-        const maskedAccCanvas = document.createElement('canvas');
-        maskedAccCanvas.width = canvas.width;
-        maskedAccCanvas.height = canvas.height;
-        const maskedAccCtx = maskedAccCanvas.getContext('2d');
-        if (!maskedAccCtx) {
+        // 1. Create a temporary canvas with the adjustment applied globally
+        const tempAdjustedCanvas = document.createElement('canvas');
+        tempAdjustedCanvas.width = mainCanvas.width;
+        tempAdjustedCanvas.height = mainCanvas.height;
+        const tempAdjustedCtx = tempAdjustedCanvas.getContext('2d');
+        if (!tempAdjustedCtx) {
             accCtx.restore();
             baseLayerCanvas = null;
             continue;
         }
         
-        // Draw accumulated content
-        maskedAccCtx.drawImage(accumulatedCanvas, 0, 0);
+        // Draw accumulated content onto the temporary canvas
+        tempAdjustedCtx.drawImage(accumulatedCanvas, 0, 0);
         
-        // Clip by mask
-        maskedAccCtx.globalCompositeOperation = 'destination-in';
-        maskedAccCtx.drawImage(maskImg, 0, 0, canvas.width, canvas.height);
-        
-        // 2. Apply the adjustment filter to the masked content
+        // Apply the adjustment filter to the temporary canvas
         const adjustmentFilter = getAdjustmentFilterString(layer);
         if (adjustmentFilter) {
-            maskedAccCtx.filter = adjustmentFilter;
-            maskedAccCtx.globalCompositeOperation = 'source-over';
-            maskedAccCtx.drawImage(maskedAccCanvas, 0, 0); // Redraw onto itself with filter
-            maskedAccCtx.filter = 'none';
+            tempAdjustedCtx.filter = adjustmentFilter;
+            tempAdjustedCtx.globalCompositeOperation = 'source-over';
+            tempAdjustedCtx.drawImage(accumulatedCanvas, 0, 0); // Redraw accumulated content with filter
+            tempAdjustedCtx.filter = 'none';
         }
         
-        // Handle Curves/HSL (SVG filters) - Currently stubbed/warned
-        if (layer.adjustmentData.type === 'curves' && layer.adjustmentData.curves) {
-            applyCurvesToCanvas(maskedAccCtx, layer.adjustmentData.curves);
+        // 2. Create a mask canvas (white where adjustment should apply)
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = mainCanvas.width;
+        maskCanvas.height = mainCanvas.height;
+        const maskCtx = maskCanvas.getContext('2d');
+        if (!maskCtx) {
+            accCtx.restore();
+            baseLayerCanvas = null;
+            continue;
         }
+        maskCtx.drawImage(maskImg, 0, 0, mainCanvas.width, mainCanvas.height);
         
-        // 3. Draw the adjusted, masked content back onto the main accumulated canvas
-        // We need to draw the adjusted part (maskedAccCanvas) over the original accumulated content (accumulatedCanvas)
-        // only where the mask was applied.
+        // 3. Use the mask to clip the difference between adjusted and original accumulated content
         
-        // Draw the original accumulated content first
+        // We need to draw the adjusted content (tempAdjustedCanvas) over the original accumulated content (accumulatedCanvas)
+        // only where the mask is white.
+        
+        // Draw the original accumulated content onto the main accumulated canvas
         accCtx.globalCompositeOperation = 'source-over';
         accCtx.drawImage(accumulatedCanvas, 0, 0);
         
-        // Draw the adjusted, masked content over it
-        accCtx.drawImage(maskedAccCanvas, 0, 0);
+        // Draw the adjusted content onto the main accumulated canvas, clipped by the mask
+        accCtx.globalCompositeOperation = 'source-atop'; // Draw adjusted content only where mask is opaque
+        accCtx.drawImage(tempAdjustedCanvas, 0, 0);
+        
+        // Note: This is a simplified approach. Full adjustment layer masking is complex.
         
       } else {
         // No mask: Apply adjustment globally to the accumulated canvas
@@ -255,23 +261,19 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
         continue;
     }
 
-    // 2. Determine the filter to apply to this layer
-    // Apply global filters (if no adjustment layers) + adjustment filters from layers ABOVE this one.
-    const adjustmentFiltersAbove = getAdjustmentFiltersAbove(layers, i);
-    const currentLayerFilter = globalFilter + adjustmentFiltersAbove;
-
+    // 2. Rasterize the current layer (text, drawing, smart-object, etc.)
     let layerCanvas: HTMLCanvasElement | null = null;
     
     if (layer.type === 'image') {
         // Handle the main background image layer
         
-        ctx.save();
-        ctx.filter = currentLayerFilter + colorModeFilter;
+        mainCtx.save();
+        mainCtx.filter = globalFilter + colorModeFilter;
         
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(transforms.rotation * Math.PI / 180);
-        ctx.scale(transforms.scaleX, transforms.scaleY);
-        ctx.drawImage(
+        mainCtx.translate(mainCanvas.width / 2, mainCanvas.height / 2);
+        mainCtx.rotate(transforms.rotation * Math.PI / 180);
+        mainCtx.scale(transforms.scaleX, transforms.scaleY);
+        mainCtx.drawImage(
           image,
           pixelCrop.x,
           pixelCrop.y,
@@ -282,42 +284,43 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
           pixelCrop.width,
           pixelCrop.height
         );
-        ctx.restore();
-        ctx.filter = colorModeFilter; // Reset filter for subsequent layers
+        mainCtx.restore();
+        mainCtx.filter = colorModeFilter; // Reset filter for subsequent layers
         
         // Draw to accumulated canvas
-        accCtx.drawImage(canvas, 0, 0);
+        accCtx.drawImage(mainCanvas, 0, 0);
         
         // Create a canvas of the drawn background for clipping mask reference
         const bgCanvas = document.createElement('canvas');
-        bgCanvas.width = canvas.width;
-        bgCanvas.height = canvas.height;
-        bgCanvas.getContext('2d')?.drawImage(canvas, 0, 0);
+        bgCanvas.width = mainCanvas.width;
+        bgCanvas.height = mainCanvas.height;
+        bgCanvas.getContext('2d')?.drawImage(mainCanvas, 0, 0);
         baseLayerCanvas = bgCanvas;
         continue;
     }
 
-    // 3. Rasterize the current layer (text, drawing, smart-object, etc.)
-    layerCanvas = await rasterizeLayerToCanvas(layer, { width: canvas.width, height: canvas.height });
+    // For all other layers:
+    layerCanvas = await rasterizeLayerToCanvas(layer, { width: mainCanvas.width, height: mainCanvas.height });
     if (!layerCanvas) {
         baseLayerCanvas = null;
         continue;
     }
 
-    // 4. Apply current filter stack to the layer canvas
-    if (currentLayerFilter) {
+    // 3. Apply current filter stack to the layer canvas (only if no adjustment layers exist)
+    // Note: If adjustment layers exist, the filters are applied to the accumulated canvas, not individual layers.
+    if (!hasAdjustmentLayers && globalFilter) {
       const tempFilteredCanvas = document.createElement('canvas');
-      tempFilteredCanvas.width = canvas.width;
-      tempFilteredCanvas.height = canvas.height;
+      tempFilteredCanvas.width = mainCanvas.width;
+      tempFilteredCanvas.height = mainCanvas.height;
       const tempFilteredCtx = tempFilteredCanvas.getContext('2d');
       if (tempFilteredCtx) {
-        tempFilteredCtx.filter = currentLayerFilter;
+        tempFilteredCtx.filter = globalFilter;
         tempFilteredCtx.drawImage(layerCanvas, 0, 0);
         layerCanvas = tempFilteredCanvas;
       }
     }
 
-    // 5. Check for Clipping Mask
+    // 4. Check for Clipping Mask (Clipping Masking)
     const isClipped = layer.isClippingMask;
     
     if (isClipped) {
@@ -325,75 +328,91 @@ export const getEditedImageCanvas = async (options: ImageOptions): Promise<HTMLC
         
         if (baseLayerCanvas) {
             const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
+            tempCanvas.width = mainCanvas.width;
+            tempCanvas.height = mainCanvas.height;
             const tempCtx = tempCanvas.getContext('2d');
             if (tempCtx) {
                 // 1. Draw the clipping layer (Layer A)
                 tempCtx.drawImage(layerCanvas, 0, 0);
                 
                 // 2. Use the base layer (Layer B) as the clipping shape (destination-in)
+                // We need the shape of the base layer, which is its alpha channel.
+                
+                // Create a mask from the base layer's alpha channel
+                const baseMaskCanvas = document.createElement('canvas');
+                baseMaskCanvas.width = mainCanvas.width;
+                baseMaskCanvas.height = mainCanvas.height;
+                const baseMaskCtx = baseMaskCanvas.getContext('2d');
+                if (baseMaskCtx) {
+                    baseMaskCtx.drawImage(baseLayerCanvas, 0, 0);
+                    baseMaskCtx.globalCompositeOperation = 'source-in'; // Keep only the alpha channel of the base layer
+                    baseMaskCtx.fillStyle = 'white';
+                    baseMaskCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+                }
+                
+                // Apply the base layer's shape as a clip to the current layer
                 tempCtx.globalCompositeOperation = 'destination-in';
-                tempCtx.drawImage(baseLayerCanvas, 0, 0);
+                tempCtx.drawImage(baseLayerCanvas, 0, 0); // Use baseLayerCanvas directly for destination-in
                 
                 // 3. Draw the result onto the accumulated canvas
-                accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
+                accCtx.globalAlpha = 1.0; // Opacity is already baked into layerCanvas if it had a mask
                 accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
                 accCtx.drawImage(tempCanvas, 0, 0);
             }
         } else {
-            // If there is no base layer canvas, draw normally to accumulated canvas
+            // If there is no base layer canvas (e.g., layer below was an adjustment layer), draw normally
             accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
             accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
             accCtx.drawImage(layerCanvas, 0, 0);
         }
         
     } else {
-        // 6. Normal drawing to accumulated canvas
+        // 5. Normal drawing to accumulated canvas
         accCtx.globalAlpha = (layer.opacity ?? 100) / 100;
         accCtx.globalCompositeOperation = (layer.blendMode || 'normal') as GlobalCompositeOperation;
         accCtx.drawImage(layerCanvas, 0, 0);
     }
     
-    // 7. Update baseLayerCanvas for the next iteration (Layer A becomes Layer B for the layer above it)
+    // 6. Update baseLayerCanvas for the next iteration (Layer A becomes Layer B for the layer above it)
+    // The base layer for clipping is the layer *before* any adjustment layers above it.
     baseLayerCanvas = layerCanvas;
   }
   
   // Final step: Draw the accumulated canvas onto the main canvas
-  ctx.globalAlpha = 1.0;
-  ctx.globalCompositeOperation = 'source-over';
-  ctx.drawImage(accumulatedCanvas, 0, 0);
+  mainCtx.globalAlpha = 1.0;
+  mainCtx.globalCompositeOperation = 'source-over';
+  mainCtx.drawImage(accumulatedCanvas, 0, 0);
 
   // Apply Vignette (Canvas API)
   if (options.effects.vignette > 0) {
-    const outerRadius = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) / 2;
+    const outerRadius = Math.sqrt(mainCanvas.width ** 2 + mainCanvas.height ** 2) / 2;
     const innerRadius = outerRadius * (1 - (options.effects.vignette / 100) * 1.2);
-    const gradient = ctx.createRadialGradient(
-        canvas.width / 2, canvas.height / 2, innerRadius,
-        canvas.width / 2, canvas.height / 2, outerRadius
+    const gradient = mainCtx.createRadialGradient(
+        mainCanvas.width / 2, mainCanvas.height / 2, innerRadius,
+        mainCanvas.width / 2, mainCanvas.height / 2, outerRadius
     );
     gradient.addColorStop(0, 'rgba(0,0,0,0)');
     gradient.addColorStop(1, `rgba(0,0,0,${options.effects.vignette / 100 * 0.7})`);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    mainCtx.fillStyle = gradient;
+    mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
   }
 
   // Apply Frame (Canvas API)
   if (frame && frame.type === 'solid' && frame.width > 0) {
     const frameWidth = frame.width;
     const framedCanvas = document.createElement('canvas');
-    framedCanvas.width = canvas.width + frameWidth * 2;
-    framedCanvas.height = canvas.height + frameWidth * 2;
+    framedCanvas.width = mainCanvas.width + frameWidth * 2;
+    framedCanvas.height = mainCanvas.height + frameWidth * 2;
     const frameCtx = framedCanvas.getContext('2d');
     if (frameCtx) {
       frameCtx.fillStyle = frame.color;
       frameCtx.fillRect(0, 0, framedCanvas.width, framedCanvas.height);
-      frameCtx.drawImage(canvas, frameWidth, frameWidth);
+      frameCtx.drawImage(mainCanvas, frameWidth, frameWidth);
       return framedCanvas;
     }
   }
 
-  return canvas;
+  return mainCanvas;
 };
 
 export const rasterizeEditedImageWithMask = async (

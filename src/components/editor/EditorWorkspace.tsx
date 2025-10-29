@@ -42,6 +42,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
     transforms, crop, channels, curves, isPreviewingOriginal,
     updateLayer, commitLayerChange,
+    handleSelectionBrushStrokeEnd, // NEW
+    handleSelectiveBlurStrokeEnd, // NEW
   } = logic;
 
   // --- Render Layer Logic ---
@@ -168,20 +170,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
                   onAddDrawingLayer={handleAddDrawingLayer}
                   layers={layers}
                   isSelectionBrush={activeTool === 'selectionBrush'}
-                  onSelectionBrushStrokeEnd={async (dataUrl, operation) => {
-                    if (operation === 'add') {
-                      setSelectionMaskDataUrl(dataUrl);
-                    } else {
-                      showError("Subtracting from selection mask is a stub.");
-                    }
-                  }}
-                  onSelectiveBlurStrokeEnd={async (dataUrl, operation) => {
-                    if (operation === 'add') {
-                      updateCurrentState({ selectiveBlurMask: dataUrl });
-                    } else {
-                      showError("Removing blur area is a stub.");
-                    }
-                  }}
+                  onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd} // Use merged handler
+                  onSelectiveBlurStrokeEnd={handleSelectiveBlurStrokeEnd} // Use merged handler
                   foregroundColor={foregroundColor}
                   backgroundColor={backgroundColor}
                 />

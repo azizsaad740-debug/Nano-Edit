@@ -337,18 +337,19 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
     return canvas;
   }
 
-  // --- Apply Layer Mask ---
+  // --- Apply Layer Mask (Layer Masking) ---
   if (layer.maskDataUrl) {
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = imageDimensions.width;
-    maskCanvas.height = imageDimensions.height;
-    const maskCtx = maskCanvas.getContext('2d');
-    if (!maskCtx) return canvas; // Return unmasked if mask context fails
+    // 1. Create a temporary canvas to hold the masked content
+    const maskedCanvas = document.createElement('canvas');
+    maskedCanvas.width = imageDimensions.width;
+    maskedCanvas.height = imageDimensions.height;
+    const maskedCtx = maskedCanvas.getContext('2d');
+    if (!maskedCtx) return canvas; // Return unmasked if mask context fails
 
-    // 1. Draw the layer content onto the mask canvas
-    maskCtx.drawImage(canvas, 0, 0);
+    // 2. Draw the layer content onto the masked canvas
+    maskedCtx.drawImage(canvas, 0, 0);
 
-    // 2. Load the mask image
+    // 3. Load the mask image
     const maskImg = new Image();
     await new Promise((resolve, reject) => {
       maskImg.onload = resolve;
@@ -356,11 +357,15 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       maskImg.src = layer.maskDataUrl!;
     });
 
-    // 3. Use the mask image to clip the layer content
-    maskCtx.globalCompositeOperation = 'destination-in';
-    maskCtx.drawImage(maskImg, 0, 0, imageDimensions.width, imageDimensions.height);
+    // 4. Use the mask image to clip the layer content (destination-in)
+    // destination-in: The new shape (mask) is drawn only where it overlaps the existing canvas content (layer).
+    maskedCtx.globalCompositeOperation = 'destination-in';
+    maskedCtx.drawImage(maskImg, 0, 0, imageDimensions.width, imageDimensions.height);
 
-    return maskCanvas;
+    // Reset composite operation
+    maskedCtx.globalCompositeOperation = 'source-over';
+
+    return maskedCanvas;
   }
 
   return canvas;

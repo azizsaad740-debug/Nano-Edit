@@ -147,6 +147,7 @@ export interface UseLayersProps {
   backgroundColor: string;
   selectedShapeType: Layer['shapeType'] | null;
   selectionMaskDataUrl: string | null;
+  setSelectionMaskDataUrl: (url: string | null) => void; // Added setter
   clearSelectionState: () => void;
   selectiveBlurAmount: number; // Added
 }
@@ -169,6 +170,7 @@ export const useLayers = ({
   backgroundColor,
   selectedShapeType,
   selectionMaskDataUrl,
+  setSelectionMaskDataUrl, // Destructure setter
   clearSelectionState,
   selectiveBlurAmount, // Destructure new prop
 }: UseLayersProps) => {
@@ -177,9 +179,12 @@ export const useLayers = ({
 
   const updateLayersState = useCallback(
     (newLayers: Layer[], historyName?: string) => {
-      setLayers(newLayers, historyName);
+      setLayers(newLayers);
+      if (historyName) {
+        recordHistory(historyName, currentEditState, newLayers);
+      }
     },
-    [setLayers]
+    [setLayers, recordHistory, currentEditState]
   );
 
   // --- Layer Property Management ---
@@ -1416,6 +1421,92 @@ export const useLayers = ({
     commitLayerChange(layerId);
   }, [layers, imgRef, updateLayer, commitLayerChange, activeTool]);
 
+  /**
+   * Merges a new brush stroke (white/black data URL) onto an existing mask data URL.
+   * @param existingMaskDataUrl The current mask (or null if starting new).
+   * @param strokeDataUrl The new stroke to apply.
+   * @param operation 'add' (white stroke) or 'subtract' (black stroke).
+   * @param dimensions The dimensions of the canvas.
+   * @returns A promise resolving to the new merged mask data URL.
+   */
+  const mergeMaskStroke = useCallback(async (
+    existingMaskDataUrl: string | null,
+    strokeDataUrl: string,
+    operation: 'add' | 'subtract',
+    dimensions: { width: number; height: number }
+  ): Promise<string> => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error("Failed to get canvas context for mask merging.");
+
+    // 1. Draw existing mask (if present)
+    if (existingMaskDataUrl) {
+      const existingImg = new Image();
+      await new Promise((res, rej) => { existingImg.onload = res; existingImg.onerror = rej; existingImg.src = existingMaskDataUrl; });
+      ctx.drawImage(existingImg, 0, 0);
+    } else {
+      // If no existing mask, start with a black mask (fully hidden) for subtraction, or transparent for addition
+      if (operation === 'subtract') {
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+      }
+    }
+
+    // 2. Draw new stroke
+    const strokeImg = new Image();
+    await new Promise((res, rej) => { strokeImg.onload = res; strokeImg.onerror = rej; strokeImg.src = strokeDataUrl; });
+
+    // Use composite operations:
+    // 'source-over' (default) for adding (white stroke over existing mask)
+    // 'destination-out' for subtracting (black stroke removes existing mask content)
+    ctx.globalCompositeOperation = operation === 'add' ? 'source-over' : 'destination-out';
+    ctx.drawImage(strokeImg, 0, 0);
+
+    // Reset composite operation
+    ctx.globalCompositeOperation = 'source-over';
+
+    return canvas.toDataURL();
+  }, []);
+
+  const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+    if (!imageNaturalDimensions) return;
+    
+    try {
+      const newMaskUrl = await mergeMaskStroke(
+        selectionMaskDataUrl,
+        strokeDataUrl,
+        operation,
+        imageNaturalDimensions
+      );
+      setSelectionMaskDataUrl(newMaskUrl);
+      recordHistory(`Selection Brush Stroke (${operation})`, currentEditState, layers);
+    } catch (error) {
+      showError("Failed to update selection mask.");
+      console.error(error);
+    }
+  }, [selectionMaskDataUrl, imageNaturalDimensions, mergeMaskStroke, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
+
+  const handleSelectiveBlurStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+    if (!imageNaturalDimensions) return;
+    
+    try {
+      const newMaskUrl = await mergeMaskStroke(
+        currentEditState.selectiveBlurMask,
+        strokeDataUrl,
+        operation,
+        imageNaturalDimensions
+      );
+      updateCurrentState({ selectiveBlurMask: newMaskUrl });
+      recordHistory(`Selective Blur Stroke (${operation})`, currentEditState, layers);
+    } catch (error) {
+      showError("Failed to update selective blur mask.");
+      console.error(error);
+    }
+  }, [currentEditState, layers, imageNaturalDimensions, mergeMaskStroke, updateCurrentState, recordHistory]);
+
+
   // --- Public Interface ---
   return {
     layers,
@@ -1463,6 +1554,8 @@ export const useLayers = ({
     // State/History helpers
     handleToggleVisibility: toggleLayerVisibility,
     handleDrawingStrokeEnd,
+    handleSelectionBrushStrokeEnd, // NEW
+    handleSelectiveBlurStrokeEnd, // NEW
     applySelectionAsMask,
     canUndoLayers: () => currentHistoryIndex > 0,
     canRedoLayers: () => currentHistoryIndex < history.length - 1,
