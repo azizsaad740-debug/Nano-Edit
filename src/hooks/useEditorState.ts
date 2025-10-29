@@ -39,6 +39,7 @@ export const useEditorState = () => {
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
   const [customHslColor, setCustomHslColor] = useState<string>(initialEditState.customHslColor);
   const [selectionSettings, setSelectionSettings] = useState<SelectionSettings>(initialSelectionSettings); // NEW
+  const [cloneSourcePoint, setCloneSourcePoint] = useState<Point | null>(null); // NEW: Clone source point
 
   // Selection Drawing State
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
@@ -143,6 +144,7 @@ export const useEditorState = () => {
     selectiveBlurAmount, setSelectiveBlurAmount,
     customHslColor, setCustomHslColor,
     selectionSettings, setSelectionSettings, // NEW
+    cloneSourcePoint, setCloneSourcePoint, // NEW
     zoom, setZoom,
   };
 };

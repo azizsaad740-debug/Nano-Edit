@@ -20,12 +20,12 @@ export const useWorkspaceInteraction = (
   setMarqueeCurrent: (point: Point | null) => void, // NEW
   onMarqueeSelectionComplete: (start: Point, end: Point) => void, // NEW
   currentEditState: EditState, // NEW
+  setCloneSourcePoint: (point: Point | null) => void, // NEW: Setter for clone source
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
   const [gradientStart, setGradientStart] = React.useState<Point | null>(null);
   const [gradientCurrent, setGradientCurrent] = React.useState<Point | null>(null);
-  const [cloneSourcePoint, setCloneSourcePoint] = React.useState<Point | null>(null); // NEW: Clone source point (in image pixels)
   
   // Use refs for marquee drawing state to avoid re-creating handlers constantly
   const marqueeStartRef = React.useRef<Point | null>(null);
@@ -329,6 +329,5 @@ export const useWorkspaceInteraction = (
     handleWorkspaceMouseDown,
     handleWorkspaceMouseMove,
     handleWorkspaceMouseUp,
-    cloneSourcePoint, // EXPOSED
   };
 };
