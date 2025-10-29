@@ -15,11 +15,9 @@ export interface TextLayerProps { // Exporting interface for Index.tsx
   isSelected: boolean;
   activeTool: ActiveTool | null;
   zoom: number;
-  systemFonts: string[]; // Added
-  customFonts: string[]; // Added
 }
 
-export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom, systemFonts, customFonts }: TextLayerProps) => {
+export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: TextLayerProps) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
 

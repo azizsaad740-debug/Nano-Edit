@@ -148,6 +148,7 @@ export interface UseLayersProps {
   selectedShapeType: Layer['shapeType'] | null;
   selectionMaskDataUrl: string | null;
   clearSelectionState: () => void;
+  selectiveBlurAmount: number; // Added
 }
 
 export const useLayers = ({
@@ -169,6 +170,7 @@ export const useLayers = ({
   selectedShapeType,
   selectionMaskDataUrl,
   clearSelectionState,
+  selectiveBlurAmount, // Destructure new prop
 }: UseLayersProps) => {
   const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false);
   const [smartObjectEditingId, setSmartObjectEditingId] = useState<string | null>(null);

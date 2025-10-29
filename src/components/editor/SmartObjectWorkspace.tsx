@@ -54,24 +54,23 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
     if (!layer.visible) return null;
 
     if (layer.type === 'text') {
-      return <TextLayer {...layerProps} zoom={zoom} />;
+      return <TextLayer {...layerProps} />;
     }
     if (layer.type === 'smart-object') {
-      return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} zoom={zoom} />;
+      return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} />;
     }
     if (layer.type === 'vector-shape') {
-      return <VectorShapeLayer {...layerProps} zoom={zoom} />;
+      return <VectorShapeLayer {...layerProps} />;
     }
     if (layer.type === 'gradient') {
-      return <GradientLayer {...layerProps} imageNaturalDimensions={parentDimensions} zoom={zoom} />;
+      return <GradientLayer {...layerProps} imageNaturalDimensions={parentDimensions} />;
     }
     if (layer.type === 'group') {
       return <GroupLayer
         {...layerProps}
         parentDimensions={parentDimensions}
-        renderChildren={renderChildren} // FIX 68: Pass the defined renderChildren function
+        renderChildren={renderLayer} // FIX 68: Pass the defined renderChildren function
         globalSelectedLayerId={globalSelectedLayerId}
-        zoom={zoom}
       />;
     }
     return null;

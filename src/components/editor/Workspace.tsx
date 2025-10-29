@@ -10,6 +10,7 @@ interface WorkspaceProps {
   handleWorkspaceMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
   setIsMouseOverImage: (isOver: boolean) => void;
+  children: React.ReactNode;
 }
 
 export const Workspace: React.FC<WorkspaceProps> = ({
@@ -19,6 +20,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
   handleWorkspaceMouseUp,
   handleWheel,
   setIsMouseOverImage,
+  children,
 }) => {
   return (
     <div
@@ -34,7 +36,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
       onMouseEnter={() => setIsMouseOverImage(true)}
       onMouseLeave={() => setIsMouseOverImage(false)}
     >
-      {/* Placeholder for image and layers */}
+      {children}
     </div>
   );
 };

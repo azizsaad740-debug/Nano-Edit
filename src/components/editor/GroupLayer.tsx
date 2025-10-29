@@ -20,7 +20,7 @@ interface GroupLayerProps {
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
-  renderChildren: (layers: Layer[]) => React.ReactNode; // Function to recursively render children
+  renderChildren: (layer: Layer) => JSX.Element | null; // Updated signature
   globalSelectedLayerId: string | null; // New prop to track global selection
   zoom: number; // NEW
 }

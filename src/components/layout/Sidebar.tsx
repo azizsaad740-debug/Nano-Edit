@@ -9,13 +9,13 @@ import {
 } from "@/components/ui/resizable";
 import AuxiliaryPanel from "./AuxiliaryPanel";
 import { Card } from "@/components/ui/card";
-import type { EditState, BrushState } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool } from "@/types/editor";
 import { ScrollArea } from "@/components/ui/scroll-area"; // FIX 5, 6, 7, 9: Import ScrollArea
 
 interface SidebarProps {
   // RightSidebarTabs Props
   hasImage: boolean;
-  activeTool: string | null;
+  activeTool: ActiveTool | null;
   selectedLayerId: string | null;
   selectedLayer: any;
   layers: any[];
