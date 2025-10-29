@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/resizable";
 import AuxiliaryPanel from "./AuxiliaryPanel";
 import { Card } from "@/components/ui/card";
-import type { EditState, BrushState, ActiveTool } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool, SelectionSettings } from "@/types/editor";
 import { ScrollArea } from "@/components/ui/scroll-area"; // FIX 5, 6, 7, 9: Import ScrollArea
 
 interface SidebarProps {
@@ -136,6 +136,10 @@ interface SidebarProps {
   systemFonts: string[];
   customFonts: string[];
   onOpenFontManager: () => void;
+  // Selection Settings
+  selectionSettings: SelectionSettings; // NEW
+  onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void; // NEW
+  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void; // NEW
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -152,7 +156,6 @@ const Sidebar = (props: SidebarProps) => {
     canRedo: props.canRedo,
     foregroundColor: props.foregroundColor,
     onForegroundColorChange: props.onForegroundColorChange,
-    backgroundColor: props.backgroundColor,
     onBackgroundColorChange: props.onBackgroundColorChange,
     onSwapColors: props.onSwapColors,
     dimensions: props.dimensions,

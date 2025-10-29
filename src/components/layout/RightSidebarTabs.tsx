@@ -39,7 +39,7 @@ import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { cn } from "@/lib/utils";
-import type { Layer, EditState, ActiveTool, BrushState, GradientToolState, Point, HslAdjustment } from "@/types/editor";
+import type { Layer, EditState, ActiveTool, BrushState, GradientToolState, Point, HslAdjustment, SelectionSettings } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
@@ -50,6 +50,7 @@ import ShapeOptions from "@/components/editor/ShapeOptions";
 import { GradientOptions } from "@/components/editor/GradientOptions";
 import { AdjustmentOptions } from "@/components/editor/AdjustmentOptions";
 import MaskProperties from "@/components/editor/MaskProperties";
+import SelectionToolOptions from "@/components/editor/SelectionToolOptions"; // NEW
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -151,14 +152,21 @@ interface RightSidebarTabsProps {
   // HSL Custom Color
   customHslColor: string;
   setCustomHslColor: (color: string) => void;
+  // Selection Settings
+  selectionSettings: SelectionSettings; // NEW
+  onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void; // NEW
+  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void; // NEW
 }
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const { selectedLayer } = props;
   const selectedLayerId = selectedLayer?.id;
+  
   const isBrushTool = props.activeTool === 'brush' || props.activeTool === 'eraser';
   const isSelectionBrushTool = props.activeTool === 'selectionBrush';
   const isBlurBrushTool = props.activeTool === 'blurBrush';
+  
+  const isSelectionTool = props.activeTool === 'move' || props.activeTool?.startsWith('marquee') || props.activeTool?.startsWith('lasso') || props.activeTool === 'quickSelect' || props.activeTool === 'magicWand' || props.activeTool === 'objectSelect';
 
   const [isSavingPreset, setIsSavingPreset] = React.useState(false);
   const [isSavingGradientPreset, setIsSavingGradientPreset] = React.useState(false);
@@ -275,7 +283,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         <TabsTrigger value="adjustments" className="h-8 flex-1">
           <Wand2 className="h-4 w-4" />
         </TabsTrigger>
-        <TabsTrigger value="tools" className="h-8 flex-1" disabled={!isBrushTool && !isSelectionBrushTool && !isBlurBrushTool}>
+        <TabsTrigger value="tools" className="h-8 flex-1" disabled={!isBrushTool && !isSelectionBrushTool && !isBlurBrushTool && !isSelectionTool}>
           <Brush className="h-4 w-4" />
         </TabsTrigger>
       </TabsList>
@@ -295,6 +303,14 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           </TabsContent>
 
           <TabsContent value="tools">
+            {isSelectionTool && (
+              <SelectionToolOptions
+                activeTool={props.activeTool}
+                settings={props.selectionSettings}
+                onSettingChange={props.onSelectionSettingChange}
+                onSettingCommit={props.onSelectionSettingCommit}
+              />
+            )}
             {(isBrushTool || isSelectionBrushTool) && (
               <BrushOptions
                 activeTool={props.activeTool as "brush" | "eraser"}
@@ -318,6 +334,11 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 onStrengthChange={props.onSelectiveBlurAmountChange}
                 onStrengthCommit={props.onSelectiveBlurAmountCommit}
               />
+            )}
+            {!isSelectionTool && !isBrushTool && !isSelectionBrushTool && !isBlurBrushTool && (
+              <p className="text-sm text-muted-foreground p-4">
+                Select a brush or selection tool to view its options here.
+              </p>
             )}
           </TabsContent>
         </div>

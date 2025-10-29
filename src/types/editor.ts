@@ -170,6 +170,59 @@ export interface Layer {
   adjustmentData?: AdjustmentLayerData; // For 'adjustment'
 }
 
+export interface SelectionSettings {
+  // Move Tool
+  autoSelectLayer: boolean;
+  showTransformControls: boolean;
+  snapToPixels: boolean;
+  
+  // Marquee/Lasso/Quick/Magic/Object
+  feather: number; // 0 to 50px
+  antiAlias: boolean;
+  sampleAllLayers: boolean;
+  
+  // Marquee Specific
+  fixedRatio: boolean;
+  fixedWidth: number; // in pixels
+  fixedHeight: number; // in pixels
+  
+  // Lasso Specific
+  edgeDetection: number; // 0 to 100 (Magnetic Lasso sensitivity)
+  
+  // Quick/Magic Wand Specific
+  tolerance: number; // 0 to 255
+  contiguous: boolean;
+  autoEnhanceEdges: boolean; // Quick Selection
+  
+  // Refinement Settings (Applied when refining selection)
+  refineFeather: number;
+  refineSmooth: number;
+  refineContrast: number;
+  refineShiftEdge: number;
+  decontaminateColors: boolean;
+}
+
+export interface BrushState {
+  size: number;
+  opacity: number;
+  hardness: number; // 0 to 100
+  smoothness: number; // 0 to 100
+  shape: 'circle' | 'square';
+  color: string; // ADDED: Brush color
+}
+
+export interface GradientToolState {
+  type: 'linear' | 'radial';
+  colors: string[];
+  stops: number[]; // 0 to 1
+  angle: number; // 0 to 360
+  feather: number; // 0 to 100
+  inverted: boolean;
+  centerX: number; // 0 to 100
+  centerY: number; // 0 to 100
+  radius: number; // 0 to 100
+}
+
 export interface EditState {
   adjustments: {
     brightness: number; // 0 to 200
@@ -233,27 +286,7 @@ export interface EditState {
   selectiveBlurMask: string | null; // Data URL of the mask for selective blur
   selectiveBlurAmount: number; // 0 to 100 (max blur strength)
   customHslColor: string; // NEW
-}
-
-export interface BrushState {
-  size: number;
-  opacity: number;
-  hardness: number; // 0 to 100
-  smoothness: number; // 0 to 100
-  shape: 'circle' | 'square';
-  color: string; // ADDED: Brush color
-}
-
-export interface GradientToolState {
-  type: 'linear' | 'radial';
-  colors: string[];
-  stops: number[]; // 0 to 1
-  angle: number; // 0 to 360
-  feather: number; // 0 to 100
-  inverted: boolean;
-  centerX: number; // 0 to 100
-  centerY: number; // 0 to 100
-  radius: number; // 0 to 100
+  selectionSettings: SelectionSettings; // NEW
 }
 
 export const initialBrushState: Omit<BrushState, 'color'> = {
@@ -274,6 +307,27 @@ export const initialGradientToolState: GradientToolState = {
   centerX: 50,
   centerY: 50,
   radius: 50,
+};
+
+export const initialSelectionSettings: SelectionSettings = {
+  autoSelectLayer: true,
+  showTransformControls: true,
+  snapToPixels: true,
+  feather: 0,
+  antiAlias: true,
+  sampleAllLayers: false,
+  fixedRatio: false,
+  fixedWidth: 0,
+  fixedHeight: 0,
+  edgeDetection: 50,
+  tolerance: 32,
+  contiguous: true,
+  autoEnhanceEdges: true,
+  refineFeather: 0,
+  refineSmooth: 0,
+  refineContrast: 0,
+  refineShiftEdge: 0,
+  decontaminateColors: false,
 };
 
 export const initialEditState: EditState = {
@@ -301,6 +355,7 @@ export const initialEditState: EditState = {
   selectiveBlurMask: null,
   selectiveBlurAmount: 50,
   customHslColor: '#EC4899', // NEW default
+  selectionSettings: initialSelectionSettings, // NEW
 };
 
 export const initialLayerState: Layer[] = [

@@ -37,7 +37,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
     // HSL Custom Color
     customHslColor, setCustomHslColor,
     // Project Settings
-    handleProjectSettingsUpdate, // Added handleProjectSettingsUpdate
+    handleProjectSettingsUpdate,
+    // Selection Settings
+    selectionSettings, onSelectionSettingChange, onSelectionSettingCommit, // NEW
   } = logic;
 
   const selectedLayerIds = selectedLayerId ? [selectedLayerId] : [];
@@ -176,6 +178,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
       // HSL Custom Color
       customHslColor={customHslColor}
       setCustomHslColor={setCustomHslColor}
+      // Selection Settings
+      selectionSettings={selectionSettings}
+      onSelectionSettingChange={onSelectionSettingChange}
+      onSelectionSettingCommit={onSelectionSettingCommit}
     />
   );
 };

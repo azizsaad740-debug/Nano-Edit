@@ -12,6 +12,7 @@ import {
   type Dimensions,
   type NewProjectSettings,
   type HistoryItem,
+  type SelectionSettings,
 } from "@/types/editor";
 import { useEditorState } from "@/hooks/useEditorState";
 import { usePresets, type Preset } from "@/hooks/usePresets";
@@ -66,6 +67,18 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   const setBrushStatePartial = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
     setBrushState(prev => ({ ...prev, ...updates }));
   }, [setBrushState]);
+
+  // --- Selection Settings Management ---
+  const selectionSettings = currentEditState.selectionSettings;
+
+  const onSelectionSettingChange = useCallback((key: keyof SelectionSettings, value: any) => {
+    updateCurrentState({ selectionSettings: { ...selectionSettings, [key]: value } });
+  }, [selectionSettings, updateCurrentState]);
+
+  const onSelectionSettingCommit = useCallback((key: keyof SelectionSettings, value: any) => {
+    recordHistory(`Set Selection Setting ${key} to ${value}`, currentEditState, layers);
+  }, [currentEditState, layers, recordHistory]);
+
 
   // --- Individual Adjustment Hooks (for Global Adjustments Panel) ---
   const { adjustments, onAdjustmentChange, onAdjustmentCommit, applyPreset: applyAdjustmentsPreset } = useAdjustments(currentEditState, updateCurrentState, recordHistory, layers);
@@ -142,6 +155,10 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     applyChannelsPreset(state);
     applySelectiveBlurPreset(state);
     
+    if (state.selectionSettings) {
+      updateCurrentState({ selectionSettings: state.selectionSettings });
+    }
+    
     if (presetLayers) {
       setLayers(presetLayers);
     }
@@ -151,7 +168,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   }, [
     applyAdjustmentsPreset, applyEffectsPreset, applyGradingPreset, applyHslPreset, applyCurvesPreset, applyFilterPreset,
     applyTransformPreset, applyCropPreset, applyFramePreset, applyChannelsPreset, applySelectiveBlurPreset,
-    recordHistory, currentEditState, layers, setLayers
+    recordHistory, currentEditState, layers, setLayers, updateCurrentState
   ]);
 
   // --- Consolidated Callbacks ---
@@ -211,6 +228,11 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     channels, onChannelChange,
     selectiveBlurMask, handleSelectiveBlurStrokeEnd,
+
+    // Selection Settings
+    selectionSettings,
+    onSelectionSettingChange,
+    onSelectionSettingCommit,
 
     // Layer Actions
     ...layerActions,
