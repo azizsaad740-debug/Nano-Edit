@@ -208,7 +208,7 @@ export const useWorkspaceInteraction = (
         polygonalPathRef.current.push(clickPoint);
         setSelectionPath([...polygonalPathRef.current]);
       }
-    } else if (activeTool === 'magicWand') {
+    } else if (activeTool === 'magicWand' || activeTool === 'quickSelect') { // Handle Magic Wand and Quick Select
       handleMagicWandClick(clickPoint);
     } else if (activeTool === 'objectSelect') { // NEW: Object Select
       handleObjectSelectClick();

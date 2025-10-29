@@ -7,7 +7,7 @@ interface LiveBrushCanvasProps {
   brushState: BrushState;
   imageRef: React.RefObject<HTMLImageElement>;
   onDrawEnd: (dataUrl: string, layerId: string) => void;
-  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush" | "quickSelect";
+  activeTool: "brush" | "eraser" | "selectionBrush" | "blurBrush" | "quickSelect" | "magicWand";
   selectedLayerId: string | null;
   onAddDrawingLayer: () => string;
   layers: Layer[];
@@ -40,7 +40,8 @@ export const LiveBrushCanvas = ({
   const activeDrawingLayerIdRef = React.useRef<string | null>(null);
   const currentOperationRef = React.useRef<'add' | 'subtract'>('add'); // Track current operation
 
-  const isBlurBrush = activeTool === 'blurBrush'; // NEW flag
+  const isBlurBrush = activeTool === 'blurBrush';
+  const isQuickOrMagicWand = activeTool === 'quickSelect' || activeTool === 'magicWand';
 
   const getCoords = React.useCallback((e: MouseEvent): { x: number; y: number; pressure?: number } | null => {
     if (!imageRef.current) return null;
@@ -127,7 +128,7 @@ export const LiveBrushCanvas = ({
       ctx.lineTo(points[i].x, points[i].y);
     }
     ctx.stroke(); // Draw the continuous line
-  }, [brushState.shape, brushState.size]); // Added dependencies for completeness
+  }, [brushState.shape, brushState.size]);
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
@@ -135,8 +136,8 @@ export const LiveBrushCanvas = ({
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     
-    if (isSelectionBrush || isBlurBrush) {
-      // No live drawing on this canvas for mask brushes.
+    if (isSelectionBrush || isBlurBrush || isQuickOrMagicWand) {
+      // No live drawing on this canvas for mask brushes or single-click tools.
     } else {
       // For regular brush/eraser, draw live preview
       applyBrushSettings(ctx, 'add'); // Live preview always draws based on foreground/tool settings
@@ -146,11 +147,14 @@ export const LiveBrushCanvas = ({
     if (isDrawingRef.current) {
       animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
     }
-  }, [drawPath, isSelectionBrush, isBlurBrush, applyBrushSettings, brushState.shape, brushState.size]);
+  }, [drawPath, isSelectionBrush, isBlurBrush, isQuickOrMagicWand, applyBrushSettings, brushState.shape, brushState.size]);
 
   const startDrawing = React.useCallback((e: MouseEvent) => {
     const coords = getCoords(e);
     if (!coords || !contextRef.current) return;
+
+    // Quick/Magic Wand are single-click operations handled by useWorkspaceInteraction
+    if (isQuickOrMagicWand) return;
 
     // Determine operation based on mouse button
     const operation = e.button === 2 ? 'subtract' : 'add';
@@ -172,7 +176,7 @@ export const LiveBrushCanvas = ({
     isDrawingRef.current = true;
     pathPointsRef.current = [coords];
     animationFrameIdRef.current = requestAnimationFrame(renderLiveStroke);
-  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush, isBlurBrush, activeTool]);
+  }, [getCoords, renderLiveStroke, selectedLayerId, onAddDrawingLayer, layers, isSelectionBrush, isBlurBrush, activeTool, isQuickOrMagicWand]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -188,6 +192,9 @@ export const LiveBrushCanvas = ({
       cancelAnimationFrame(animationFrameIdRef.current);
       animationFrameIdRef.current = null;
     }
+
+    // If it was a single-click tool, we don't process the stroke here
+    if (isQuickOrMagicWand) return;
 
     const offscreenCanvas = document.createElement('canvas');
     offscreenCanvas.width = imageRef.current.naturalWidth;
@@ -215,7 +222,7 @@ export const LiveBrushCanvas = ({
     contextRef.current?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     pathPointsRef.current = [];
     activeDrawingLayerIdRef.current = null; 
-  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, brushState.shape, brushState.size]);
+  }, [onDrawEnd, imageRef, applyBrushSettings, drawPath, isSelectionBrush, isBlurBrush, onSelectionBrushStrokeEnd, onSelectiveBlurStrokeEnd, brushState.shape, brushState.size, isQuickOrMagicWand]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
