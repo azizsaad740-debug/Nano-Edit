@@ -209,6 +209,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     setBrushSmoothness: (smoothness: number) => props.setBrushState({ smoothness }),
     brushShape: props.brushState.shape,
     setBrushShape: (shape: 'circle' | 'square') => props.setBrushState({ shape }),
+    // New properties
     brushFlow: props.brushState.flow,
     setBrushFlow: (flow: number) => props.setBrushState({ flow }),
     brushAngle: props.brushState.angle,

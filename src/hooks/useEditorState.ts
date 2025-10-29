@@ -6,6 +6,7 @@ import {
   initialGradientToolState,
   initialLayerState,
   initialHistoryItem,
+  initialSelectionSettings, // Import new initial settings
   type Layer,
   type EditState,
   type ActiveTool,
@@ -14,6 +15,7 @@ import {
   type GradientToolState,
   type Dimensions,
   type HistoryItem,
+  type SelectionSettings, // Import SelectionSettings type
 } from "@/types/editor";
 import { showSuccess, showError } from "@/utils/toast";
 
@@ -36,7 +38,8 @@ export const useEditorState = () => {
   const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null);
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
   const [customHslColor, setCustomHslColor] = useState<string>(initialEditState.customHslColor);
-  
+  const [selectionSettings, setSelectionSettings] = useState<SelectionSettings>(initialSelectionSettings); // NEW
+
   // Selection Drawing State
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
   const [marqueeCurrent, setMarqueeCurrent] = useState<Point | null>(null);
@@ -139,6 +142,7 @@ export const useEditorState = () => {
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
     customHslColor, setCustomHslColor,
-    zoom, setZoom, // Export zoom state
+    selectionSettings, setSelectionSettings, // NEW
+    zoom, setZoom,
   };
 };
