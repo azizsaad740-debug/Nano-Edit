@@ -42,8 +42,18 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
       img.src = layer.dataUrl!;
     });
     
-    // Drawing layers are assumed to be full canvas size (100% width/height)
-    ctx.drawImage(img, 0, 0, imageDimensions.width, imageDimensions.height);
+    // Calculate layer dimensions in pixels
+    const layerWidth = (layer.width ?? 100) / 100 * imageDimensions.width;
+    const layerHeight = (layer.height ?? 100) / 100 * imageDimensions.height;
+
+    ctx.save();
+    applyTransform(layer, ctx, layerWidth, layerHeight);
+    
+    // Draw the content image onto the transformed bounding box (0, 0 to layerWidth, layerHeight)
+    // Note: The content image itself is usually full canvas size, so we stretch/scale it to fit the layer's bounding box.
+    ctx.drawImage(img, 0, 0, layerWidth, layerHeight);
+
+    ctx.restore();
 
   } else if (layer.type === 'image' && layer.dataUrl) {
     const img = new Image();
