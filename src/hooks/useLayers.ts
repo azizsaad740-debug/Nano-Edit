@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
-import type { Layer, EditState, ActiveTool, Point, BrushState } from "@/types/editor";
+import type { Layer, EditState, ActiveTool, Point, BrushState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, GroupLayerData } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
 import { rasterizeEditedImageWithMask, downloadImage } from "@/utils/imageUtils"; // ADDED imports
@@ -80,7 +80,7 @@ const updateNestedContainer = (layers: Layer[], parentIds: string[], newContaine
       return {
         ...l,
         children: updateNestedContainer(l.children, parentIds.slice(1), newContainer),
-      };
+      } as GroupLayerData;
     }
     return l;
   });
@@ -108,7 +108,7 @@ export const useLayers = ({
   brushState, activeTool, // Destructure activeTool
 }: UseLayersProps) => {
   
-  const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]); // ADDED
+  const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]);
 
   // --- Core Layer Operations ---
 
@@ -195,12 +195,29 @@ export const useLayers = ({
       if (!location) return prev;
       
       const originalLayer = location.layer;
+      
+      // Helper to recursively duplicate children for groups
+      const duplicateChildren = (children: Layer[]): Layer[] => {
+        return children.map(child => {
+          const newChild: Layer = {
+            ...child,
+            id: uuidv4(),
+            name: `${child.name} Copy`,
+          } as Layer;
+          
+          if (child.type === 'group' && child.children) {
+            (newChild as GroupLayerData).children = duplicateChildren(child.children);
+          }
+          return newChild;
+        });
+      };
+
       const newLayer: Layer = {
         ...originalLayer,
         id: uuidv4(),
         name: `${originalLayer.name} Copy`,
         children: originalLayer.type === 'group' && originalLayer.children 
-          ? originalLayer.children.map(c => ({ ...c, id: uuidv4() })) // Simple deep copy for children
+          ? duplicateChildren(originalLayer.children)
           : undefined,
       };
       
@@ -272,8 +289,8 @@ export const useLayers = ({
 
   // --- Layer Creation ---
 
-  const handleAddTextLayer = useCallback((coords: { x: number; y: number }, color: string) => {
-    const newLayer: Layer = {
+  const handleAddTextLayer = useCallback((coords: Point, color: string) => {
+    const newLayer: TextLayerData = {
       id: uuidv4(),
       type: "text",
       name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
@@ -319,7 +336,7 @@ export const useLayers = ({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const transparentDataUrl = canvas.toDataURL();
 
-    const newLayer: Layer = {
+    const newLayer: DrawingLayerData = {
       id: uuidv4(),
       type: "drawing",
       name: `Drawing ${layers.filter((l) => l.type === "drawing").length + 1}`,
@@ -343,13 +360,13 @@ export const useLayers = ({
   }, [layers, recordHistory, currentEditState, dimensions, setLayers, setSelectedLayerId]);
 
   const handleAddLayerFromBackground = useCallback(() => {
-    const backgroundLayer = layers.find(l => l.id === 'background');
+    const backgroundLayer = layers.find(l => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
     if (!backgroundLayer || !backgroundLayer.dataUrl) {
       showError("No background image to create layer from.");
       return;
     }
 
-    const newLayer: Layer = {
+    const newLayer: DrawingLayerData = {
       id: uuidv4(),
       type: "drawing",
       name: `Layer from Background`,
@@ -392,8 +409,8 @@ export const useLayers = ({
   }, [selectionMaskDataUrl, dimensions, handleAddDrawingLayer, updateLayer, commitLayerChange, clearSelectionState]);
 
 
-  const handleAddShapeLayer = useCallback((coords: { x: number; y: number }, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
-    const newLayer: Layer = {
+  const handleAddShapeLayer = useCallback((coords: Point, shapeType: Layer['shapeType'] = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string, strokeColor: string) => {
+    const newLayer: VectorShapeLayerData = {
       id: uuidv4(),
       type: "vector-shape",
       name: `${shapeType?.charAt(0).toUpperCase() + shapeType?.slice(1) || 'Shape'} ${layers.filter((l) => l.type === "vector-shape").length + 1}`,
@@ -421,7 +438,7 @@ export const useLayers = ({
   }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerId]);
 
   const handleAddGradientLayer = useCallback(() => {
-    const newLayer: Layer = {
+    const newLayer: GradientLayerData = {
       id: uuidv4(),
       type: "gradient",
       name: `Gradient ${layers.filter((l) => l.type === "gradient").length + 1}`,
@@ -452,7 +469,7 @@ export const useLayers = ({
   }, [layers, recordHistory, currentEditState, foregroundColor, backgroundColor, setLayers, setSelectedLayerId]);
 
   const addAdjustmentLayer = useCallback((type: 'brightness' | 'curves' | 'hsl' | 'grading') => {
-    const initialData: Partial<Layer> = {};
+    const initialData: Partial<AdjustmentLayerData> = {};
     let name: string;
 
     switch (type) {
@@ -474,7 +491,7 @@ export const useLayers = ({
         break;
     }
 
-    const newLayer: Layer = {
+    const newLayer: AdjustmentLayerData = {
       id: uuidv4(),
       type: "adjustment",
       name: `${name} Layer`,
@@ -484,7 +501,7 @@ export const useLayers = ({
       x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
       isLocked: false,
       ...initialData,
-    };
+    } as AdjustmentLayerData;
     const updated = [...layers, newLayer];
     setLayers(updated);
     recordHistory(`Add Adjustment Layer: ${name}`, currentEditState, updated);
@@ -508,9 +525,9 @@ export const useLayers = ({
     
     updateLayer(smartObjectEditingId, {
       smartObjectData: {
-        ...layers.find(l => l.id === smartObjectEditingId)?.smartObjectData,
+        ...(layers.find(l => l.id === smartObjectEditingId) as SmartObjectLayerData)?.smartObjectData,
         layers: updatedLayers,
-      } as Layer['smartObjectData'],
+      },
     });
     commitLayerChange(smartObjectEditingId);
     showSuccess("Smart Object saved.");
@@ -578,7 +595,7 @@ export const useLayers = ({
     // This handler is called by LiveBrushCanvas when a stroke is finished.
     // It merges the new stroke onto the existing layer's dataUrl.
     
-    const targetLayer = findLayerLocation(layerId, layers)?.layer;
+    const targetLayer = findLayerLocation(layerId, layers)?.layer as DrawingLayerData | undefined;
     if (!targetLayer || !dimensions) return;
 
     const mergeStroke = async () => {
@@ -591,7 +608,7 @@ export const useLayers = ({
       // 1. Draw existing content
       if (targetLayer.dataUrl) {
         const existingImg = new Image();
-        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl!; });
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl; });
         ctx.drawImage(existingImg, 0, 0);
       }
 
@@ -669,7 +686,7 @@ export const useLayers = ({
   const handlePaintBucketFill = useCallback(async () => {
     if (activeTool !== 'paintBucket' || !selectionMaskDataUrl || !dimensions) return;
 
-    const targetLayer = layers.find(l => l.id === selectedLayerId);
+    const targetLayer = layers.find(l => l.id === selectedLayerId) as DrawingLayerData | VectorShapeLayerData | GradientLayerData | SmartObjectLayerData | GroupLayerData | TextLayerData | undefined;
     if (!targetLayer || targetLayer.type === 'image' || targetLayer.type === 'adjustment') {
       showError("Please select a non-background, non-adjustment layer to fill.");
       clearSelectionState();
@@ -752,7 +769,7 @@ export const useLayers = ({
     addAdjustmentLayer,
     groupLayers,
     toggleGroupExpanded: useCallback((id: string) => {
-      updateLayer(id, { expanded: !findLayerLocation(id, layers)?.layer.expanded });
+      updateLayer(id, { expanded: !(findLayerLocation(id, layers)?.layer as GroupLayerData)?.expanded });
     }, [updateLayer, layers]),
     handleDrawingStrokeEnd,
     handleLayerDelete,

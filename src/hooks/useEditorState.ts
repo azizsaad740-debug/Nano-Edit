@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import {
   initialEditState,
@@ -6,7 +6,7 @@ import {
   initialGradientToolState,
   initialLayerState,
   initialHistoryItem,
-  initialSelectionSettings, // Import new initial settings
+  initialSelectionSettings,
   type Layer,
   type EditState,
   type ActiveTool,
@@ -15,11 +15,22 @@ import {
   type GradientToolState,
   type Dimensions,
   type HistoryItem,
-  type SelectionSettings, // Import SelectionSettings type
+  type SelectionSettings,
 } from "@/types/editor";
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, dismissToast } from "@/utils/toast";
+import { useFontManager } from "./useFontManager";
+import { useSettings } from "./useSettings";
 
 export const useEditorState = () => {
+  // Refs for DOM elements
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // Dialog State
+  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
+  const [isGenerativeFillOpen, setIsGenerativeFillOpen] = useState(false);
+  const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
+
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<Dimensions | null>(null);
@@ -38,8 +49,8 @@ export const useEditorState = () => {
   const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null);
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
   const [customHslColor, setCustomHslColor] = useState<string>(initialEditState.customHslColor);
-  const [selectionSettings, setSelectionSettings] = useState<SelectionSettings>(initialSelectionSettings); // NEW
-  const [cloneSourcePoint, setCloneSourcePoint] = useState<Point | null>(null); // NEW: Clone source point
+  const [selectionSettings, setSelectionSettings] = useState<SelectionSettings>(initialSelectionSettings);
+  const [cloneSourcePoint, setCloneSourcePoint] = useState<Point | null>(null);
 
   // Selection Drawing State
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
@@ -51,6 +62,10 @@ export const useEditorState = () => {
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+
+  // External Hooks
+  const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
+  const { geminiApiKey, stabilityApiKey } = useSettings();
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     setCurrentEditState(prev => ({ ...prev, ...updates }));
@@ -116,6 +131,13 @@ export const useEditorState = () => {
   }, []);
 
   return {
+    // Refs
+    workspaceRef, imgRef,
+    // Dialogs
+    isGenerateOpen, setIsGenerateOpen,
+    isGenerativeFillOpen, setIsGenerativeFillOpen,
+    isPreviewingOriginal, setIsPreviewingOriginal,
+    // Core State
     image, setImage,
     dimensions, setDimensions,
     fileInfo, setFileInfo,
@@ -123,19 +145,23 @@ export const useEditorState = () => {
     currentEditState, setCurrentEditState,
     updateCurrentState,
     resetAllEdits,
+    // History
     history, setHistory,
     currentHistoryIndex, setCurrentHistoryIndex,
     recordHistory,
     undo, redo,
     canUndo, canRedo,
+    // Layers
     layers, setLayers,
     selectedLayerId, setSelectedLayerId,
+    // Tools
     activeTool, setActiveTool,
     brushState, setBrushState,
     gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor,
     backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType,
+    // Selection
     selectionPath, setSelectionPath,
     selectionMaskDataUrl, setSelectionMaskDataUrl,
     marqueeStart, setMarqueeStart,
@@ -143,8 +169,15 @@ export const useEditorState = () => {
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
     customHslColor, setCustomHslColor,
-    selectionSettings, setSelectionSettings, // NEW
-    cloneSourcePoint, setCloneSourcePoint, // NEW
+    selectionSettings, setSelectionSettings,
+    cloneSourcePoint, setCloneSourcePoint,
+    // Zoom
     zoom, setZoom,
+    // Constants
+    initialLayerState, initialHistoryItem,
+    // External
+    systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
+    geminiApiKey, stabilityApiKey,
+    dismissToast,
   };
 };

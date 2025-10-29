@@ -21,6 +21,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLocation } from "react-router-dom";
 import { fetchCommunityTemplates } from "@/utils/templateApi";
 import { showError } from "@/utils/toast";
+import LayersPanel from "@/components/editor/LayersPanel"; // Import LayersPanel
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -75,6 +76,10 @@ export const Index = () => {
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
     clearSelectionState,
     setIsPreviewingOriginal,
+    
+    // Refs/External
+    workspaceRef, imgRef,
+    systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
   } = logic;
 
   const isMobile = useIsMobile();
@@ -151,7 +156,7 @@ export const Index = () => {
 
   return (
     <div className="flex flex-col h-screen w-screen bg-background">
-      <CustomFontLoader customFonts={logic.customFonts} />
+      <CustomFontLoader customFonts={customFonts} />
       
       <EditorHeader
         logic={logic}
@@ -192,8 +197,8 @@ export const Index = () => {
 
         {/* Main Workspace Area */}
         <EditorWorkspace
-          workspaceRef={logic.workspaceRef}
-          imgRef={logic.imgRef}
+          workspaceRef={workspaceRef}
+          imgRef={imgRef}
           image={image}
           dimensions={dimensions}
           currentEditState={currentEditState}
@@ -231,7 +236,7 @@ export const Index = () => {
           handleFitScreen={handleFitScreen}
           handleZoomIn={handleZoomIn}
           handleZoomOut={handleZoomOut}
-          isPreviewingOriginal={logic.isPreviewingOriginal}
+          isPreviewingOriginal={setIsPreviewingOriginal}
         />
 
         {/* Right Sidebar (Adjustments, Layers, Info) */}
@@ -243,7 +248,7 @@ export const Index = () => {
             selectedLayerId={selectedLayerId}
             selectedLayer={selectedLayer}
             layers={layers}
-            imgRef={logic.imgRef}
+            imgRef={imgRef}
             onSelectLayer={onSelectLayer}
             onReorder={reorderLayers}
             toggleLayerVisibility={handleToggleVisibility}
@@ -259,7 +264,7 @@ export const Index = () => {
             onLayerPropertyCommit={handleLayerPropertyCommit}
             onLayerOpacityChange={handleLayerOpacityChange}
             onLayerOpacityCommit={handleLayerOpacityCommit}
-            addTextLayer={(coords) => handleAddTextLayer(coords, foregroundColor)}
+            addTextLayer={(coords, color) => handleAddTextLayer(coords, color)}
             addDrawingLayer={handleAddDrawingLayer}
             onAddLayerFromBackground={handleAddLayerFromBackground}
             onLayerFromSelection={handleLayerFromSelection}
@@ -364,13 +369,17 @@ export const Index = () => {
             customHslColor={customHslColor}
             setCustomHslColor={setCustomHslColor}
             // Font Manager Props
-            systemFonts={logic.systemFonts}
-            customFonts={logic.customFonts}
+            systemFonts={systemFonts}
+            customFonts={customFonts}
             onOpenFontManager={() => setIsFontManagerOpen(true)}
             // Selection Settings
             selectionSettings={selectionSettings}
             onSelectionSettingChange={(key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value }))}
             onSelectionSettingCommit={(key, value) => recordHistory(`Set Selection Setting ${key}`, currentEditState, layers)}
+            // Clone Source Point
+            cloneSourcePoint={cloneSourcePoint}
+            // Layers Panel Component
+            LayersPanel={LayersPanel}
           />
         </aside>
       </main>
@@ -422,11 +431,11 @@ export const Index = () => {
       <FontManagerDialog
         open={isFontManagerOpen}
         onOpenChange={setIsFontManagerOpen}
-        systemFonts={logic.systemFonts}
-        setSystemFonts={logic.setSystemFonts}
-        customFonts={logic.customFonts}
-        addCustomFont={logic.addCustomFont}
-        removeCustomFont={logic.removeCustomFont}
+        systemFonts={systemFonts}
+        setSystemFonts={setSystemFonts}
+        customFonts={customFonts}
+        addCustomFont={addCustomFont}
+        removeCustomFont={removeCustomFont}
       />
     </div>
   );

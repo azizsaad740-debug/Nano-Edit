@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { Layer, EditState, HistoryItem, NewProjectSettings } from '@/types/editor';
+import type { Layer, EditState, HistoryItem, NewProjectSettings, ImageLayerData, DrawingLayerData } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
 import { loadProjectFromFile } from '@/utils/projectUtils';
 import ExifReader from 'exifreader';
@@ -45,8 +45,8 @@ export const useImageLoader = (
         setExifData(exif);
         
         // 3. Set initial layer state (Background layer)
-        const backgroundLayer: Layer = {
-          ...initialLayerState[0],
+        const backgroundLayer: ImageLayerData = {
+          ...(initialLayerState[0] as ImageLayerData),
           dataUrl: src,
           scaleX: 1, // ADDED
           scaleY: 1, // ADDED
@@ -86,7 +86,7 @@ export const useImageLoader = (
     }
     const dataUrl = canvas.toDataURL();
 
-    const backgroundLayer: Layer = {
+    const backgroundLayer: DrawingLayerData = {
       id: 'background',
       name: 'Background',
       type: 'drawing', // Use drawing type for a colored background
@@ -125,13 +125,13 @@ export const useImageLoader = (
         setFileInfo(projectData.fileInfo);
         
         // 4. Determine dimensions from layers (assuming background layer holds dimensions)
-        const backgroundLayer = currentHistory.layers.find(l => l.id === 'background');
+        const backgroundLayer = currentHistory.layers.find(l => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
         if (backgroundLayer && backgroundLayer.dataUrl) {
           const img = new Image();
           await new Promise((resolve, reject) => {
             img.onload = resolve;
             img.onerror = reject;
-            img.src = backgroundLayer.dataUrl!;
+            img.src = backgroundLayer.dataUrl;
           });
           setDimensions({ width: img.naturalWidth, height: img.naturalHeight });
         } else {
@@ -170,7 +170,7 @@ export const useImageLoader = (
     setCurrentEditState({ ...initialEditState, ...data.editState });
     
     // 4. Handle background image (if template uses a placeholder image)
-    const backgroundLayer = data.layers.find((l: Layer) => l.id === 'background');
+    const backgroundLayer = data.layers.find((l: Layer) => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
     if (backgroundLayer && backgroundLayer.dataUrl) {
       setImage(backgroundLayer.dataUrl);
     } else {

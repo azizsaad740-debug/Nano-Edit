@@ -13,7 +13,19 @@ export type ActiveTool =
   | "shape"
   | "gradient"
   | "crop"
-  | "eyedropper";
+  | "eyedropper"
+  | "marqueeRect"
+  | "marqueeEllipse"
+  | "lassoPoly"
+  | "quickSelect"
+  | "magicWand"
+  | "objectSelect"
+  | "pencil"
+  | "paintBucket"
+  | "patternStamp"
+  | "cloneStamp"
+  | "historyBrush"
+  | "artHistoryBrush";
 
 export interface Dimensions {
   width: number;
@@ -26,7 +38,12 @@ export interface BrushState {
   hardness: number;
   smoothness: number;
   shape: 'circle' | 'square';
-  color: string; // Note: color is managed by foregroundColor in Index.tsx, but kept here for completeness
+  color: string;
+  flow: number;
+  angle: number;
+  roundness: number;
+  spacing: number;
+  blendMode: string;
 }
 
 export interface GradientToolState {
@@ -39,6 +56,8 @@ export interface GradientToolState {
   radius: number;
   feather: number;
   inverted: boolean;
+  dither: boolean;
+  transparency: boolean;
 }
 
 export interface AdjustmentState {
@@ -60,9 +79,15 @@ export interface EffectState {
   grain: number;
   sharpen: number;
   blur: number;
+  hueShift: number;
+  noise: number;
+  clarity: number;
 }
 
 export interface GradingState {
+  grayscale: number;
+  sepia: number;
+  invert: number;
   shadowsColor: string;
   midtonesColor: string;
   highlightsColor: string;
@@ -71,23 +96,42 @@ export interface GradingState {
   blending: number;
 }
 
-export interface HslAdjustmentState {
+export type HslColorKey = 'global' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
+
+export interface HslAdjustment {
   hue: number;
   saturation: number;
   luminance: number;
 }
 
+export interface HslAdjustmentsState {
+  global: HslAdjustment;
+  red: HslAdjustment;
+  orange: HslAdjustment;
+  yellow: HslAdjustment;
+  green: HslAdjustment;
+  aqua: HslAdjustment;
+  blue: HslAdjustment;
+  purple: HslAdjustment;
+  magenta: HslAdjustment;
+}
+
 export interface ChannelState {
-  red: number;
-  green: number;
-  blue: number;
+  r: boolean;
+  g: boolean;
+  b: boolean;
+}
+
+export interface Point {
+  x: number;
+  y: number;
 }
 
 export interface CurvesState {
-  rgb: [number, number][];
-  red: [number, number][];
-  green: [number, number][];
-  blue: [number, number][];
+  all: Point[];
+  r: Point[];
+  g: Point[];
+  b: Point[];
 }
 
 export interface TransformState {
@@ -103,29 +147,63 @@ export interface CropState {
   y: number;
   width: number;
   height: number;
+  unit: 'px' | '%';
+  aspect?: number;
 }
 
 export interface FrameState {
-  preset: 'none' | 'polaroid' | 'film' | 'border';
+  type: 'none' | 'border' | 'polaroid' | 'film' | 'solid';
+  width: number;
   color: string;
-  thickness: number;
-  padding: number;
-  radius: number;
-  opacity: number;
+  padding?: number;
+  radius?: number;
+  opacity?: number;
 }
 
-export interface EditorState {
+export interface SelectionSettings {
+  feather: number;
+  antiAlias: boolean;
+  fixedRatio: boolean;
+  fixedWidth: number;
+  fixedHeight: number;
+  tolerance: number;
+  contiguous: boolean;
+  sampleAllLayers: boolean;
+  autoEnhanceEdges: boolean;
+  showTransformControls: boolean;
+  autoSelectLayer: boolean;
+  snapToPixels: boolean;
+  // Refine Edge settings (Stub)
+  refineFeather: number;
+  refineSmooth: number;
+  refineContrast: number;
+  refineShiftEdge: number;
+  decontaminateColors: boolean;
+}
+
+export interface EditState {
   adjustments: AdjustmentState;
   effects: EffectState;
   grading: GradingState;
-  hslAdjustments: HslAdjustmentState[]; // Array of 6 HSL adjustments
+  hslAdjustments: HslAdjustmentsState;
   channels: ChannelState;
   curves: CurvesState;
-  selectedFilter: string | null;
+  selectedFilter: string;
   transforms: TransformState;
-  crop: CropState;
+  crop: CropState | null;
   frame: FrameState;
   colorMode: 'RGB' | 'CMYK' | 'Grayscale';
+  selectiveBlurMask: string | null;
+  selectiveBlurAmount: number;
+  customHslColor: string;
+  selectionSettings: SelectionSettings;
+}
+
+export interface NewProjectSettings {
+  width: number;
+  height: number;
+  dpi: number;
+  backgroundColor: string;
 }
 
 // --- Layer Types ---
@@ -148,190 +226,120 @@ export type BlendMode =
   | 'color'
   | 'luminosity';
 
+// Base layer properties that all layers share
 export interface BaseLayerData {
+  id: string;
+  name: string;
+  visible: boolean;
+  opacity: number;
+  blendMode: BlendMode;
   x: number;
   y: number;
   width: number;
   height: number;
-  opacity: number;
   rotation: number;
   scaleX: number;
   scaleY: number;
-  blendMode: BlendMode;
-  mask?: string; // Data URL of the mask image
-  isClippingMask: boolean;
   isLocked: boolean;
+  maskDataUrl?: string;
+  isClippingMask?: boolean;
 }
 
 export interface ImageLayerData extends BaseLayerData {
   type: 'image';
-  src: string;
+  dataUrl: string;
 }
 
 export interface DrawingLayerData extends BaseLayerData {
   type: 'drawing';
-  path: string; // SVG path data or similar
-  color: string;
-  size: number;
-  hardness: number;
+  dataUrl: string;
 }
 
-export interface ShapeLayerData extends BaseLayerData {
-  type: 'shape';
-  shapeType: 'rect' | 'circle' | 'triangle' | 'polygon';
+export interface TextLayerData extends BaseLayerData {
+  type: 'text';
+  content: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: number | 'normal' | 'bold' | string;
+  fontStyle: 'normal' | 'italic';
+  color: string;
+  fillColor?: string;
+  stroke?: { width: number; color: string }; // Text stroke
+  lineHeight?: number;
+  letterSpacing?: number;
+  textAlign?: 'left' | 'center' | 'right' | 'justify';
+  backgroundColor?: string;
+  padding?: number;
+  textShadow?: { offsetX: number; offsetY: number; blur: number; color: string };
+}
+
+export interface VectorShapeLayerData extends BaseLayerData {
+  type: 'vector-shape';
+  shapeType: 'rect' | 'circle' | 'triangle' | 'polygon' | 'star' | 'line' | 'arrow' | 'custom';
   fillColor: string;
   strokeColor: string;
   strokeWidth: number;
-  radius?: number; // For rounded rectangles
+  borderRadius?: number;
+  points?: Point[];
+  starPoints?: number;
+  lineThickness?: number;
 }
 
 export interface GradientLayerData extends BaseLayerData {
   type: 'gradient';
   gradientType: 'linear' | 'radial';
-  colors: string[];
-  stops: number[];
-  angle: number;
+  gradientColors: string[];
+  gradientStops: number[];
+  gradientAngle: number;
+  gradientFeather: number;
+  gradientInverted: boolean;
+  gradientCenterX: number;
+  gradientCenterY: number;
+  gradientRadius: number;
 }
 
 export interface AdjustmentLayerData extends BaseLayerData {
   type: 'adjustment';
-  adjustmentType: 'brightness' | 'curves' | 'hsl';
-  adjustmentSettings: Partial<AdjustmentState | CurvesState | HslAdjustmentState>;
+  adjustmentData: {
+    type: 'brightness' | 'curves' | 'hsl' | 'grading';
+    adjustments?: AdjustmentState;
+    curves?: CurvesState;
+    hslAdjustments?: HslAdjustmentsState;
+    grading?: GradingState;
+  };
 }
 
 export interface SmartObjectData {
+  layers: Layer[];
   width: number;
   height: number;
-  layers: Layer[];
 }
 
 export interface SmartObjectLayerData extends BaseLayerData {
-  type: 'smartObject';
+  type: 'smart-object';
   smartObjectData: SmartObjectData;
 }
 
-export type TextAlignment = 'left' | 'center' | 'right' | 'justify';
-export type TextVerticalAlignment = 'top' | 'middle' | 'bottom';
-export type TextTransform = 'none' | 'uppercase' | 'lowercase' | 'capitalize';
-export type TextDecoration = 'none' | 'underline' | 'line-through';
-
-export interface TextWarpData {
-  type: 'none' | 'arc' | 'arch' | 'bulge' | 'shell' | 'wave' | 'fish' | 'rise' | 'fisheye' | 'inflate' | 'squeeze' | 'twist' | 'custom';
-  bend: number; // -100 to 100
-  horizontalDistortion: number;
-  verticalDistortion: number;
-  customPath?: string; // For custom warping
+export interface GroupLayerData extends BaseLayerData {
+  type: 'group';
+  children: Layer[];
+  expanded: boolean;
 }
 
-export interface TextLayerData extends BaseLayerData {
-  type: 'text';
-  text: string;
-  fontFamily: string;
-  fontSize: number;
-  fontWeight: number | 'normal' | 'bold';
-  fontStyle: 'normal' | 'italic';
-  fillColor: string;
-  strokeColor: string;
-  strokeWidth: number;
-  // Spacing
-  lineHeight: number; // Leading
-  letterSpacing: number; // Tracking
-  wordSpacing: number; // Kerning (often handled by letterSpacing in CSS, but kept separate for control)
-  baselineShift: number;
-  // Alignment & Flow
-  textAlignment: TextAlignment;
-  verticalAlignment: TextVerticalAlignment; // For Area Type
-  indentation: number;
-  spaceBefore: number;
-  spaceAfter: number;
-  hyphenate: boolean;
-  // Styles
-  textTransform: TextTransform; // All Caps, Small Caps
-  textDecoration: TextDecoration; // Underline, Strikethrough
-  isSuperscript: boolean;
-  isSubscript: boolean;
-  // OpenType (Placeholder for future implementation)
-  openTypeFeatures: {
-    ligatures: boolean;
-    swashes: boolean;
-    stylisticSet: number;
-    fractions: boolean;
-  };
-  // Warping
-  textWarp: TextWarpData;
-}
-
-export type LayerData =
+export type Layer =
   | ImageLayerData
   | DrawingLayerData
-  | ShapeLayerData
+  | TextLayerData
+  | VectorShapeLayerData
   | GradientLayerData
   | AdjustmentLayerData
   | SmartObjectLayerData
-  | TextLayerData;
-
-export interface Layer extends LayerData {
-  id: string;
-  name: string;
-  isVisible: boolean;
-  isGroup: boolean;
-  isExpanded: boolean;
-  children: Layer[];
-}
+  | GroupLayerData;
 
 // --- Project & History Types ---
 
-export interface Project {
-  id: string;
-  name: string;
-  image: string | null; // Base image data URL
-  dimensions: Dimensions | null;
-  fileInfo: { name: string; size: number; type: string } | null;
-  exifData: Record<string, any> | null;
-  currentState: EditorState;
-  layers: Layer[];
-  history: HistoryItem[];
-  currentHistoryIndex: number;
-  aspect: number;
-  selectedLayerId: string | null;
-  activeTool: ActiveTool | null;
-  brushState: BrushState;
-  gradientToolState: GradientToolState;
-  selectionPath: string | null; // SVG path for selection
-  selectionMaskDataUrl: string | null; // Data URL for selection mask
-  selectiveBlurAmount: number;
-  foregroundColor: string;
-  backgroundColor: string;
-  selectedShapeType: Layer['shapeType'] | null;
-}
-
 export interface HistoryItem {
   name: string;
-  state: EditorState;
+  state: EditState;
   layers: Layer[];
 }
-
-// --- Preset Types ---
-
-export interface Preset {
-  id: string;
-  name: string;
-  state: EditorState;
-}
-
-export interface GradientPreset {
-  id: string;
-  name: string;
-  state: GradientToolState;
-}
-
-// --- Template Types ---
-
-export interface TemplateData {
-  name: string;
-  description: string;
-  image: string;
-  project: Omit<Project, 'id' | 'name'>;
-}
-
-// Removed explicit exports to rely on ambient declaration structure

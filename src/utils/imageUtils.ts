@@ -1,4 +1,4 @@
-import type { Layer, EditState, Dimensions } from '@/types/editor'; // ADDED Layer, EditState, Dimensions
+import type { Layer, EditState, Dimensions, ImageLayerData, DrawingLayerData } from '@/types/editor';
 
 /**
  * Options required for rasterizing the final image.
@@ -40,7 +40,7 @@ export const rasterizeEditedImageWithMask = async (
   // and rendering all layers onto a single canvas.
   
   // For now, we return the base image data URL if available, or a placeholder.
-  const backgroundLayer = layers.find(l => l.id === 'background');
+  const backgroundLayer = layers.find(l => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
   const baseImageSrc = backgroundLayer?.dataUrl || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
   return new Promise((resolve) => {
