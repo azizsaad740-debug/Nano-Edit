@@ -186,7 +186,7 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,
     curves, onCurvesChange, onCurvesCommit,
     selectedFilter, onFilterChange,
-    transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
+    transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, // <-- EXPOSED TRANSFORM FUNCTIONS
     crop, onCropChange, onCropComplete, onAspectChange, aspect,
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     channels, onChannelChange,
