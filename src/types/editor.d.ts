@@ -73,11 +73,12 @@ export interface AdjustmentState {
   shadows: number;
   clarity: number;
   vibrance: number;
+  grain: number; // Added missing property
 }
 
 export interface EffectState {
   vignette: number;
-  grain: number;
+  grain: number; // Added missing property
   sharpen: number;
   blur: number;
   hueShift: number;

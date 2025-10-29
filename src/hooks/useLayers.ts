@@ -474,7 +474,7 @@ export const useLayers = ({
 
     switch (type) {
       case 'brightness':
-        initialData.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100 };
+        initialData.adjustments = { brightness: 100, contrast: 100, saturation: 100, exposure: 0, gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 100, grain: 0 };
         name = "Brightness/Contrast";
         break;
       case 'curves':
@@ -595,8 +595,8 @@ export const useLayers = ({
     // This handler is called by LiveBrushCanvas when a stroke is finished.
     // It merges the new stroke onto the existing layer's dataUrl.
     
-    const targetLayer = findLayerLocation(layerId, layers)?.layer as DrawingLayerData | undefined;
-    if (!targetLayer || !dimensions) return;
+    const targetLayer = findLayerLocation(layerId, layers)?.layer;
+    if (!targetLayer || (targetLayer.type !== 'drawing' && targetLayer.type !== 'image') || !dimensions) return;
 
     const mergeStroke = async () => {
       const canvas = document.createElement('canvas');
@@ -686,7 +686,9 @@ export const useLayers = ({
   const handlePaintBucketFill = useCallback(async () => {
     if (activeTool !== 'paintBucket' || !selectionMaskDataUrl || !dimensions) return;
 
-    const targetLayer = layers.find(l => l.id === selectedLayerId) as DrawingLayerData | VectorShapeLayerData | GradientLayerData | SmartObjectLayerData | GroupLayerData | TextLayerData | undefined;
+    const targetLayer = layers.find(l => l.id === selectedLayerId);
+    
+    // Check if targetLayer is a type that can be filled (Drawing, Vector, Gradient, Text, SmartObject, Group)
     if (!targetLayer || targetLayer.type === 'image' || targetLayer.type === 'adjustment') {
       showError("Please select a non-background, non-adjustment layer to fill.");
       clearSelectionState();
@@ -702,10 +704,11 @@ export const useLayers = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // 1. Draw existing content (if any)
-      if ((targetLayer as DrawingLayerData).dataUrl) {
+      // 1. Draw existing content (only if it's a drawing layer, otherwise we assume vector/text layers handle their own fill properties)
+      // We only handle drawing layers here for simplicity in rasterization.
+      if (targetLayer.type === 'drawing' && targetLayer.dataUrl) {
         const existingImg = new Image();
-        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = (targetLayer as DrawingLayerData).dataUrl!; });
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl; });
         ctx.drawImage(existingImg, 0, 0);
       }
 
@@ -726,14 +729,33 @@ export const useLayers = ({
       
       const newLayerDataUrl = canvas.toDataURL();
       
-      updateLayer(fillLayerId, { dataUrl: newLayerDataUrl });
-      commitLayerChange(fillLayerId);
+      // Update the layer. If it's a drawing layer, update dataUrl. 
+      // If it's a vector/text layer, this operation is complex and usually modifies fill properties, 
+      // but since we are rasterizing the fill, we must convert it to a drawing layer or update its dataUrl.
+      
+      // For simplicity, if it's not a drawing layer, we create a new drawing layer above it.
+      if (targetLayer.type !== 'drawing') {
+        const newDrawingLayerId = handleAddDrawingLayer();
+        updateLayer(newDrawingLayerId, {
+          dataUrl: newLayerDataUrl,
+          name: `Fill: ${targetLayer.name}`,
+          opacity: 100,
+          blendMode: 'normal',
+          x: 50, y: 50, width: 100, height: 100, rotation: 0,
+          scaleX: 1, scaleY: 1,
+        });
+        commitLayerChange(newDrawingLayerId);
+      } else {
+        updateLayer(fillLayerId, { dataUrl: newLayerDataUrl });
+        commitLayerChange(fillLayerId);
+      }
+      
       clearSelectionState();
       showSuccess("Layer filled successfully.");
     };
 
     fillOperation();
-  }, [activeTool, selectionMaskDataUrl, dimensions, layers, selectedLayerId, foregroundColor, updateLayer, commitLayerChange, clearSelectionState]);
+  }, [activeTool, selectionMaskDataUrl, dimensions, layers, selectedLayerId, foregroundColor, updateLayer, commitLayerChange, clearSelectionState, handleAddDrawingLayer]);
 
   // Watch for selectionMaskDataUrl changes when Paint Bucket is active
   useEffect(() => {
