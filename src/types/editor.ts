@@ -1,4 +1,4 @@
-export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | "marqueeRect" | "marqueeEllipse" | "marqueeRow" | "marqueeCol" | "lassoPoly" | "lassoMagnetic" | "quickSelect" | "magicWand" | "objectSelect";
+export type ActiveTool = "lasso" | "brush" | "text" | "crop" | "eraser" | "eyedropper" | "shape" | "move" | "gradient" | "selectionBrush" | "blurBrush" | "marqueeRect" | "marqueeEllipse" | "marqueeRow" | "marqueeCol" | "lassoPoly" | "lassoMagnetic" | "quickSelect" | "magicWand" | "objectSelect" | "pencil" | "paintBucket" | "patternStamp" | "cloneStamp" | "historyBrush" | "artHistoryBrush";
 
 export interface Dimensions {
   width: number;
@@ -148,7 +148,7 @@ export interface Layer {
   starPoints?: number; // Number of points for a star
   lineThickness?: number; // Thickness for line/arrow (in pixels or percentage)
 
-  gradientType?: 'linear' | 'radial'; // For 'gradient'
+  gradientType?: 'linear' | 'radial' | 'angle' | 'reflected' | 'diamond'; // For 'gradient' (UPDATED)
   gradientColors?: string[]; // For 'gradient'
   gradientStops?: number[]; // For 'gradient' (0 to 1)
   gradientAngle?: number; // For 'gradient' (0 to 360)
@@ -157,6 +157,8 @@ export interface Layer {
   gradientCenterX?: number; // For 'radial' (0 to 100)
   gradientCenterY?: number; // For 'radial' (0 to 100)
   gradientRadius?: number; // For 'radial' (0 to 100)
+  gradientDither?: boolean; // NEW
+  gradientTransparency?: boolean; // NEW
 
   smartObjectData?: {
     layers: Layer[];
@@ -209,10 +211,15 @@ export interface BrushState {
   smoothness: number; // 0 to 100
   shape: 'circle' | 'square';
   color: string; // ADDED: Brush color
+  flow: number; // NEW: 0 to 100
+  angle: number; // NEW: 0 to 360
+  roundness: number; // NEW: 0 to 100
+  spacing: number; // NEW: 1 to 100
+  blendMode: string; // NEW: CSS blend mode string
 }
 
 export interface GradientToolState {
-  type: 'linear' | 'radial';
+  type: 'linear' | 'radial' | 'angle' | 'reflected' | 'diamond'; // UPDATED
   colors: string[];
   stops: number[]; // 0 to 1
   angle: number; // 0 to 360
@@ -221,72 +228,8 @@ export interface GradientToolState {
   centerX: number; // 0 to 100
   centerY: number; // 0 to 100
   radius: number; // 0 to 100
-}
-
-export interface EditState {
-  adjustments: {
-    brightness: number; // 0 to 200
-    contrast: number; // 0 to 200
-    saturation: number; // 0 to 200
-  };
-  effects: {
-    blur: number; // 0 to 20
-    hueShift: number; // -180 to 180
-    vignette: number; // 0 to 100
-    noise: number; // 0 to 100
-    sharpen: number; // 0 to 100
-    clarity: number; // 0 to 100
-  };
-  grading: {
-    grayscale: number; // 0 to 100
-    sepia: number; // 0 to 100
-    invert: number; // 0 to 100
-  };
-  hslAdjustments: {
-    global: HslAdjustment;
-    red: HslAdjustment;
-    orange: HslAdjustment;
-    yellow: HslAdjustment;
-    green: HslAdjustment;
-    aqua: HslAdjustment;
-    blue: HslAdjustment;
-    purple: HslAdjustment;
-    magenta: HslAdjustment;
-  };
-  curves: {
-    all: Point[];
-    r: Point[];
-    g: Point[];
-    b: Point[];
-  };
-  selectedFilter: string;
-  transforms: {
-    rotation: number; // -180 to 180
-    scaleX: number; // 1 or -1
-    scaleY: number; // 1 or -1
-  };
-  crop: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    unit: 'px' | '%';
-  } | undefined;
-  frame: {
-    type: 'none' | 'solid';
-    width: number; // in pixels
-    color: string;
-  };
-  channels: {
-    r: boolean;
-    g: boolean;
-    b: boolean;
-  };
-  colorMode: 'RGB' | 'CMYK' | 'Grayscale';
-  selectiveBlurMask: string | null; // Data URL of the mask for selective blur
-  selectiveBlurAmount: number; // 0 to 100 (max blur strength)
-  customHslColor: string; // NEW
-  selectionSettings: SelectionSettings; // NEW
+  dither: boolean; // NEW
+  transparency: boolean; // NEW
 }
 
 export const initialBrushState: Omit<BrushState, 'color'> = {
@@ -295,6 +238,11 @@ export const initialBrushState: Omit<BrushState, 'color'> = {
   hardness: 50,
   smoothness: 50,
   shape: 'circle',
+  flow: 100, // NEW
+  angle: 0, // NEW
+  roundness: 100, // NEW
+  spacing: 25, // NEW
+  blendMode: 'normal', // NEW
 };
 
 export const initialGradientToolState: GradientToolState = {
@@ -307,6 +255,8 @@ export const initialGradientToolState: GradientToolState = {
   centerX: 50,
   centerY: 50,
   radius: 50,
+  dither: false, // NEW
+  transparency: true, // NEW
 };
 
 export const initialSelectionSettings: SelectionSettings = {

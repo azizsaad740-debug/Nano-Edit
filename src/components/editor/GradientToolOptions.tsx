@@ -101,7 +101,7 @@ export const GradientToolOptions = ({
               <Label htmlFor="gradient-type">Gradient Type</Label>
               <Select
                 value={gradientToolState.type}
-                onValueChange={(v) => handleUpdate({ type: v as "linear" | "radial" })}
+                onValueChange={(v) => handleUpdate({ type: v as GradientToolState['type'] })}
               >
                 <SelectTrigger id="gradient-type">
                   <SelectValue placeholder="Select gradient type" />
@@ -109,6 +109,9 @@ export const GradientToolOptions = ({
                 <SelectContent>
                   <SelectItem value="linear">Linear</SelectItem>
                   <SelectItem value="radial">Radial</SelectItem>
+                  <SelectItem value="angle">Angle (Stub)</SelectItem>
+                  <SelectItem value="reflected">Reflected (Stub)</SelectItem>
+                  <SelectItem value="diamond">Diamond (Stub)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -211,6 +214,23 @@ export const GradientToolOptions = ({
                 </div>
               </div>
             )}
+            
+            <div className="flex items-center justify-between pt-2 border-t">
+              <Label htmlFor="gradient-dither">Dither (Stub)</Label>
+              <Switch
+                id="gradient-dither"
+                checked={gradientToolState.dither}
+                onCheckedChange={(c) => handleUpdate({ dither: c })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="gradient-transparency">Transparency</Label>
+              <Switch
+                id="gradient-transparency"
+                checked={gradientToolState.transparency}
+                onCheckedChange={(c) => handleUpdate({ transparency: c })}
+              />
+            </div>
 
             <div className="flex items-center justify-between">
               <Label htmlFor="gradient-inverted">Invert</Label>

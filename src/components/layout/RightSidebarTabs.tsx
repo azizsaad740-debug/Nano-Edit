@@ -50,7 +50,11 @@ import ShapeOptions from "@/components/editor/ShapeOptions";
 import { GradientOptions } from "@/components/editor/GradientOptions";
 import { AdjustmentOptions } from "@/components/editor/AdjustmentOptions";
 import MaskProperties from "@/components/editor/MaskProperties";
-import SelectionToolOptions from "@/components/editor/SelectionToolOptions"; // NEW
+import SelectionToolOptions from "@/components/editor/SelectionToolOptions";
+import { PencilOptions } from "@/components/editor/PencilOptions"; // NEW
+import { PaintBucketOptions } from "@/components/editor/PaintBucketOptions"; // NEW
+import { StampOptions } from "@/components/editor/StampOptions"; // NEW
+import { HistoryBrushOptions } from "@/components/editor/HistoryBrushOptions"; // NEW
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -153,9 +157,11 @@ interface RightSidebarTabsProps {
   customHslColor: string;
   setCustomHslColor: (color: string) => void;
   // Selection Settings
-  selectionSettings: SelectionSettings; // NEW
-  onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void; // NEW
-  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void; // NEW
+  selectionSettings: SelectionSettings;
+  onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void;
+  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
+  // History
+  history: { name: string }[];
 }
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
@@ -163,10 +169,17 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const selectedLayerId = selectedLayer?.id;
   
   const isBrushTool = props.activeTool === 'brush' || props.activeTool === 'eraser';
+  const isPencilTool = props.activeTool === 'pencil';
   const isSelectionBrushTool = props.activeTool === 'selectionBrush';
   const isBlurBrushTool = props.activeTool === 'blurBrush';
+  const isGradientTool = props.activeTool === 'gradient';
+  const isPaintBucketTool = props.activeTool === 'paintBucket';
+  const isStampTool = props.activeTool === 'patternStamp' || props.activeTool === 'cloneStamp';
+  const isHistoryBrushTool = props.activeTool === 'historyBrush' || props.activeTool === 'artHistoryBrush';
   
   const isSelectionTool = props.activeTool === 'move' || props.activeTool?.startsWith('marquee') || props.activeTool?.startsWith('lasso') || props.activeTool === 'quickSelect' || props.activeTool === 'magicWand' || props.activeTool === 'objectSelect';
+  
+  const isAnyToolWithOptions = isSelectionTool || isBrushTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isGradientTool || isPaintBucketTool || isStampTool || isHistoryBrushTool;
 
   const [isSavingPreset, setIsSavingPreset] = React.useState(false);
   const [isSavingGradientPreset, setIsSavingGradientPreset] = React.useState(false);
@@ -186,7 +199,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onRasterizeLayer: props.onRasterizeLayer,
     onCreateSmartObject: props.onCreateSmartObject,
     onOpenSmartObject: props.onOpenSmartObject,
-    onLayerPropertyCommit: props.onLayerPropertyCommit, // FIX 3: Use the correct prop name
+    onLayerPropertyCommit: props.onLayerPropertyCommit,
     onLayerOpacityChange: props.onLayerOpacityChange,
     onLayerOpacityCommit: props.onLayerOpacityCommit,
     onAddTextLayer: props.addTextLayer,
@@ -228,8 +241,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     onDeleteGradientPreset: props.onDeleteGradientPreset,
     customHslColor: props.customHslColor,
     setCustomHslColor: props.setCustomHslColor,
-    onRemoveLayerMask: props.onRemoveLayerMask, // Pass mask handlers
-    onInvertLayerMask: props.onInvertLayerMask, // Pass mask handlers
+    onRemoveLayerMask: props.onRemoveLayerMask,
+    onInvertLayerMask: props.onInvertLayerMask,
   };
 
   // Props for GlobalAdjustmentsPanel
@@ -283,7 +296,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         <TabsTrigger value="adjustments" className="h-8 flex-1">
           <Wand2 className="h-4 w-4" />
         </TabsTrigger>
-        <TabsTrigger value="tools" className="h-8 flex-1" disabled={!isBrushTool && !isSelectionBrushTool && !isBlurBrushTool && !isSelectionTool}>
+        <TabsTrigger value="tools" className="h-8 flex-1" disabled={!isAnyToolWithOptions}>
           <Brush className="h-4 w-4" />
         </TabsTrigger>
       </TabsList>
@@ -311,6 +324,16 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 onSettingCommit={props.onSelectionSettingCommit}
               />
             )}
+            
+            {isPencilTool && (
+              <PencilOptions
+                brushState={props.brushState}
+                setBrushState={props.setBrushState}
+                foregroundColor={props.foregroundColor}
+                setForegroundColor={props.onForegroundColorChange}
+              />
+            )}
+
             {(isBrushTool || isSelectionBrushTool) && (
               <BrushOptions
                 activeTool={props.activeTool as "brush" | "eraser"}
@@ -318,16 +341,28 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 setBrushSize={(size) => props.setBrushState({ size })}
                 brushOpacity={props.brushState.opacity}
                 setBrushOpacity={(opacity) => props.setBrushState({ opacity })}
-                foregroundColor={props.brushState.color}
-                setForegroundColor={() => {}} // Color is handled by ColorTool in ToolsPanel
+                foregroundColor={props.foregroundColor}
+                setForegroundColor={props.onForegroundColorChange}
                 brushHardness={props.brushState.hardness}
                 setBrushHardness={(hardness) => props.setBrushState({ hardness })}
                 brushSmoothness={props.brushState.smoothness}
                 setBrushSmoothness={(smoothness) => props.setBrushState({ smoothness })}
                 brushShape={props.brushState.shape}
                 setBrushShape={(shape) => props.setBrushState({ shape })}
+                // NEW PROPERTIES
+                brushFlow={props.brushState.flow}
+                setBrushFlow={(flow) => props.setBrushState({ flow })}
+                brushAngle={props.brushState.angle}
+                setBrushAngle={(angle) => props.setBrushState({ angle })}
+                brushRoundness={props.brushState.roundness}
+                setBrushRoundness={(roundness) => props.setBrushState({ roundness })}
+                brushSpacing={props.brushState.spacing}
+                setBrushSpacing={(spacing) => props.setBrushState({ spacing })}
+                brushBlendMode={props.brushState.blendMode}
+                setBrushBlendMode={(blendMode) => props.setBrushState({ blendMode })}
               />
             )}
+            
             {isBlurBrushTool && (
               <BlurBrushOptions
                 selectiveBlurStrength={props.selectiveBlurAmount}
@@ -335,9 +370,31 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 onStrengthCommit={props.onSelectiveBlurAmountCommit}
               />
             )}
-            {!isSelectionTool && !isBrushTool && !isSelectionBrushTool && !isBlurBrushTool && (
+            
+            {isPaintBucketTool && (
+              <PaintBucketOptions />
+            )}
+            
+            {isStampTool && (
+              <StampOptions />
+            )}
+            
+            {isHistoryBrushTool && (
+              <HistoryBrushOptions 
+                activeTool={props.activeTool as 'historyBrush' | 'artHistoryBrush'}
+                history={props.history}
+                brushSize={props.brushState.size}
+                setBrushSize={(size) => props.setBrushState({ size })}
+                brushOpacity={props.brushState.opacity}
+                setBrushOpacity={(opacity) => props.setBrushState({ opacity })}
+                brushFlow={props.brushState.flow}
+                setBrushFlow={(flow) => props.setBrushState({ flow })}
+              />
+            )}
+
+            {!isAnyToolWithOptions && (
               <p className="text-sm text-muted-foreground p-4">
-                Select a brush or selection tool to view its options here.
+                Select a tool to view its options here.
               </p>
             )}
           </TabsContent>

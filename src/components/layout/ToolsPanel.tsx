@@ -24,10 +24,13 @@ import {
   PenTool,
   Move,
   SquareDashedMousePointer, // Marquee icon
-  MousePointer, // Quick Selection icon (Fixed: Replaced MousePointerSquare)
+  MousePointer, // Quick Selection icon
   Wand2, // Magic Wand icon
   ScanEye, // Object Selection icon
   MousePointer2, // Lasso icon
+  PaintBucket, // NEW
+  Stamp, // NEW
+  History, // NEW
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -78,9 +81,22 @@ const selectionTools: { name: string; icon: React.ElementType; tool: Tool; short
   { name: "Object Selection", icon: ScanEye, tool: "objectSelect", shortcut: "A", group: 'object' },
 ];
 
-const brushTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'paint' | 'mask' }[] = [
+const paintAndFillTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'paint' }[] = [
   { name: "Brush Tool", icon: Brush, tool: "brush", shortcut: "B", group: 'paint' },
+  { name: "Pencil Tool", icon: Pencil, tool: "pencil", shortcut: "N", group: 'paint' },
   { name: "Eraser Tool", icon: Eraser, tool: "eraser", shortcut: "E", group: 'paint' },
+  { name: "Paint Bucket Tool", icon: PaintBucket, tool: "paintBucket", shortcut: "G", group: 'paint' },
+  { name: "Gradient Tool", icon: Palette, tool: "gradient", shortcut: "G", group: 'paint' },
+];
+
+const stampAndHistoryTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'stamp' | 'history' }[] = [
+  { name: "Pattern Stamp Tool", icon: Stamp, tool: "patternStamp", shortcut: "S", group: 'stamp' },
+  { name: "Clone Stamp Tool", icon: Stamp, tool: "cloneStamp", shortcut: "Shift+S", group: 'stamp' },
+  { name: "History Brush Tool", icon: History, tool: "historyBrush", shortcut: "Y", group: 'history' },
+  { name: "Art History Brush Tool", icon: History, tool: "artHistoryBrush", shortcut: "Shift+Y", group: 'history' },
+];
+
+const maskTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'mask' }[] = [
   { name: "Selection Brush", icon: Paintbrush, tool: "selectionBrush", shortcut: "S", group: 'mask' },
   { name: "Blur Brush", icon: Droplet, tool: "blurBrush", shortcut: "U", group: 'mask' },
 ];
@@ -98,7 +114,7 @@ const shapeSubTools: { name: string; icon: React.ElementType; type: Layer['shape
 // --- Helper Components ---
 
 interface ToolGroupDropdownProps {
-  tools: typeof selectionTools | typeof brushTools;
+  tools: typeof selectionTools | typeof paintAndFillTools | typeof stampAndHistoryTools | typeof maskTools;
   activeTool: Tool | null;
   setActiveTool: (tool: Tool | null) => void;
   defaultTool: Tool;
@@ -182,20 +198,15 @@ export const ToolsPanel = ({
     setSelectedShapeType(type);
   };
 
-  const isBrushTool = activeTool === 'brush' || activeTool === 'eraser';
+  const isPaintToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil';
   const isSelectionBrushActive = activeTool === 'selectionBrush';
   const isBlurBrushActive = activeTool === 'blurBrush';
-  const isAnyBrushActive = isBrushTool || isSelectionBrushActive || isBlurBrushActive;
-
-  // Group selection tools by their default tool/shortcut
-  const marqueeTools = selectionTools.filter(t => t.group === 'marquee');
-  const lassoTools = selectionTools.filter(t => t.group === 'lasso');
-  const quickSelectTools = selectionTools.filter(t => t.group === 'quick' || t.group === 'magic');
-  const objectSelectTools = selectionTools.filter(t => t.group === 'object');
+  const isAnyBrushActive = isPaintToolActive || isSelectionBrushActive || isBlurBrushActive;
   
-  // Group brush tools
-  const paintTools = brushTools.filter(t => t.group === 'paint');
-  const maskTools = brushTools.filter(t => t.group === 'mask');
+  const isGradientToolActive = activeTool === 'gradient';
+  const isPaintBucketToolActive = activeTool === 'paintBucket';
+  const isStampToolActive = activeTool === 'patternStamp' || activeTool === 'cloneStamp';
+  const isHistoryBrushToolActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
 
   return (
     <aside className="h-full border-r bg-muted/40 p-2 flex flex-col">
@@ -221,7 +232,7 @@ export const ToolsPanel = ({
           
           {/* 2. Selection Tools Group */}
           <ToolGroupDropdown
-            tools={marqueeTools}
+            tools={selectionTools.filter(t => t.group === 'marquee')}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="marqueeRect"
@@ -230,7 +241,7 @@ export const ToolsPanel = ({
             shortcut="M"
           />
           <ToolGroupDropdown
-            tools={lassoTools}
+            tools={selectionTools.filter(t => t.group === 'lasso')}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="lasso"
@@ -239,7 +250,7 @@ export const ToolsPanel = ({
             shortcut="L"
           />
           <ToolGroupDropdown
-            tools={quickSelectTools}
+            tools={selectionTools.filter(t => t.group === 'quick' || t.group === 'magic')}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="quickSelect"
@@ -248,7 +259,7 @@ export const ToolsPanel = ({
             shortcut="W"
           />
           <ToolGroupDropdown
-            tools={objectSelectTools}
+            tools={selectionTools.filter(t => t.group === 'object')}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="objectSelect"
@@ -257,16 +268,29 @@ export const ToolsPanel = ({
             shortcut="A"
           />
 
-          {/* 3. Brush Tools Group */}
+          {/* 3. Paint/Fill Tools Group */}
           <ToolGroupDropdown
-            tools={paintTools}
+            tools={paintAndFillTools}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="brush"
             icon={Brush}
-            groupName="Painting Tools"
-            shortcut="B"
+            groupName="Painting & Fill Tools"
+            shortcut="B/G"
           />
+          
+          {/* 4. Stamp/History Tools Group */}
+          <ToolGroupDropdown
+            tools={stampAndHistoryTools}
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            defaultTool="patternStamp"
+            icon={Stamp}
+            groupName="Stamp & History Tools"
+            shortcut="S/Y"
+          />
+
+          {/* 5. Masking Tools Group */}
           <ToolGroupDropdown
             tools={maskTools}
             activeTool={activeTool}
@@ -274,10 +298,10 @@ export const ToolsPanel = ({
             defaultTool="selectionBrush"
             icon={Paintbrush}
             groupName="Masking Tools"
-            shortcut="S"
+            shortcut="S/U"
           />
           
-          {/* 4. Text Tool */}
+          {/* 6. Text Tool */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -294,7 +318,7 @@ export const ToolsPanel = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* 5. Shape Tool Group */}
+          {/* 7. Shape Tool Group */}
           <DropdownMenu>
             <Tooltip>
               <DropdownMenuTrigger asChild>
@@ -322,24 +346,7 @@ export const ToolsPanel = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* 6. Gradient Tool */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={activeTool === "gradient" ? "secondary" : "ghost"}
-                size="icon"
-                onClick={() => setActiveTool("gradient" === activeTool ? null : "gradient")}
-                className={cn("w-10 h-10", activeTool === "gradient" && "bg-secondary")}
-              >
-                <Palette className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Gradient Tool (G)</p>
-            </TooltipContent>
-          </Tooltip>
-
-          {/* 7. Crop Tool */}
+          {/* 8. Crop Tool */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -356,7 +363,7 @@ export const ToolsPanel = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* 8. Eyedropper Tool */}
+          {/* 9. Eyedropper Tool */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -394,30 +401,12 @@ export const ToolsPanel = ({
             </div>
           )}
           
-          {isAnyBrushActive && (
+          {(isAnyBrushActive || isGradientToolActive || isPaintBucketToolActive || isStampToolActive || isHistoryBrushToolActive) && (
             <div className="mt-4 w-full space-y-4">
-              <BrushOptions
-                activeTool={activeTool as "brush" | "eraser"}
-                brushSize={brushState.size}
-                setBrushSize={(size) => setBrushState({ size })}
-                brushOpacity={brushState.opacity}
-                setBrushOpacity={(opacity) => setBrushState({ opacity })}
-                foregroundColor={foregroundColor}
-                setForegroundColor={onForegroundColorChange}
-                brushHardness={brushState.hardness}
-                setBrushHardness={(hardness) => setBrushState({ hardness })}
-                brushSmoothness={brushState.smoothness}
-                setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
-                brushShape={brushState.shape}
-                setBrushShape={(shape) => setBrushState({ shape })}
-              />
-              {isBlurBrushActive && (
-                <BlurBrushOptions
-                  selectiveBlurStrength={selectiveBlurStrength}
-                  onStrengthChange={onSelectiveBlurStrengthChange}
-                  onStrengthCommit={onSelectiveBlurStrengthCommit}
-                />
-              )}
+              {/* We rely on RightSidebarTabs to render the correct options component */}
+              <p className="text-sm text-muted-foreground text-center">
+                Tool Options in Properties Panel
+              </p>
             </div>
           )}
         </div>
