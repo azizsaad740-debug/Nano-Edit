@@ -20,7 +20,7 @@ import { CustomFontLoader } from "@/components/editor/CustomFontLoader";
 
 // Only import necessary hooks once
 import { useEditorState } from "@/hooks/useEditorState";
-import { usePresets } from "@/hooks/usePresets";
+import { usePresets, type Preset } from "@/hooks/usePresets";
 import { useGradientPresets } from "@/hooks/useGradientPresets";
 import { useFontManager } from "@/hooks/useFontManager";
 import { useSettings } from "@/hooks/useSettings";
@@ -155,6 +155,7 @@ export const Index = () => {
     setSelectiveBlurAmount,
     customHslColor,
     setCustomHslColor,
+    zoom, setZoom, // Export zoom state from useEditorState
   } = useEditorState();
 
   const hasImage = !!image;
@@ -175,6 +176,11 @@ export const Index = () => {
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
   const { systemFonts, customFonts, addCustomFont, removeCustomFont, setSystemFonts } = useFontManager();
   const { geminiApiKey, stabilityApiKey, saveApiKey } = useSettings();
+
+  // --- Brush Setter Wrapper (Fixes Errors 7, 13, 15) ---
+  const setBrushStatePartial = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
+    setBrushState(prev => ({ ...prev, ...updates }));
+  }, [setBrushState]);
 
   // Layer Management Hooks (Consolidated)
   const {
@@ -230,9 +236,11 @@ export const Index = () => {
     gradientToolState,
     activeTool,
     layers,
-    setLayers: (newLayers, historyName) => {
-      setLayers(newLayers);
-      if (historyName) recordHistory(historyName, currentEditState, newLayers);
+    setLayers: (newLayersOrUpdater, historyName) => {
+      setLayers(newLayersOrUpdater);
+      if (historyName && Array.isArray(newLayersOrUpdater)) { // Fix Error 5
+        recordHistory(historyName, currentEditState, newLayersOrUpdater);
+      }
     },
     selectedLayerId,
     setSelectedLayerId,
@@ -263,7 +271,7 @@ export const Index = () => {
   const { selectiveBlurMask, handleSelectiveBlurStrokeEnd, applyPreset: applySelectiveBlurPreset } = useSelectiveBlur(currentEditState, updateCurrentState, recordHistory, layers, dimensions);
 
   // --- Tool Hooks ---
-  const { handleBrushToolChange } = useBrush(setActiveTool, setBrushState, brushState, foregroundColor);
+  const { handleBrushToolChange } = useBrush(setActiveTool, setBrushStatePartial, brushState, foregroundColor);
   const { handleGradientToolChange } = useGradientTool(setActiveTool, setGradientToolState, gradientToolState);
   const { handleShapeToolChange } = useShapeTool(setActiveTool, setSelectedShapeType, selectedShapeType);
   const { handleTextToolChange } = useTextTool(setActiveTool);
@@ -326,8 +334,8 @@ export const Index = () => {
 
   // --- Workspace Interaction ---
   const {
-    zoom,
-    setZoom,
+    zoom: workspaceZoom, // Renamed to avoid shadowing/initialization error
+    setZoom: setWorkspaceZoom, // Renamed for clarity
     handleWheel,
     handleFitScreen,
     handleZoomIn,
@@ -350,8 +358,8 @@ export const Index = () => {
     gradientToolState,
     setSelectedLayerId,
     layers,
-    zoom,
-    setZoom
+    zoom, // Use zoom from useEditorState (global state)
+    setZoom // Use setZoom from useEditorState (global setter)
   );
 
   // --- Global Preset Application ---
@@ -423,7 +431,7 @@ export const Index = () => {
       onCommit: commitLayerChange,
       isSelected,
       activeTool,
-      zoom,
+      zoom: workspaceZoom, // Use workspaceZoom for rendering
     };
 
     if (!layer.visible) return null;
@@ -516,7 +524,7 @@ export const Index = () => {
             setBackgroundColor(temp);
           }}
           brushState={brushState}
-          setBrushState={setBrushState}
+          setBrushState={setBrushStatePartial}
           selectiveBlurStrength={selectiveBlurAmount}
           onSelectiveBlurStrengthChange={setSelectiveBlurAmount}
           onSelectiveBlurStrengthCommit={() => recordHistory("Change Selective Blur Strength", currentEditState, layers)}
@@ -538,7 +546,7 @@ export const Index = () => {
                 style={{
                   width: dimensions.width,
                   height: dimensions.height,
-                  transform: `translate(-50%, -50%) scale(${zoom})`,
+                  transform: `translate(-50%, -50%) scale(${workspaceZoom})`, // Use workspaceZoom
                   cursor: isMouseOverImage ? 'crosshair' : 'default',
                 }}
               >
@@ -657,7 +665,7 @@ export const Index = () => {
 
                 {/* Workspace Controls (Zoom/Fit) */}
                 <WorkspaceControls
-                  zoom={zoom}
+                  zoom={workspaceZoom} // Use workspaceZoom
                   onZoomIn={handleZoomIn}
                   onZoomOut={handleZoomOut}
                   onFitScreen={handleFitScreen}
@@ -696,6 +704,7 @@ export const Index = () => {
             onOpenSmartObject={openSmartObjectEditor}
             onLayerUpdate={updateLayer}
             onLayerCommit={commitLayerChange}
+            onLayerPropertyCommit={handleLayerPropertyCommit}
             onLayerOpacityChange={handleLayerOpacityChange}
             onLayerOpacityCommit={handleLayerOpacityCommit}
             addTextLayer={() => handleAddTextLayer({ x: 50, y: 50 }, foregroundColor)}
@@ -784,7 +793,7 @@ export const Index = () => {
             exifData={exifData}
             colorMode={currentEditState.colorMode}
             // Navigator Props
-            zoom={zoom}
+            zoom={workspaceZoom} // Use workspaceZoom
             onZoomIn={handleZoomIn}
             onZoomOut={handleZoomOut}
             onFitScreen={handleFitScreen}
@@ -793,7 +802,7 @@ export const Index = () => {
             onChannelChange={onChannelChange}
             // Brushes Props
             brushState={brushState}
-            setBrushState={setBrushState}
+            setBrushState={setBrushStatePartial}
             // Selective Blur
             selectiveBlurAmount={selectiveBlurAmount}
             onSelectiveBlurAmountChange={setSelectiveBlurAmount}
