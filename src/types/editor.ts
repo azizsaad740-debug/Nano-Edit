@@ -322,3 +322,10 @@ export const initialHistoryItem: HistoryItem = {
   state: initialEditState,
   layers: initialLayerState,
 };
+
+export interface NewProjectSettings {
+  width: number;
+  height: number;
+  dpi: number;
+  backgroundColor: string;
+}

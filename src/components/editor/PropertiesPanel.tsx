@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { TabsContent } from "@/components/ui/tabs";
-import type { Layer, ActiveTool, BrushState, GradientToolState, EditState, HslAdjustment } from "@/types/editor";
+import type { Layer, ActiveTool, BrushState, GradientToolState } from "@/types/editor";
 import { TextOptions } from "./TextOptions";
 import { AdjustmentOptions } from "./AdjustmentOptions";
 import LayerGeneralProperties from "./LayerGeneralProperties";
@@ -10,9 +10,8 @@ import ShapeOptions from "./ShapeOptions";
 import GradientOptions from "./GradientOptions";
 import MaskProperties from "./MaskProperties";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
-
-type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface PropertiesPanelProps {
   selectedLayer: Layer | undefined;
@@ -29,6 +28,7 @@ interface PropertiesPanelProps {
   onDeleteGradientPreset: (name: string) => void;
   customHslColor: string;
   setCustomHslColor: (color: string) => void;
+  onInvertLayerMask: (id: string) => void; // Added for MaskProperties usage
 }
 
 export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
@@ -47,26 +47,26 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
     }
   };
 
-  if (!selectedLayer) return null;
-
-  const isTextLayer = selectedLayer.type === 'text';
-  const isShapeLayer = selectedLayer.type === 'vector-shape';
-  const isGradientLayer = selectedLayer.type === 'gradient';
-  const isAdjustmentLayer = selectedLayer.type === 'adjustment';
-  const hasMask = !!selectedLayer.maskDataUrl;
+  if (!selectedLayer) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        Select a layer to view its properties.
+      </div>
+    );
+  }
 
   return (
-    <TabsContent value="properties" className="w-full">
-      <div className="space-y-4">
-        {/* General Properties (Opacity, Blend Mode, Fill) */}
+    <ScrollArea className="h-full">
+      <div className="p-4 space-y-4">
+        {/* General Properties (Opacity, Blend Mode) */}
         <LayerGeneralProperties
           layer={selectedLayer}
           onUpdate={props.onLayerUpdate}
           onCommit={props.onLayerCommit}
         />
 
-        {/* Layer Type Specific Options */}
-        {isTextLayer && (
+        {/* Text Options */}
+        {selectedLayer.type === 'text' && (
           <TextOptions
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
@@ -77,7 +77,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
           />
         )}
 
-        {isShapeLayer && (
+        {/* Shape Options */}
+        {selectedLayer.type === 'vector-shape' && (
           <ShapeOptions
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
@@ -85,7 +86,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
           />
         )}
 
-        {isGradientLayer && (
+        {/* Gradient Options */}
+        {selectedLayer.type === 'gradient' && (
           <GradientOptions
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
@@ -98,7 +100,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
           />
         )}
 
-        {isAdjustmentLayer && (
+        {/* Adjustment Options */}
+        {selectedLayer.type === 'adjustment' && (
           <AdjustmentOptions
             layer={selectedLayer}
             onLayerUpdate={handleLayerUpdate}
@@ -110,16 +113,16 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = (props) => {
         )}
 
         {/* Mask Properties */}
-        {hasMask && (
+        {selectedLayer.maskDataUrl && (
           <MaskProperties
             layer={selectedLayer}
-            onRemoveMask={() => {}} // Placeholder, actual logic is in useLayers
-            onInvertMask={() => {}} // Placeholder, actual logic is in useLayers
+            onRemoveMask={props.onRemoveLayerMask}
+            onInvertMask={props.onInvertLayerMask}
             onLayerUpdate={handleLayerUpdate}
             onLayerCommit={handleLayerCommit}
           />
         )}
       </div>
-    </TabsContent>
+    </ScrollArea>
   );
 };
