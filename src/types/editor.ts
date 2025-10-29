@@ -1,4 +1,4 @@
-import type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslAdjustmentsState, SelectionSettings, ActiveTool, Point, BlendMode, HslColorKey, NewProjectSettings, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType } from "@/types/editor.d";
+import type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslAdjustmentsState, SelectionSettings, ActiveTool, Point, BlendMode, HslColorKey, NewProjectSettings, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType } from "@/types/editor.d";
 
 // --- Initial State Constants ---
 
@@ -88,6 +88,7 @@ export const initialEditState: EditState = {
     shadows: 0,
     clarity: 0,
     vibrance: 100,
+    grain: 0, // Added missing property
   },
   effects: {
     blur: 0,
@@ -149,4 +150,4 @@ export const initialHistoryItem: HistoryItem = {
   layers: initialLayerState,
 };
 
-export type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslColorKey, SelectionSettings, ActiveTool, Point, NewProjectSettings, BlendMode, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData, ShapeType };
+export type { Layer, EditState, HistoryItem, BrushState, GradientToolState, Dimensions, HslAdjustment, HslColorKey, SelectionSettings, ActiveTool, Point, NewProjectSettings, BlendMode, AdjustmentLayerData, SmartObjectData, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, SmartObjectLayerData, GroupLayerData, ShapeType };
