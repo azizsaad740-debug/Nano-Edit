@@ -48,6 +48,8 @@ export const useImageLoader = (
         const backgroundLayer: Layer = {
           ...initialLayerState[0],
           dataUrl: src,
+          scaleX: 1, // ADDED
+          scaleY: 1, // ADDED
         };
         setLayers([backgroundLayer]);
         setSelectedLayerId('background');
@@ -80,7 +82,7 @@ export const useImageLoader = (
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.fillStyle = settings.backgroundColor;
-      ctx.fillRect(0, 0, settings.width, settings.height);
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     const dataUrl = canvas.toDataURL();
 
@@ -94,6 +96,7 @@ export const useImageLoader = (
       dataUrl: dataUrl,
       isLocked: true,
       x: 50, y: 50, width: 100, height: 100, rotation: 0,
+      scaleX: 1, scaleY: 1, // ADDED
     };
     
     setLayers([backgroundLayer]);
