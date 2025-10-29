@@ -5,6 +5,7 @@ import { LiveBrushCanvas } from "@/components/editor/LiveBrushCanvas";
 import { SelectionCanvas } from "@/components/editor/SelectionCanvas";
 import { SelectionMaskOverlay } from "@/components/editor/SelectionMaskOverlay";
 import { GradientPreviewCanvas } from "@/components/editor/GradientPreviewCanvas";
+import MarqueeCanvas from "@/components/editor/MarqueeCanvas"; // NEW import
 import { ChannelFilter } from "@/components/editor/ChannelFilter";
 import { CurvesFilter } from "@/components/editor/CurvesFilter";
 import { EffectsFilters } from "@/components/editor/EffectsFilters";
@@ -44,6 +45,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
     updateLayer, commitLayerChange,
     handleSelectionBrushStrokeEnd, // NEW
     handleSelectiveBlurStrokeEnd, // NEW
+    marqueeStart, marqueeCurrent, // NEW
   } = logic;
 
   // --- Render Layer Logic ---
@@ -95,6 +97,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
     }
     return null;
   };
+
+  const isMarqueeToolActive = activeTool?.startsWith('marquee');
 
   return (
     <div className="flex-1 relative bg-muted/50 overflow-hidden">
@@ -206,7 +210,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
               )}
 
               {/* Selection Mask Overlay (for visual feedback) */}
-              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || activeTool === 'lasso') && (
+              {selectionMaskDataUrl && (activeTool === 'selectionBrush' || activeTool === 'lasso' || isMarqueeToolActive) && (
                 <SelectionMaskOverlay
                   maskDataUrl={selectionMaskDataUrl}
                   imageNaturalDimensions={dimensions}
@@ -214,6 +218,14 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ logic, workspa
                 />
               )}
             </div>
+
+            {/* Live Marquee Selection Canvas (Drawn over everything, using screen coordinates) */}
+            {isMarqueeToolActive && marqueeStart && marqueeCurrent && (
+              <MarqueeCanvas
+                start={marqueeStart}
+                current={marqueeCurrent}
+              />
+            )}
 
             {/* Workspace Controls (Zoom/Fit) */}
             <WorkspaceControls

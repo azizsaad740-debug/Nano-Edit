@@ -36,6 +36,7 @@ import { useSelectiveBlur } from "@/hooks/useSelectiveBlur";
 import { useGenerativeAi } from "@/hooks/useGenerativeAi";
 import { useProjectSettings } from "@/hooks/useProjectSettings";
 import { copyImageToClipboard } from "@/utils/imageUtils";
+import { polygonToMaskDataUrl } from "@/utils/maskUtils";
 import { showError, showSuccess } from "@/utils/toast";
 
 export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, workspaceRef: React.RefObject<HTMLDivElement>) => {
@@ -52,6 +53,8 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
     selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount, customHslColor, setCustomHslColor,
     zoom, setZoom,
+    marqueeStart, setMarqueeStart,
+    marqueeCurrent, setMarqueeCurrent,
   } = coreState;
   
   // NEW: Preview state
@@ -93,6 +96,48 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   const { channels, onChannelChange, applyPreset: applyChannelsPreset } = useChannels(currentEditState, updateCurrentState, recordHistory, layers);
   const { selectiveBlurMask, handleSelectiveBlurStrokeEnd, applyPreset: applySelectiveBlurPreset } = useSelectiveBlur(currentEditState, updateCurrentState, recordHistory, layers, dimensions);
 
+  // --- Marquee Selection Logic ---
+  const handleMarqueeSelectionComplete = useCallback(async (start: Point, end: Point) => {
+    if (!dimensions || !workspaceRef.current || !imgRef.current) return;
+
+    const imageRect = imgRef.current.getBoundingClientRect();
+    
+    // Calculate coordinates relative to the image (in pixels)
+    const scaleX = dimensions.width / imageRect.width;
+    const scaleY = dimensions.height / imageRect.height;
+
+    // Convert screen coordinates (start/end) to image pixel coordinates
+    const startX_px = Math.round((start.x - imageRect.left) * scaleX);
+    const startY_px = Math.round((start.y - imageRect.top) * scaleY);
+    const endX_px = Math.round((end.x - imageRect.left) * scaleX);
+    const endY_px = Math.round((end.y - imageRect.top) * scaleY);
+
+    const minX = Math.max(0, Math.min(startX_px, endX_px));
+    const minY = Math.max(0, Math.min(startY_px, endY_px));
+    const maxX = Math.min(dimensions.width, Math.max(startX_px, endX_px));
+    const maxY = Math.min(dimensions.height, Math.max(startY_px, endY_px));
+
+    const rectPath: Point[] = [
+      { x: minX, y: minY },
+      { x: maxX, y: minY },
+      { x: maxX, y: maxY },
+      { x: minX, y: maxY },
+    ];
+
+    try {
+      const maskUrl = await polygonToMaskDataUrl(rectPath, dimensions.width, dimensions.height);
+      setSelectionMaskDataUrl(maskUrl);
+      // Marquee selection uses mask data URL directly, no need for selectionPath visualization
+      setSelectionPath(null); 
+      recordHistory("Marquee Selection Applied", currentEditState, layers);
+      showSuccess("Selection created.");
+    } catch (error) {
+      showError("Failed to create selection mask.");
+      console.error(error);
+    }
+  }, [dimensions, workspaceRef, imgRef, setSelectionMaskDataUrl, setSelectionPath, recordHistory, currentEditState, layers]);
+
+
   // --- Layer Selection Logic ---
   const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
     // Simplified selection logic: only supports single selection for now
@@ -127,7 +172,9 @@ export const useEditorLogic = (imgRef: React.RefObject<HTMLImageElement>, worksp
   // --- Workspace Interaction ---
   const workspaceInteraction = useWorkspaceInteraction(
     workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl,
-    clearSelectionState, gradientToolState, setSelectedLayerId, layers, zoom, setZoom
+    clearSelectionState, gradientToolState, setSelectedLayerId, layers, zoom, setZoom,
+    setMarqueeStart, setMarqueeCurrent,
+    handleMarqueeSelectionComplete,
   );
   
   // --- Project Settings Hook ---

@@ -156,6 +156,7 @@ const Sidebar = (props: SidebarProps) => {
     canRedo: props.canRedo,
     foregroundColor: props.foregroundColor,
     onForegroundColorChange: props.onForegroundColorChange,
+    backgroundColor: props.backgroundColor,
     onBackgroundColorChange: props.onBackgroundColorChange,
     onSwapColors: props.onSwapColors,
     dimensions: props.dimensions,

@@ -37,6 +37,10 @@ export const useEditorState = () => {
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
   const [customHslColor, setCustomHslColor] = useState<string>(initialEditState.customHslColor);
   
+  // Selection Drawing State
+  const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
+  const [marqueeCurrent, setMarqueeCurrent] = useState<Point | null>(null);
+  
   // Zoom State (Managed here for global access)
   const [zoom, setZoom] = useState(1);
 
@@ -130,6 +134,8 @@ export const useEditorState = () => {
     selectedShapeType, setSelectedShapeType,
     selectionPath, setSelectionPath,
     selectionMaskDataUrl, setSelectionMaskDataUrl,
+    marqueeStart, setMarqueeStart,
+    marqueeCurrent, setMarqueeCurrent,
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
     customHslColor, setCustomHslColor,

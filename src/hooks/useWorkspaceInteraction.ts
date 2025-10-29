@@ -15,11 +15,17 @@ export const useWorkspaceInteraction = (
   layers: Layer[],
   initialZoom: number,
   setZoom: (zoom: number) => void,
+  setMarqueeStart: (point: Point | null) => void, // NEW
+  setMarqueeCurrent: (point: Point | null) => void, // NEW
+  onMarqueeSelectionComplete: (start: Point, end: Point) => void, // NEW
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
   const [gradientStart, setGradientStart] = React.useState<Point | null>(null);
   const [gradientCurrent, setGradientCurrent] = React.useState<Point | null>(null);
+  
+  // Use refs for marquee drawing state to avoid re-creating handlers constantly
+  const marqueeStartRef = React.useRef<Point | null>(null);
 
   React.useEffect(() => {
     setLocalZoom(initialZoom);
@@ -74,26 +80,49 @@ export const useWorkspaceInteraction = (
       clearSelectionState();
       return;
     }
+    
+    const clickPoint: Point = { x: e.clientX, y: e.clientY };
 
     if (activeTool === 'gradient') {
-      setGradientStart({ x: e.clientX, y: e.clientY });
-      setGradientCurrent({ x: e.clientX, y: e.clientY });
+      setGradientStart(clickPoint);
+      setGradientCurrent(clickPoint);
+    } else if (activeTool?.startsWith('marquee')) {
+      marqueeStartRef.current = clickPoint;
+      setMarqueeStart(clickPoint);
+      setMarqueeCurrent(clickPoint);
+      clearSelectionState();
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {
       setGradientCurrent({ x: e.clientX, y: e.clientY });
+    } else if (activeTool?.startsWith('marquee') && marqueeStartRef.current) {
+      setMarqueeCurrent({ x: e.clientX, y: e.clientY });
     }
-  }, [activeTool, gradientStart]);
+  }, [activeTool, gradientStart, setGradientCurrent, setMarqueeCurrent]);
 
   const handleWorkspaceMouseUp = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart && gradientCurrent) {
       // Logic to commit gradient layer creation goes here (handled in Index.tsx)
       setGradientStart(null);
       setGradientCurrent(null);
+    } else if (activeTool?.startsWith('marquee') && marqueeStartRef.current) {
+      const start = marqueeStartRef.current;
+      const end: Point = { x: e.clientX, y: e.clientY };
+      
+      // Only commit if the selection area is non-zero
+      if (Math.abs(start.x - end.x) > 5 && Math.abs(start.y - end.y) > 5) {
+        onMarqueeSelectionComplete(start, end);
+      } else {
+        clearSelectionState();
+      }
+      
+      marqueeStartRef.current = null;
+      setMarqueeStart(null);
+      setMarqueeCurrent(null);
     }
-  }, [activeTool, gradientStart, gradientCurrent]);
+  }, [activeTool, gradientStart, gradientCurrent, onMarqueeSelectionComplete, clearSelectionState, setMarqueeStart, setMarqueeCurrent]);
 
   return {
     zoom,
