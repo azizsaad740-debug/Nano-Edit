@@ -1,12 +1,16 @@
-import { useCallback } from 'react';
+import { useCallback } from 'react'; // FIX 82
 import type { EditState, Layer, Point } from '@/types/editor';
+import { initialCurvesState } from '@/types/editor';
+import { useMemo } from 'react';
 
-export const useCurves = (
-  currentEditState: EditState,
-  updateCurrentState: (updates: Partial<EditState>) => void,
-  recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
-  layers: Layer[],
-) => {
+interface UseCurvesProps {
+  currentEditState: EditState;
+  updateCurrentState: (updates: Partial<EditState>) => void;
+  recordHistory: (name: string, state: EditState, layers: Layer[]) => void;
+  layers: Layer[];
+}
+
+export const useCurves = ({ currentEditState, updateCurrentState, recordHistory, layers }: UseCurvesProps) => {
   const curves = currentEditState.curves;
 
   const onCurvesChange = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
@@ -14,14 +18,18 @@ export const useCurves = (
   }, [curves, updateCurrentState]);
 
   const onCurvesCommit = useCallback((channel: keyof EditState['curves'], points: Point[]) => {
-    recordHistory(`Edit Curves: ${channel}`, currentEditState, layers);
+    recordHistory(`Edit Curves: ${String(channel)}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
-  const applyPreset = useCallback((state: Partial<EditState>) => {
-    if (state.curves) {
-      updateCurrentState({ curves: state.curves });
-    }
-  }, [updateCurrentState]);
+  const applyPreset = useCallback((presetCurves: EditState['curves']) => {
+    updateCurrentState({ curves: presetCurves });
+    recordHistory("Applied Curves Preset", currentEditState, layers);
+  }, [currentEditState, layers, recordHistory, updateCurrentState]);
 
-  return { curves, onCurvesChange, onCurvesCommit, applyPreset };
+  return {
+    curves,
+    onCurvesChange,
+    onCurvesCommit,
+    applyPreset,
+  };
 };

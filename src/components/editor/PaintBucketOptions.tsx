@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Checkbox } from "@/components/ui/checkbox"; // FIX 205, 208, 211
 import { Separator } from "@/components/ui/separator";
 
 interface PaintBucketOptionsProps {
@@ -33,33 +33,45 @@ export const PaintBucketOptions: React.FC<PaintBucketOptionsProps> = () => {
       
       <Separator />
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2"> {/* FIX 1 */}
         <Checkbox
           id="contiguous"
           checked={contiguous}
-          onCheckedChange={setContiguous}
+          onCheckedChange={(checked) => { 
+            if (typeof checked === 'boolean') {
+              setContiguous(checked);
+            }
+          }}
         />
         <Label htmlFor="contiguous" className="text-sm font-medium leading-none">
           Contiguous
         </Label>
-      </div>
+      </div> {/* FIX 4 */}
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2"> {/* FIX 2 */}
         <Checkbox
           id="anti-alias"
           checked={antiAlias}
-          onCheckedChange={setAntiAlias}
+          onCheckedChange={(checked) => { 
+            if (typeof checked === 'boolean') {
+              setAntiAlias(checked);
+            }
+          }}
         />
         <Label htmlFor="anti-alias" className="text-sm font-medium leading-none">
           Anti-alias
         </Label>
       </div>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2"> {/* FIX 3 */}
         <Checkbox
           id="all-layers"
           checked={allLayers}
-          onCheckedChange={setAllLayers}
+          onCheckedChange={(checked) => { 
+            if (typeof checked === 'boolean') {
+              setAllLayers(checked);
+            }
+          }}
         />
         <Label htmlFor="all-layers" className="text-sm font-medium leading-none">
           All Layers (Sample)
