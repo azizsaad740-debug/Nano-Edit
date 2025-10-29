@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import Sidebar from "./Sidebar";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
 
@@ -43,6 +43,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
   const selectedLayerIds = selectedLayerId ? [selectedLayerId] : [];
   const smartObjectEditingId = layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id;
 
+  // Wrapper to ensure onLayerCommit matches the expected signature (id, historyName)
+  // We use handleLayerPropertyCommit with empty updates to commit the current state with a specific name.
+  const handleCommitWithHistory = useCallback((id: string, historyName: string) => {
+    handleLayerPropertyCommit(id, {}, historyName);
+  }, [handleLayerPropertyCommit]);
+
   return (
     <Sidebar
       hasImage={hasImage}
@@ -65,7 +71,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({ logic }) => {
       onCreateSmartObject={createSmartObject}
       onOpenSmartObject={openSmartObjectEditor}
       onLayerUpdate={updateLayer}
-      onLayerCommit={commitLayerChange}
+      onLayerCommit={handleCommitWithHistory}
       onLayerPropertyCommit={handleLayerPropertyCommit}
       onLayerOpacityChange={handleLayerOpacityChange}
       onLayerOpacityCommit={handleLayerOpacityCommit}
