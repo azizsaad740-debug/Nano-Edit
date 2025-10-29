@@ -127,7 +127,7 @@ export const LiveBrushCanvas = ({
       ctx.lineTo(points[i].x, points[i].y);
     }
     ctx.stroke(); // Draw the continuous line
-  }, []),
+  }, [brushState.shape, brushState.size]); // Added dependencies for completeness
 
   const renderLiveStroke = React.useCallback(() => {
     const ctx = contextRef.current;
