@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, TextLayerData } from "@/types/editor";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
 import { useLayerTransform } from "@/hooks/useLayerTransform";
 
-export interface TextLayerProps { // Exporting interface for Index.tsx
+export interface TextLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
@@ -20,6 +20,7 @@ export interface TextLayerProps { // Exporting interface for Index.tsx
 export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: TextLayerProps) => {
   const [isEditing, setIsEditing] = React.useState(false);
   const editableRef = React.useRef<HTMLDivElement>(null);
+  const textLayer = layer as TextLayerData;
 
   const {
     layerRef,
@@ -34,7 +35,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     type: "text",
     activeTool,
     isSelected,
-    zoom, // PASS ZOOM
+    zoom,
   });
 
   // Editing logic
@@ -66,7 +67,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
   if (!layer.visible || layer.type !== "text") return null;
 
   const getPositionTransform = () => {
-    switch (layer.textAlign) {
+    switch (textLayer.textAlign) {
       case 'left': return 'translate(0, -50%)';
       case 'right': return 'translate(-100%, -50%)';
       case 'center': default: return 'translate(-50%, -50%)';
@@ -74,36 +75,36 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
   };
 
   const style: React.CSSProperties = {
-    color: layer.color,
-    fontSize: `${layer.fontSize}px`,
-    fontFamily: layer.fontFamily || 'Roboto',
-    fontWeight: layer.fontWeight || 'normal',
-    fontStyle: layer.fontStyle || 'normal',
-    lineHeight: layer.lineHeight || 1.2, // Use lineHeight multiplier
+    color: textLayer.color,
+    fontSize: `${textLayer.fontSize}px`,
+    fontFamily: textLayer.fontFamily || 'Roboto',
+    fontWeight: textLayer.fontWeight || 'normal',
+    fontStyle: textLayer.fontStyle || 'normal',
+    lineHeight: textLayer.lineHeight || 1.2, // Use lineHeight multiplier
     userSelect: isEditing ? "text" : "none",
     whiteSpace: "pre-wrap", // Allow wrapping and preserve whitespace/newlines
-    opacity: (layer.opacity ?? 100) / 100,
-    letterSpacing: layer.letterSpacing ? `${layer.letterSpacing}px` : undefined,
-    textAlign: layer.textAlign || 'center', // Apply text alignment
+    opacity: (textLayer.opacity ?? 100) / 100,
+    letterSpacing: textLayer.letterSpacing ? `${textLayer.letterSpacing}px` : undefined,
+    textAlign: textLayer.textAlign || 'center', // Apply text alignment
   };
 
-  if (layer.textShadow) {
-    const { offsetX, offsetY, blur, color } = layer.textShadow;
+  if (textLayer.textShadow) {
+    const { offsetX, offsetY, blur, color } = textLayer.textShadow;
     style.textShadow = `${offsetX}px ${offsetY}px ${blur}px ${color}`;
   }
 
-  if (layer.stroke) {
-    const { width, color } = layer.stroke;
+  if (textLayer.stroke) {
+    const { width, color } = textLayer.stroke;
     style.WebkitTextStroke = `${width}px ${color}`;
-    style.WebkitTextFillColor = layer.color;
+    style.WebkitTextFillColor = textLayer.color;
   } else {
     style.WebkitTextFillColor = undefined;
   }
 
   const wrapperStyle: React.CSSProperties = {};
-  if (layer.backgroundColor) {
-    wrapperStyle.backgroundColor = layer.backgroundColor;
-    wrapperStyle.padding = `${layer.padding || 0}px`;
+  if (textLayer.backgroundColor) {
+    wrapperStyle.backgroundColor = textLayer.backgroundColor;
+    wrapperStyle.padding = `${textLayer.padding || 0}px`;
     wrapperStyle.borderRadius = 'var(--radius)';
   }
 
@@ -116,11 +117,11 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
       onDoubleClick={handleDoubleClick}
       className="absolute"
       style={{
-        left: `${layer.x ?? 50}%`,
-        top: `${layer.y ?? 50}%`,
-        transform: `${getPositionTransform()} rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
+        left: `${textLayer.x ?? 50}%`,
+        top: `${textLayer.y ?? 50}%`,
+        transform: `${getPositionTransform()} rotateZ(${textLayer.rotation || 0}deg) scaleX(${textLayer.scaleX ?? 1}) scaleY(${textLayer.scaleY ?? 1})`,
         cursor: isEditing ? "text" : (isMovable ? "grab" : "default"),
-        mixBlendMode: layer.blendMode as any || 'normal',
+        mixBlendMode: textLayer.blendMode as any || 'normal',
       }}
     >
       <div
@@ -137,10 +138,10 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
             suppressContentEditableWarning
             onBlur={handleBlur}
             style={style}
-            dangerouslySetInnerHTML={{ __html: layer.content || "" }}
+            dangerouslySetInnerHTML={{ __html: textLayer.content || "" }}
           />
         ) : (
-          <div style={style}>{layer.content}</div>
+          <div style={style}>{textLayer.content}</div>
         )}
 
         {isSelected && !isEditing && (

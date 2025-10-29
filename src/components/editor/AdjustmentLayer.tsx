@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/types/editor";
+import type { Layer, AdjustmentLayerData } from "@/types/editor";
 
 interface AdjustmentLayerProps {
   layer: Layer;
@@ -13,7 +13,9 @@ interface AdjustmentLayerProps {
  * directly to the canvas context during the rasterization process.
  */
 export const AdjustmentLayer = ({ layer }: AdjustmentLayerProps) => {
-  if (!layer.visible || layer.type !== "adjustment") return null;
+  const adjustmentLayer = layer as AdjustmentLayerData;
+  
+  if (!adjustmentLayer.visible || adjustmentLayer.type !== "adjustment") return null;
   
   // This component intentionally returns null as its effect is handled by the canvas renderer.
   return null;

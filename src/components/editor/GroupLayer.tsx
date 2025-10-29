@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, GroupLayerData, SmartObjectLayerData, GradientLayerData } from "@/types/editor";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -10,7 +10,7 @@ import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
-import GradientLayer from "./GradientLayer"; // Import GradientLayer
+import GradientLayer from "./GradientLayer";
 
 interface GroupLayerProps {
   layer: Layer;
@@ -22,7 +22,7 @@ interface GroupLayerProps {
   activeTool: ActiveTool | null;
   renderChildren: (layer: Layer) => JSX.Element | null; // Updated signature
   globalSelectedLayerId: string | null; // New prop to track global selection
-  zoom: number; // NEW
+  zoom: number;
 }
 
 const GroupLayer = ({
@@ -34,9 +34,11 @@ const GroupLayer = ({
   parentDimensions,
   activeTool,
   renderChildren,
-  globalSelectedLayerId, // Destructure new prop
-  zoom, // NEW
+  globalSelectedLayerId,
+  zoom,
 }: GroupLayerProps) => {
+  const groupLayer = layer as GroupLayerData;
+
   const {
     layerRef,
     handleDragMouseDown,
@@ -51,24 +53,24 @@ const GroupLayer = ({
     parentDimensions,
     activeTool,
     isSelected,
-    zoom, // PASS ZOOM
+    zoom,
   });
 
-  if (!layer.visible || layer.type !== "group" || !layer.children || !parentDimensions) return null;
+  if (!groupLayer.visible || groupLayer.type !== "group" || !groupLayer.children || !parentDimensions) return null;
 
-  const currentWidthPercent = layer.width ?? 100;
-  const currentHeightPercent = layer.height ?? 100;
+  const currentWidthPercent = groupLayer.width ?? 100;
+  const currentHeightPercent = groupLayer.height ?? 100;
 
   const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
 
   const style: React.CSSProperties = {
-    left: `${layer.x ?? 50}%`,
-    top: `${layer.y ?? 50}%`,
+    left: `${groupLayer.x ?? 50}%`,
+    top: `${groupLayer.y ?? 50}%`,
     width: `${currentWidthPercent}%`,
     height: `${currentHeightPercent}%`,
-    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
-    opacity: (layer.opacity ?? 100) / 100,
-    mixBlendMode: layer.blendMode as any || 'normal',
+    transform: `translate(-50%, -50%) rotateZ(${groupLayer.rotation || 0}deg) scaleX(${groupLayer.scaleX ?? 1}) scaleY(${groupLayer.scaleY ?? 1})`,
+    opacity: (groupLayer.opacity ?? 100) / 100,
+    mixBlendMode: groupLayer.blendMode as any || 'normal',
     cursor: isMovable ? "grab" : "default",
     // Outline for debugging group bounds
     // outline: isSelected ? '1px dashed red' : 'none',
@@ -100,7 +102,7 @@ const GroupLayer = ({
       >
         <div style={childrenStyle}>
           {/* Recursively render children layers */}
-          {layer.children.map(child => {
+          {groupLayer.children.map(child => {
             // Props wrapper for nested layers
             const childProps = {
               key: child.id,
@@ -109,16 +111,16 @@ const GroupLayer = ({
               onUpdate: (id: string, updates: Partial<Layer>) => {
                 // This update needs to go up to the parent useLayers hook
                 // to modify the children array of this group layer
-                onUpdate(layer.id, {
-                  children: layer.children?.map(c => c.id === id ? { ...c, ...updates } : c)
+                onUpdate(groupLayer.id, {
+                  children: groupLayer.children?.map(c => c.id === id ? { ...c, ...updates } : c)
                 });
               },
               onCommit: (id: string) => {
-                onCommit(layer.id); // Commit the group layer when a child is committed
+                onCommit(groupLayer.id); // Commit the group layer when a child is committed
               },
               isSelected: globalSelectedLayerId === child.id, // Use globalSelectedLayerId for highlighting
               activeTool: activeTool,
-              zoom: zoom, // PASS ZOOM
+              zoom: zoom,
             };
 
             if (!child.visible) return null;
@@ -130,17 +132,17 @@ const GroupLayer = ({
               return <DrawingLayer {...childProps} />;
             }
             if (child.type === 'smart-object') {
-              return <SmartObjectLayer {...childProps} parentDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} />;
+              return <SmartObjectLayer {...childProps} parentDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} />;
             }
             if (child.type === 'vector-shape') {
               return <VectorShapeLayer {...childProps} />;
             }
             if (child.type === 'gradient') {
-              return <GradientLayer {...childProps} imageNaturalDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} />;
+              return <GradientLayer {...childProps} imageNaturalDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} />;
             }
             // If a group contains another group, render it recursively
             if (child.type === 'group') {
-              return <GroupLayer {...childProps} parentDimensions={{ width: layer.width ?? 100, height: layer.height ?? 100 }} renderChildren={renderChildren} globalSelectedLayerId={globalSelectedLayerId} />;
+              return <GroupLayer {...childProps} parentDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} renderChildren={renderChildren} globalSelectedLayerId={globalSelectedLayerId} />;
             }
             return null;
           })}

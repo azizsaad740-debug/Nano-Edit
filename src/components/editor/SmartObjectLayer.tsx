@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import { useLayerTransform } from "@/hooks/useLayerTransform";
+import type { SmartObjectLayerData } from "@/types/editor";
 
 interface SmartObjectLayerProps {
   layer: Layer;
@@ -16,7 +17,7 @@ interface SmartObjectLayerProps {
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
-  zoom: number; // NEW
+  zoom: number;
 }
 
 export const SmartObjectLayer = ({
@@ -27,7 +28,7 @@ export const SmartObjectLayer = ({
   isSelected,
   parentDimensions,
   activeTool,
-  zoom, // NEW
+  zoom,
 }: SmartObjectLayerProps) => {
   const [renderedDataUrl, setRenderedDataUrl] = React.useState<string | null>(null);
 
@@ -42,17 +43,17 @@ export const SmartObjectLayer = ({
     onUpdate,
     onCommit,
     type: "smart-object",
-    smartObjectData: layer.smartObjectData,
+    smartObjectData: (layer as SmartObjectLayerData).smartObjectData,
     parentDimensions,
     activeTool,
     isSelected,
-    zoom, // PASS ZOOM
+    zoom,
   });
 
   // Render the smart object's content to a canvas
   React.useEffect(() => {
     const renderSmartObject = async () => {
-      if (!layer.smartObjectData || !parentDimensions) {
+      if (!(layer as SmartObjectLayerData).smartObjectData || !parentDimensions) {
         setRenderedDataUrl(null);
         return;
       }
@@ -66,13 +67,13 @@ export const SmartObjectLayer = ({
     };
 
     renderSmartObject();
-  }, [layer.smartObjectData, parentDimensions, layer.opacity, layer.blendMode]);
+  }, [(layer as SmartObjectLayerData).smartObjectData, parentDimensions, layer.opacity, layer.blendMode]);
 
   if (!layer.visible || layer.type !== "smart-object" || !renderedDataUrl || !parentDimensions) return null;
 
   // Calculate current width/height in percentages relative to parentDimensions
-  const defaultWidthPx = layer.smartObjectData?.width || 1000;
-  const defaultHeightPx = layer.smartObjectData?.height || 1000;
+  const defaultWidthPx = (layer as SmartObjectLayerData).smartObjectData?.width || 1000;
+  const defaultHeightPx = (layer as SmartObjectLayerData).smartObjectData?.height || 1000;
 
   const currentWidthPercent = layer.width ?? (parentDimensions ? (defaultWidthPx / parentDimensions.width) * 100 : 0);
   const currentHeightPercent = layer.height ?? (parentDimensions ? (defaultHeightPx / parentDimensions.height) * 100 : 0);
@@ -84,7 +85,7 @@ export const SmartObjectLayer = ({
     top: `${layer.y ?? 50}%`,
     width: `${currentWidthPercent}%`,
     height: `${currentHeightPercent}%`,
-    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
+    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`,
     opacity: (layer.opacity ?? 100) / 100,
     mixBlendMode: layer.blendMode as any || 'normal',
     cursor: isMovable ? "grab" : "default",

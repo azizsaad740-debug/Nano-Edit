@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, GradientLayerData } from "@/types/editor";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -16,7 +16,7 @@ interface GradientLayerProps {
   isSelected: boolean;
   imageNaturalDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
-  zoom: number; // NEW
+  zoom: number;
 }
 
 export const GradientLayer = ({
@@ -27,9 +27,10 @@ export const GradientLayer = ({
   isSelected,
   imageNaturalDimensions,
   activeTool,
-  zoom, // NEW
+  zoom,
 }: GradientLayerProps) => {
   const [renderedDataUrl, setRenderedDataUrl] = React.useState<string | null>(null);
+  const gradientLayer = layer as GradientLayerData;
 
   const {
     layerRef,
@@ -45,7 +46,7 @@ export const GradientLayer = ({
     parentDimensions: imageNaturalDimensions,
     activeTool,
     isSelected,
-    zoom, // PASS ZOOM
+    zoom,
   });
 
   // Render the gradient's content to a canvas
@@ -69,19 +70,19 @@ export const GradientLayer = ({
 
   if (!layer.visible || layer.type !== "gradient" || !renderedDataUrl || !imageNaturalDimensions) return null;
 
-  const currentWidthPercent = layer.width ?? 100;
-  const currentHeightPercent = layer.height ?? 100;
+  const currentWidthPercent = gradientLayer.width ?? 100;
+  const currentHeightPercent = gradientLayer.height ?? 100;
 
   const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper', 'gradient'].includes(activeTool || ''));
 
   const style: React.CSSProperties = {
-    left: `${layer.x ?? 50}%`,
-    top: `${layer.y ?? 50}%`,
+    left: `${gradientLayer.x ?? 50}%`,
+    top: `${gradientLayer.y ?? 50}%`,
     width: `${currentWidthPercent}%`,
     height: `${currentHeightPercent}%`,
-    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
-    opacity: (layer.opacity ?? 100) / 100,
-    mixBlendMode: layer.blendMode as any || 'normal',
+    transform: `translate(-50%, -50%) rotateZ(${gradientLayer.rotation || 0}deg) scaleX(${gradientLayer.scaleX ?? 1}) scaleY(${gradientLayer.scaleY ?? 1})`,
+    opacity: (gradientLayer.opacity ?? 100) / 100,
+    mixBlendMode: gradientLayer.blendMode as any || 'normal',
     cursor: isMovable ? "grab" : "default",
   };
 

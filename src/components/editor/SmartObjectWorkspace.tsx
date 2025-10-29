@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
-import { TextLayer } from "./TextLayer"; // FIX 65: Named import
-import { SmartObjectLayer } from "./SmartObjectLayer"; // FIX 66: Named import
-import VectorShapeLayer from "./VectorShapeLayer"; // Assuming default export
-import GradientLayer from "./GradientLayer"; // Assuming default export
-import GroupLayer from "./GroupLayer"; // Assuming default export
+import type { Layer, ActiveTool, SmartObjectLayerData, GroupLayerData } from "@/types/editor";
+import { TextLayer } from "./TextLayer";
+import { SmartObjectLayer } from "./SmartObjectLayer";
+import VectorShapeLayer from "./VectorShapeLayer";
+import GradientLayer from "./GradientLayer";
+import GroupLayer from "./GroupLayer";
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -20,7 +20,7 @@ interface SmartObjectWorkspaceProps {
   zoom: number;
 }
 
-export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props) => { // FIX 67: Ensure return type is JSX.Element or null
+export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props) => {
   const {
     layers,
     parentDimensions,
@@ -32,10 +32,6 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
     globalSelectedLayerId,
     zoom,
   } = props;
-
-  const renderChildren = (layersToRender: Layer[]) => {
-    return layersToRender.map(layer => renderLayer(layer));
-  };
 
   const renderLayer = (layer: Layer): JSX.Element | null => {
     const isSelected = layer.id === selectedLayerId;
@@ -69,7 +65,7 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
       return <GroupLayer
         {...layerProps}
         parentDimensions={parentDimensions}
-        renderChildren={renderLayer} // FIX 68: Pass the defined renderChildren function
+        renderChildren={renderLayer}
         globalSelectedLayerId={globalSelectedLayerId}
       />;
     }
@@ -78,7 +74,7 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
 
   return (
     <div className="w-full h-full relative">
-      {renderChildren(layers)}
+      {layers.map(layer => renderLayer(layer))}
     </div>
   );
 };

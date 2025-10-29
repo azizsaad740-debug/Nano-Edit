@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
-import type { Layer } from "@/types/editor";
+import type { Layer, SmartObjectLayerData } from "@/types/editor";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface LayerActionsProps {
@@ -26,11 +26,11 @@ interface LayerActionsProps {
   onApplySelectionAsMask: () => void;
   onInvertLayerMask: () => void;
   onToggleClippingMask: () => void;
-  onDeleteHiddenLayers: () => void; // NEW
-  onRasterizeSmartObject: () => void; // NEW
-  onConvertSmartObjectToLayers: () => void; // NEW
-  onExportSmartObjectContents: () => void; // NEW
-  onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void; // NEW
+  onDeleteHiddenLayers: () => void;
+  onRasterizeSmartObject: () => void;
+  onConvertSmartObjectToLayers: () => void;
+  onExportSmartObjectContents: () => void;
+  onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
 }
 
 export const LayerActions = ({
@@ -53,11 +53,11 @@ export const LayerActions = ({
   onApplySelectionAsMask,
   onInvertLayerMask,
   onToggleClippingMask,
-  onDeleteHiddenLayers, // Destructure NEW
-  onRasterizeSmartObject, // Destructure NEW
-  onConvertSmartObjectToLayers, // Destructure NEW
-  onExportSmartObjectContents, // Destructure NEW
-  onArrangeLayer, // Destructure NEW
+  onDeleteHiddenLayers,
+  onRasterizeSmartObject,
+  onConvertSmartObjectToLayers,
+  onExportSmartObjectContents,
+  onArrangeLayer,
 }: LayerActionsProps) => {
   const hasMultipleSelection = selectedLayerIds.length > 1;
   const isAnyLayerSelected = selectedLayerIds.length > 0;

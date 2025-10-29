@@ -5,7 +5,7 @@ import {
   SortableContext,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import type { Layer } from "@/types/editor";
+import type { Layer, GroupLayerData } from "@/types/editor";
 import LayerItem from "./LayerItem";
 
 interface LayerListProps {
@@ -63,13 +63,13 @@ const LayerList: React.FC<LayerListProps> = ({
             onRemoveMask={onRemoveLayerMask}
             onToggleLock={onToggleLayerLock}
           />
-          {layer.type === 'group' && layer.expanded && layer.children && (
+          {layer.type === 'group' && (layer as GroupLayerData).expanded && (layer as GroupLayerData).children && (
             <SortableContext
-              items={layer.children.map(c => c.id)}
+              items={(layer as GroupLayerData).children.map(c => c.id)}
               strategy={verticalListSortingStrategy}
             >
               <LayerList
-                layersToRender={layer.children}
+                layersToRender={(layer as GroupLayerData).children}
                 depth={depth + 1}
                 editingId={editingId}
                 tempName={tempName}

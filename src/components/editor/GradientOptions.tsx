@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Layer, GradientToolState } from "@/types/editor";
+import { Layer, GradientToolState, GradientLayerData } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";

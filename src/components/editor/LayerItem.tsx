@@ -7,7 +7,7 @@ import { Edit2, GripVertical, Type, Image as ImageIcon, Eye, EyeOff, FileArchive
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import type { Layer } from "@/types/editor";
+import type { Layer, GroupLayerData, AdjustmentLayerData } from "@/types/editor";
 
 interface LayerItemProps {
   layer: Layer;
@@ -70,7 +70,23 @@ const LayerItem = ({
 
   const getLayerIcon = () => {
     if (isGroup) {
-      return layer.expanded ? <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+      const groupLayer = layer as GroupLayerData;
+      return groupLayer.expanded ? <FolderOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <Folder className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+    }
+    if (layer.type === 'adjustment') {
+      const adjustmentLayer = layer as AdjustmentLayerData;
+      switch (adjustmentLayer.adjustmentData?.type) {
+        case 'brightness':
+          return <Sun className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+        case 'curves':
+          return <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+        case 'hsl':
+          return <Palette className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+        case 'grading':
+          return <Zap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+        default:
+          return <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
+      }
     }
     switch (layer.type) {
       case 'image':
@@ -83,19 +99,6 @@ const LayerItem = ({
         return <Square className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
       case 'gradient':
         return <Palette className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-      case 'adjustment':
-        switch (layer.adjustmentData?.type) {
-          case 'brightness':
-            return <Sun className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-          case 'curves':
-            return <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-          case 'hsl':
-            return <Palette className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-          case 'grading':
-            return <Zap className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-          default:
-            return <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
-        }
       default:
         return <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />;
     }
@@ -133,7 +136,7 @@ const LayerItem = ({
             className="h-6 w-6 shrink-0" // Reduced button size
             onClick={(e) => handleIconClick(e, () => onToggleGroupExpanded(layer.id))}
           >
-            {layer.expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+            {(layer as GroupLayerData).expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
           </Button>
         )}
         <Button

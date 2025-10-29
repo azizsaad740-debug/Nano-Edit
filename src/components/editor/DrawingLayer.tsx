@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool } from "@/types/editor";
+import type { Layer, ActiveTool, DrawingLayerData } from "@/types/editor";
 import { ResizeHandle } from "./ResizeHandle";
 import { cn } from "@/lib/utils";
 import { RotateCw } from "lucide-react";
@@ -20,6 +20,7 @@ interface DrawingLayerProps {
 export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: DrawingLayerProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [contentDimensions, setContentDimensions] = React.useState<{ width: number; height: number } | null>(null);
+  const drawingLayer = layer as DrawingLayerData;
 
   const {
     layerRef,
@@ -41,7 +42,7 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
   React.useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!ctx || !layer.dataUrl) return;
+    if (!ctx || !drawingLayer.dataUrl) return;
 
     const loadImage = async (src: string): Promise<HTMLImageElement> => {
       return new Promise((resolve, reject) => {
@@ -54,7 +55,7 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
 
     const renderLayer = async () => {
       try {
-        const contentImage = await loadImage(layer.dataUrl!);
+        const contentImage = await loadImage(drawingLayer.dataUrl!);
         
         // Set canvas dimensions to the natural size of the content image
         canvas.width = contentImage.naturalWidth;
@@ -77,25 +78,25 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
     };
 
     renderLayer();
-  }, [layer.dataUrl]);
+  }, [drawingLayer.dataUrl]);
 
-  if (!layer.visible || layer.type !== "drawing" || !layer.dataUrl || !contentDimensions) {
+  if (!layer.visible || layer.type !== "drawing" || !drawingLayer.dataUrl || !contentDimensions) {
     return null;
   }
 
-  const currentWidthPercent = layer.width ?? 100;
-  const currentHeightPercent = layer.height ?? 100;
+  const currentWidthPercent = drawingLayer.width ?? 100;
+  const currentHeightPercent = drawingLayer.height ?? 100;
 
   const isMovable = activeTool === 'move' || (isSelected && !['lasso', 'brush', 'eraser', 'text', 'shape', 'eyedropper'].includes(activeTool || ''));
 
   const style: React.CSSProperties = {
-    left: `${layer.x ?? 50}%`,
-    top: `${layer.y ?? 50}%`,
+    left: `${drawingLayer.x ?? 50}%`,
+    top: `${drawingLayer.y ?? 50}%`,
     width: `${currentWidthPercent}%`,
     height: `${currentHeightPercent}%`,
-    transform: `translate(-50%, -50%) rotateZ(${layer.rotation || 0}deg) scaleX(${layer.scaleX ?? 1}) scaleY(${layer.scaleY ?? 1})`, // ADDED scaleX/scaleY
-    opacity: (layer.opacity ?? 100) / 100,
-    mixBlendMode: layer.blendMode as any || 'normal',
+    transform: `translate(-50%, -50%) rotateZ(${drawingLayer.rotation || 0}deg) scaleX(${drawingLayer.scaleX ?? 1}) scaleY(${drawingLayer.scaleY ?? 1})`,
+    opacity: (drawingLayer.opacity ?? 100) / 100,
+    mixBlendMode: drawingLayer.blendMode as any || 'normal',
     cursor: isMovable ? "grab" : "default",
   };
 
