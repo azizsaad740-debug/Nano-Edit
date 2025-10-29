@@ -61,6 +61,8 @@ interface EditorWorkspaceProps {
   setSelectionMaskDataUrl: (url: string | null) => void;
   clearSelectionState: () => void;
   updateCurrentState: (updates: Partial<EditState>) => void;
+  updateLayer: (id: string, updates: Partial<Layer>) => void; // ADDED
+  commitLayerChange: (id: string) => void; // ADDED
   workspaceZoom: number;
   handleFitScreen: () => void;
   handleZoomIn: () => void;
@@ -104,6 +106,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   setSelectionMaskDataUrl,
   clearSelectionState,
   updateCurrentState,
+  updateLayer, // ADDED
+  commitLayerChange, // ADDED
   workspaceZoom,
   handleFitScreen,
   handleZoomIn,

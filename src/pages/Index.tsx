@@ -232,6 +232,8 @@ export const Index = () => {
           setSelectionMaskDataUrl={setSelectionMaskDataUrl}
           clearSelectionState={clearSelectionState}
           updateCurrentState={updateCurrentState}
+          updateLayer={updateLayer} // PASSED
+          commitLayerChange={commitLayerChange} // PASSED
           workspaceZoom={workspaceZoom}
           handleFitScreen={handleFitScreen}
           handleZoomIn={handleZoomIn}
