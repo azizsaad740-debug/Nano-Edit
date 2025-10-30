@@ -20,7 +20,6 @@ interface FontManagerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   systemFonts: string[];
-  setSystemFonts: (fonts: string[]) => void;
   customFonts: string[];
   addCustomFont: (fontName: string) => void;
   removeCustomFont: (fontName: string) => void;
@@ -30,37 +29,11 @@ export const FontManagerDialog = ({
   open,
   onOpenChange,
   systemFonts,
-  setSystemFonts,
   customFonts,
   addCustomFont,
   removeCustomFont,
 }: FontManagerDialogProps) => {
-  const [isScanning, setIsScanning] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleScanSystemFonts = async () => {
-    if (!('queryLocalFonts' in window)) {
-      showError("System font scanning is not supported by your browser (requires experimental API access).");
-      return;
-    }
-
-    setIsScanning(true);
-    const toastId = showLoading("Scanning system fonts...");
-
-    try {
-      // @ts-ignore - Use experimental API
-      const fonts = await window.queryLocalFonts();
-      const uniqueFontNames = Array.from(new Set(fonts.map((f: any) => f.family))).sort() as string[];
-      setSystemFonts(uniqueFontNames);
-      showSuccess(`${uniqueFontNames.length} system fonts found.`);
-    } catch (error) {
-      console.error("Failed to scan system fonts:", error);
-      showError("Permission denied or scanning failed.");
-    } finally {
-      dismissToast(toastId);
-      setIsScanning(false);
-    }
-  };
 
   const handleCustomFontUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -83,7 +56,7 @@ export const FontManagerDialog = ({
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const allFonts = [...customFonts, ...systemFonts].sort();
+  const allFonts = [...systemFonts, ...customFonts].sort();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,7 +64,7 @@ export const FontManagerDialog = ({
         <DialogHeader>
           <DialogTitle>Font Manager</DialogTitle>
           <DialogDescription>
-            Manage system and custom fonts available for text layers.
+            Manage available fonts for text layers.
           </DialogDescription>
         </DialogHeader>
         
@@ -124,18 +97,6 @@ export const FontManagerDialog = ({
                     </div>
                 ))}
             </div>
-          </div>
-
-          {/* System Font Scan */}
-          <div className="border p-3 rounded-md space-y-2">
-            <h4 className="font-semibold">System Fonts</h4>
-            <Button onClick={handleScanSystemFonts} className="w-full" disabled={isScanning}>
-              <Search className={cn("h-4 w-4 mr-2", isScanning && "animate-spin")} />
-              {isScanning ? "Scanning..." : "Scan Installed System Fonts"}
-            </Button>
-            <p className="text-xs text-muted-foreground">
-              Note: Requires browser permission and may not be supported on all platforms.
-            </p>
           </div>
 
           {/* Font List */}

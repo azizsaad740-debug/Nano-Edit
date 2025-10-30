@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
+import { toast } from 'sonner';
 import { v4 as uuidv4 } from "uuid";
 import {
   initialEditState,
@@ -35,7 +36,7 @@ export const useEditorState = () => {
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<Dimensions | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(fileInfo);
   const [exifData, setExifData] = useState<any>(null);
   const [currentEditState, setCurrentEditState] = useState<EditState>(initialEditState);
   const [layers, setLayers] = useState<Layer[]>(initialLayerState);
@@ -66,7 +67,7 @@ export const useEditorState = () => {
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
   // External Hooks
-  const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
+  const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
   const { geminiApiKey, stabilityApiKey } = useSettings();
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
@@ -90,6 +91,10 @@ export const useEditorState = () => {
     const newIndex = Math.max(0, currentHistoryIndex - steps);
     if (newIndex !== currentHistoryIndex) {
       const entry = history[newIndex];
+      if (!entry) { // Safety check
+        showError("History state not found.");
+        return;
+      }
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
       setCurrentHistoryIndex(newIndex);
@@ -104,6 +109,10 @@ export const useEditorState = () => {
     const newIndex = Math.min(history.length - 1, currentHistoryIndex + 1);
     if (newIndex !== currentHistoryIndex) {
       const entry = history[newIndex];
+      if (!entry) { // Safety check
+        showError("History state not found.");
+        return;
+      }
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
       setCurrentHistoryIndex(newIndex);
@@ -179,7 +188,8 @@ export const useEditorState = () => {
     // Constants
     initialLayerState, initialHistoryItem,
     // External
-    systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
+    systemFonts,
+    customFonts, addCustomFont, removeCustomFont,
     geminiApiKey, stabilityApiKey,
     dismissToast,
   };

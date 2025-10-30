@@ -89,7 +89,7 @@ export const Index = () => {
     
     // Refs/External
     workspaceRef, imgRef,
-    systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
+    systemFonts, customFonts, addCustomFont, removeCustomFont,
     setZoom,
     handleSwapColors, // Destructure handleSwapColors
   } = logic;
@@ -230,6 +230,26 @@ export const Index = () => {
         )}
       </main>
 
+      {/* Hidden file input for image/project import */}
+      <input
+        type="file"
+        id="file-upload-input"
+        className="hidden"
+        accept="image/*,.nanoedit"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            if (file.name.endsWith('.nanoedit')) {
+              handleLoadProject(file);
+            } else {
+              handleImageLoad(file);
+            }
+          }
+          // Clear input value to allow re-uploading the same file
+          e.target.value = '';
+        }}
+      />
+
       {/* Dialogs */}
       <NewProjectDialog
         open={isNewProjectOpen}
@@ -278,7 +298,6 @@ export const Index = () => {
         open={isFontManagerOpen}
         onOpenChange={setIsFontManagerOpen}
         systemFonts={systemFonts}
-        setSystemFonts={setSystemFonts}
         customFonts={customFonts}
         addCustomFont={addCustomFont}
         removeCustomFont={removeCustomFont}
