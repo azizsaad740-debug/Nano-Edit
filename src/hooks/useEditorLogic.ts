@@ -32,7 +32,8 @@ import { upscaleImageApi } from '@/utils/stabilityApi';
 import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
 import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point } from '@/types/editor';
-import { useGradientPresets } from './useGradientPresets'; // ADDED HOOK CALL
+import { useGradientPresets } from './useGradientPresets';
+import LeftSidebar from '@/components/layout/LeftSidebar'; // Import the component directly
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -267,6 +268,6 @@ export const useEditorLogic = () => {
     // Tools
     handleBrushToolChange, handleTextToolChange, handleShapeToolChange, handleGradientToolChange, handleEyedropperToolChange, handleMoveToolChange, handleLassoToolChange,
     handleSwapColors,
-    ToolsPanel: require('@/components/layout/LeftSidebar').default, // Re-exporting the component reference
+    ToolsPanel: LeftSidebar, // Use the imported component
   };
 };
