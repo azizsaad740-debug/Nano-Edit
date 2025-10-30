@@ -21,6 +21,9 @@ export const useWorkspaceInteraction = (
   onMarqueeSelectionComplete: (start: Point, end: Point) => void, // NEW
   currentEditState: EditState, // NEW
   setCloneSourcePoint: (point: Point | null) => void, // NEW: Setter for clone source
+  // NEW PROPS for Text Tool:
+  handleAddTextLayer: (coords: Point, color: string) => void,
+  foregroundColor: string,
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
@@ -245,8 +248,11 @@ export const useWorkspaceInteraction = (
       handleObjectSelectClick();
     } else if (activeTool === 'paintBucket') { // Paint Bucket
       handlePaintBucketClick(clickPoint);
+    } else if (activeTool === 'text') { // NEW: Text Tool Click
+      handleAddTextLayer(clickPoint, foregroundColor);
+      e.stopPropagation();
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick, setCloneSourcePoint]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick, setCloneSourcePoint, handleAddTextLayer, foregroundColor]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {

@@ -225,7 +225,10 @@ export const useEditorLogic = () => {
   } = useWorkspaceInteraction(
     workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState,
     gradientToolState, setSelectedLayerId, layers, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
-    handleMarqueeSelectionComplete, currentEditState, setCloneSourcePoint
+    handleMarqueeSelectionComplete, currentEditState, setCloneSourcePoint,
+    // NEW:
+    handleAddTextLayer,
+    foregroundColor
   );
 
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;
