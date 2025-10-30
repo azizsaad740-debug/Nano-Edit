@@ -36,7 +36,7 @@ import { MobileToolBar } from "@/components/mobile/MobileToolBar";
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { Undo2, Redo2, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils"; // Import cn for dynamic classes
+import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Index = () => {
@@ -211,186 +211,30 @@ export const Index = () => {
   const mobileOptionsBottomOffset = activeMobileTab === 'tools' ? 'bottom-[144px]' : 'bottom-[80px]';
 
 
-  // --- Render Logic ---
-
-  if (smartObjectEditingId) {
-    const smartObjectLayer = layers.find(l => l.id === smartObjectEditingId);
-    if (smartObjectLayer && smartObjectLayer.type === 'smart-object') {
-      return (
-        <SmartObjectEditor
-          layer={smartObjectLayer}
-          onClose={closeSmartObjectEditor}
-          onSave={saveSmartObjectChanges}
-          foregroundColor={foregroundColor}
-          backgroundColor={backgroundColor}
-          selectedShapeType={selectedShapeType}
-          brushState={brushState}
-          gradientToolState={gradientToolState}
-          setBrushState={setBrushState}
-          setGradientToolState={setGradientToolState}
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          setSelectedShapeType={setSelectedShapeType}
-          zoom={workspaceZoom}
-          setZoom={setZoom}
-          handleZoomIn={handleZoomIn}
-          handleZoomOut={handleZoomOut}
-          handleFitScreen={handleFitScreen}
-        />
-      );
-    }
-  }
-
-  if (isMobile) {
-    return (
-      <div className="flex flex-col h-screen w-screen bg-background">
-        <CustomFontLoader customFonts={customFonts} />
-        
-        {/* 1. Mobile Header */}
-        <MobileHeader 
-          hasImage={hasImage}
-          onNewProjectClick={() => setIsNewProjectOpen(true)}
-          onOpenProject={() => document.getElementById('file-upload-input')?.click()}
-          onSaveProject={() => showError("Project saving is a stub.")}
-          onExportClick={() => setIsExportOpen(true)} 
-          onReset={logic.resetAllEdits}
-          onSettingsClick={() => setIsSettingsOpen(true)}
-          onImportClick={() => setIsImportOpen(true)}
-          onNewFromClipboard={() => showError("New from clipboard is a stub.")}
-        />
-
-        {/* 2. Main Workspace Area */}
-        <main className="flex-1 relative min-h-0">
-          <EditorWorkspace {...editorWorkspaceProps} />
-          
-          {/* Floating Controls (Undo/Redo/Zoom) */}
-          <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => undo()} disabled={!canUndo}>
-              <Undo2 className="h-5 w-5" />
-            </Button>
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => redo()} disabled={!canRedo}>
-              <Redo2 className="h-5 w-5" />
-            </Button>
-          </div>
-          <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomIn}>
-              <ZoomIn className="h-5 w-5" />
-            </Button>
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomOut}>
-              <ZoomOut className="h-5 w-5" />
-            </Button>
-          </div>
-        </main>
-        
-        {/* 3. Mobile Tool Options Panel (Collapsible) */}
-        {isMobileOptionsOpen && (
-          <div className={cn("absolute left-0 right-0 h-1/2 bg-background border-t border-border/50 z-20 shadow-2xl transition-all duration-300", mobileOptionsBottomOffset)}>
-            <ScrollArea className="h-full">
-              <MobileToolOptions {...mobileOptionsProps} activeMobileTab={activeMobileTab} onApplyPreset={handleApplyPreset} />
-            </ScrollArea>
-            {/* Close button for the options panel */}
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="absolute top-2 right-2 h-8 w-8 z-30"
-              onClick={() => setIsMobileOptionsOpen(false)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-
-        {/* 4. Secondary Tool Bar (Visible when 'Tools' is active) */}
-        {activeMobileTab === 'tools' && (
-          <MobileToolBar activeTool={activeTool} setActiveTool={handleSetActiveTool} />
-        )}
-
-        {/* 5. Bottom Navigation */}
-        <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleSetActiveTab} />
-      </div>
-    );
-  }
-
-  // Desktop Layout (Existing Structure)
-  return (
-    <div className="flex flex-col h-screen w-screen bg-background">
-      <CustomFontLoader customFonts={customFonts} />
-      
-      {/* 1. Top Header Bar */}
-      <EditorHeader
-        logic={logic}
-        setIsNewProjectOpen={setIsNewProjectOpen}
-        setIsExportOpen={setIsExportOpen}
-        setIsSettingsOpen={setIsSettingsOpen}
-        setIsImportOpen={setIsImportOpen}
-        setIsGenerateOpen={setIsGenerateOpen}
-        setIsGenerativeFillOpen={setIsGenerativeFillOpen}
-        setIsProjectSettingsOpen={setIsProjectSettingsOpen}
-        isFullscreen={isFullscreen}
-        onToggleFullscreen={handleToggleFullscreen}
-      />
-      
-      {/* 2. Tool Options Bar */}
-      <ToolOptionsBar {...toolOptionsBarProps} />
-
-      {/* 3. Main Content Area (Left | Center | Right) */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
-        
-        {/* Left Sidebar Panel (Tools) */}
-        <ResizablePanel defaultSize={5} minSize={4} maxSize={8} className="shrink-0">
-          <LeftSidebar {...mobileOptionsProps} />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        
-        {/* Center Panel (Workspace) */}
-        <ResizablePanel defaultSize={70} minSize={40}>
-          <EditorWorkspace {...editorWorkspaceProps} />
-        </ResizablePanel>
-        <ResizableHandle withHandle />
-        
-        {/* Right Sidebar Panel (Layers/Channels/Properties) */}
-        <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
-          <Sidebar {...mobileOptionsProps} onApplyPreset={handleApplyPreset} />
-        </ResizablePanel>
-      </ResizablePanelGroup>
-      
-      {/* 4. Bottom Panel (Color/History/Ad) */}
-      <BottomPanel 
-        foregroundColor={foregroundColor} 
-        onForegroundColorChange={setForegroundColor} 
-        backgroundColor={backgroundColor} 
-        onBackgroundColorChange={setBackgroundColor} 
-        onSwapColors={handleSwapColors}
-        history={history}
-        currentHistoryIndex={currentHistoryIndex}
-        onHistoryJump={mobileOptionsProps.onHistoryJump}
-        onUndo={undo}
-        onRedo={redo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-      />
-
-      {/* Hidden file input for image/project import */}
-      <input
-        type="file"
-        id="file-upload-input"
-        className="hidden"
-        accept="image/*,.nanoedit"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) {
-            if (file.name.endsWith('.nanoedit')) {
-              handleLoadProject(file);
-            } else {
-              handleImageLoad(file);
-            }
+  // --- Common Elements (File Input and Dialogs) ---
+  const fileInput = (
+    <input
+      type="file"
+      id="file-upload-input"
+      className="hidden"
+      accept="image/*,.nanoedit"
+      onChange={(e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          if (file.name.endsWith('.nanoedit')) {
+            handleLoadProject(file);
+          } else {
+            handleImageLoad(file);
           }
-          // Clear input value to allow re-uploading the same file
-          e.target.value = '';
-        }}
-      />
+        }
+        // Clear input value to allow re-uploading the same file
+        e.target.value = '';
+      }}
+    />
+  );
 
-      {/* Dialogs */}
+  const dialogs = (
+    <>
       <NewProjectDialog
         open={isNewProjectOpen}
         onOpenChange={setIsNewProjectOpen}
@@ -442,6 +286,176 @@ export const Index = () => {
         addCustomFont={addCustomFont}
         removeCustomFont={removeCustomFont}
       />
-    </div>
+    </>
+  );
+
+
+  // --- Render Logic ---
+
+  if (smartObjectEditingId) {
+    const smartObjectLayer = layers.find(l => l.id === smartObjectEditingId);
+    if (smartObjectLayer && smartObjectLayer.type === 'smart-object') {
+      return (
+        <SmartObjectEditor
+          layer={smartObjectLayer}
+          onClose={closeSmartObjectEditor}
+          onSave={saveSmartObjectChanges}
+          foregroundColor={foregroundColor}
+          backgroundColor={backgroundColor}
+          selectedShapeType={selectedShapeType}
+          brushState={brushState}
+          gradientToolState={gradientToolState}
+          setBrushState={setBrushState}
+          setGradientToolState={setGradientToolState}
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          setSelectedShapeType={setSelectedShapeType}
+          zoom={workspaceZoom}
+          setZoom={setZoom}
+          handleZoomIn={handleZoomIn}
+          handleZoomOut={handleZoomOut}
+          handleFitScreen={handleFitScreen}
+        />
+      );
+    }
+  }
+
+  if (isMobile) {
+    return (
+      <>
+        <div className="flex flex-col h-screen w-screen bg-background">
+          <CustomFontLoader customFonts={customFonts} />
+          
+          {/* 1. Mobile Header */}
+          <MobileHeader 
+            hasImage={hasImage}
+            onNewProjectClick={() => setIsNewProjectOpen(true)}
+            onOpenProject={() => document.getElementById('file-upload-input')?.click()}
+            onSaveProject={() => showError("Project saving is a stub.")}
+            onExportClick={() => setIsExportOpen(true)} 
+            onReset={logic.resetAllEdits}
+            onSettingsClick={() => setIsSettingsOpen(true)}
+            onImportClick={() => setIsImportOpen(true)}
+            onNewFromClipboard={() => showError("New from clipboard is a stub.")}
+          />
+
+          {/* 2. Main Workspace Area */}
+          <main className="flex-1 relative min-h-0">
+            <EditorWorkspace {...editorWorkspaceProps} />
+            
+            {/* Floating Controls (Undo/Redo/Zoom) */}
+            <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
+              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => undo()} disabled={!canUndo}>
+                <Undo2 className="h-5 w-5" />
+              </Button>
+              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => redo()} disabled={!canRedo}>
+                <Redo2 className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
+              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomIn}>
+                <ZoomIn className="h-5 w-5" />
+              </Button>
+              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomOut}>
+                <ZoomOut className="h-5 w-5" />
+              </Button>
+            </div>
+          </main>
+          
+          {/* 3. Mobile Tool Options Panel (Collapsible) */}
+          {isMobileOptionsOpen && (
+            <div className={cn("absolute left-0 right-0 h-1/2 bg-background border-t border-border/50 z-20 shadow-2xl transition-all duration-300", mobileOptionsBottomOffset)}>
+              <ScrollArea className="h-full">
+                <MobileToolOptions {...mobileOptionsProps} activeMobileTab={activeMobileTab} onApplyPreset={handleApplyPreset} />
+              </ScrollArea>
+              {/* Close button for the options panel */}
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute top-2 right-2 h-8 w-8 z-30"
+                onClick={() => setIsMobileOptionsOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+
+          {/* 4. Secondary Tool Bar (Visible when 'Tools' is active) */}
+          {activeMobileTab === 'tools' && (
+            <MobileToolBar activeTool={activeTool} setActiveTool={handleSetActiveTool} />
+          )}
+
+          {/* 5. Bottom Navigation */}
+          <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleSetActiveTab} />
+        </div>
+        {fileInput}
+        {dialogs}
+      </>
+    );
+  }
+
+  // Desktop Layout
+  return (
+    <>
+      <div className="flex flex-col h-screen w-screen bg-background">
+        <CustomFontLoader customFonts={customFonts} />
+        
+        {/* 1. Top Header Bar */}
+        <EditorHeader
+          logic={logic}
+          setIsNewProjectOpen={setIsNewProjectOpen}
+          setIsExportOpen={setIsExportOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+          setIsImportOpen={setIsImportOpen}
+          setIsGenerateOpen={setIsGenerateOpen}
+          setIsGenerativeFillOpen={setIsGenerativeFillOpen}
+          setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+        
+        {/* 2. Tool Options Bar */}
+        <ToolOptionsBar {...toolOptionsBarProps} />
+
+        {/* 3. Main Content Area (Left | Center | Right) */}
+        <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+          
+          {/* Left Sidebar Panel (Tools) */}
+          <ResizablePanel defaultSize={5} minSize={4} maxSize={8} className="shrink-0">
+            <LeftSidebar {...mobileOptionsProps} />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          
+          {/* Center Panel (Workspace) */}
+          <ResizablePanel defaultSize={70} minSize={40}>
+            <EditorWorkspace {...editorWorkspaceProps} />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          
+          {/* Right Sidebar Panel (Layers/Channels/Properties) */}
+          <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
+            <Sidebar {...mobileOptionsProps} onApplyPreset={handleApplyPreset} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+        
+        {/* 4. Bottom Panel (Color/History/Ad) */}
+        <BottomPanel 
+          foregroundColor={foregroundColor} 
+          onForegroundColorChange={setForegroundColor} 
+          backgroundColor={backgroundColor} 
+          onBackgroundColorChange={setBackgroundColor} 
+          onSwapColors={handleSwapColors}
+          history={history}
+          currentHistoryIndex={currentHistoryIndex}
+          onHistoryJump={mobileOptionsProps.onHistoryJump}
+          onUndo={undo}
+          onRedo={redo}
+          canUndo={canUndo}
+          canRedo={canRedo}
+        />
+      </div>
+      {fileInput}
+      {dialogs}
+    </>
   );
 };
