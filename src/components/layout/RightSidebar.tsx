@@ -32,14 +32,14 @@ interface SidebarProps {
   onOpenSmartObject: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; // Added full commit signature
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   addTextLayer: (coords: Point, color: string) => void;
   addDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number) => void;
+  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // FIXED SIGNATURE
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
   selectedShapeType: any;
@@ -137,11 +137,13 @@ interface SidebarProps {
   customFonts: string[];
   onOpenFontManager: () => void;
   // Clone Source Point
-  cloneSourcePoint: Point | null;
+  cloneSourcePoint: Point | null; // ADDED
   // Selection Settings
   selectionSettings: SelectionSettings;
   onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void;
   onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
+  // Layers Panel Component (Passed from Index.tsx)
+  LayersPanel: React.ComponentType<any>; // ADDED
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -184,7 +186,7 @@ const Sidebar = (props: SidebarProps) => {
     customFonts: props.customFonts,
     onOpenFontManager: props.onOpenFontManager,
     // LayersPanel is defined in Index.tsx, but we need to pass the component reference here
-    LayersPanel: require('@/components/editor/LayersPanel').default,
+    LayersPanel: props.LayersPanel,
   };
 
   if (isMobile) {

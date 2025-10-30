@@ -56,7 +56,7 @@ interface LayersPanelProps {
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
-  onAddTextLayer: (coords: Point, color: string) => void; // UPDATED SIGNATURE
+  onAddTextLayer: (coords: Point) => void; // UPDATED SIGNATURE: Color is injected by parent
   onAddDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
@@ -159,9 +159,8 @@ const LayersPanel = (props: LayersPanelProps) => {
     const defaultCoords = { x: 50, y: 50 }; 
     
     if (type === 'text') {
-      // Pass foregroundColor as the default color (assuming it's available in Index.tsx scope)
-      // We call the prop function with default coords, and Index.tsx will inject the color.
-      onAddTextLayer(defaultCoords, 'currentColorPlaceholder'); 
+      // Call the prop function with default coords. The parent (RightSidebarTabs) injects the color.
+      onAddTextLayer(defaultCoords); 
     } else if (type === 'drawing') {
       onAddDrawingLayer();
     } else if (type === 'shape') {
@@ -311,7 +310,7 @@ const LayersPanel = (props: LayersPanelProps) => {
           selectedShapeType={selectedShapeType}
           groupLayers={() => groupLayers(selectedLayerIds)}
           hasActiveSelection={hasActiveSelection}
-          onApplySelectionAsMask={applySelectionAsMask}
+          onApplySelectionAsMask={onApplySelectionAsMask}
           onInvertLayerMask={() => selectedLayerId && onInvertLayerMask(selectedLayerId)}
           onToggleClippingMask={() => selectedLayerId && onToggleClippingMask(selectedLayerId)}
           onDeleteHiddenLayers={onDeleteHiddenLayers}

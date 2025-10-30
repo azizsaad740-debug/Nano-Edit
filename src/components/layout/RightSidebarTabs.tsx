@@ -39,9 +39,9 @@ interface RightSidebarTabsProps {
   selectedLayer: Layer | undefined;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
-  toggleLayerVisibility: (id: string) => void;
-  renameLayer: (id: string, newName: string) => void;
-  deleteLayer: (id: string) => void;
+  toggleLayerVisibility: (id: string) => void; // Renamed from onToggleVisibility
+  renameLayer: (id: string, newName: string) => void; // Renamed from onRename
+  deleteLayer: (id: string) => void; // Renamed from onDelete
   onDuplicateLayer: (id: string) => void;
   onMergeLayerDown: (id: string) => void;
   onRasterizeLayer: (id: string) => void;
@@ -56,7 +56,7 @@ interface RightSidebarTabsProps {
   addDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number) => void;
+  addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void;
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
   selectedShapeType: ShapeType | null;
@@ -154,9 +154,15 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const isShapeToolActive = activeTool === 'shape';
   const isGradientToolActive = activeTool === 'gradient';
   const isCropToolActive = activeTool === 'crop';
-  const isBrushToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil';
-  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush';
-  const isGradientToolActiveOnly = activeTool === 'gradient'; // Use this for tool options
+  
+  // FIX: Define tool flags correctly
+  const isBrushToolActive = activeTool === 'brush';
+  const isEraserToolActive = activeTool === 'eraser';
+  const isPencilToolActive = activeTool === 'pencil';
+  const isBlurBrushActive = activeTool === 'blurBrush'; 
+  
+  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || isBlurBrushActive;
+  const isGradientToolActiveOnly = activeTool === 'gradient'; 
   const isPaintBucketActive = activeTool === 'paintBucket';
   const isStampToolActive = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
@@ -165,8 +171,21 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const isLayerSpecificTool = isTextToolActive || isShapeToolActive || isGradientToolActive;
   const isLayerPropertyPanelActive = isLayerSelected && !isLayerSpecificTool;
 
+  // Helper functions to route updates to the selected layer
+  const handleLayerUpdate = (updates: Partial<Layer>) => {
+    if (selectedLayer) {
+      props.onLayerUpdate(selectedLayer.id, updates);
+    }
+  };
+
+  const handleLayerCommit = (historyName: string) => {
+    if (selectedLayer) {
+      props.onLayerCommit(selectedLayer.id, historyName);
+    }
+  };
+
   const renderToolOptions = () => {
-    if (isBrushToolActive || isEraserToolActive) {
+    if (isBrushToolActive || isEraserToolActive || isPencilToolActive) {
       return (
         <BrushOptions
           activeTool={activeTool as 'brush' | 'eraser' | 'pencil'}
@@ -330,8 +349,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       return (
         <GradientOptions // FIX: Use GradientOptions for layer properties
           layer={selectedLayer}
-          onLayerUpdate={(updates) => props.onLayerUpdate(selectedLayer.id, updates)}
-          onLayerCommit={(name) => props.onLayerCommit(selectedLayer.id, name)}
+          onLayerUpdate={handleLayerUpdate}
+          onLayerCommit={handleLayerCommit}
           gradientToolState={props.gradientToolState}
           setGradientToolState={props.setGradientToolState}
           gradientPresets={props.gradientPresets}
@@ -411,7 +430,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               onAddDrawingLayer={props.addDrawingLayer}
               onAddLayerFromBackground={props.onAddLayerFromBackground}
               onLayerFromSelection={props.onLayerFromSelection}
-              onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => props.addShapeLayer(coords, shapeType, initialWidth, initialHeight)}
+              onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => props.addShapeLayer(coords, shapeType, initialWidth, initialHeight, props.foregroundColor, props.backgroundColor)}
               onAddGradientLayer={props.addGradientLayer}
               onAddAdjustmentLayer={props.onAddAdjustmentLayer}
               selectedShapeType={props.selectedShapeType}
@@ -459,7 +478,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               aspect={props.aspect}
               presets={props.presets}
               onApplyPreset={props.onApplyPreset}
-              onSavePreset={props.onSavePreset}
+              onSavePreset={() => props.onSavePreset('New Preset')}
               onDeletePreset={props.onDeletePreset}
               frame={props.frame}
               onFramePresetChange={props.onFramePresetChange}

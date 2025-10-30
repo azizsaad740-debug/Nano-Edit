@@ -180,7 +180,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
         </div>
       )}
       
-      <Accordion type="multiple" collapsible className="w-full pt-2 border-t" defaultValue={['dimensions']}>
+      <Accordion type="multiple" className="w-full pt-2 border-t" defaultValue={['dimensions']}>
         <AccordionItem value="path-editing">
           <AccordionTrigger>Path Editing</AccordionTrigger>
           <AccordionContent className="space-y-4">

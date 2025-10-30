@@ -31,7 +31,8 @@ import { downloadImage, rasterizeEditedImageWithMask } from '@/utils/imageUtils'
 import { upscaleImageApi } from '@/utils/stabilityApi';
 import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
-import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState } from '@/types/editor';
+import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point } from '@/types/editor';
+import { useGradientPresets } from './useGradientPresets'; // ADDED IMPORT
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -50,7 +51,8 @@ export const useEditorLogic = () => {
 
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
     state.setImage, state.setDimensions, state.setFileInfo, state.setExifData, state.setLayers, state.resetAllEdits,
-    state.recordHistory, state.setCurrentEditState, initialEditState, initialLayerState, initialHistoryItem,
+    state.recordHistory, state.setCurrentEditState, initialEditState, // Pass initialEditState constant
+    state.initialLayerState, 
     state.setSelectedLayerId, state.clearSelectionState,
   );
 
@@ -153,6 +155,7 @@ export const useEditorLogic = () => {
   );
 
   const { presets, savePreset, deletePreset } = usePresets();
+  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // ADDED HOOK CALL
 
   const handleApplyPreset = useCallback((preset: typeof presets[0]) => {
     applyAdjustmentsPreset(preset.state);
@@ -248,7 +251,7 @@ export const useEditorLogic = () => {
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,
     // Gradient Presets (from useEditorState)
-    gradientPresets: rest.gradientPresets, saveGradientPreset: rest.saveGradientPreset, deleteGradientPreset: rest.deleteGradientPreset,
+    gradientPresets, saveGradientPreset, deleteGradientPreset, // FIXED: Now correctly exported
     // Project & IO
     handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleExport, handleCopy, handleProjectSettingsUpdate,
     // AI

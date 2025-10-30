@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/resizable";
 import AuxiliaryPanel from "./AuxiliaryPanel";
 import { Card } from "@/components/ui/card";
-import type { EditState, BrushState, ActiveTool, SelectionSettings } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point } from "@/types/editor";
 import { ScrollArea } from "@/components/ui/scroll-area"; // FIX 5, 6, 7, 9: Import ScrollArea
 
 interface SidebarProps {
@@ -17,8 +17,8 @@ interface SidebarProps {
   hasImage: boolean;
   activeTool: ActiveTool | null;
   selectedLayerId: string | null;
-  selectedLayer: any;
-  layers: any[];
+  selectedLayer: Layer | undefined;
+  layers: Layer[];
   imgRef: React.RefObject<HTMLImageElement>;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
@@ -30,16 +30,16 @@ interface SidebarProps {
   onRasterizeLayer: (id: string) => void;
   onCreateSmartObject: (layerIds: string[]) => void;
   onOpenSmartObject: (id: string) => void;
-  onLayerUpdate: (id: string, updates: Partial<any>) => void;
+  onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<any>, historyName: string) => void; // Added full commit signature
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; // Added full commit signature
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
-  addTextLayer: () => void;
+  addTextLayer: (coords: Point, color: string) => void;
   addDrawingLayer: () => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
-  addShapeLayer: (coords: { x: number; y: number }, shapeType?: any, initialWidth?: number, initialHeight?: number) => void;
+  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // FIXED SIGNATURE
   addGradientLayer: () => void;
   onAddAdjustmentLayer: (type: 'brightness' | 'curves' | 'hsl' | 'grading') => void;
   selectedShapeType: any;
@@ -50,9 +50,9 @@ interface SidebarProps {
   onToggleClippingMask: (id: string) => void;
   onToggleLayerLock: (id: string) => void;
   onDeleteHiddenLayers: () => void;
-  onRasterizeSmartObject: () => void;
-  onConvertSmartObjectToLayers: () => void;
-  onExportSmartObjectContents: () => void;
+  onRasterizeSmartObject: (id: string) => void;
+  onConvertSmartObjectToLayers: (id: string) => void;
+  onExportSmartObjectContents: (id: string) => void;
   onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;
@@ -136,10 +136,14 @@ interface SidebarProps {
   systemFonts: string[];
   customFonts: string[];
   onOpenFontManager: () => void;
+  // Clone Source Point
+  cloneSourcePoint: Point | null; // ADDED
   // Selection Settings
   selectionSettings: SelectionSettings; // NEW
   onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void; // NEW
   onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void; // NEW
+  // Layers Panel Component (Passed from Index.tsx)
+  LayersPanel: React.ComponentType<any>; // ADDED
 }
 
 const Sidebar = (props: SidebarProps) => {
@@ -181,6 +185,8 @@ const Sidebar = (props: SidebarProps) => {
     systemFonts: props.systemFonts,
     customFonts: props.customFonts,
     onOpenFontManager: props.onOpenFontManager,
+    // LayersPanel is defined in Index.tsx, but we need to pass the component reference here
+    LayersPanel: props.LayersPanel,
   };
 
   if (isMobile) {

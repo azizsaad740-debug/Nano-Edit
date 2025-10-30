@@ -41,7 +41,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import type { Layer, ActiveTool, BrushState } from "@/types/editor";
+import type { Layer, ActiveTool, BrushState, ShapeType } from "@/types/editor"; // Import ShapeType
 import { ColorTool } from "./ColorTool";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
@@ -51,8 +51,8 @@ type Tool = ActiveTool;
 interface ToolsPanelProps {
   activeTool: Tool | null;
   setActiveTool: (tool: Tool | null) => void;
-  selectedShapeType: Layer['shapeType'] | null;
-  setSelectedShapeType: (type: Layer['shapeType'] | null) => void;
+  selectedShapeType: ShapeType | null; // FIXED TYPE
+  setSelectedShapeType: (type: ShapeType | null) => void; // FIXED TYPE
   foregroundColor: string;
   onForegroundColorChange: (color: string) => void;
   backgroundColor: string;
@@ -101,7 +101,7 @@ const maskTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: 
   { name: "Blur Brush", icon: Droplet, tool: "blurBrush", shortcut: "U", group: 'mask' },
 ];
 
-const shapeSubTools: { name: string; icon: React.ElementType; type: Layer['shapeType'] }[] = [
+const shapeSubTools: { name: string; icon: React.ElementType; type: ShapeType }[] = [ // FIXED TYPE
   { name: "Rectangle", icon: RectangleHorizontal, type: "rect" },
   { name: "Circle", icon: Circle, type: "circle" },
   { name: "Triangle", icon: Triangle, type: "triangle" },
@@ -193,7 +193,7 @@ export const ToolsPanel = ({
     return subTool ? subTool.icon : Square;
   }, [selectedShapeType]);
 
-  const handleShapeToolSelect = (type: Layer['shapeType']) => {
+  const handleShapeToolSelect = (type: ShapeType) => { // FIXED TYPE
     setActiveTool("shape");
     setSelectedShapeType(type);
   };

@@ -36,7 +36,7 @@ import Curves from "@/components/editor/Curves";
 
 import React from "react";
 import type { Preset } from "@/hooks/usePresets";
-import type { Point, EditState, HslAdjustment } from "@/types/editor";
+import type { Point, EditState, HslAdjustment, FrameState } from "@/types/editor"; // Import FrameState
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -80,11 +80,7 @@ interface GlobalAdjustmentsPanelProps {
   onRotationCommit: (value: number) => void;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
-  presets: Preset[];
-  onApplyPreset: (preset: Preset) => void;
-  onSavePreset: () => void;
-  onDeletePreset: (name: string) => void;
-  frame: { type: 'none' | 'solid'; width: number; color: string; };
+  frame: FrameState; // FIXED TYPE
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
