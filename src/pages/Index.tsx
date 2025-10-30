@@ -37,6 +37,7 @@ import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { Undo2, Redo2, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils"; // Import cn for dynamic classes
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -186,6 +187,11 @@ export const Index = () => {
     onOpenSettings: () => setIsSettingsOpen(true),
     onOpenGenerate: () => setIsGenerateOpen(true),
     onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
+    // Added missing props for LeftSidebarProps (TS2739 fix)
+    setActiveTool,
+    setSelectedShapeType,
+    onSelectiveBlurStrengthChange: setSelectiveBlurAmount,
+    onSelectiveBlurStrengthCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers),
   };
 
   const editorWorkspaceProps = {
@@ -251,10 +257,10 @@ export const Index = () => {
           
           {/* Floating Controls (Undo/Redo/Zoom) */}
           <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={undo} disabled={!canUndo}>
+            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => undo()} disabled={!canUndo}>
               <Undo2 className="h-5 w-5" />
             </Button>
-            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={redo} disabled={!canRedo}>
+            <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => redo()} disabled={!canRedo}>
               <Redo2 className="h-5 w-5" />
             </Button>
           </div>

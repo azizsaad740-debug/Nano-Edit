@@ -14,8 +14,8 @@ import SelectionToolOptions from "@/components/editor/SelectionToolOptions";
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Settings } from "lucide-react";
-import type { RightSidebarTabsProps } from "@/components/layout/RightSidebarTabs";
+import { Sparkles, Settings, Zap } from "lucide-react";
+import type { RightSidebarTabsProps } from "@/components/layout/Sidebar";
 import { LayerPropertiesContent } from "../editor/LayerPropertiesContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -28,7 +28,108 @@ interface MobileToolOptionsProps extends RightSidebarTabsProps {
 }
 
 export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
-  const { activeTool, activeMobileTab, brushState, setBrushState, foregroundColor, setForegroundColor, onOpenSettings, onOpenGenerate, onOpenGenerativeFill, history } = props;
+  // Destructure all required props from RightSidebarTabsProps
+  const { 
+    activeTool, activeMobileTab, brushState, setBrushState, foregroundColor, setForegroundColor, 
+    onOpenSettings, onOpenGenerate, onOpenGenerativeFill, history,
+    selectiveBlurAmount, 
+    onSelectiveBlurAmountChange, 
+    onSelectiveBlurAmountCommit, 
+    selectionSettings, 
+    onSelectionSettingChange, 
+    onSelectionSettingCommit, 
+    gradientToolState, 
+    setGradientToolState, 
+    gradientPresets, 
+    onSaveGradientPreset, 
+    onDeleteGradientPreset, 
+    cloneSourcePoint, 
+    historyBrushSourceIndex, 
+    setHistoryBrushSourceIndex, 
+    selectedLayer, 
+    imgRef, 
+    onLayerUpdate, 
+    onLayerCommit, 
+    systemFonts, 
+    customFonts, 
+    onOpenFontManager, 
+    customHslColor, 
+    setCustomHslColor, 
+    onRemoveLayerMask, 
+    onInvertLayerMask, 
+    LayersPanel, 
+    layers, 
+    selectedLayerId, 
+    onSelectLayer, 
+    onReorder, 
+    toggleLayerVisibility, 
+    renameLayer, 
+    deleteLayer, 
+    onDuplicateLayer, 
+    onMergeLayerDown, 
+    onRasterizeLayer, 
+    onCreateSmartObject, 
+    onOpenSmartObject, 
+    onLayerPropertyCommit, 
+    onLayerOpacityChange, 
+    onLayerOpacityCommit, 
+    addTextLayer, 
+    addDrawingLayer, 
+    onAddLayerFromBackground, 
+    onLayerFromSelection, 
+    addShapeLayer, 
+    addGradientLayer, 
+    onAddAdjustmentLayer, 
+    selectedShapeType, 
+    groupLayers, 
+    toggleGroupExpanded, 
+    hasActiveSelection, 
+    onApplySelectionAsMask, 
+    onToggleClippingMask, 
+    onToggleLayerLock, 
+    onDeleteHiddenLayers, 
+    onRasterizeSmartObject, 
+    onConvertSmartObjectToLayers, 
+    onExportSmartObjectContents, 
+    onArrangeLayer, 
+    handleDestructiveOperation, 
+    hasImage, 
+    adjustments, 
+    onAdjustmentChange, 
+    onAdjustmentCommit, 
+    effects, 
+    onEffectChange, 
+    onEffectCommit, 
+    grading, 
+    onGradingChange, 
+    onGradingCommit, 
+    hslAdjustments, 
+    onHslAdjustmentChange, 
+    onHslAdjustmentCommit, 
+    curves, 
+    onCurvesChange, 
+    onCurvesCommit, 
+    onFilterChange, 
+    selectedFilter, 
+    onTransformChange, 
+    rotation, 
+    onRotationChange, 
+    onRotationCommit, 
+    onAspectChange, 
+    aspect, 
+    frame, 
+    onFramePresetChange, 
+    onFramePropertyChange, 
+    onFramePropertyCommit, 
+    presets, 
+    onApplyPreset, 
+    onSavePreset, 
+    onDeletePreset, 
+    backgroundColor, 
+    onForegroundColorChange, 
+    onBackgroundColorChange, 
+    onSwapColors,
+  } = props;
 
   const isBrushTool = activeTool === 'brush';
   const isEraserTool = activeTool === 'eraser';
@@ -85,8 +186,8 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       return (
         <BlurBrushOptions
           selectiveBlurStrength={selectiveBlurAmount}
-          onStrengthChange={props.onSelectiveBlurAmountChange}
-          onStrengthCommit={props.onSelectiveBlurAmountCommit}
+          onStrengthChange={onSelectiveBlurAmountChange}
+          onStrengthCommit={onSelectiveBlurAmountCommit}
         />
       );
     }
@@ -94,21 +195,21 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       return (
         <SelectionToolOptions
           activeTool={activeTool}
-          settings={props.selectionSettings}
-          onSettingChange={props.onSelectionSettingChange}
-          onSettingCommit={props.onSelectionSettingCommit}
+          settings={selectionSettings}
+          onSettingChange={onSelectionSettingChange}
+          onSettingCommit={onSelectionSettingCommit}
         />
       );
     }
     if (isGradientTool) {
       return (
         <GradientToolOptions
-          gradientToolState={props.gradientToolState}
-          setGradientToolState={props.setGradientToolState}
-          gradientPresets={props.gradientPresets}
-          onApplyGradientPreset={(preset) => props.setGradientToolState(preset.state)}
-          onSaveGradientPreset={props.onSaveGradientPreset}
-          onDeleteGradientPreset={props.onDeleteGradientPreset}
+          gradientToolState={gradientToolState}
+          setGradientToolState={setGradientToolState}
+          gradientPresets={gradientPresets}
+          onApplyGradientPreset={(preset) => setGradientToolState(preset.state)}
+          onSaveGradientPreset={onSaveGradientPreset}
+          onDeleteGradientPreset={onDeleteGradientPreset}
         />
       );
     }
@@ -129,8 +230,8 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
           setBrushOpacity={(opacity) => setBrushState({ opacity })}
           brushFlow={brushState.flow}
           setBrushFlow={(flow) => setBrushState({ flow })}
-          historyBrushSourceIndex={props.historyBrushSourceIndex}
-          setHistoryBrushSourceIndex={props.setHistoryBrushSourceIndex}
+          historyBrushSourceIndex={historyBrushSourceIndex}
+          setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
         />
       );
     }
@@ -151,25 +252,25 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         }
         // Fallthrough to properties if no specific tool options are needed (e.g., Move, Crop, Text)
       case 'properties':
-        if (props.selectedLayer) {
+        if (selectedLayer) {
           return (
             <LayerPropertiesContent
-              selectedLayer={props.selectedLayer}
-              imgRef={props.imgRef}
-              onLayerUpdate={props.onLayerUpdate}
-              onLayerCommit={props.onLayerCommit}
-              systemFonts={props.systemFonts}
-              customFonts={props.customFonts}
-              onOpenFontManager={props.onOpenFontManager}
-              gradientToolState={props.gradientToolState}
-              setGradientToolState={props.setGradientToolState}
-              gradientPresets={props.gradientPresets}
-              onSaveGradientPreset={props.onSaveGradientPreset}
-              onDeleteGradientPreset={props.onDeleteGradientPreset}
-              customHslColor={props.customHslColor}
-              setCustomHslColor={props.setCustomHslColor}
-              onRemoveLayerMask={props.onRemoveLayerMask}
-              onInvertLayerMask={props.onInvertLayerMask}
+              selectedLayer={selectedLayer}
+              imgRef={imgRef}
+              onLayerUpdate={onLayerUpdate}
+              onLayerCommit={onLayerCommit}
+              systemFonts={systemFonts}
+              customFonts={customFonts}
+              onOpenFontManager={onOpenFontManager}
+              gradientToolState={gradientToolState}
+              setGradientToolState={setGradientToolState}
+              gradientPresets={gradientPresets}
+              onSaveGradientPreset={onSaveGradientPreset}
+              onDeleteGradientPreset={onDeleteGradientPreset}
+              customHslColor={customHslColor}
+              setCustomHslColor={setCustomHslColor}
+              onRemoveLayerMask={onRemoveLayerMask}
+              onInvertLayerMask={onInvertLayerMask}
             />
           );
         }
@@ -179,44 +280,44 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
               <CardTitle className="text-base">Layers</CardTitle>
             </CardHeader>
             <CardContent>
-              <props.LayersPanel
-                layers={props.layers}
-                selectedLayerId={props.selectedLayerId}
-                onSelectLayer={props.onSelectLayer}
-                onReorder={props.onReorder}
-                toggleLayerVisibility={props.toggleLayerVisibility}
-                renameLayer={props.renameLayer}
-                deleteLayer={props.deleteLayer}
-                onDuplicateLayer={props.onDuplicateLayer}
-                onMergeLayerDown={props.onMergeLayerDown}
-                onRasterizeLayer={props.onRasterizeLayer}
-                onCreateSmartObject={props.onCreateSmartObject}
-                onOpenSmartObject={props.onOpenSmartObject}
-                onLayerPropertyCommit={props.onLayerPropertyCommit}
-                onLayerOpacityChange={props.onLayerOpacityChange}
-                onLayerOpacityCommit={props.onLayerOpacityCommit}
-                onAddTextLayer={(coords) => props.addTextLayer(coords, props.foregroundColor)}
-                onAddDrawingLayer={props.addDrawingLayer}
-                onAddLayerFromBackground={props.onAddLayerFromBackground}
-                onLayerFromSelection={props.onLayerFromSelection}
-                onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => props.addShapeLayer(coords, shapeType, initialWidth, initialHeight, props.foregroundColor, props.backgroundColor)}
-                onAddGradientLayer={props.addGradientLayer}
-                onAddAdjustmentLayer={props.onAddAdjustmentLayer}
-                selectedShapeType={props.selectedShapeType}
-                groupLayers={props.groupLayers}
-                toggleGroupExpanded={props.toggleGroupExpanded}
-                hasActiveSelection={props.hasActiveSelection}
-                onApplySelectionAsMask={props.onApplySelectionAsMask}
-                onRemoveLayerMask={props.onRemoveLayerMask}
-                onInvertLayerMask={props.onInvertLayerMask}
-                onToggleClippingMask={props.onToggleClippingMask}
-                onToggleLayerLock={props.onToggleLayerLock}
-                onDeleteHiddenLayers={props.onDeleteHiddenLayers}
-                onRasterizeSmartObject={props.onRasterizeSmartObject}
-                onConvertSmartObjectToLayers={props.onConvertSmartObjectToLayers}
-                onExportSmartObjectContents={props.onExportSmartObjectContents}
-                onArrangeLayer={props.onArrangeLayer}
-                handleDestructiveOperation={props.handleDestructiveOperation}
+              <LayersPanel
+                layers={layers}
+                selectedLayerId={selectedLayerId}
+                onSelectLayer={onSelectLayer}
+                onReorder={onReorder}
+                toggleLayerVisibility={toggleLayerVisibility}
+                renameLayer={renameLayer}
+                deleteLayer={deleteLayer}
+                onDuplicateLayer={onDuplicateLayer}
+                onMergeLayerDown={onMergeLayerDown}
+                onRasterizeLayer={onRasterizeLayer}
+                onCreateSmartObject={onCreateSmartObject}
+                onOpenSmartObject={onOpenSmartObject}
+                onLayerPropertyCommit={onLayerPropertyCommit}
+                onLayerOpacityChange={onLayerOpacityChange}
+                onLayerOpacityCommit={onLayerOpacityCommit}
+                onAddTextLayer={(coords) => addTextLayer(coords, foregroundColor)}
+                onAddDrawingLayer={addDrawingLayer}
+                onAddLayerFromBackground={onAddLayerFromBackground}
+                onLayerFromSelection={onLayerFromSelection}
+                onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor)}
+                onAddGradientLayer={addGradientLayer}
+                onAddAdjustmentLayer={onAddAdjustmentLayer}
+                selectedShapeType={selectedShapeType}
+                groupLayers={groupLayers}
+                toggleGroupExpanded={toggleGroupExpanded}
+                hasActiveSelection={hasActiveSelection}
+                onApplySelectionAsMask={onApplySelectionAsMask}
+                onRemoveLayerMask={onRemoveLayerMask}
+                onInvertLayerMask={onInvertLayerMask}
+                onToggleClippingMask={onToggleClippingMask}
+                onToggleLayerLock={onToggleLayerLock}
+                onDeleteHiddenLayers={onDeleteHiddenLayers}
+                onRasterizeSmartObject={onRasterizeSmartObject}
+                onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
+                onExportSmartObjectContents={onExportSmartObjectContents}
+                onArrangeLayer={onArrangeLayer}
+                handleDestructiveOperation={handleDestructiveOperation}
               />
             </CardContent>
           </Card>
@@ -224,51 +325,51 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       case 'adjustments':
         return (
           <GlobalAdjustmentsPanel
-            hasImage={props.hasImage}
-            adjustments={props.adjustments}
-            onAdjustmentChange={props.onAdjustmentChange}
-            onAdjustmentCommit={props.onAdjustmentCommit}
-            effects={props.effects}
-            onEffectChange={props.onEffectChange}
-            onEffectCommit={props.onEffectCommit}
-            grading={props.grading}
-            onGradingChange={props.onGradingChange}
-            onGradingCommit={props.onGradingCommit}
-            hslAdjustments={props.hslAdjustments}
-            onHslAdjustmentChange={props.onHslAdjustmentChange}
-            onHslAdjustmentCommit={props.onHslAdjustmentCommit}
-            curves={props.curves}
-            onCurvesChange={props.onCurvesChange}
-            onCurvesCommit={props.onCurvesCommit}
-            onFilterChange={props.onFilterChange}
-            selectedFilter={props.selectedFilter}
-            onTransformChange={props.onTransformChange}
-            rotation={props.rotation}
-            onRotationChange={props.onRotationChange}
-            onRotationCommit={props.onRotationCommit}
-            onAspectChange={props.onAspectChange}
-            aspect={props.aspect}
-            frame={props.frame}
-            onFramePresetChange={props.onFramePresetChange}
-            onFramePropertyChange={props.onFramePropertyChange}
-            onFramePropertyCommit={props.onFramePropertyCommit}
-            imgRef={props.imgRef}
-            customHslColor={props.customHslColor}
-            setCustomHslColor={props.setCustomHslColor}
-            presets={props.presets}
-            onApplyPreset={props.onApplyPreset}
-            onSavePreset={props.onSavePreset}
-            onDeletePreset={props.onDeletePreset}
+            hasImage={hasImage}
+            adjustments={adjustments}
+            onAdjustmentChange={onAdjustmentChange}
+            onAdjustmentCommit={onAdjustmentCommit}
+            effects={effects}
+            onEffectChange={onEffectChange}
+            onEffectCommit={onEffectCommit}
+            grading={grading}
+            onGradingChange={onGradingChange}
+            onGradingCommit={onGradingCommit}
+            hslAdjustments={hslAdjustments}
+            onHslAdjustmentChange={onHslAdjustmentChange}
+            onHslAdjustmentCommit={onHslAdjustmentCommit}
+            curves={curves}
+            onCurvesChange={onCurvesChange}
+            onCurvesCommit={onCurvesCommit}
+            onFilterChange={onFilterChange}
+            selectedFilter={selectedFilter}
+            onTransformChange={onTransformChange}
+            rotation={rotation}
+            onRotationChange={onRotationChange}
+            onRotationCommit={onRotationCommit}
+            onAspectChange={onAspectChange}
+            aspect={aspect}
+            frame={frame}
+            onFramePresetChange={onFramePresetChange}
+            onFramePropertyChange={onFramePropertyChange}
+            onFramePropertyCommit={onFramePropertyCommit}
+            imgRef={imgRef}
+            customHslColor={customHslColor}
+            setCustomHslColor={setCustomHslColor}
+            presets={presets}
+            onApplyPreset={onApplyPreset}
+            onSavePreset={onSavePreset}
+            onDeletePreset={onDeletePreset}
           />
         );
       case 'color':
         return (
           <ColorPanel
-            foregroundColor={props.foregroundColor}
-            onForegroundColorChange={props.onForegroundColorChange}
-            backgroundColor={props.backgroundColor}
-            onBackgroundColorChange={props.onBackgroundColorChange}
-            onSwapColors={props.onSwapColors}
+            foregroundColor={foregroundColor}
+            onForegroundColorChange={onForegroundColorChange}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={onBackgroundColorChange}
+            onSwapColors={onSwapColors}
           />
         );
       case 'ai':
@@ -280,7 +381,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
             <Button onClick={onOpenGenerate} className="w-full">
               Generate New Image
             </Button>
-            <Button onClick={onOpenGenerativeFill} className="w-full" disabled={!props.hasActiveSelection}>
+            <Button onClick={onOpenGenerativeFill} className="w-full" disabled={!hasActiveSelection}>
               Generative Fill (Requires Selection)
             </Button>
             <Button onClick={onOpenSettings} variant="outline" className="w-full">
