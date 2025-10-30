@@ -12,7 +12,7 @@ interface LiveBrushCanvasProps {
   foregroundColor: string;
   backgroundColor: string;
   cloneSourcePoint?: Point | null;
-  targetLayerId: string;
+  selectedLayerId: string | null; // RENAMED PROP
   zoom: number;
 }
 
@@ -24,7 +24,7 @@ export const LiveBrushCanvas = ({
   foregroundColor,
   backgroundColor,
   cloneSourcePoint,
-  targetLayerId,
+  selectedLayerId, // RENAMED PROP
   zoom,
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -205,6 +205,7 @@ export const LiveBrushCanvas = ({
     if (operation === 'history') {
       onStrokeEnd(strokeDataUrl, operation, getHistoryStateName());
     } else {
+      // For drawing/erasing/selection brush, we pass the selectedLayerId (which might be null)
       onStrokeEnd(strokeDataUrl, operation);
     }
   }, [onStrokeEnd, getOperation]);

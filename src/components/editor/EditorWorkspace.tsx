@@ -140,12 +140,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush'; // NEW
   const isGradientToolActive = activeTool === 'gradient' && gradientStart && gradientCurrent;
 
-  // Determine the target layer ID for drawing/erasing/stamping/history brush
-  const targetLayer = layers.find(l => l.id === selectedLayerId);
-  const targetLayerId = targetLayer?.type === 'drawing' || targetLayer?.type === 'image' ? targetLayer.id : handleAddDrawingLayer(); // Auto-create if needed
-
   // --- Filter String Generation ---
-  const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && selectiveBlurMask ? `url(#selective-blur-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
+  const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && currentEditState.selectiveBlurMask ? `url(#selective-blur-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
 
   // --- Layer Rendering ---
   const renderLayer = (layer: Layer): JSX.Element | null => {
@@ -210,8 +206,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
         <ChannelFilter channels={channels} />
         <CurvesFilter curves={curves} />
         <EffectsFilters effects={effects} />
-        {selectiveBlurMask && dimensions && (
-          <SelectiveBlurFilter maskDataUrl={selectiveBlurMask} blurAmount={selectiveBlurAmount} imageNaturalDimensions={dimensions} />
+        {currentEditState.selectiveBlurMask && dimensions && (
+          <SelectiveBlurFilter maskDataUrl={currentEditState.selectiveBlurMask} blurAmount={selectiveBlurAmount} imageNaturalDimensions={dimensions} />
         )}
         {/* HslFilter and other filters are applied via CSS filter property */}
 
@@ -264,9 +260,9 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               imageNaturalDimensions={dimensions}
               onStrokeEnd={(strokeDataUrl, operation, historyStateName) => {
                 if (isHistoryBrushActive) {
-                  handleHistoryBrushStrokeEnd(strokeDataUrl, targetLayerId, historyStateName || 'Current State');
+                  handleHistoryBrushStrokeEnd(strokeDataUrl, selectedLayerId || '', historyStateName || 'Current State');
                 } else {
-                  handleDrawingStrokeEnd(strokeDataUrl, targetLayerId);
+                  handleDrawingStrokeEnd(strokeDataUrl, selectedLayerId || '');
                 }
               }}
               activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush'}
@@ -274,7 +270,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               foregroundColor={foregroundColor}
               backgroundColor={backgroundColor}
               cloneSourcePoint={cloneSourcePoint} // PASSED
-              targetLayerId={targetLayerId}
+              selectedLayerId={selectedLayerId} // PASSED SELECTED ID
               zoom={workspaceZoom}
             />
           )}
@@ -289,7 +285,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               foregroundColor={foregroundColor}
               backgroundColor={backgroundColor}
               cloneSourcePoint={null}
-              targetLayerId={targetLayerId} // Not strictly used for mask, but required by interface
+              selectedLayerId={selectedLayerId} // PASSED SELECTED ID
               zoom={workspaceZoom}
             />
           )}

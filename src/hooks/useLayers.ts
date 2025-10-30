@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
-import type { Layer, EditState, ActiveTool, Point, BrushState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, GroupLayerData, SmartObjectLayerData, ShapeType } from "@/types/editor";
+import type { Layer, EditState, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData, ImageLayerData, Point, AdjustmentLayerData, SmartObjectLayerData } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
 import { rasterizeEditedImageWithMask, downloadImage, applyMaskDestructively } from "@/utils/imageUtils";
@@ -296,8 +296,8 @@ export const useLayers = ({
       name: `Text ${layers.filter((l) => l.type === "text").length + 1}`,
       visible: true,
       content: "New Text",
-      x: coords.x,
-      y: coords.y,
+      x: (coords.x / (dimensions?.width || 1)) * 100, // Convert pixel X to percentage
+      y: (coords.y / (dimensions?.height || 1)) * 100, // Convert pixel Y to percentage
       width: 50,
       height: 10,
       fontSize: 48,
@@ -318,7 +318,7 @@ export const useLayers = ({
     setLayers(updated);
     recordHistory("Add Text Layer", currentEditState, updated);
     setSelectedLayerId(newLayer.id);
-  }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerId]);
+  }, [layers, recordHistory, currentEditState, dimensions, setLayers, setSelectedLayerId]);
 
   const handleAddDrawingLayer = useCallback(() => {
     if (!dimensions) {
@@ -603,27 +603,37 @@ export const useLayers = ({
   // --- Drawing/Brush Handlers ---
 
   const handleDrawingStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
-    // This handler is called by LiveBrushCanvas when a stroke is finished.
-    // It merges the new stroke onto the existing layer's dataUrl.
-    
+    // 1. Determine the target layer ID, creating a new one if the selected layer is unsuitable.
+    let targetId = layerId;
     const targetLayer = findLayerLocation(layerId, layers)?.layer;
-    if (!targetLayer || (targetLayer.type !== 'drawing' && targetLayer.type !== 'image') || !dimensions) return;
+    
+    const isDrawable = targetLayer && (targetLayer.type === 'drawing' || targetLayer.id === 'background');
 
+    if (!isDrawable) {
+      // If no suitable layer is selected, create a new drawing layer.
+      targetId = handleAddDrawingLayer();
+      // Note: handleAddDrawingLayer already records history and sets selection.
+    }
+
+    // 2. Perform the merge operation on the determined layer.
     const mergeStroke = async () => {
+      const finalTargetLayer = findLayerLocation(targetId, layers)?.layer as DrawingLayerData | ImageLayerData | undefined;
+      if (!finalTargetLayer || !dimensions) return;
+
       const canvas = document.createElement('canvas');
       canvas.width = dimensions.width;
       canvas.height = dimensions.height;
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // 1. Draw existing content
-      if (targetLayer.dataUrl) {
+      // Draw existing content
+      if (finalTargetLayer.dataUrl) {
         const existingImg = new Image();
-        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl; });
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = finalTargetLayer.dataUrl; });
         ctx.drawImage(existingImg, 0, 0);
       }
 
-      // 2. Draw new stroke
+      // Draw new stroke
       const strokeImg = new Image();
       await new Promise(resolve => { strokeImg.onload = resolve; strokeImg.src = strokeDataUrl; });
       
@@ -641,12 +651,12 @@ export const useLayers = ({
 
       const newLayerDataUrl = canvas.toDataURL();
       
-      updateLayer(layerId, { dataUrl: newLayerDataUrl });
-      commitLayerChange(layerId);
+      updateLayer(targetId, { dataUrl: newLayerDataUrl, type: 'drawing' }); // Ensure background becomes 'drawing' if modified
+      commitLayerChange(targetId);
     };
 
     mergeStroke();
-  }, [layers, dimensions, activeTool, updateLayer, commitLayerChange]);
+  }, [layers, dimensions, activeTool, updateLayer, commitLayerChange, handleAddDrawingLayer]);
 
   const handleSelectionBrushStrokeEnd = useCallback((strokeDataUrl: string, operation: 'add' | 'subtract') => {
     // This handler is called by LiveBrushCanvas when a selection brush stroke is finished.
@@ -694,15 +704,22 @@ export const useLayers = ({
   }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
 
   const handleHistoryBrushStrokeEnd = useCallback((strokeDataUrl: string, layerId: string, historyStateName: string) => {
-    // This handler is called by LiveBrushCanvas when a history brush stroke is finished.
-    
+    // 1. Determine the target layer ID, creating a new one if the selected layer is unsuitable.
+    let targetId = layerId;
     const targetLayer = findLayerLocation(layerId, layers)?.layer;
-    if (!targetLayer || (targetLayer.type !== 'drawing' && targetLayer.type !== 'image') || !dimensions) {
-      showError("History brush can only be applied to drawing or image layers.");
-      return;
-    }
+    
+    const isDrawable = targetLayer && (targetLayer.type === 'drawing' || targetLayer.id === 'background');
 
+    if (!isDrawable) {
+      // If no suitable layer is selected, create a new drawing layer.
+      targetId = handleAddDrawingLayer();
+    }
+    
+    // 2. Perform the merge operation on the determined layer.
     const mergeStroke = async () => {
+      const finalTargetLayer = findLayerLocation(targetId, layers)?.layer as DrawingLayerData | ImageLayerData | undefined;
+      if (!finalTargetLayer || !dimensions) return;
+
       const canvas = document.createElement('canvas');
       canvas.width = dimensions.width;
       canvas.height = dimensions.height;
@@ -710,9 +727,9 @@ export const useLayers = ({
       if (!ctx) return;
 
       // 1. Draw existing content (the current state of the layer)
-      if (targetLayer.dataUrl) {
+      if (finalTargetLayer.dataUrl) {
         const existingImg = new Image();
-        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl; });
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = finalTargetLayer.dataUrl; });
         ctx.drawImage(existingImg, 0, 0);
       }
 
@@ -725,19 +742,18 @@ export const useLayers = ({
       
       // STUB: In a real app, the strokeDataUrl would contain the pixels from the history state,
       // blended with the current brush settings (opacity, flow, blend mode).
-      // For now, we just draw the stroke image (which is a placeholder circle in LiveBrushCanvas).
       
       ctx.drawImage(strokeImg, 0, 0);
       
       const newLayerDataUrl = canvas.toDataURL();
       
-      updateLayer(layerId, { dataUrl: newLayerDataUrl });
-      commitLayerChange(layerId);
+      updateLayer(targetId, { dataUrl: newLayerDataUrl, type: 'drawing' });
+      commitLayerChange(targetId);
       showSuccess(`History brush applied (Stub: Restored pixels from ${historyStateName}).`);
     };
 
     mergeStroke();
-  }, [layers, dimensions, updateLayer, commitLayerChange]);
+  }, [layers, dimensions, updateLayer, commitLayerChange, handleAddDrawingLayer]);
 
 
   // --- Paint Bucket Logic ---
