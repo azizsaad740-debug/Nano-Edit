@@ -18,6 +18,8 @@ import { Sparkles, Settings, Zap } from "lucide-react";
 import type { RightSidebarTabsProps } from "@/components/layout/Sidebar";
 import { LayerPropertiesContent } from "../editor/LayerPropertiesContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Crop from "@/components/editor/Crop"; // Import Crop
+import Transform from "@/components/editor/Transform"; // Import Transform
 
 // We reuse the props interface from RightSidebarTabsProps for convenience
 interface MobileToolOptionsProps extends RightSidebarTabsProps {
@@ -140,9 +142,10 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
   const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
   const isGradientTool = activeTool === 'gradient';
   const isPaintBucketTool = activeTool === 'paintBucket';
-  const isSelectionTool = activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select');
-
-  const renderToolOptions = () => {
+  const isSelectionTool = activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect';
+  
+  // Renamed to renderBrushAndFillOptions to avoid collision with renderToolOptionsContent
+  const renderBrushAndFillOptions = () => {
     if (isBrushTool || isEraserTool) {
       return (
         <BrushOptions
@@ -191,16 +194,6 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         />
       );
     }
-    if (isSelectionTool) {
-      return (
-        <SelectionToolOptions
-          activeTool={activeTool}
-          settings={selectionSettings}
-          onSettingChange={onSelectionSettingChange}
-          onSettingCommit={onSelectionSettingCommit}
-        />
-      );
-    }
     if (isGradientTool) {
       return (
         <GradientToolOptions
@@ -236,9 +229,81 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       );
     }
     
+    return null;
+  };
+
+  const renderToolOptionsContent = () => {
+    // 1. Tools with dedicated option components (Brushes, Selection, Fill, Stamp, History)
+    const brushAndFillOptions = renderBrushAndFillOptions();
+    if (brushAndFillOptions) {
+      return <div className="p-4 space-y-4">{brushAndFillOptions}</div>;
+    }
+
+    // 2. Tools that use Global Adjustment components (Crop, Transform)
+    if (activeTool === 'crop') {
+      return (
+        <div className="p-4 space-y-4">
+          <h3 className="text-lg font-semibold">Crop Tool Options</h3>
+          <Crop onAspectChange={props.onAspectChange} currentAspect={props.aspect} />
+        </div>
+      );
+    }
+    
+    // 3. Tools that rely on Layer Properties (Text, Shape, Gradient)
+    if (activeTool === 'text' || activeTool === 'shape' || activeTool === 'gradient') {
+        // If the tool is active, we show the layer properties content, 
+        // which handles the specific options for creating/editing that layer type.
+        return (
+            <div className="p-4 space-y-4">
+                <h3 className="text-lg font-semibold capitalize">{activeTool} Tool Properties</h3>
+                <LayerPropertiesContent
+                    // Pass all necessary props for LayerPropertiesContent
+                    {...props}
+                />
+            </div>
+        );
+    }
+    
+    // 4. Selection Tools (Marquee, Lasso, QuickSelect, MagicWand, ObjectSelect)
+    if (isSelectionTool) {
+        return (
+            <div className="p-4 space-y-4">
+                <SelectionToolOptions
+                    activeTool={activeTool}
+                    settings={selectionSettings}
+                    onSettingChange={onSelectionSettingChange}
+                    onSettingCommit={onSelectionSettingCommit}
+                />
+            </div>
+        );
+    }
+    
+    // 5. Move Tool
+    if (activeTool === 'move') {
+        return (
+            <div className="p-4 space-y-4">
+                <SelectionToolOptions
+                    activeTool={activeTool}
+                    settings={selectionSettings}
+                    onSettingChange={onSelectionSettingChange}
+                    onSettingCommit={onSelectionSettingCommit}
+                />
+            </div>
+        );
+    }
+    
+    // 6. Other tools (Eyedropper)
+    if (activeTool === 'eyedropper') {
+        return (
+            <p className="text-sm text-muted-foreground p-4">
+                Eyedropper Tool is active. Click on the image to sample a color.
+            </p>
+        );
+    }
+
     return (
       <p className="text-sm text-muted-foreground p-4">
-        Select a tool to view its options.
+        Select a tool from the bottom bar.
       </p>
     );
   };
@@ -246,12 +311,10 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
   const renderTabContent = () => {
     switch (activeMobileTab) {
       case 'tools':
-        // Render tool-specific options if a tool is active
-        if (activeTool && activeTool !== 'move' && activeTool !== 'crop' && activeTool !== 'text' && activeTool !== 'eyedropper') {
-          return renderToolOptions();
-        }
-        // Fallthrough to properties if no specific tool options are needed (e.g., Move, Crop, Text)
+        return renderToolOptionsContent();
+        
       case 'properties':
+        // If a layer is selected, show its properties. Otherwise, show the Layers Panel.
         if (selectedLayer) {
           return (
             <LayerPropertiesContent
