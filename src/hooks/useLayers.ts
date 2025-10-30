@@ -26,6 +26,7 @@ interface UseLayersProps {
   clearSelectionState: () => void;
   brushState: BrushState;
   activeTool: ActiveTool | null;
+  onBrushCommit: () => void; // ADDED PROP
 }
 
 // Helper function to recursively find a layer and its container/path
@@ -105,7 +106,7 @@ export const useLayers = ({
   layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
   recordHistory, currentEditState, foregroundColor, backgroundColor,
   selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
-  brushState, activeTool,
+  brushState, activeTool, onBrushCommit, // DESTRUCTURED NEW PROP
 }: UseLayersProps) => {
   
   const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]);
@@ -904,7 +905,7 @@ export const useLayers = ({
     toggleGroupExpanded,
     handleDrawingStrokeEnd,
     handleSelectionBrushStrokeEnd,
-    handleHistoryBrushStrokeEnd, // EXPOSED
+    handleHistoryBrushStrokeEnd,
     handleLayerDelete,
     reorderLayers,
     onSelectLayer,
@@ -927,6 +928,7 @@ export const useLayers = ({
       clearSelectionState();
       showSuccess("Selection applied as layer mask.");
     }, [selectedLayerId, selectionMaskDataUrl, updateLayer, commitLayerChange, clearSelectionState]),
-    handleDestructiveOperation, // EXPOSED
+    handleDestructiveOperation,
+    onBrushCommit, // EXPOSED NEW PROP
   };
 };

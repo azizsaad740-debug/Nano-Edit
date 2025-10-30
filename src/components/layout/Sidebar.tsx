@@ -10,7 +10,6 @@ interface SidebarProps {
   selectedLayerId: string | null;
   selectedLayer: Layer | undefined;
   layers: Layer[];
-  imgRef: React.RefObject<HTMLImageElement>;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
   toggleLayerVisibility: (id: string) => void;
@@ -110,6 +109,10 @@ interface SidebarProps {
   // Channels Props
   channels: EditState['channels'];
   onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
+  // History for History Brush
+  history: { name: string }[];
+  historyBrushSourceIndex: number;
+  setHistoryBrushSourceIndex: (index: number) => void;
   // Layers Panel Component
   LayersPanel: React.ComponentType<any>;
   // Image Ref

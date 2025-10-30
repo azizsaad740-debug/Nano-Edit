@@ -118,6 +118,9 @@ interface RightSidebarTabsProps {
   selectionSettings: SelectionSettings;
   onSelectionSettingChange: (key: keyof SelectionSettings, value: any) => void;
   onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
+  // Channels Props
+  channels: EditState['channels'];
+  onChannelChange: (channel: 'r' | 'g' | 'b', value: boolean) => void;
   // History for History Brush
   history: { name: string }[];
   historyBrushSourceIndex: number;

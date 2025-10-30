@@ -79,6 +79,7 @@ export const useEditorLogic = () => {
     recordHistory, currentEditState, foregroundColor, backgroundColor,
     selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl: state.setSelectionMaskDataUrl, clearSelectionState: state.clearSelectionState,
     brushState, activeTool,
+    onBrushCommit: () => recordHistory("Update Brush Settings", currentEditState, layers), // Pass commit function
   });
 
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
