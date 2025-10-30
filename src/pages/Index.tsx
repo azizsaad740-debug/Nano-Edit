@@ -248,8 +248,15 @@ export const Index = () => {
         
         {/* 1. Mobile Header */}
         <MobileHeader 
+          hasImage={hasImage}
+          onNewProjectClick={() => setIsNewProjectOpen(true)}
+          onOpenProject={() => document.getElementById('file-upload-input')?.click()}
+          onSaveProject={() => showError("Project saving is a stub.")}
           onExportClick={() => setIsExportOpen(true)} 
+          onReset={logic.resetAllEdits}
           onSettingsClick={() => setIsSettingsOpen(true)}
+          onImportClick={() => setIsImportOpen(true)}
+          onNewFromClipboard={() => showError("New from clipboard is a stub.")}
         />
 
         {/* 2. Main Workspace Area */}
