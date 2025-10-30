@@ -33,6 +33,8 @@ import {
   Palette,
   SlidersHorizontal,
   Sun,
+  Trash2,
+  PaintBucket,
 } from "lucide-react";
 import type { Layer, Point, ShapeType } from "@/types/editor";
 import LayerItem from "./LayerItem";
@@ -77,6 +79,7 @@ interface LayersPanelProps {
   onConvertSmartObjectToLayers: () => void;
   onExportSmartObjectContents: () => void;
   onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
+  handleDestructiveOperation: (operation: 'delete' | 'fill') => void; // NEW PROP
 }
 
 const LayersPanel = (props: LayersPanelProps) => {
@@ -117,6 +120,7 @@ const LayersPanel = (props: LayersPanelProps) => {
     onArrangeLayer,
     hasActiveSelection,
     onApplySelectionAsMask,
+    handleDestructiveOperation, // DESTRUCTURED
   } = props;
 
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -176,6 +180,8 @@ const LayersPanel = (props: LayersPanelProps) => {
       onLayerFromSelection();
     }
   };
+
+  const isBackgroundSelected = selectedLayerId === 'background';
 
   return (
     <Card className="flex flex-col h-full border-none shadow-none">
@@ -292,6 +298,38 @@ const LayersPanel = (props: LayersPanelProps) => {
             </TooltipContent>
           </Tooltip>
         </div>
+
+        {/* Destructive Selection Actions */}
+        {isBackgroundSelected && hasActiveSelection && (
+          <div className="flex flex-wrap gap-1 justify-start pt-2 border-t">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="destructive" 
+                  className="flex-1"
+                  onClick={() => handleDestructiveOperation('delete')}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete Selection
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Destructively delete selected area from Background.</p></TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  size="sm" 
+                  variant="secondary" 
+                  className="flex-1"
+                  onClick={() => handleDestructiveOperation('fill')}
+                >
+                  <PaintBucket className="h-4 w-4 mr-2" /> Fill Selection
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent><p>Destructively fill selected area with Foreground Color.</p></TooltipContent>
+            </Tooltip>
+          </div>
+        )}
 
         <LayerActions
           layers={layers}

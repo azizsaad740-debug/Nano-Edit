@@ -5,7 +5,7 @@ import { showSuccess, showError } from "@/utils/toast";
 import type { Layer, EditState, ActiveTool, Point, BrushState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, GroupLayerData, SmartObjectLayerData, ShapeType } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
-import { rasterizeEditedImageWithMask, downloadImage } from "@/utils/imageUtils";
+import { rasterizeEditedImageWithMask, downloadImage, applyMaskDestructively } from "@/utils/imageUtils";
 import { invertMaskDataUrl, polygonToMaskDataUrl } from "@/utils/maskUtils";
 import { maskToPolygon } from "@/utils/maskToPolygon";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
@@ -235,7 +235,7 @@ export const useLayers = ({
       setSelectedLayerId(newLayer.id);
       return updatedLayers;
     });
-  }, [recordHistory, currentEditState, setSelectedLayerId]);
+  }, [layers, selectedLayerId, recordHistory, currentEditState, setSelectedLayerId]);
 
   const mergeLayerDown = useCallback((id: string) => {
     // Stub: Merging layers is complex as it requires rasterization of the layer above onto the layer below.
@@ -318,7 +318,7 @@ export const useLayers = ({
     setLayers(updated);
     recordHistory("Add Text Layer", currentEditState, updated);
     setSelectedLayerId(newLayer.id);
-  }, [layers, recordHistory, currentEditState, foregroundColor, setLayers, setSelectedLayerId]);
+  }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerId]);
 
   const handleAddDrawingLayer = useCallback(() => {
     if (!dimensions) {
@@ -730,10 +730,7 @@ export const useLayers = ({
       const newLayerDataUrl = canvas.toDataURL();
       
       // Update the layer. If it's a drawing layer, update dataUrl. 
-      // If it's a vector/text layer, this operation is complex and usually modifies fill properties, 
-      // but since we are rasterizing the fill, we must convert it to a drawing layer or update its dataUrl.
-      
-      // For simplicity, if it's not a drawing layer, we create a new drawing layer above it.
+      // If it's not a drawing layer, we create a new drawing layer above it.
       if (targetLayer.type !== 'drawing') {
         const newDrawingLayerId = handleAddDrawingLayer();
         updateLayer(newDrawingLayerId, {
@@ -764,6 +761,46 @@ export const useLayers = ({
     }
   }, [activeTool, selectionMaskDataUrl, handlePaintBucketFill]);
 
+  // --- Destructive Selection Operations (Delete/Fill on Background) ---
+  const handleDestructiveOperation = useCallback(async (operation: 'delete' | 'fill') => {
+    if (!selectionMaskDataUrl || !dimensions) {
+      showError(`A selection must be active to perform ${operation} operation.`);
+      return;
+    }
+
+    const backgroundLayer = layers.find(l => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
+    if (!backgroundLayer || !backgroundLayer.dataUrl) {
+      showError("No background image found.");
+      return;
+    }
+
+    try {
+      const newBaseDataUrl = await applyMaskDestructively(
+        backgroundLayer.dataUrl,
+        selectionMaskDataUrl,
+        dimensions,
+        operation,
+        foregroundColor // Use foreground color for fill operation
+      );
+
+      // Update the background layer's data URL
+      updateLayer('background', { dataUrl: newBaseDataUrl, type: 'drawing' }); // Convert to drawing layer if it was an image layer
+      
+      // Update the main image state if it was tied to the background layer
+      if (backgroundLayer.type === 'image') {
+        // Note: This is a simplification. In a real app, we'd need to update the main image state too.
+        // For now, we rely on the background layer dataUrl being the source of truth.
+      }
+
+      commitLayerChange('background');
+      clearSelectionState();
+      showSuccess(`Selection ${operation === 'delete' ? 'deleted' : 'filled'} successfully.`);
+    } catch (error) {
+      console.error(`Destructive ${operation} failed:`, error);
+      showError(`Failed to ${operation} selection.`);
+    }
+  }, [selectionMaskDataUrl, dimensions, layers, updateLayer, commitLayerChange, clearSelectionState, foregroundColor]);
+
 
   return {
     smartObjectEditingId,
@@ -790,9 +827,7 @@ export const useLayers = ({
     handleAddGradientLayer,
     addAdjustmentLayer,
     groupLayers,
-    toggleGroupExpanded: useCallback((id: string) => {
-      updateLayer(id, { expanded: !(findLayerLocation(id, layers)?.layer as GroupLayerData)?.expanded });
-    }, [updateLayer, layers]),
+    toggleGroupExpanded,
     handleDrawingStrokeEnd,
     handleLayerDelete,
     reorderLayers,
@@ -817,5 +852,6 @@ export const useLayers = ({
       showSuccess("Selection applied as layer mask.");
     }, [selectedLayerId, selectionMaskDataUrl, updateLayer, commitLayerChange, clearSelectionState]),
     handleSelectionBrushStrokeEnd,
+    handleDestructiveOperation, // EXPOSED
   };
 };

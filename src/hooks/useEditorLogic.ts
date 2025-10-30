@@ -69,6 +69,7 @@ export const useEditorLogic = () => {
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleSelectionBrushStrokeEnd,
+    handleDestructiveOperation, // EXPOSED
   } = useLayers({
     layers, setLayers: state.setLayers, selectedLayerId: state.selectedLayerId, setSelectedLayerId: state.setSelectedLayerId, dimensions,
     recordHistory, currentEditState, foregroundColor, backgroundColor,
@@ -242,6 +243,7 @@ export const useEditorLogic = () => {
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleSelectionBrushStrokeEnd,
+    handleDestructiveOperation, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,
@@ -251,7 +253,7 @@ export const useEditorLogic = () => {
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,
     // Gradient Presets (from useEditorState)
-    gradientPresets, saveGradientPreset, deleteGradientPreset, // FIXED: Now correctly exported
+    gradientPresets, saveGradientPreset, deleteGradientPreset,
     // Project & IO
     handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleExport, handleCopy, handleProjectSettingsUpdate,
     // AI
