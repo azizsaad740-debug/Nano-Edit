@@ -26,7 +26,7 @@ export const Workspace: React.FC<WorkspaceProps> = ({
     <div
       ref={workspaceRef}
       className={cn(
-        "relative w-full h-full overflow-hidden",
+        "relative w-full h-full overflow-hidden flex items-center justify-center", // Added flex centering
         // ... other classes
       )}
       onMouseDown={handleWorkspaceMouseDown}

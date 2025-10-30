@@ -63,6 +63,7 @@ export const useLayerTransform = ({
     const initialPoints = pointDragStartInfo.current.initialPoints;
     if (!initialPoints) return;
 
+    // Scale down screen movement by zoom factor
     const dx = (e.clientX - pointDragStartInfo.current.x) / zoom;
     const dy = (e.clientY - pointDragStartInfo.current.y) / zoom;
 
@@ -124,8 +125,10 @@ export const useLayerTransform = ({
     if (!isDragging || !containerRef.current) return;
 
     const containerRect = containerRef.current.getBoundingClientRect();
-    const dx = e.clientX - dragStartInfo.current.x;
-    const dy = e.clientY - dragStartInfo.current.y;
+    
+    // Scale down screen movement by zoom factor
+    const dx = (e.clientX - dragStartInfo.current.x) / zoom;
+    const dy = (e.clientY - dragStartInfo.current.y) / zoom;
 
     const dxPercent = (dx / containerRect.width) * 100;
     const dyPercent = (dy / containerRect.height) * 100;
@@ -134,7 +137,7 @@ export const useLayerTransform = ({
     const newY = dragStartInfo.current.initialY + dyPercent;
 
     onUpdate(layer.id, { x: newX, y: newY });
-  }, [isDragging, layer.id, onUpdate, containerRef]);
+  }, [isDragging, layer.id, onUpdate, containerRef, zoom]);
 
   const handleDragMouseUp = useCallback(() => {
     if (isDragging) {
@@ -195,8 +198,9 @@ export const useLayerTransform = ({
     const { x: startX, y: startY, initialWidth, initialHeight, initialX, initialY, position } = resizeStartInfo.current;
     const containerRect = containerRef.current.getBoundingClientRect();
     
-    const dx = e.clientX - startX;
-    const dy = e.clientY - startY;
+    // Scale down screen movement by zoom factor
+    const dx = (e.clientX - startX) / zoom;
+    const dy = (e.clientY - startY) / zoom;
 
     const dxPercent = (dx / containerRect.width) * 100;
     const dyPercent = (dy / containerRect.height) * 100;
@@ -233,7 +237,7 @@ export const useLayerTransform = ({
       x: newX, 
       y: newY 
     });
-  }, [isResizing, layer.id, onUpdate, containerRef]);
+  }, [isResizing, layer.id, onUpdate, containerRef, zoom]);
 
   const handleResizeMouseUp = useCallback(() => {
     if (isResizing) {

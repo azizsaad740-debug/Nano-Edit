@@ -12,13 +12,21 @@ const MarqueeCanvas = ({ start, current, activeTool }: MarqueeCanvasProps) => {
   const animationFrameRef = React.useRef<number>(0);
 
   const drawMarquee = React.useCallback((ctx: CanvasRenderingContext2D, dashOffset: number) => {
-    const { width, height } = ctx.canvas;
-    ctx.clearRect(0, 0, width, height);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    
+    // Convert screen coordinates (start, current) to local coordinates relative to the canvas origin (0,0)
+    // Since the canvas is inside the scaled image container, its bounding box reflects the scaled size.
+    const localStart: Point = { x: start.x - rect.left, y: start.y - rect.top };
+    const localCurrent: Point = { x: current.x - rect.left, y: current.y - rect.top };
 
-    const x = Math.min(start.x, current.x);
-    const y = Math.min(start.y, current.y);
-    const w = Math.abs(start.x - current.x);
-    const h = Math.abs(start.y - current.y);
+    const x = Math.min(localStart.x, localCurrent.x);
+    const y = Math.min(localStart.y, localCurrent.y);
+    const w = Math.abs(localStart.x - localCurrent.x);
+    const h = Math.abs(localStart.y - localCurrent.y);
+
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
     if (w < 5 || h < 5) return; // Don't draw tiny selections
 
@@ -50,17 +58,20 @@ const MarqueeCanvas = ({ start, current, activeTool }: MarqueeCanvasProps) => {
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx) return;
+    if (!canvas) return;
 
-    // Set canvas size to viewport size
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Set canvas size to match the parent container's scaled size
+    // We rely on CSS to stretch it to 100% of the scaled container.
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
 
     let offset = 0;
     const animate = () => {
       offset += 0.5;
-      drawMarquee(ctx, offset);
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        drawMarquee(ctx, offset);
+      }
       animationFrameRef.current = requestAnimationFrame(animate);
     };
     animate();
@@ -73,7 +84,7 @@ const MarqueeCanvas = ({ start, current, activeTool }: MarqueeCanvasProps) => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-20"
+      className="absolute inset-0 pointer-events-none z-20" // Changed from fixed to absolute
     />
   );
 };
