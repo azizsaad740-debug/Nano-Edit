@@ -16,24 +16,32 @@ const tools: { name: string; icon: React.ElementType; tool: ActiveTool | 'select
   { name: "Move", icon: Move, tool: "move" },
   { name: "Brush", icon: Brush, tool: "brush" },
   { name: "Eraser", icon: Eraser, tool: "eraser" },
-  { name: "Select", icon: MousePointer2, tool: "lasso" }, // Grouping selection tools under 'Select'
+  { name: "Select", icon: MousePointer2, tool: "select" }, // Grouping selection tools under 'Select'
   { name: "Crop", icon: Crop, tool: "crop" },
   { name: "Text", icon: Type, tool: "text" },
 ];
 
 export const MobileToolBar: React.FC<MobileToolBarProps> = ({ activeTool, setActiveTool }) => {
   const handleToolClick = (tool: ActiveTool | 'select') => {
+    let targetTool: ActiveTool | null = null;
+    
     if (tool === 'select') {
-      // Default to lasso tool for 'Select' group
-      setActiveTool('lasso');
+      // If 'select' is clicked, default to 'lasso' (or the last active selection tool)
+      targetTool = 'lasso'; 
     } else {
-      setActiveTool(tool);
+      targetTool = tool;
     }
+    
+    // Toggle logic: if the target tool is already active, set it to null (deselect)
+    const toolToSet = (targetTool === activeTool) ? null : targetTool;
+    
+    setActiveTool(toolToSet);
   };
 
   const isActive = (tool: ActiveTool | 'select') => {
     if (tool === 'select') {
-      return activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select');
+      // Check if any selection tool is active
+      return activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect';
     }
     return activeTool === tool;
   };

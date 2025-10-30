@@ -29,7 +29,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import type { Point } from "@/types/editor";
+import type { Point, ActiveTool } from "@/types/editor";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileBottomNav";
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
@@ -118,6 +118,29 @@ export const Index = () => {
   const [activeMobileTab, setActiveMobileTab] = React.useState<MobileTab>('tools');
   const [isMobileOptionsOpen, setIsMobileOptionsOpen] = React.useState(false);
 
+  // Define which tools should automatically open the options panel
+  const toolsThatOpenOptions: ActiveTool[] = [
+    'brush', 'eraser', 'pencil', 'crop', 'text', 
+    'lasso', 'marqueeRect', 'marqueeEllipse', 'lassoPoly', 'quickSelect', 'magicWand', 'objectSelect',
+    'selectionBrush', 'blurBrush', 'cloneStamp', 'patternStamp', 'historyBrush', 'artHistoryBrush',
+    'shape', 'gradient', 'paintBucket'
+  ];
+
+  const handleSetActiveTool = React.useCallback((tool: ActiveTool | null) => {
+      // Note: The MobileToolBar now handles the toggle logic (setting tool to null if clicked again).
+      // We just need to react to the new tool state.
+      
+      setActiveTool(tool);
+      
+      const toolRequiresOptions = tool && toolsThatOpenOptions.includes(tool);
+      
+      if (toolRequiresOptions) {
+          setIsMobileOptionsOpen(true);
+      } else {
+          setIsMobileOptionsOpen(false);
+      }
+  }, [setActiveTool, setIsMobileOptionsOpen]);
+
   // --- Template Loading from Community Page ---
   React.useEffect(() => {
     const templateDataString = sessionStorage.getItem('nanoedit-template-data');
@@ -154,15 +177,6 @@ export const Index = () => {
       // Always open the options panel when switching tabs
       setIsMobileOptionsOpen(true);
   }, []);
-
-  const handleSetActiveTool = React.useCallback((tool: ActiveTool | null) => {
-      setActiveTool(tool);
-      // If a tool is selected, open the options panel
-      if (tool) {
-          setIsMobileOptionsOpen(true);
-      }
-  }, [setActiveTool]);
-
 
   // --- Props for Sidebars and Workspace ---
   // Consolidate all props needed for MobileToolOptions (which reuses RightSidebarTabsProps structure)
