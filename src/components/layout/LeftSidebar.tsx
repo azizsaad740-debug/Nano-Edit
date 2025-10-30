@@ -1,11 +1,6 @@
 "use client";
 
 import * as React from "react";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ToolsPanel } from "./ToolsPanel";
@@ -38,28 +33,26 @@ const LeftSidebar = ({
   if (isMobile) return null;
 
   return (
-    <ResizablePanel defaultSize={15} minSize={10} maxSize={20} className="shrink-0">
-      <ScrollArea className="h-full">
-        <div className="p-2">
-          <ToolsPanel
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            selectedShapeType={selectedShapeType}
-            setSelectedShapeType={setSelectedShapeType}
-            foregroundColor={foregroundColor}
-            onForegroundColorChange={onForegroundColorChange}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={onBackgroundColorChange}
-            onSwapColors={onSwapColors}
-            brushState={brushState}
-            setBrushState={setBrushState}
-            selectiveBlurStrength={selectiveBlurAmount}
-            onSelectiveBlurStrengthChange={onSelectiveBlurStrengthChange}
-            onSelectiveBlurStrengthCommit={onSelectiveBlurStrengthCommit}
-          />
-        </div>
-      </ScrollArea>
-    </ResizablePanel>
+    <ScrollArea className="h-full">
+      <div className="p-2">
+        <ToolsPanel
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          selectedShapeType={selectedShapeType}
+          setSelectedShapeType={setSelectedShapeType}
+          foregroundColor={foregroundColor}
+          onForegroundColorChange={onForegroundColorChange}
+          backgroundColor={backgroundColor}
+          onBackgroundColorChange={onBackgroundColorChange}
+          onSwapColors={onSwapColors}
+          brushState={brushState}
+          setBrushState={setBrushState}
+          selectiveBlurStrength={selectiveBlurAmount}
+          onSelectiveBlurStrengthChange={onSelectiveBlurStrengthChange}
+          onSelectiveBlurStrengthCommit={onSelectiveBlurStrengthCommit}
+        />
+      </div>
+    </ScrollArea>
   );
 };
 

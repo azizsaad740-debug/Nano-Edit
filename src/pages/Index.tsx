@@ -23,6 +23,12 @@ import { fetchCommunityTemplates } from "@/utils/templateApi";
 import { showError } from "@/utils/toast";
 import LayersPanel from "@/components/editor/LayersPanel"; // Import LayersPanel
 import LeftSidebar from "@/components/layout/LeftSidebar"; // Import LeftSidebar
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "@/components/ui/resizable"; // Import Resizable components
+import type { Point } from "@/types/editor"; // Import Point type
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -85,6 +91,7 @@ export const Index = () => {
     workspaceRef, imgRef,
     systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont,
     setZoom,
+    handleSwapColors, // Destructure handleSwapColors
   } = logic;
 
   const isMobile = useIsMobile();
@@ -128,6 +135,22 @@ export const Index = () => {
   const setBrushStatePartial = React.useCallback((updates: Partial<Omit<typeof brushState, 'color'>>) => {
     setBrushState(prev => ({ ...prev, ...updates }));
   }, [setBrushState]);
+
+  // --- Props for Sidebars and Workspace ---
+  const sidebarProps = {
+    // ... (all props passed to Sidebar)
+    hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, onDeleteHiddenLayers: handleDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers), customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
+  };
+
+  const leftSidebarProps = {
+    activeTool, setActiveTool, selectedShapeType, setSelectedShapeType,
+    foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors,
+    brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurStrengthChange: setSelectiveBlurAmount, onSelectiveBlurStrengthCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers),
+  };
+
+  const editorWorkspaceProps = {
+    workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask: currentEditState.selectiveBlurMask, selectiveBlurAmount, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
+  };
 
   // --- Render Logic ---
 
@@ -177,222 +200,34 @@ export const Index = () => {
       />
 
       <main className="flex flex-1 min-h-0">
-        {/* Left Sidebar (Tools Panel) */}
-        <div className="shrink-0">
-          <LeftSidebar
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            selectedShapeType={selectedShapeType}
-            setSelectedShapeType={setSelectedShapeType}
-            foregroundColor={foregroundColor}
-            onForegroundColorChange={setForegroundColor}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={setBackgroundColor}
-            onSwapColors={() => {
-              setForegroundColor(backgroundColor);
-              setBackgroundColor(foregroundColor);
-            }}
-            brushState={brushState}
-            setBrushState={setBrushStatePartial}
-            selectiveBlurAmount={selectiveBlurAmount}
-            onSelectiveBlurStrengthChange={setSelectiveBlurAmount}
-            onSelectiveBlurStrengthCommit={(value) => recordHistory("Change Selective Blur Strength", currentEditState, layers)}
-          />
-        </div>
-
-        {/* Main Workspace Area */}
-        <EditorWorkspace
-          workspaceRef={workspaceRef}
-          imgRef={imgRef}
-          image={image}
-          dimensions={dimensions}
-          currentEditState={currentEditState}
-          layers={layers}
-          selectedLayerId={selectedLayerId}
-          activeTool={activeTool}
-          brushState={brushState}
-          foregroundColor={foregroundColor}
-          backgroundColor={backgroundColor}
-          gradientToolState={gradientToolState}
-          selectionPath={selectionPath}
-          selectionMaskDataUrl={selectionMaskDataUrl}
-          selectiveBlurMask={currentEditState.selectiveBlurMask}
-          selectiveBlurAmount={selectiveBlurAmount}
-          marqueeStart={marqueeStart}
-          marqueeCurrent={marqueeCurrent}
-          gradientStart={gradientStart}
-          gradientCurrent={gradientCurrent}
-          cloneSourcePoint={cloneSourcePoint}
-          onCropChange={onCropChange}
-          onCropComplete={onCropComplete}
-          handleWorkspaceMouseDown={handleWorkspaceMouseDown}
-          handleWorkspaceMouseMove={handleWorkspaceMouseMove}
-          handleWorkspaceMouseUp={handleWorkspaceMouseUp}
-          handleWheel={handleWheel}
-          setIsMouseOverImage={setIsMouseOverImage}
-          handleDrawingStrokeEnd={handleDrawingStrokeEnd}
-          handleSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
-          handleHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd} // PASSED
-          handleAddDrawingLayer={handleAddDrawingLayer}
-          setSelectionPath={setSelectionPath}
-          setSelectionMaskDataUrl={setSelectionMaskDataUrl}
-          clearSelectionState={clearSelectionState}
-          updateCurrentState={updateCurrentState}
-          updateLayer={updateLayer} // PASSED
-          commitLayerChange={commitLayerChange} // PASSED
-          workspaceZoom={workspaceZoom}
-          handleFitScreen={handleFitScreen}
-          handleZoomIn={handleZoomIn}
-          handleZoomOut={handleZoomOut}
-          isPreviewingOriginal={isPreviewingOriginal}
-        />
-
-        {/* Right Sidebar (Adjustments, Layers, Info) */}
-        <aside className="w-80 shrink-0 border-l bg-sidebar">
-          <Sidebar
-            // RightSidebarTabs Props
-            hasImage={hasImage}
-            activeTool={activeTool}
-            selectedLayerId={selectedLayerId}
-            selectedLayer={selectedLayer}
-            layers={layers}
-            imgRef={imgRef}
-            onSelectLayer={onSelectLayerFromLogic}
-            onReorder={reorderLayers}
-            toggleLayerVisibility={handleToggleVisibility}
-            renameLayer={renameLayer}
-            deleteLayer={deleteLayer}
-            onDuplicateLayer={duplicateLayer}
-            onMergeLayerDown={mergeLayerDown}
-            onRasterizeLayer={rasterizeLayer}
-            onCreateSmartObject={createSmartObject}
-            onOpenSmartObject={openSmartObjectEditor}
-            onLayerUpdate={updateLayer}
-            onLayerCommit={commitLayerChange}
-            onLayerPropertyCommit={handleLayerPropertyCommit}
-            onLayerOpacityChange={handleLayerOpacityChange}
-            onLayerOpacityCommit={handleLayerOpacityCommit}
-            addTextLayer={(coords, color) => handleAddTextLayer(coords, color)}
-            addDrawingLayer={handleAddDrawingLayer}
-            onAddLayerFromBackground={handleAddLayerFromBackground}
-            onLayerFromSelection={handleLayerFromSelection}
-            addShapeLayer={(coords, shapeType, initialWidth, initialHeight) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor)}
-            addGradientLayer={handleAddGradientLayer}
-            onAddAdjustmentLayer={addAdjustmentLayer}
-            selectedShapeType={selectedShapeType}
-            groupLayers={groupLayers}
-            toggleGroupExpanded={toggleGroupExpanded}
-            onRemoveLayerMask={removeLayerMask}
-            onInvertLayerMask={invertLayerMask}
-            onToggleClippingMask={toggleClippingMask}
-            onToggleLayerLock={toggleLayerLock}
-            onDeleteHiddenLayers={handleDeleteHiddenLayers}
-            onRasterizeSmartObject={handleRasterizeSmartObject}
-            onConvertSmartObjectToLayers={handleConvertSmartObjectToLayers}
-            onExportSmartObjectContents={handleExportSmartObjectContents}
-            onArrangeLayer={handleArrangeLayer}
-            hasActiveSelection={hasActiveSelection}
-            onApplySelectionAsMask={applySelectionAsMask}
-            handleDestructiveOperation={handleDestructiveOperation}
-            // Global Adjustments Props
-            adjustments={adjustments}
-            onAdjustmentChange={onAdjustmentChange}
-            onAdjustmentCommit={onAdjustmentCommit}
-            effects={effects}
-            onEffectChange={onEffectChange}
-            onEffectCommit={onEffectCommit}
-            grading={grading}
-            onGradingChange={onGradingChange}
-            onGradingCommit={onGradingCommit}
-            hslAdjustments={hslAdjustments}
-            onHslAdjustmentChange={onHslAdjustmentChange}
-            onHslAdjustmentCommit={onHslAdjustmentCommit}
-            curves={curves}
-            onCurvesChange={onCurvesChange}
-            onCurvesCommit={onCurvesCommit}
-            onFilterChange={onFilterChange}
-            selectedFilter={selectedFilter}
-            onTransformChange={onTransformChange}
-            rotation={rotation}
-            onRotationChange={onRotationChange}
-            onRotationCommit={onRotationCommit}
-            onAspectChange={onAspectChange}
-            aspect={aspect}
-            frame={frame}
-            onFramePresetChange={onFramePresetChange}
-            onFramePropertyChange={onFramePropertyChange}
-            onFramePropertyCommit={onFramePropertyCommit}
-            // Presets
-            presets={presets}
-            onApplyPreset={handleApplyPreset}
-            onSavePreset={handleSavePreset}
-            onDeletePreset={deletePreset}
-            // Gradient Presets
-            gradientToolState={gradientToolState}
-            setGradientToolState={setGradientToolState}
-            gradientPresets={gradientPresets}
-            onSaveGradientPreset={saveGradientPreset}
-            onDeleteGradientPreset={deleteGradientPreset}
-            // History Props
-            history={history}
-            currentHistoryIndex={currentHistoryIndex}
-            onHistoryJump={(index) => {
-              setCurrentEditState(history[index].state);
-              setLayers(history[index].layers);
-              setCurrentHistoryIndex(index);
-            }}
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            historyBrushSourceIndex={historyBrushSourceIndex}
-            setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
-            // Color Props
-            foregroundColor={foregroundColor}
-            onForegroundColorChange={setForegroundColor}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={setBackgroundColor}
-            onSwapColors={() => {
-              setForegroundColor(backgroundColor);
-              setBackgroundColor(foregroundColor);
-            }}
-            // Info Props
-            dimensions={dimensions}
-            fileInfo={fileInfo}
-            exifData={exifData}
-            colorMode={currentEditState.colorMode}
-            // Navigator Props
-            zoom={workspaceZoom}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            onFitScreen={handleFitScreen}
-            // Channels Props
-            channels={channels}
-            onChannelChange={onChannelChange}
-            // Brushes Props
-            brushState={brushState}
-            setBrushState={setBrushStatePartial}
-            // Selective Blur
-            selectiveBlurAmount={selectiveBlurAmount}
-            onSelectiveBlurAmountChange={setSelectiveBlurAmount}
-            onSelectiveBlurAmountCommit={(value) => recordHistory("Change Selective Blur Strength", currentEditState, layers)}
-            // HSL Custom Color
-            customHslColor={customHslColor}
-            setCustomHslColor={setCustomHslColor}
-            // Font Manager Props
-            systemFonts={systemFonts}
-            customFonts={customFonts}
-            onOpenFontManager={() => setIsFontManagerOpen(true)}
-            // Selection Settings
-            selectionSettings={selectionSettings}
-            onSelectionSettingChange={(key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value }))}
-            onSelectionSettingCommit={(key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers)}
-            // Clone Source Point
-            cloneSourcePoint={cloneSourcePoint}
-            // Layers Panel Component
-            LayersPanel={LayersPanel}
-          />
-        </aside>
+        {isMobile ? (
+          <>
+            {/* Mobile Layout: Tools Panel is hidden, Sidebar is full width */}
+            <EditorWorkspace {...editorWorkspaceProps} />
+            <aside className="w-full h-full border-l bg-sidebar">
+              <Sidebar {...sidebarProps} />
+            </aside>
+          </>
+        ) : (
+          <ResizablePanelGroup direction="horizontal" className="w-full h-full">
+            {/* Left Sidebar Panel */}
+            <ResizablePanel defaultSize={15} minSize={10} maxSize={20} className="shrink-0">
+              <LeftSidebar {...leftSidebarProps} />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            
+            {/* Workspace Panel */}
+            <ResizablePanel defaultSize={65} minSize={40}>
+              <EditorWorkspace {...editorWorkspaceProps} />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            
+            {/* Right Sidebar Panel */}
+            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
+              <Sidebar {...sidebarProps} />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        )}
       </main>
 
       {/* Dialogs */}
