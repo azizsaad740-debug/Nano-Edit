@@ -515,6 +515,17 @@ export const useLayers = ({
     showError("Grouping layers is currently a stub.");
   }, []);
 
+  const toggleGroupExpanded = useCallback((id: string) => {
+    setLayers(prev => {
+      const location = findLayerLocation(id, prev);
+      if (!location || location.layer.type !== 'group') return prev;
+      
+      const updated = recursivelyUpdateLayer(prev, id, { expanded: !(location.layer as GroupLayerData).expanded });
+      recordHistory(`Toggle Group: ${location.layer.name}`, currentEditState, updated);
+      return updated;
+    });
+  }, [recordHistory, currentEditState]);
+
   const createSmartObject = useCallback((layerIds: string[]) => {
     // Stub: Creating a smart object requires extracting layers and creating a nested structure.
     showError("Creating Smart Objects is currently a stub.");
@@ -682,6 +693,53 @@ export const useLayers = ({
     mergeMask();
   }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
 
+  const handleHistoryBrushStrokeEnd = useCallback((strokeDataUrl: string, layerId: string, historyStateName: string) => {
+    // This handler is called by LiveBrushCanvas when a history brush stroke is finished.
+    
+    const targetLayer = findLayerLocation(layerId, layers)?.layer;
+    if (!targetLayer || (targetLayer.type !== 'drawing' && targetLayer.type !== 'image') || !dimensions) {
+      showError("History brush can only be applied to drawing or image layers.");
+      return;
+    }
+
+    const mergeStroke = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      // 1. Draw existing content (the current state of the layer)
+      if (targetLayer.dataUrl) {
+        const existingImg = new Image();
+        await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = targetLayer.dataUrl; });
+        ctx.drawImage(existingImg, 0, 0);
+      }
+
+      // 2. Draw the stroke (which contains the history state pixels)
+      const strokeImg = new Image();
+      await new Promise(resolve => { strokeImg.onload = resolve; strokeImg.src = strokeDataUrl; });
+      
+      // Use source-over, but the stroke image itself contains the blended history pixels
+      ctx.globalCompositeOperation = 'source-over';
+      
+      // STUB: In a real app, the strokeDataUrl would contain the pixels from the history state,
+      // blended with the current brush settings (opacity, flow, blend mode).
+      // For now, we just draw the stroke image (which is a placeholder circle in LiveBrushCanvas).
+      
+      ctx.drawImage(strokeImg, 0, 0);
+      
+      const newLayerDataUrl = canvas.toDataURL();
+      
+      updateLayer(layerId, { dataUrl: newLayerDataUrl });
+      commitLayerChange(layerId);
+      showSuccess(`History brush applied (Stub: Restored pixels from ${historyStateName}).`);
+    };
+
+    mergeStroke();
+  }, [layers, dimensions, updateLayer, commitLayerChange]);
+
+
   // --- Paint Bucket Logic ---
   const handlePaintBucketFill = useCallback(async () => {
     if (activeTool !== 'paintBucket' || !selectionMaskDataUrl || !dimensions) return;
@@ -829,6 +887,8 @@ export const useLayers = ({
     groupLayers,
     toggleGroupExpanded,
     handleDrawingStrokeEnd,
+    handleSelectionBrushStrokeEnd,
+    handleHistoryBrushStrokeEnd, // EXPOSED
     handleLayerDelete,
     reorderLayers,
     onSelectLayer,
@@ -851,7 +911,6 @@ export const useLayers = ({
       clearSelectionState();
       showSuccess("Selection applied as layer mask.");
     }, [selectedLayerId, selectionMaskDataUrl, updateLayer, commitLayerChange, clearSelectionState]),
-    handleSelectionBrushStrokeEnd,
     handleDestructiveOperation, // EXPOSED
   };
 };

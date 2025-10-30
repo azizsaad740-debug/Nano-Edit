@@ -59,6 +59,7 @@ interface EditorWorkspaceProps {
   setIsMouseOverImage: (isOver: boolean) => void;
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
+  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string, historyStateName: string) => void; // NEW
   handleAddDrawingLayer: () => string;
   setSelectionPath: (path: Point[] | null) => void;
   setSelectionMaskDataUrl: (url: string | null) => void;
@@ -104,6 +105,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   setIsMouseOverImage,
   handleDrawingStrokeEnd,
   handleSelectionBrushStrokeEnd,
+  handleHistoryBrushStrokeEnd, // NEW
   handleAddDrawingLayer,
   setSelectionPath,
   setSelectionMaskDataUrl,
@@ -135,11 +137,12 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   const isLassoActive = activeTool?.startsWith('lasso');
   const isBrushToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush';
+  const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush'; // NEW
   const isGradientToolActive = activeTool === 'gradient' && gradientStart && gradientCurrent;
 
-  // Determine the target layer ID for drawing/erasing/stamping
+  // Determine the target layer ID for drawing/erasing/stamping/history brush
   const targetLayer = layers.find(l => l.id === selectedLayerId);
-  const targetLayerId = targetLayer?.type === 'drawing' ? targetLayer.id : handleAddDrawingLayer(); // Auto-create if needed
+  const targetLayerId = targetLayer?.type === 'drawing' || targetLayer?.type === 'image' ? targetLayer.id : handleAddDrawingLayer(); // Auto-create if needed
 
   // --- Filter String Generation ---
   const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && selectiveBlurMask ? `url(#selective-blur-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
@@ -255,12 +258,18 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             />
           )}
 
-          {/* Live Brush Canvas for Drawing/Erasing/Stamping */}
-          {isBrushToolActive && dimensions && (
+          {/* Live Brush Canvas for Drawing/Erasing/Stamping/History Brush */}
+          {(isBrushToolActive || isHistoryBrushActive) && dimensions && (
             <LiveBrushCanvas
               imageNaturalDimensions={dimensions}
-              onStrokeEnd={handleDrawingStrokeEnd}
-              activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp'}
+              onStrokeEnd={(strokeDataUrl, operation, historyStateName) => {
+                if (isHistoryBrushActive) {
+                  handleHistoryBrushStrokeEnd(strokeDataUrl, targetLayerId, historyStateName || 'Current State');
+                } else {
+                  handleDrawingStrokeEnd(strokeDataUrl, targetLayerId);
+                }
+              }}
+              activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush'}
               brushState={brushState}
               foregroundColor={foregroundColor}
               backgroundColor={backgroundColor}

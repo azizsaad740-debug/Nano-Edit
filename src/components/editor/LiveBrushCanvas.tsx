@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 
 interface LiveBrushCanvasProps {
   imageNaturalDimensions: { width: number; height: number } | null;
-  onStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  activeTool: 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp';
+  onStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract' | 'history', historyStateName?: string) => void;
+  activeTool: 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush';
   brushState: BrushState;
   foregroundColor: string;
   backgroundColor: string;
@@ -34,6 +34,7 @@ export const LiveBrushCanvas = ({
   const [isDrawing, setIsDrawing] = React.useState(false);
 
   const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
+  const isHistoryBrush = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
   const isEraser = activeTool === 'eraser';
   const isSelectionBrush = activeTool === 'selectionBrush' || activeTool === 'blurBrush';
   const isPencil = activeTool === 'pencil';
@@ -41,27 +42,35 @@ export const LiveBrushCanvas = ({
   const { size, hardness, opacity, flow, shape, angle, roundness, spacing } = brushState;
 
   const getBrushColor = () => {
-    if (isEraser) return 'rgba(0, 0, 0, 1)'; // Eraser uses destination-out, color doesn't matter for stroke content
+    if (isEraser) return 'rgba(0, 0, 0, 1)'; 
     if (isSelectionBrush) {
-      // Selection brush uses white for add (foreground) and black for subtract (background)
       return foregroundColor;
+    }
+    if (isHistoryBrush) {
+      // History brush uses a placeholder color for the stroke canvas, 
+      // as the actual pixels come from the history state during merge.
+      return 'rgba(128, 128, 128, 1)'; 
     }
     return foregroundColor;
   };
 
-  const getOperation = () => {
+  const getOperation = (): 'add' | 'subtract' | 'history' => {
+    if (isHistoryBrush) return 'history';
     if (isSelectionBrush) {
-      // Determine if we are adding (foreground) or subtracting (background)
       return foregroundColor === backgroundColor ? 'add' : 'subtract';
     }
     return 'add';
+  };
+  
+  const getHistoryStateName = () => {
+    // STUB: In a real app, this would read the selected history state from the UI options.
+    return "History State (Stub)";
   };
 
   const drawBrushStroke = React.useCallback((ctx: CanvasRenderingContext2D, start: Point, end: Point) => {
     if (!imageNaturalDimensions) return;
 
     const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
-    const angle = Math.atan2(end.y - start.y, end.x - start.x);
     const spacingPx = Math.max(1, size * (spacing / 100));
     const steps = Math.max(1, Math.ceil(distance / spacingPx));
 
@@ -74,7 +83,6 @@ export const LiveBrushCanvas = ({
     if (isEraser) {
       ctx.globalCompositeOperation = 'destination-out';
     } else if (isSelectionBrush) {
-      // Selection brush uses white for add, black for subtract
       ctx.globalCompositeOperation = getOperation() === 'add' ? 'source-over' : 'destination-out';
     } else {
       ctx.globalCompositeOperation = 'source-over';
@@ -97,15 +105,17 @@ export const LiveBrushCanvas = ({
 
       if (isStampTool && cloneSourcePoint) {
         // --- Clone Stamp Logic ---
-        const cloneX = cloneSourcePoint.x + (x - start.x);
-        const cloneY = cloneSourcePoint.y + (y - start.y);
-        
-        // STUB: In a real app, we would sample from the base image or a composite layer.
-        // For now, we draw a placeholder circle to show the brush path.
+        // STUB: Draw a placeholder circle to show the brush path.
         ctx.beginPath();
         ctx.arc(x, y, radius, 0, Math.PI * 2);
         ctx.fill();
         
+      } else if (isHistoryBrush) {
+        // --- History Brush Logic ---
+        // STUB: Draw a placeholder circle to indicate where history is being restored.
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fill();
       } else {
         // --- Standard Brush/Eraser/Selection Brush Logic ---
         ctx.beginPath();
@@ -120,7 +130,7 @@ export const LiveBrushCanvas = ({
     }
     
     ctx.restore();
-  }, [size, hardness, opacity, flow, shape, isEraser, isSelectionBrush, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation]);
+  }, [size, hardness, opacity, flow, shape, isEraser, isSelectionBrush, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation, isHistoryBrush]);
 
   const getPointOnCanvas = React.useCallback((e: MouseEvent): Point | null => {
     if (!canvasRef.current || !imageNaturalDimensions) return null;
@@ -191,7 +201,12 @@ export const LiveBrushCanvas = ({
     canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
 
     // Pass the stroke data to the parent hook for merging
-    onStrokeEnd(strokeDataUrl, getOperation());
+    const operation = getOperation();
+    if (operation === 'history') {
+      onStrokeEnd(strokeDataUrl, operation, getHistoryStateName());
+    } else {
+      onStrokeEnd(strokeDataUrl, operation);
+    }
   }, [onStrokeEnd, getOperation]);
 
   // --- Setup and Cleanup ---
@@ -290,7 +305,7 @@ export const LiveBrushCanvas = ({
         className={cn(
           "absolute top-0 left-0",
           // Only allow mouse events if the tool is active and not a selection tool
-          (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || isStampTool) && "pointer-events-auto",
+          (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || isStampTool || isHistoryBrush) && "pointer-events-auto",
           isDrawing && "cursor-none"
         )}
         style={{

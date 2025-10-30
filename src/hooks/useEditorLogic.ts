@@ -32,7 +32,7 @@ import { upscaleImageApi } from '@/utils/stabilityApi';
 import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
 import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point } from '@/types/editor';
-import { useGradientPresets } from './useGradientPresets'; // ADDED IMPORT
+import { useGradientPresets } from './useGradientPresets'; // ADDED HOOK CALL
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -65,10 +65,11 @@ export const useEditorLogic = () => {
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
-    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // EXPOSED
+    handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
-    applySelectionAsMask, handleSelectionBrushStrokeEnd,
+    applySelectionAsMask,
     handleDestructiveOperation, // EXPOSED
   } = useLayers({
     layers, setLayers: state.setLayers, selectedLayerId: state.selectedLayerId, setSelectedLayerId: state.setSelectedLayerId, dimensions,
@@ -239,10 +240,11 @@ export const useEditorLogic = () => {
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
-    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // EXPOSED
+    handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
-    applySelectionAsMask, handleSelectionBrushStrokeEnd,
+    applySelectionAsMask,
     handleDestructiveOperation, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,

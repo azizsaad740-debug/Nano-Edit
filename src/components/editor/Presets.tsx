@@ -17,7 +17,7 @@ import type { Preset } from "@/hooks/usePresets";
 interface PresetsProps {
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
-  onSavePreset: () => void;
+  onSavePreset: () => void; // Changed signature to reflect it's a trigger
   onDeletePreset: (name: string) => void;
 }
 

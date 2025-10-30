@@ -1,9 +1,36 @@
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { RotateCcw } from "lucide-react";
+import type { FrameState } from "@/types/editor"; // Import FrameState
+
+interface CropProps {
+  onAspectChange: (aspect: number | undefined) => void;
+  currentAspect: number | undefined;
+}
+
+const aspectRatios = [
+  { name: "Free", value: undefined },
+  { name: "16:9", value: 16 / 9 },
+  { name: "4:3", value: 4 / 3 },
+  { name: "Square", value: 1 },
+];
+
+const Crop = ({ onAspectChange, currentAspect }: CropProps) => {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {aspectRatios.map(({ name, value }) => (
+        <Button
+          key={name}
+          variant={currentAspect === value ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => onAspectChange(value)}
+        >
+          {name}
+        </Button>
+      ))}
+    </div>
+  );
+};
+
+// --- Frames Component ---
 
 interface Frame {
   type: 'none' | 'solid';
@@ -15,7 +42,7 @@ interface FramesProps {
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
-  currentFrame: Frame;
+  currentFrame: FrameState; // Use FrameState from types/editor.ts
 }
 
 const framePresets = [

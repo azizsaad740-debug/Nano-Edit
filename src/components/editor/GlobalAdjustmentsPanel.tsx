@@ -80,13 +80,18 @@ interface GlobalAdjustmentsPanelProps {
   onRotationCommit: (value: number) => void;
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
-  frame: FrameState; // FIXED TYPE
+  frame: FrameState;
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
   imgRef: React.RefObject<HTMLImageElement>;
   customHslColor: string; // NEW
   setCustomHslColor: (color: string) => void; // NEW
+  // Preset Props (Added to fix errors 2, 3, 4, 5)
+  presets: Preset[];
+  onApplyPreset: (preset: Preset) => void;
+  onSavePreset: (name: string) => void; // This is the function that takes the name from the dialog
+  onDeletePreset: (name: string) => void;
 }
 
 const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
@@ -115,10 +120,10 @@ const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
     onRotationCommit,
     onAspectChange,
     aspect,
-    presets,
-    onApplyPreset,
-    onSavePreset,
-    onDeletePreset,
+    presets, // Destructured
+    onApplyPreset, // Destructured
+    onSavePreset, // Destructured
+    onDeletePreset, // Destructured
     frame,
     onFramePresetChange,
     onFramePropertyChange,
@@ -257,7 +262,7 @@ const GlobalAdjustmentsPanel = (props: GlobalAdjustmentsPanelProps) => {
               <Presets
                 presets={presets}
                 onApplyPreset={onApplyPreset}
-                onSavePreset={onSavePreset}
+                onSavePreset={() => props.onSavePreset("New Preset")} // Call the prop function with a placeholder name, which triggers the dialog
                 onDeletePreset={onDeletePreset}
               />
             </AccordionContent>

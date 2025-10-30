@@ -31,6 +31,7 @@ import { ChannelsPanel } from "@/components/editor/ChannelsPanel";
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel"; // ADDED IMPORT
 import { GradientOptions } from "@/components/editor/GradientOptions"; // ADDED IMPORT
 import type { Layer, EditState, HslColorKey, HslAdjustment, GradientToolState, FrameState, Point, BrushState, SelectionSettings, ActiveTool, ShapeType } from "@/types/editor";
+import type { Preset } from "@/hooks/usePresets"; // Import Preset type
 
 interface RightSidebarTabsProps {
   // Layer Props
@@ -49,7 +50,7 @@ interface RightSidebarTabsProps {
   onOpenSmartObject: (id: string) => void;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
-  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
+  onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void; // Added full commit signature
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   addTextLayer: (coords: Point, color: string) => void;
@@ -103,8 +104,8 @@ interface RightSidebarTabsProps {
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
   // Presets
-  presets: { name: string; state: Partial<EditState> }[];
-  onApplyPreset: (preset: { name: string; state: Partial<EditState> }) => void;
+  presets: Preset[];
+  onApplyPreset: (preset: Preset) => void;
   onSavePreset: (name: string) => void;
   onDeletePreset: (name: string) => void;
   // Gradient Presets
@@ -144,6 +145,8 @@ interface RightSidebarTabsProps {
   // Color Props
   foregroundColor: string;
   onForegroundColorChange: (color: string) => void;
+  backgroundColor: string;
+  onBackgroundColorChange: (color: string) => void;
 }
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
@@ -463,8 +466,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               onGradingChange={props.onGradingChange}
               onGradingCommit={props.onGradingCommit}
               hslAdjustments={props.hslAdjustments}
-              onHslAdjustmentChange={props.onHslAdjustmentChange as (color: HslColorKey, key: keyof HslAdjustment, value: number) => void}
-              onHslAdjustmentCommit={props.onHslAdjustmentCommit as (color: HslColorKey, key: keyof HslAdjustment, value: number) => void}
+              onHslAdjustmentChange={props.onHslAdjustmentChange}
+              onHslAdjustmentCommit={props.onHslAdjustmentCommit}
               curves={props.curves}
               onCurvesChange={props.onCurvesChange}
               onCurvesCommit={props.onCurvesCommit}
@@ -478,7 +481,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               aspect={props.aspect}
               presets={props.presets}
               onApplyPreset={props.onApplyPreset}
-              onSavePreset={() => props.onSavePreset('New Preset')}
+              onSavePreset={props.onSavePreset}
               onDeletePreset={props.onDeletePreset}
               frame={props.frame}
               onFramePresetChange={props.onFramePresetChange}

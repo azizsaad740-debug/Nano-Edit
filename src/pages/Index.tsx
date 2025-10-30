@@ -44,10 +44,11 @@ export const Index = () => {
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
-    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // ADDED
+    handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
-    applySelectionAsMask, handleSelectionBrushStrokeEnd,
+    applySelectionAsMask, handleDestructiveOperation, // ADDED
     
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
@@ -229,6 +230,7 @@ export const Index = () => {
           setIsMouseOverImage={setIsMouseOverImage}
           handleDrawingStrokeEnd={handleDrawingStrokeEnd}
           handleSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
+          handleHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd} // PASSED
           handleAddDrawingLayer={handleAddDrawingLayer}
           setSelectionPath={setSelectionPath}
           setSelectionMaskDataUrl={setSelectionMaskDataUrl}
