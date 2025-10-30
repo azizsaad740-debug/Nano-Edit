@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -22,7 +21,7 @@ interface ColorPanelProps {
 
 const defaultSwatches = [
   '#000000', '#FFFFFF', '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-  '#808080', '#C0C0C0', '#800000', '#008000', '#000080', '#808000', '#800080', '#008080',
+  '#808080', '#C0C0C0', '#800000', '#008000', '#000080', '#808000', '#800080', '#008000',
 ];
 
 const ColorPanel: React.FC<ColorPanelProps> = ({
@@ -128,7 +127,7 @@ const ColorPanel: React.FC<ColorPanelProps> = ({
           <div className="space-y-2 p-2 border rounded-md">
             <h4 className="text-sm font-medium">Color Harmony (Stub)</h4>
             <p className="text-xs text-muted-foreground">
-              Analogous, Complementary, Triad, Tetrad, Split complementary generation is not yet implemented.
+              Analogous, Complementary, Triad, Tetrad, Tetrad, Split complementary generation is not yet implemented.
             </p>
           </div>
         </TabsContent>

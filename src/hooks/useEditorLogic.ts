@@ -33,7 +33,7 @@ import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
 import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point } from '@/types/editor';
 import { useGradientPresets } from './useGradientPresets';
-import LeftSidebar from '@/components/layout/LeftSidebar'; // Import the component directly
+import LeftSidebar from '@/components/layout/LeftSidebar';
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -73,6 +73,7 @@ export const useEditorLogic = () => {
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask,
     handleDestructiveOperation, // EXPOSED
+    onBrushCommit, // EXPOSED
   } = useLayers({
     layers, setLayers: state.setLayers, selectedLayerId: state.selectedLayerId, setSelectedLayerId: state.setSelectedLayerId, dimensions,
     recordHistory, currentEditState, foregroundColor, backgroundColor,
@@ -252,6 +253,7 @@ export const useEditorLogic = () => {
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask,
     handleDestructiveOperation, // EXPOSED
+    onBrushCommit, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,

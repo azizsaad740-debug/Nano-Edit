@@ -43,7 +43,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     layers,
     handleZoomIn, handleZoomOut, handleFitScreen,
     clearSelectionState,
-    setIsPreviewingOriginal, // Destructure the new property
+    setIsPreviewingOriginal,
+    // ADDED: Brush commit function
+    onBrushCommit,
   } = logic;
 
   // --- Keyboard Shortcuts ---

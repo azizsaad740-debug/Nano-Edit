@@ -3,6 +3,9 @@ import { useEditorLogic } from "@/hooks/useEditorLogic";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { EditorHeader } from "@/components/layout/EditorHeader";
 import Sidebar from "@/components/layout/Sidebar";
+import LeftSidebar from "@/components/layout/LeftSidebar";
+import ToolOptionsBar from "@/components/layout/ToolOptionsBar";
+import BottomPanel from "@/components/layout/BottomPanel";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { ExportOptions } from "@/components/editor/ExportOptions";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
@@ -19,16 +22,14 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useLocation } from "react-router-dom";
-import { fetchCommunityTemplates } from "@/utils/templateApi";
 import { showError } from "@/utils/toast";
-import LayersPanel from "@/components/editor/LayersPanel"; // Import LayersPanel
-import LeftSidebar from "@/components/layout/LeftSidebar"; // Import LeftSidebar
+import LayersPanel from "@/components/editor/LayersPanel";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@/components/ui/resizable"; // Import Resizable components
-import type { Point } from "@/types/editor"; // Import Point type
+} from "@/components/ui/resizable";
+import type { Point } from "@/types/editor";
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -52,11 +53,12 @@ export const Index = () => {
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
-    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // ADDED
+    groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
-    applySelectionAsMask, handleDestructiveOperation, // ADDED
+    applySelectionAsMask, handleDestructiveOperation,
+    onBrushCommit, // ADDED
     
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
@@ -91,7 +93,7 @@ export const Index = () => {
     workspaceRef, imgRef,
     systemFonts, customFonts, addCustomFont, removeCustomFont,
     setZoom,
-    handleSwapColors, // Destructure handleSwapColors
+    handleSwapColors,
   } = logic;
 
   const isMobile = useIsMobile();
@@ -137,8 +139,7 @@ export const Index = () => {
   }, [setBrushState]);
 
   // --- Props for Sidebars and Workspace ---
-  const sidebarProps = {
-    // ... (all props passed to Sidebar)
+  const rightSidebarProps = {
     hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, onDeleteHiddenLayers: handleDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers), customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
   };
 
@@ -150,6 +151,18 @@ export const Index = () => {
 
   const editorWorkspaceProps = {
     workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask: currentEditState.selectiveBlurMask, selectiveBlurAmount, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
+  };
+  
+  const bottomPanelProps = {
+    foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors,
+    history, currentHistoryIndex, onHistoryJump: rightSidebarProps.onHistoryJump, onUndo: undo, onRedo: redo, canUndo, canRedo,
+  };
+  
+  const toolOptionsBarProps = {
+    activeTool,
+    brushState,
+    setBrushState: setBrushStatePartial,
+    onBrushCommit: () => recordHistory("Update Brush Settings", currentEditState, layers),
   };
 
   // --- Render Logic ---
@@ -182,10 +195,40 @@ export const Index = () => {
     }
   }
 
+  if (isMobile) {
+    // Keep existing mobile layout for now
+    return (
+      <div className="flex flex-col h-screen w-screen bg-background">
+        <CustomFontLoader customFonts={customFonts} />
+        <EditorHeader
+          logic={logic}
+          setIsNewProjectOpen={setIsNewProjectOpen}
+          setIsExportOpen={setIsExportOpen}
+          setIsSettingsOpen={setIsSettingsOpen}
+          setIsImportOpen={setIsImportOpen}
+          setIsGenerateOpen={setIsGenerateOpen}
+          setIsGenerativeFillOpen={setIsGenerativeFillOpen}
+          setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+        <main className="flex flex-1 min-h-0">
+          <EditorWorkspace {...editorWorkspaceProps} />
+          <aside className="w-full h-full border-l bg-sidebar">
+            <Sidebar {...rightSidebarProps} />
+          </aside>
+        </main>
+        {/* Dialogs remain here */}
+      </div>
+    );
+  }
+
+  // Desktop Layout (New Structure)
   return (
     <div className="flex flex-col h-screen w-screen bg-background">
       <CustomFontLoader customFonts={customFonts} />
       
+      {/* 1. Top Header Bar */}
       <EditorHeader
         logic={logic}
         setIsNewProjectOpen={setIsNewProjectOpen}
@@ -198,37 +241,33 @@ export const Index = () => {
         isFullscreen={isFullscreen}
         onToggleFullscreen={handleToggleFullscreen}
       />
+      
+      {/* 2. Tool Options Bar */}
+      <ToolOptionsBar {...toolOptionsBarProps} />
 
-      <main className="flex flex-1 min-h-0">
-        {isMobile ? (
-          <>
-            {/* Mobile Layout: Tools Panel is hidden, Sidebar is full width */}
-            <EditorWorkspace {...editorWorkspaceProps} />
-            <aside className="w-full h-full border-l bg-sidebar">
-              <Sidebar {...sidebarProps} />
-            </aside>
-          </>
-        ) : (
-          <ResizablePanelGroup direction="horizontal" className="w-full h-full">
-            {/* Left Sidebar Panel */}
-            <ResizablePanel defaultSize={15} minSize={10} maxSize={20} className="shrink-0">
-              <LeftSidebar {...leftSidebarProps} />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            
-            {/* Workspace Panel */}
-            <ResizablePanel defaultSize={65} minSize={40}>
-              <EditorWorkspace {...editorWorkspaceProps} />
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            
-            {/* Right Sidebar Panel */}
-            <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
-              <Sidebar {...sidebarProps} />
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        )}
-      </main>
+      {/* 3. Main Content Area (Left | Center | Right) */}
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
+        
+        {/* Left Sidebar Panel (Tools) */}
+        <ResizablePanel defaultSize={5} minSize={4} maxSize={8} className="shrink-0">
+          <LeftSidebar {...leftSidebarProps} />
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        
+        {/* Center Panel (Workspace) */}
+        <ResizablePanel defaultSize={70} minSize={40}>
+          <EditorWorkspace {...editorWorkspaceProps} />
+        </ResizablePanel>
+        <ResizableHandle withHandle />
+        
+        {/* Right Sidebar Panel (Layers/Channels/Properties) */}
+        <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
+          <Sidebar {...rightSidebarProps} />
+        </ResizablePanel>
+      </ResizablePanelGroup>
+      
+      {/* 4. Bottom Panel (Color/History/Ad) */}
+      <BottomPanel {...bottomPanelProps} />
 
       {/* Hidden file input for image/project import */}
       <input
