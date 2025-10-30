@@ -3,7 +3,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
 
-interface SidebarProps {
+// Renamed and exported interface
+export interface RightSidebarTabsProps {
   // RightSidebarTabs Props
   hasImage: boolean;
   activeTool: ActiveTool | null;
@@ -120,11 +121,13 @@ interface SidebarProps {
   // Color Props (Needed for LayersPanel/ToolOptions)
   foregroundColor: string;
   onForegroundColorChange: (color: string) => void;
+  setForegroundColor: (color: string) => void;
   backgroundColor: string;
   onBackgroundColorChange: (color: string) => void;
+  onSwapColors: () => void;
 }
 
-const Sidebar = (props: SidebarProps) => {
+const Sidebar = (props: RightSidebarTabsProps) => {
   // The mobile check is now handled in Index.tsx for the overall layout structure.
   // This component now represents the fixed Right Sidebar content.
 
