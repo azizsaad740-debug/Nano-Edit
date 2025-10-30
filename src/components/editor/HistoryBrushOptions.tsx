@@ -14,6 +14,8 @@ interface HistoryBrushOptionsProps {
   setBrushOpacity: (opacity: number) => void;
   brushFlow: number;
   setBrushFlow: (flow: number) => void;
+  historyBrushSourceIndex: number; // NEW
+  setHistoryBrushSourceIndex: (index: number) => void; // NEW
 }
 
 export const HistoryBrushOptions: React.FC<HistoryBrushOptionsProps> = ({
@@ -25,22 +27,33 @@ export const HistoryBrushOptions: React.FC<HistoryBrushOptionsProps> = ({
   setBrushOpacity,
   brushFlow,
   setBrushFlow,
+  historyBrushSourceIndex,
+  setHistoryBrushSourceIndex,
 }) => {
   const isArtHistory = activeTool === 'artHistoryBrush';
-  const [historyState, setHistoryState] = React.useState(history[0]?.name || 'Initial State');
   const [styleTolerance, setStyleTolerance] = React.useState(50);
+
+  const handleHistorySelect = (value: string) => {
+    const index = parseInt(value, 10);
+    if (!isNaN(index)) {
+      setHistoryBrushSourceIndex(index);
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div className="grid gap-2">
         <Label htmlFor="history-state">Source State</Label>
-        <Select value={historyState} onValueChange={setHistoryState}>
+        <Select 
+          value={String(historyBrushSourceIndex)} 
+          onValueChange={handleHistorySelect}
+        >
           <SelectTrigger id="history-state">
             <SelectValue placeholder="Select History State" />
           </SelectTrigger>
           <SelectContent>
             {history.map((item, index) => (
-              <SelectItem key={index} value={item.name}>
+              <SelectItem key={index} value={String(index)}>
                 {item.name}
               </SelectItem>
             ))}

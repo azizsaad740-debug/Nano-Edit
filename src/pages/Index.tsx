@@ -22,6 +22,7 @@ import { useLocation } from "react-router-dom";
 import { fetchCommunityTemplates } from "@/utils/templateApi";
 import { showError } from "@/utils/toast";
 import LayersPanel from "@/components/editor/LayersPanel"; // Import LayersPanel
+import LeftSidebar from "@/components/layout/LeftSidebar"; // Import LeftSidebar
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -38,6 +39,7 @@ export const Index = () => {
     // History
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentEditState, setLayers, setCurrentHistoryIndex,
+    historyBrushSourceIndex, setHistoryBrushSourceIndex,
     
     // Layer Management
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
@@ -177,7 +179,7 @@ export const Index = () => {
       <main className="flex flex-1 min-h-0">
         {/* Left Sidebar (Tools Panel) */}
         <div className="shrink-0">
-          <logic.ToolsPanel
+          <LeftSidebar
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             selectedShapeType={selectedShapeType}
@@ -192,7 +194,7 @@ export const Index = () => {
             }}
             brushState={brushState}
             setBrushState={setBrushStatePartial}
-            selectiveBlurStrength={selectiveBlurAmount}
+            selectiveBlurAmount={selectiveBlurAmount}
             onSelectiveBlurStrengthChange={setSelectiveBlurAmount}
             onSelectiveBlurStrengthCommit={(value) => recordHistory("Change Selective Blur Strength", currentEditState, layers)}
           />
@@ -291,6 +293,7 @@ export const Index = () => {
             onArrangeLayer={handleArrangeLayer}
             hasActiveSelection={hasActiveSelection}
             onApplySelectionAsMask={applySelectionAsMask}
+            handleDestructiveOperation={handleDestructiveOperation}
             // Global Adjustments Props
             adjustments={adjustments}
             onAdjustmentChange={onAdjustmentChange}
@@ -342,6 +345,8 @@ export const Index = () => {
             onRedo={redo}
             canUndo={canUndo}
             canRedo={canRedo}
+            historyBrushSourceIndex={historyBrushSourceIndex}
+            setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
             // Color Props
             foregroundColor={foregroundColor}
             onForegroundColorChange={setForegroundColor}
@@ -438,7 +443,6 @@ export const Index = () => {
         open={isFontManagerOpen}
         onOpenChange={setIsFontManagerOpen}
         systemFonts={systemFonts}
-        setSystemFonts={setSystemFonts}
         customFonts={customFonts}
         addCustomFont={addCustomFont}
         removeCustomFont={removeCustomFont}

@@ -63,6 +63,7 @@ export const useEditorState = () => {
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+  const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
   // External Hooks
   const { systemFonts, setSystemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
@@ -152,6 +153,7 @@ export const useEditorState = () => {
     recordHistory,
     undo, redo,
     canUndo, canRedo,
+    historyBrushSourceIndex, setHistoryBrushSourceIndex,
     // Layers
     layers, setLayers,
     selectedLayerId, setSelectedLayerId,

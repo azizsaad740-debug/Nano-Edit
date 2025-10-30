@@ -74,6 +74,7 @@ interface RightSidebarTabsProps {
   onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;
+  handleDestructiveOperation: (operation: 'delete' | 'fill') => void;
   // Global Adjustments Props
   hasImage: boolean;
   adjustments: EditState['adjustments'];
@@ -136,6 +137,8 @@ interface RightSidebarTabsProps {
   onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
   // History for History Brush
   history: { name: string }[];
+  historyBrushSourceIndex: number; // ADDED
+  setHistoryBrushSourceIndex: (index: number) => void; // ADDED
   // Clone Source Point
   cloneSourcePoint: Point | null;
   // Layers Panel Component (passed from Sidebar)
@@ -289,6 +292,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           setBrushOpacity={(opacity) => setBrushState({ opacity })}
           brushFlow={brushState.flow}
           setBrushFlow={(flow) => setBrushState({ flow })}
+          historyBrushSourceIndex={props.historyBrushSourceIndex}
+          setHistoryBrushSourceIndex={props.setHistoryBrushSourceIndex}
         />
       );
     }
@@ -450,6 +455,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               onConvertSmartObjectToLayers={props.onConvertSmartObjectToLayers}
               onExportSmartObjectContents={props.onExportSmartObjectContents}
               onArrangeLayer={props.onArrangeLayer}
+              handleDestructiveOperation={props.handleDestructiveOperation}
             />
           </TabsContent>
 
@@ -479,10 +485,6 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               onRotationCommit={props.onRotationCommit}
               onAspectChange={props.onAspectChange}
               aspect={props.aspect}
-              presets={props.presets}
-              onApplyPreset={props.onApplyPreset}
-              onSavePreset={props.onSavePreset}
-              onDeletePreset={props.onDeletePreset}
               frame={props.frame}
               onFramePresetChange={props.onFramePresetChange}
               onFramePropertyChange={props.onFramePropertyChange}
@@ -490,6 +492,10 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               imgRef={props.imgRef}
               customHslColor={props.customHslColor}
               setCustomHslColor={props.setCustomHslColor}
+              presets={props.presets}
+              onApplyPreset={props.onApplyPreset}
+              onSavePreset={props.onSavePreset}
+              onDeletePreset={props.onDeletePreset}
             />
           </TabsContent>
 

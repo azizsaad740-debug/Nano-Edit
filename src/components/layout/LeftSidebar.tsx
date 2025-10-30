@@ -9,18 +9,31 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ToolsPanel } from "./ToolsPanel";
-import { useEditorLogic } from "@/hooks/useEditorLogic";
+import type { ActiveTool, BrushState, ShapeType } from "@/types/editor";
 
 interface LeftSidebarProps {
-  logic: ReturnType<typeof useEditorLogic>;
+  activeTool: ActiveTool | null;
+  setActiveTool: (tool: ActiveTool | null) => void;
+  selectedShapeType: ShapeType | null;
+  setSelectedShapeType: (type: ShapeType | null) => void;
+  foregroundColor: string;
+  onForegroundColorChange: (color: string) => void;
+  backgroundColor: string;
+  onBackgroundColorChange: (color: string) => void;
+  onSwapColors: () => void;
+  brushState: BrushState;
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
+  selectiveBlurAmount: number;
+  onSelectiveBlurStrengthChange: (value: number) => void;
+  onSelectiveBlurStrengthCommit: (value: number) => void;
 }
 
-const LeftSidebar = ({ logic }: LeftSidebarProps) => {
+const LeftSidebar = ({ 
+  activeTool, setActiveTool, selectedShapeType, setSelectedShapeType,
+  foregroundColor, onForegroundColorChange, backgroundColor, onBackgroundColorChange, onSwapColors,
+  brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurStrengthChange, onSelectiveBlurStrengthCommit
+}: LeftSidebarProps) => {
   const isMobile = useIsMobile();
-  const {
-    brushState, setBrushState, selectiveBlurAmount, setSelectiveBlurAmount,
-    currentEditState, layers, recordHistory,
-  } = logic;
 
   if (isMobile) return null;
 
@@ -29,23 +42,20 @@ const LeftSidebar = ({ logic }: LeftSidebarProps) => {
       <ScrollArea className="h-full">
         <div className="p-2">
           <ToolsPanel
-            activeTool={logic.activeTool}
-            setActiveTool={logic.setActiveTool}
-            selectedShapeType={logic.selectedShapeType}
-            setSelectedShapeType={logic.setSelectedShapeType}
-            foregroundColor={logic.foregroundColor}
-            onForegroundColorChange={logic.setForegroundColor}
-            backgroundColor={logic.backgroundColor}
-            onBackgroundColorChange={logic.setBackgroundColor}
-            onSwapColors={() => {
-              logic.setForegroundColor(logic.backgroundColor);
-              logic.setBackgroundColor(logic.foregroundColor);
-            }}
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            selectedShapeType={selectedShapeType}
+            setSelectedShapeType={setSelectedShapeType}
+            foregroundColor={foregroundColor}
+            onForegroundColorChange={onForegroundColorChange}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={onBackgroundColorChange}
+            onSwapColors={onSwapColors}
             brushState={brushState}
-            setBrushState={(updates) => setBrushState(prev => ({ ...prev, ...updates }))}
+            setBrushState={setBrushState}
             selectiveBlurStrength={selectiveBlurAmount}
-            onSelectiveBlurStrengthChange={setSelectiveBlurAmount}
-            onSelectiveBlurStrengthCommit={(value) => recordHistory("Change Selective Blur Strength", currentEditState, layers)}
+            onSelectiveBlurStrengthChange={onSelectiveBlurStrengthChange}
+            onSelectiveBlurStrengthCommit={onSelectiveBlurStrengthCommit}
           />
         </div>
       </ScrollArea>

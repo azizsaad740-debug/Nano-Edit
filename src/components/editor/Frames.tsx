@@ -1,5 +1,10 @@
 import { Button } from "@/components/ui/button";
 import type { FrameState } from "@/types/editor"; // Import FrameState
+import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { RotateCcw } from "lucide-react";
 
 interface CropProps {
   onAspectChange: (aspect: number | undefined) => void;

@@ -47,6 +47,7 @@ export const useEditorLogic = () => {
     workspaceRef, imgRef, zoom, setZoom, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
     cloneSourcePoint, setCloneSourcePoint,
     setSelectedLayerId, clearSelectionState, updateCurrentState,
+    historyBrushSourceIndex, setHistoryBrushSourceIndex,
     ...rest
   } = state;
 
@@ -236,6 +237,7 @@ export const useEditorLogic = () => {
     selectedLayer: layers.find(l => l.id === state.selectedLayerId),
     // History
     undo, redo, canUndo, canRedo,
+    historyBrushSourceIndex, setHistoryBrushSourceIndex,
     // Layer Management (from useLayers)
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,

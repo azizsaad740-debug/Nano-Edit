@@ -56,6 +56,7 @@ interface SidebarProps {
   onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => void;
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;
+  handleDestructiveOperation: (operation: 'delete' | 'fill') => void; // ADDED
   // Global Adjustments Props
   adjustments: EditState['adjustments'];
   onAdjustmentChange: (adjustment: string, value: number) => void;
@@ -103,6 +104,8 @@ interface SidebarProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  historyBrushSourceIndex: number; // ADDED
+  setHistoryBrushSourceIndex: (index: number) => void; // ADDED
   // Color Props
   foregroundColor: string;
   onForegroundColorChange: (color: string) => void;
