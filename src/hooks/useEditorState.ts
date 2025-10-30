@@ -36,7 +36,7 @@ export const useEditorState = () => {
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
   const [dimensions, setDimensions] = useState<Dimensions | null>(null);
-  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(fileInfo);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
   const [exifData, setExifData] = useState<any>(null);
   const [currentEditState, setCurrentEditState] = useState<EditState>(initialEditState);
   const [layers, setLayers] = useState<Layer[]>(initialLayerState);
