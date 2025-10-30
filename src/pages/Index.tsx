@@ -443,6 +443,7 @@ export const Index = () => {
         open={isFontManagerOpen}
         onOpenChange={setIsFontManagerOpen}
         systemFonts={systemFonts}
+        setSystemFonts={setSystemFonts}
         customFonts={customFonts}
         addCustomFont={addCustomFont}
         removeCustomFont={removeCustomFont}
