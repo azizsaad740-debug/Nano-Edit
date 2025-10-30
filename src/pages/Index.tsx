@@ -192,6 +192,7 @@ export const Index = () => {
     setSelectedShapeType,
     onSelectiveBlurStrengthChange: setSelectiveBlurAmount,
     onSelectiveBlurStrengthCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers),
+    setForegroundColor,
   };
 
   const editorWorkspaceProps = {

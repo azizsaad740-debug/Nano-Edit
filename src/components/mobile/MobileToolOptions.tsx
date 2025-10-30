@@ -239,11 +239,11 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
   const renderToolOptionsContent = () => {
     // 1. Tools with dedicated option components (Brushes, Selection, Fill, Stamp, History)
     const brushAndFillOptions = renderBrushAndFillOptions();
-    if (brushAndFillOptions) {
+    if (brushAndFillOptions && activeTool !== 'gradient') {
       return <div className="p-4 space-y-4">{brushAndFillOptions}</div>;
     }
 
-    // 2. Selection Tools (Marquee, Lasso, QuickSelect, MagicWand, ObjectSelect)
+    // 2. Selection Tools (Marquee, Lasso, QuickSelect, MagicWand, ObjectSelect) & Move Tool
     if (isSelectionTool || activeTool === 'move') {
         return (
             <div className="p-4 space-y-4">
@@ -274,7 +274,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         }
         return (
             <div className="p-4 space-y-4">
-                <h3 className="text-lg font-semibold">Text Tool Properties</h3>
+                <h3 className="text-lg font-semibold">Text Layer Properties</h3>
                 <TextOptions
                     layer={selectedLayer}
                     onLayerUpdate={(updates) => onLayerUpdate(selectedLayer.id, updates)}
@@ -294,7 +294,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         }
         return (
             <div className="p-4 space-y-4">
-                <h3 className="text-lg font-semibold">Shape Tool Properties</h3>
+                <h3 className="text-lg font-semibold">Shape Layer Properties</h3>
                 <ShapeOptions
                     layer={selectedLayer}
                     onLayerUpdate={(updates) => onLayerUpdate(selectedLayer.id, updates)}
@@ -304,7 +304,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         );
     }
     
-    // 6. Gradient Tool (Layer Properties)
+    // 6. Gradient Tool (Layer Properties or Defaults)
     if (activeTool === 'gradient') {
         if (!selectedLayer || selectedLayer.type !== 'gradient') {
             return <div className="p-4 space-y-4"><h3 className="text-lg font-semibold">Gradient Tool Defaults</h3>{renderBrushAndFillOptions()}</div>;
