@@ -87,6 +87,9 @@ export const LiveBrushCanvas = ({
     } else {
       ctx.globalCompositeOperation = 'source-over';
     }
+    
+    // Reset filter to prevent artifacts
+    ctx.filter = 'none'; 
 
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
@@ -94,15 +97,8 @@ export const LiveBrushCanvas = ({
       const y = start.y + (end.y - start.y) * t;
 
       const radius = size / 2;
-      const featherRadius = isPencil ? 0 : radius * (1 - hardness / 100);
+      // const featherRadius = isPencil ? 0 : radius * (1 - hardness / 100); // Removed dynamic filter logic
       
-      // Apply blur for hardness simulation (only for non-pencil tools)
-      if (!isPencil && featherRadius > 0) {
-        ctx.filter = `blur(${featherRadius}px)`;
-      } else {
-        ctx.filter = 'none';
-      }
-
       if (isStampTool && cloneSourcePoint) {
         // --- Clone Stamp Logic ---
         // STUB: Draw a placeholder circle to show the brush path.
@@ -306,7 +302,7 @@ export const LiveBrushCanvas = ({
         className={cn(
           "absolute top-0 left-0",
           // Only allow mouse events if the tool is active and not a selection tool
-          (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || isStampTool || isHistoryBrush) && "pointer-events-auto",
+          (activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || isStampTool || isHistoryBrush || isSelectionBrush) && "pointer-events-auto",
           isDrawing && "cursor-none"
         )}
         style={{

@@ -286,7 +286,7 @@ export const Index = () => {
         {isMobileOptionsOpen && (
           <div className={cn("absolute left-0 right-0 h-1/2 bg-background border-t border-border/50 z-20 shadow-2xl transition-all duration-300", mobileOptionsBottomOffset)}>
             <ScrollArea className="h-full">
-              <MobileToolOptions {...mobileOptionsProps} activeMobileTab={activeMobileTab} />
+              <MobileToolOptions {...mobileOptionsProps} activeMobileTab={activeMobileTab} onApplyPreset={handleApplyPreset} />
             </ScrollArea>
             {/* Close button for the options panel */}
             <Button 
@@ -307,8 +307,6 @@ export const Index = () => {
 
         {/* 5. Bottom Navigation */}
         <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleSetActiveTab} />
-        
-        {/* Dialogs remain here */}
       </div>
     );
   }
@@ -352,7 +350,7 @@ export const Index = () => {
         
         {/* Right Sidebar Panel (Layers/Channels/Properties) */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
-          <Sidebar {...mobileOptionsProps} />
+          <Sidebar {...mobileOptionsProps} onApplyPreset={handleApplyPreset} />
         </ResizablePanel>
       </ResizablePanelGroup>
       
