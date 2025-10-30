@@ -20,6 +20,10 @@ import { LayerPropertiesContent } from "../editor/LayerPropertiesContent";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Crop from "@/components/editor/Crop"; // Import Crop
 import Transform from "@/components/editor/Transform"; // Import Transform
+import { TextOptions } from "../editor/TextOptions"; // Import TextOptions
+import ShapeOptions from "../editor/ShapeOptions"; // Import ShapeOptions
+import { GradientOptions } from "../editor/GradientOptions"; // Import GradientOptions
+import { Label } from "@/components/ui/label";
 
 // We reuse the props interface from RightSidebarTabsProps for convenience
 interface MobileToolOptionsProps extends RightSidebarTabsProps {
@@ -239,7 +243,21 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       return <div className="p-4 space-y-4">{brushAndFillOptions}</div>;
     }
 
-    // 2. Tools that use Global Adjustment components (Crop, Transform)
+    // 2. Selection Tools (Marquee, Lasso, QuickSelect, MagicWand, ObjectSelect)
+    if (isSelectionTool || activeTool === 'move') {
+        return (
+            <div className="p-4 space-y-4">
+                <SelectionToolOptions
+                    activeTool={activeTool}
+                    settings={selectionSettings}
+                    onSettingChange={onSelectionSettingChange}
+                    onSettingCommit={onSelectionSettingCommit}
+                />
+            </div>
+        );
+    }
+    
+    // 3. Crop Tool
     if (activeTool === 'crop') {
       return (
         <div className="p-4 space-y-4">
@@ -249,50 +267,66 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       );
     }
     
-    // 3. Tools that rely on Layer Properties (Text, Shape, Gradient)
-    if (activeTool === 'text' || activeTool === 'shape' || activeTool === 'gradient') {
-        // If the tool is active, we show the layer properties content, 
-        // which handles the specific options for creating/editing that layer type.
+    // 4. Text Tool
+    if (activeTool === 'text') {
+        if (!selectedLayer || selectedLayer.type !== 'text') {
+            return <p className="text-sm text-muted-foreground p-4">Click on the canvas to create a new text layer, or select an existing text layer to edit its properties.</p>;
+        }
         return (
             <div className="p-4 space-y-4">
-                <h3 className="text-lg font-semibold capitalize">{activeTool} Tool Properties</h3>
-                <LayerPropertiesContent
-                    // Pass all necessary props for LayerPropertiesContent
-                    {...props}
+                <h3 className="text-lg font-semibold">Text Tool Properties</h3>
+                <TextOptions
+                    layer={selectedLayer}
+                    onLayerUpdate={(updates) => onLayerUpdate(selectedLayer.id, updates)}
+                    onLayerCommit={(name) => onLayerCommit(selectedLayer.id, name)}
+                    systemFonts={systemFonts}
+                    customFonts={customFonts}
+                    onOpenFontManager={onOpenFontManager}
                 />
             </div>
         );
     }
     
-    // 4. Selection Tools (Marquee, Lasso, QuickSelect, MagicWand, ObjectSelect)
-    if (isSelectionTool) {
+    // 5. Shape Tool
+    if (activeTool === 'shape') {
+        if (!selectedLayer || selectedLayer.type !== 'vector-shape') {
+            return <p className="text-sm text-muted-foreground p-4">Click on the canvas to draw a new shape, or select an existing shape layer to edit its properties.</p>;
+        }
         return (
             <div className="p-4 space-y-4">
-                <SelectionToolOptions
-                    activeTool={activeTool}
-                    settings={selectionSettings}
-                    onSettingChange={onSelectionSettingChange}
-                    onSettingCommit={onSelectionSettingCommit}
+                <h3 className="text-lg font-semibold">Shape Tool Properties</h3>
+                <ShapeOptions
+                    layer={selectedLayer}
+                    onLayerUpdate={(updates) => onLayerUpdate(selectedLayer.id, updates)}
+                    onLayerCommit={(name) => onLayerCommit(selectedLayer.id, name)}
                 />
             </div>
         );
     }
     
-    // 5. Move Tool
-    if (activeTool === 'move') {
+    // 6. Gradient Tool (Layer Properties)
+    if (activeTool === 'gradient') {
+        if (!selectedLayer || selectedLayer.type !== 'gradient') {
+            return <div className="p-4 space-y-4"><h3 className="text-lg font-semibold">Gradient Tool Defaults</h3>{renderBrushAndFillOptions()}</div>;
+        }
         return (
             <div className="p-4 space-y-4">
-                <SelectionToolOptions
-                    activeTool={activeTool}
-                    settings={selectionSettings}
-                    onSettingChange={onSelectionSettingChange}
-                    onSettingCommit={onSelectionSettingCommit}
+                <h3 className="text-lg font-semibold">Gradient Layer Properties</h3>
+                <GradientOptions
+                    layer={selectedLayer}
+                    onLayerUpdate={(updates) => onLayerUpdate(selectedLayer.id, updates)}
+                    onLayerCommit={(name) => onLayerCommit(selectedLayer.id, name)}
+                    gradientToolState={gradientToolState}
+                    setGradientToolState={setGradientToolState}
+                    gradientPresets={gradientPresets}
+                    onSaveGradientPreset={onSaveGradientPreset}
+                    onDeleteGradientPreset={onDeleteGradientPreset}
                 />
             </div>
         );
     }
     
-    // 6. Other tools (Eyedropper)
+    // 7. Other tools (Eyedropper)
     if (activeTool === 'eyedropper') {
         return (
             <p className="text-sm text-muted-foreground p-4">
@@ -317,24 +351,27 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         // If a layer is selected, show its properties. Otherwise, show the Layers Panel.
         if (selectedLayer) {
           return (
-            <LayerPropertiesContent
-              selectedLayer={selectedLayer}
-              imgRef={imgRef}
-              onLayerUpdate={onLayerUpdate}
-              onLayerCommit={onLayerCommit}
-              systemFonts={systemFonts}
-              customFonts={customFonts}
-              onOpenFontManager={onOpenFontManager}
-              gradientToolState={gradientToolState}
-              setGradientToolState={setGradientToolState}
-              gradientPresets={gradientPresets}
-              onSaveGradientPreset={onSaveGradientPreset}
-              onDeleteGradientPreset={onDeleteGradientPreset}
-              customHslColor={customHslColor}
-              setCustomHslColor={setCustomHslColor}
-              onRemoveLayerMask={onRemoveLayerMask}
-              onInvertLayerMask={onInvertLayerMask}
-            />
+            <div className="p-4 space-y-4">
+                <h3 className="text-lg font-semibold">Layer Properties</h3>
+                <LayerPropertiesContent
+                    selectedLayer={selectedLayer}
+                    imgRef={imgRef}
+                    onLayerUpdate={(id, updates) => onLayerUpdate(id, updates)}
+                    onLayerCommit={(id, name) => onLayerCommit(id, name)}
+                    systemFonts={systemFonts}
+                    customFonts={customFonts}
+                    onOpenFontManager={onOpenFontManager}
+                    gradientToolState={gradientToolState}
+                    setGradientToolState={setGradientToolState}
+                    gradientPresets={gradientPresets}
+                    onSaveGradientPreset={onSaveGradientPreset}
+                    onDeleteGradientPreset={onDeleteGradientPreset}
+                    customHslColor={customHslColor}
+                    setCustomHslColor={setCustomHslColor}
+                    onRemoveLayerMask={onRemoveLayerMask}
+                    onInvertLayerMask={onInvertLayerMask}
+                />
+            </div>
           );
         }
         return (
