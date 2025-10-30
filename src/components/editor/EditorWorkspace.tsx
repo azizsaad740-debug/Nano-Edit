@@ -140,6 +140,9 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush'; // NEW
   const isGradientToolActive = activeTool === 'gradient' && gradientStart && gradientCurrent;
 
+  // Define the transform string for rotated/flipped elements
+  const transformStyle = `rotateZ(${rotation || 0}deg) scaleX(${scaleX ?? 1}) scaleY(${scaleY ?? 1})`;
+
   // --- Filter String Generation ---
   const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && currentEditState.selectiveBlurMask ? `url(#selective-blur-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
 
@@ -230,7 +233,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               alt="Base Image"
               className="absolute top-0 left-0 w-full h-full object-cover"
               style={{
-                transform: `rotateZ(${rotation || 0}deg) scaleX(${scaleX ?? 1}) scaleY(${scaleY ?? 1})`,
+                transform: transformStyle, // Apply rotation/flip
                 filter: filterString,
                 transformOrigin: 'center center',
                 opacity: (backgroundLayer?.opacity ?? 100) / 100,
@@ -256,76 +259,116 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
 
           {/* Live Brush Canvas for Drawing/Erasing/Stamping/History Brush */}
           {(isBrushToolActive || isHistoryBrushActive) && dimensions && (
-            <LiveBrushCanvas
-              imageNaturalDimensions={dimensions}
-              onStrokeEnd={(strokeDataUrl, operation, historyStateName) => {
-                if (isHistoryBrushActive) {
-                  handleHistoryBrushStrokeEnd(strokeDataUrl, selectedLayerId || '', historyStateName || 'Current State');
-                } else {
-                  handleDrawingStrokeEnd(strokeDataUrl, selectedLayerId || '');
-                }
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                transform: transformStyle, // Apply rotation/flip
+                transformOrigin: 'center center',
               }}
-              activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush'}
-              brushState={brushState}
-              foregroundColor={foregroundColor}
-              backgroundColor={backgroundColor}
-              cloneSourcePoint={cloneSourcePoint} // PASSED
-              selectedLayerId={selectedLayerId} // PASSED SELECTED ID
-              zoom={workspaceZoom}
-            />
+            >
+              <LiveBrushCanvas
+                imageNaturalDimensions={dimensions}
+                onStrokeEnd={(strokeDataUrl, operation, historyStateName) => {
+                  if (isHistoryBrushActive) {
+                    handleHistoryBrushStrokeEnd(strokeDataUrl, selectedLayerId || '', historyStateName || 'Current State');
+                  } else {
+                    handleDrawingStrokeEnd(strokeDataUrl, selectedLayerId || '');
+                  }
+                }}
+                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush'}
+                brushState={brushState}
+                foregroundColor={foregroundColor}
+                backgroundColor={backgroundColor}
+                cloneSourcePoint={cloneSourcePoint}
+                selectedLayerId={selectedLayerId}
+                zoom={workspaceZoom}
+              />
+            </div>
           )}
 
           {/* Live Brush Canvas for Selection/Blur Masking */}
           {isSelectionBrushToolActive && dimensions && (
-            <LiveBrushCanvas
-              imageNaturalDimensions={dimensions}
-              onStrokeEnd={handleSelectionBrushStrokeEnd}
-              activeTool={activeTool as 'selectionBrush' | 'blurBrush'}
-              brushState={brushState}
-              foregroundColor={foregroundColor}
-              backgroundColor={backgroundColor}
-              cloneSourcePoint={null}
-              selectedLayerId={selectedLayerId} // PASSED SELECTED ID
-              zoom={workspaceZoom}
-            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                transform: transformStyle, // Apply rotation/flip
+                transformOrigin: 'center center',
+              }}
+            >
+              <LiveBrushCanvas
+                imageNaturalDimensions={dimensions}
+                onStrokeEnd={handleSelectionBrushStrokeEnd}
+                activeTool={activeTool as 'selectionBrush' | 'blurBrush'}
+                brushState={brushState}
+                foregroundColor={foregroundColor}
+                backgroundColor={backgroundColor}
+                cloneSourcePoint={null}
+                selectedLayerId={selectedLayerId}
+                zoom={workspaceZoom}
+              />
+            </div>
           )}
 
           {/* Live Selection Canvas (Lasso/Polygonal Lasso) */}
           {isLassoActive && dimensions && (
-            <SelectionCanvas
-              imageRef={imgRef}
-              onSelectionComplete={(path) => {
-                // Convert path to mask and set state (handled in useEditorLogic)
-                if (path.length > 1) {
-                  polygonToMaskDataUrl(path, dimensions.width, dimensions.height)
-                    .then(setSelectionMaskDataUrl)
-                    .catch(() => showError("Failed to create lasso mask."));
-                }
-                setSelectionPath(path);
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                transform: transformStyle, // Apply rotation/flip
+                transformOrigin: 'center center',
               }}
-              selectionPath={selectionPath}
-              activeTool={activeTool as 'lasso' | 'lassoPoly'}
-            />
+            >
+              <SelectionCanvas
+                imageRef={imgRef}
+                onSelectionComplete={(path) => {
+                  // Convert path to mask and set state (handled in useEditorLogic)
+                  if (path.length > 1) {
+                    polygonToMaskDataUrl(path, dimensions.width, dimensions.height)
+                      .then(setSelectionMaskDataUrl)
+                      .catch(() => showError("Failed to create lasso mask."));
+                  }
+                  setSelectionPath(path);
+                }}
+                selectionPath={selectionPath}
+                activeTool={activeTool as 'lasso' | 'lassoPoly'}
+              />
+            </div>
           )}
 
           {/* Live Marquee Canvas */}
           {isMarqueeActive && marqueeStart && marqueeCurrent && (
-            <MarqueeCanvas
-              start={marqueeStart}
-              current={marqueeCurrent}
-              activeTool={activeTool as 'marqueeRect' | 'marqueeEllipse'}
-            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                transform: transformStyle, // Apply rotation/flip
+                transformOrigin: 'center center',
+              }}
+            >
+              <MarqueeCanvas
+                start={marqueeStart}
+                current={marqueeCurrent}
+                activeTool={activeTool as 'marqueeRect' | 'marqueeEllipse'}
+              />
+            </div>
           )}
 
           {/* Live Gradient Preview */}
           {isGradientToolActive && dimensions && workspaceRef.current && (
-            <GradientPreviewCanvas
-              start={gradientStart}
-              current={gradientCurrent}
-              gradientToolState={gradientToolState}
-              containerRect={workspaceRef.current.getBoundingClientRect()}
-              imageNaturalDimensions={dimensions}
-            />
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                transform: transformStyle, // Apply rotation/flip
+                transformOrigin: 'center center',
+              }}
+            >
+              <GradientPreviewCanvas
+                start={gradientStart}
+                current={gradientCurrent}
+                gradientToolState={gradientToolState}
+                containerRect={workspaceRef.current.getBoundingClientRect()}
+                imageNaturalDimensions={dimensions}
+              />
+            </div>
           )}
 
           {/* Crop Tool Overlay */}
@@ -348,6 +391,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
                   height: '100%',
                   opacity: 0, // Hide the image inside ReactCrop, we use the main image
                   pointerEvents: 'none',
+                  // NOTE: ReactCrop handles its own internal transforms, so we don't apply transformStyle here.
                 }}
               />
             </ReactCrop>
