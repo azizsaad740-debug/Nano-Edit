@@ -63,14 +63,16 @@ export const useLayerTransform = ({
     const initialPoints = pointDragStartInfo.current.initialPoints;
     if (!initialPoints) return;
 
-    // Scale down screen movement by zoom factor
-    const dx = (e.clientX - pointDragStartInfo.current.x) / zoom;
-    const dy = (e.clientY - pointDragStartInfo.current.y) / zoom;
+    // Calculate movement in screen pixels
+    const dxScreen = (e.clientX - pointDragStartInfo.current.x);
+    const dyScreen = (e.clientY - pointDragStartInfo.current.y);
 
     // Convert pixel movement (dx, dy) to percentage movement relative to the layer's bounding box
+    // Since layer points are relative to the layer's unscaled size, and layerRect is scaled by zoom,
+    // we use the screen movement divided by the scaled layer dimensions.
     const layerRect = layerRef.current.getBoundingClientRect();
-    const dxPercent = (dx / layerRect.width) * 100;
-    const dyPercent = (dy / layerRect.height) * 100;
+    const dxPercent = (dxScreen / layerRect.width) * 100;
+    const dyPercent = (dyScreen / layerRect.height) * 100;
 
     const newPoints = initialPoints.map((p, index) => {
       if (index === isDraggingPoint) {
@@ -80,7 +82,7 @@ export const useLayerTransform = ({
     });
 
     onUpdate(layer.id, { points: newPoints });
-  }, [isDraggingPoint, layer.id, layer, onUpdate, zoom]);
+  }, [isDraggingPoint, layer.id, layer, onUpdate]); // Removed zoom dependency as it cancels out
 
   const handlePointDragMouseUp = React.useCallback(() => {
     if (isDraggingPoint !== null) {
@@ -126,12 +128,17 @@ export const useLayerTransform = ({
 
     const containerRect = containerRef.current.getBoundingClientRect();
     
-    // Scale down screen movement by zoom factor
-    const dx = (e.clientX - dragStartInfo.current.x) / zoom;
-    const dy = (e.clientY - dragStartInfo.current.y) / zoom;
+    // Calculate movement in screen pixels
+    const dxScreen = (e.clientX - dragStartInfo.current.x);
+    const dyScreen = (e.clientY - dragStartInfo.current.y);
 
-    const dxPercent = (dx / containerRect.width) * 100;
-    const dyPercent = (dy / containerRect.height) * 100;
+    // Calculate unscaled dimensions of the container (W_natural_on_screen = W_scaled / zoom)
+    const unscaledWidth = containerRect.width / zoom;
+    const unscaledHeight = containerRect.height / zoom;
+
+    // Calculate percentage movement relative to the unscaled container size
+    const dxPercent = (dxScreen / unscaledWidth) * 100;
+    const dyPercent = (dyScreen / unscaledHeight) * 100;
 
     const newX = dragStartInfo.current.initialX + dxPercent;
     const newY = dragStartInfo.current.initialY + dyPercent;
@@ -198,12 +205,17 @@ export const useLayerTransform = ({
     const { x: startX, y: startY, initialWidth, initialHeight, initialX, initialY, position } = resizeStartInfo.current;
     const containerRect = containerRef.current.getBoundingClientRect();
     
-    // Scale down screen movement by zoom factor
-    const dx = (e.clientX - startX) / zoom;
-    const dy = (e.clientY - startY) / zoom;
+    // Calculate movement in screen pixels
+    const dxScreen = (e.clientX - startX);
+    const dyScreen = (e.clientY - startY);
 
-    const dxPercent = (dx / containerRect.width) * 100;
-    const dyPercent = (dy / containerRect.height) * 100;
+    // Calculate unscaled dimensions of the container
+    const unscaledWidth = containerRect.width / zoom;
+    const unscaledHeight = containerRect.height / zoom;
+
+    // Calculate percentage movement relative to the unscaled container size
+    const dxPercent = (dxScreen / unscaledWidth) * 100;
+    const dyPercent = (dyScreen / unscaledHeight) * 100;
 
     let newWidth = initialWidth;
     let newHeight = initialHeight;
