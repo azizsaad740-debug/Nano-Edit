@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid, PenTool, History } from "lucide-react";
 import { ChannelsPanel } from "@/components/editor/ChannelsPanel";
-import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
+import GlobalEffectsPanel from "@/components/editor/GlobalEffectsPanel"; // UPDATED IMPORT
 import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
 import { BrushOptions } from "@/components/editor/BrushOptions";
 import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
@@ -17,196 +17,105 @@ import type { RightSidebarTabsProps } from "./Sidebar";
 import BrushesPanel from "../auxiliary/BrushesPanel"; // Import BrushesPanel
 import PathsPanel from "../auxiliary/PathsPanel"; // Import PathsPanel
 import HistoryPanel from "../auxiliary/HistoryPanel"; // Import HistoryPanel
+import Crop from "@/components/editor/Crop"; // Import Crop
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const { activeTool, selectedLayer, brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, history, cloneSourcePoint } = props;
 
   const isLayerSelected = !!selectedLayer;
-  const isTextToolActive = activeTool === 'text';
-  const isShapeToolActive = activeTool === 'shape';
-  const isGradientToolActive = activeTool === 'gradient';
   
-  const isLayerSpecificTool = isTextToolActive || isShapeToolActive || isGradientToolActive;
-  const isLayerPropertyPanelActive = isLayerSelected && !isLayerSpecificTool;
+  const isBrushTool = activeTool === 'brush';
+  const isEraserTool = activeTool === 'eraser';
+  const isPencilTool = activeTool === 'pencil';
+  const isSelectionBrushTool = activeTool === 'selectionBrush';
+  const isBlurBrushTool = activeTool === 'blurBrush';
+  const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
+  const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
+  const isGradientTool = activeTool === 'gradient';
+  const isPaintBucketTool = activeTool === 'paintBucket';
+  const isCropTool = activeTool === 'crop';
+  const isTransformTool = activeTool === 'move'; // Move tool options include transform controls
+  const isSelectionTool = activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect';
+  const isTextTool = activeTool === 'text';
+  const isShapeTool = activeTool === 'shape';
+  const isEyedropperTool = activeTool === 'eyedropper';
 
-  const renderPropertiesContent = () => {
-    // 1. Layer Properties (if a layer is selected AND it's not a layer-specific tool)
-    if (isLayerPropertyPanelActive) {
-      return (
-        <LayerPropertiesContent
-          selectedLayer={selectedLayer}
-          imgRef={props.imgRef}
-          onLayerUpdate={props.onLayerUpdate}
-          onLayerCommit={props.onLayerCommit}
-          systemFonts={props.systemFonts}
-          customFonts={props.customFonts}
-          onOpenFontManager={props.onOpenFontManager}
-          gradientToolState={props.gradientToolState}
-          setGradientToolState={props.setGradientToolState}
-          gradientPresets={props.gradientPresets}
-          onSaveGradientPreset={props.onSaveGradientPreset}
-          onDeleteGradientPreset={props.onDeleteGradientPreset}
-          customHslColor={props.customHslColor}
-          setCustomHslColor={props.setCustomHslColor}
-          onRemoveLayerMask={props.onRemoveLayerMask}
-          onInvertLayerMask={props.onInvertLayerMask}
-        />
-      );
-    }
-    
-    // 2. Tool Options (if a layer-specific tool is active)
-    if (isLayerSpecificTool) {
-      return (
-        <LayerPropertiesContent
-          selectedLayer={selectedLayer}
-          imgRef={props.imgRef}
-          onLayerUpdate={props.onLayerUpdate}
-          onLayerCommit={props.onLayerCommit}
-          systemFonts={props.systemFonts}
-          customFonts={props.customFonts}
-          onOpenFontManager={props.onOpenFontManager}
-          gradientToolState={props.gradientToolState}
-          setGradientToolState={props.setGradientToolState}
-          gradientPresets={props.gradientPresets}
-          onSaveGradientPreset={props.onSaveGradientPreset}
-          onDeleteGradientPreset={props.onDeleteGradientPreset}
-          customHslColor={props.customHslColor}
-          setCustomHslColor={props.setCustomHslColor}
-          onRemoveLayerMask={props.onRemoveLayerMask}
-          onInvertLayerMask={props.onInvertLayerMask}
-        />
-      );
-    }
-    
-    // 3. Global Adjustments (if no layer is selected and no layer-specific tool is active)
-    if (!isLayerSelected && !isLayerSpecificTool) {
-      return (
-        <GlobalAdjustmentsPanel
-          hasImage={props.hasImage}
-          adjustments={props.adjustments}
-          onAdjustmentChange={props.onAdjustmentChange}
-          onAdjustmentCommit={props.onAdjustmentCommit}
-          effects={props.effects}
-          onEffectChange={props.onEffectChange}
-          onEffectCommit={props.onEffectCommit}
-          grading={props.grading}
-          onGradingChange={props.onGradingChange}
-          onGradingCommit={props.onGradingCommit}
-          hslAdjustments={props.hslAdjustments}
-          onHslAdjustmentChange={props.onHslAdjustmentChange}
-          onHslAdjustmentCommit={props.onHslAdjustmentCommit}
-          curves={props.curves}
-          onCurvesChange={props.onCurvesChange}
-          onCurvesCommit={props.onCurvesCommit}
-          onFilterChange={props.onFilterChange}
-          selectedFilter={props.selectedFilter}
-          onTransformChange={props.onTransformChange}
-          rotation={props.rotation}
-          onRotationChange={props.onRotationChange}
-          onRotationCommit={props.onRotationCommit}
-          onAspectChange={props.onAspectChange}
-          aspect={props.aspect}
-          frame={props.frame}
-          onFramePresetChange={props.onFramePresetChange}
-          onFramePropertyChange={props.onFramePropertyChange}
-          onFramePropertyCommit={props.onFramePropertyCommit}
-          imgRef={props.imgRef}
-          customHslColor={props.customHslColor}
-          setCustomHslColor={props.setCustomHslColor}
-          presets={props.presets}
-          onApplyPreset={props.onApplyPreset}
-          onSavePreset={props.onSavePreset}
-          onDeletePreset={props.onDeletePreset}
-        />
-      );
-    }
-
-    return (
-      <p className="text-sm text-muted-foreground p-4">
-        Select a layer or activate a tool to view properties.
-      </p>
-    );
-  };
+  const isToolActive = isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isStampTool || isHistoryBrushTool || isGradientTool || isPaintBucketTool || isCropTool || isTransformTool || isSelectionTool || isTextTool || isShapeTool || isEyedropperTool;
 
   const renderToolOptionsContent = () => {
-    const isBrushTool = activeTool === 'brush';
-    const isEraserTool = activeTool === 'eraser';
-    const isPencilTool = activeTool === 'pencil';
-    const isSelectionBrushTool = activeTool === 'selectionBrush';
-    const isBlurBrushTool = activeTool === 'blurBrush';
-    const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
-    const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
-    const isGradientTool = activeTool === 'gradient';
-    const isPaintBucketTool = activeTool === 'paintBucket';
-    const isSelectionTool = activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect' || activeTool === 'move';
-
+    // 1. Brush/Eraser/Pencil
     if (isBrushTool || isEraserTool) {
       return (
         <BrushOptions
           activeTool={isEraserTool ? 'eraser' : 'brush'}
           brushSize={brushState.size}
-          setBrushSize={(size) => setBrushState({ size })}
+          setBrushSize={(size) => props.setBrushState({ size })}
           brushOpacity={brushState.opacity}
-          setBrushOpacity={(opacity) => setBrushState({ opacity })}
+          setBrushOpacity={(opacity) => props.setBrushState({ opacity })}
           foregroundColor={props.foregroundColor}
           setForegroundColor={props.setForegroundColor}
           brushHardness={brushState.hardness}
-          setBrushHardness={(hardness) => setBrushState({ hardness })}
+          setBrushHardness={(hardness) => props.setBrushState({ hardness })}
           brushSmoothness={brushState.smoothness}
-          setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
+          setBrushSmoothness={(smoothness) => props.setBrushState({ smoothness })}
           brushShape={brushState.shape}
-          setBrushShape={(shape) => setBrushState({ shape })}
+          setBrushShape={(shape) => props.setBrushState({ shape })}
           brushFlow={brushState.flow}
-          setBrushFlow={(flow) => setBrushState({ flow })}
+          setBrushFlow={(flow) => props.setBrushState({ flow })}
           brushAngle={brushState.angle}
-          setBrushAngle={(angle) => setBrushState({ angle })}
+          setBrushAngle={(angle) => props.setBrushState({ angle })}
           brushRoundness={brushState.roundness}
-          setBrushRoundness={(roundness) => setBrushState({ roundness })}
+          setBrushRoundness={(roundness) => props.setBrushState({ roundness })}
           brushSpacing={brushState.spacing}
-          setBrushSpacing={(spacing) => setBrushState({ spacing })}
+          setBrushSpacing={(spacing) => props.setBrushState({ spacing })}
           brushBlendMode={brushState.blendMode}
-          setBrushBlendMode={(blendMode) => setBrushState({ blendMode })}
+          setBrushBlendMode={(blendMode) => props.setBrushState({ blendMode })}
         />
       );
     }
+    // 2. Pencil
     if (isPencilTool) {
       return (
         <PencilOptions
           brushState={brushState}
-          setBrushState={setBrushState}
+          setBrushState={props.setBrushState}
           foregroundColor={props.foregroundColor}
           setForegroundColor={props.setForegroundColor}
         />
       );
     }
-    if (isSelectionBrushTool) {
+    // 3. Selection/Blur Brush
+    if (isSelectionBrushTool || isBlurBrushTool) {
       return (
         <BlurBrushOptions
-          selectiveBlurStrength={selectiveBlurAmount}
-          onStrengthChange={onSelectiveBlurAmountChange}
-          onStrengthCommit={onSelectiveBlurAmountCommit}
+          selectiveBlurStrength={props.selectiveBlurAmount}
+          onStrengthChange={props.onSelectiveBlurAmountChange}
+          onStrengthCommit={props.onSelectiveBlurAmountCommit}
         />
       );
     }
+    // 4. Stamp Tools
     if (isStampTool) {
-      return <StampOptions cloneSourcePoint={cloneSourcePoint} />;
+      return <StampOptions cloneSourcePoint={props.cloneSourcePoint} />;
     }
+    // 5. History Brush Tools
     if (isHistoryBrushTool) {
       return (
         <HistoryBrushOptions
           activeTool={activeTool as 'historyBrush' | 'artHistoryBrush'}
-          history={history}
+          history={props.history}
           brushSize={brushState.size}
-          setBrushSize={(size) => setBrushState({ size })}
+          setBrushSize={(size) => props.setBrushState({ size })}
           brushOpacity={brushState.opacity}
-          setBrushOpacity={(opacity) => setBrushState({ opacity })}
+          setBrushOpacity={(opacity) => props.setBrushState({ opacity })}
           brushFlow={brushState.flow}
-          setBrushFlow={(flow) => setBrushState({ flow })}
+          setBrushFlow={(flow) => props.setBrushState({ flow })}
           historyBrushSourceIndex={props.historyBrushSourceIndex}
           setHistoryBrushSourceIndex={props.setHistoryBrushSourceIndex}
         />
       );
     }
+    // 6. Gradient Tool Defaults
     if (isGradientTool) {
       return (
         <GradientToolOptions
@@ -219,10 +128,12 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         />
       );
     }
+    // 7. Paint Bucket
     if (isPaintBucketTool) {
       return <PaintBucketOptions />;
     }
-    if (isSelectionTool) {
+    // 8. Selection Tools / Move Tool
+    if (isSelectionTool || isTransformTool) {
       return (
         <SelectionToolOptions
           activeTool={activeTool}
@@ -232,11 +143,86 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         />
       );
     }
+    // 9. Crop Tool
+    if (isCropTool) {
+      return (
+        <div className="p-4 space-y-4">
+          <h3 className="text-md font-semibold">Crop Tool Options</h3>
+          <Crop onAspectChange={props.onAspectChange} currentAspect={props.aspect} />
+        </div>
+      );
+    }
+    // 10. Eyedropper
+    if (isEyedropperTool) {
+      return (
+        <p className="text-sm text-muted-foreground p-4">
+          Eyedropper Tool is active. Click on the image to sample a color.
+        </p>
+      );
+    }
     
+    return null;
+  };
+
+  const renderPropertiesContent = () => {
+    // Priority 1: Tool Options (if a non-layer-specific tool is active)
+    const toolOptions = renderToolOptionsContent();
+    if (toolOptions) {
+      return <div className="p-4 space-y-4">{toolOptions}</div>;
+    }
+
+    // Priority 2: Layer Properties (if a layer is selected)
+    if (isLayerSelected) {
+      return (
+        <div className="p-4 space-y-4">
+          <LayerPropertiesContent
+            selectedLayer={selectedLayer}
+            imgRef={props.imgRef}
+            onLayerUpdate={props.onLayerUpdate}
+            onLayerCommit={props.onLayerCommit}
+            systemFonts={props.systemFonts}
+            customFonts={props.customFonts}
+            onOpenFontManager={props.onOpenFontManager}
+            gradientToolState={props.gradientToolState}
+            setGradientToolState={props.setGradientToolState}
+            gradientPresets={props.gradientPresets}
+            onSaveGradientPreset={props.onSaveGradientPreset}
+            onDeleteGradientPreset={props.onDeleteGradientPreset}
+            customHslColor={props.customHslColor}
+            setCustomHslColor={props.setCustomHslColor}
+            onRemoveLayerMask={props.onRemoveLayerMask}
+            onInvertLayerMask={props.onInvertLayerMask}
+          />
+        </div>
+      );
+    }
+    
+    // Priority 3: Global Effects/Transform (if no layer is selected)
     return (
-      <p className="text-sm text-muted-foreground p-4">
-        Select a tool to view its options.
-      </p>
+      <div className="p-4 space-y-4">
+        <GlobalEffectsPanel
+          hasImage={props.hasImage}
+          effects={props.effects}
+          onEffectChange={props.onEffectChange}
+          onEffectCommit={props.onEffectCommit}
+          onFilterChange={props.onFilterChange}
+          selectedFilter={props.selectedFilter}
+          onTransformChange={props.onTransformChange}
+          rotation={props.rotation}
+          onRotationChange={props.onRotationChange}
+          onRotationCommit={props.onRotationCommit}
+          onAspectChange={props.onAspectChange}
+          aspect={props.aspect}
+          frame={props.frame}
+          onFramePresetChange={props.onFramePresetChange}
+          onFramePropertyChange={props.onFramePropertyChange}
+          onFramePropertyCommit={props.onFramePropertyCommit}
+          presets={props.presets}
+          onApplyPreset={props.onApplyPreset}
+          onSavePreset={props.onSavePreset}
+          onDeletePreset={props.onDeletePreset}
+        />
+      </div>
     );
   };
 
@@ -313,10 +299,15 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           
           <TabsContent value="brushes">
             <div className="space-y-4">
-              <h3 className="text-md font-semibold">Tool Options</h3>
-              {renderToolOptionsContent()}
+              <h3 className="text-md font-semibold p-2">Tool Options</h3>
+              {/* Render tool options here if a brush/stamp/history tool is active */}
+              {(isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isStampTool || isHistoryBrushTool) && (
+                <div className="px-2">
+                  {renderToolOptionsContent()}
+                </div>
+              )}
+              <BrushesPanel brushState={props.brushState} setBrushState={props.setBrushState} />
             </div>
-            <BrushesPanel brushState={props.brushState} setBrushState={props.setBrushState} />
           </TabsContent>
           
           <TabsContent value="paths">

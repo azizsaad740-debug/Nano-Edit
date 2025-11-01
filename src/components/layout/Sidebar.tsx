@@ -48,22 +48,10 @@ export interface RightSidebarTabsProps {
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;
   handleDestructiveOperation: (operation: 'delete' | 'fill') => void;
-  // Global Adjustments Props
-  adjustments: EditState['adjustments'];
-  onAdjustmentChange: (adjustment: string, value: number) => void;
-  onAdjustmentCommit: (adjustment: string, value: number) => void;
+  // Global Effects Props (Reduced set)
   effects: EditState['effects'];
   onEffectChange: (effect: string, value: number) => void;
   onEffectCommit: (effect: string, value: number) => void;
-  grading: EditState['grading'];
-  onGradingChange: (gradingType: string, value: number) => void;
-  onGradingCommit: (gradingType: string, value: number) => void;
-  hslAdjustments: EditState['hslAdjustments'];
-  onHslAdjustmentChange: (color: any, key: any, value: number) => void;
-  onHslAdjustmentCommit: (color: any, key: any, value: number) => void;
-  curves: EditState['curves'];
-  onCurvesChange: (channel: any, points: any[]) => void;
-  onCurvesCommit: (channel: any, points: any[]) => void;
   onFilterChange: (filterValue: string, filterName: string) => void;
   selectedFilter: string;
   onTransformChange: (transformType: string) => void;
