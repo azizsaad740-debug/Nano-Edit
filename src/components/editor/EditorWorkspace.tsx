@@ -22,6 +22,7 @@ import { ChannelFilter } from "./ChannelFilter";
 import { CurvesFilter } from "./CurvesFilter";
 import { EffectsFilters } from "./EffectsFilters";
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
+import { SelectiveSharpenFilter } from "./SelectiveSharpenFilter"; // NEW IMPORT
 import { AdjustmentLayer } from "./AdjustmentLayer";
 import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import missing utility
 import { showError } from "@/utils/toast"; // Import missing utility
@@ -43,11 +44,13 @@ interface EditorWorkspaceProps {
   selectionMaskDataUrl: string | null;
   selectiveBlurMask: string | null;
   selectiveBlurAmount: number;
+  selectiveSharpenMask: string | null; // NEW
+  selectiveSharpenAmount: number; // NEW
   marqueeStart: Point | null;
   marqueeCurrent: Point | null;
   gradientStart: Point | null;
   gradientCurrent: Point | null;
-  cloneSourcePoint: Point | null; // NEW
+  cloneSourcePoint: Point | null;
   
   // Handlers
   onCropChange: (crop: Crop) => void;
@@ -59,14 +62,15 @@ interface EditorWorkspaceProps {
   setIsMouseOverImage: (isOver: boolean) => void;
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string, historyStateName: string) => void; // NEW
+  handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void; // UPDATED
+  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string, historyStateName: string) => void;
   handleAddDrawingLayer: () => string;
   setSelectionPath: (path: Point[] | null) => void;
   setSelectionMaskDataUrl: (url: string | null) => void;
   clearSelectionState: () => void;
   updateCurrentState: (updates: Partial<EditState>) => void;
-  updateLayer: (id: string, updates: Partial<Layer>) => void; // ADDED
-  commitLayerChange: (id: string) => void; // ADDED
+  updateLayer: (id: string, updates: Partial<Layer>) => void;
+  commitLayerChange: (id: string) => void;
   workspaceZoom: number;
   handleFitScreen: () => void;
   handleZoomIn: () => void;
@@ -91,11 +95,13 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   selectionMaskDataUrl,
   selectiveBlurMask,
   selectiveBlurAmount,
+  selectiveSharpenMask, // NEW
+  selectiveSharpenAmount, // NEW
   marqueeStart,
   marqueeCurrent,
   gradientStart,
   gradientCurrent,
-  cloneSourcePoint, // NEW
+  cloneSourcePoint,
   onCropChange,
   onCropComplete,
   handleWorkspaceMouseDown,
@@ -105,14 +111,15 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   setIsMouseOverImage,
   handleDrawingStrokeEnd,
   handleSelectionBrushStrokeEnd,
-  handleHistoryBrushStrokeEnd, // NEW
+  handleSelectiveRetouchStrokeEnd, // UPDATED
+  handleHistoryBrushStrokeEnd,
   handleAddDrawingLayer,
   setSelectionPath,
   setSelectionMaskDataUrl,
   clearSelectionState,
   updateCurrentState,
-  updateLayer, // ADDED
-  commitLayerChange, // ADDED
+  updateLayer,
+  commitLayerChange,
   workspaceZoom,
   handleFitScreen,
   handleZoomIn,
@@ -136,15 +143,15 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   const isMarqueeActive = activeTool?.startsWith('marquee');
   const isLassoActive = activeTool?.startsWith('lasso');
   const isBrushToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || activeTool === 'cloneStamp' || activeTool === 'patternStamp';
-  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush';
-  const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush'; // NEW
+  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'sharpenTool'; // UPDATED
+  const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
   const isGradientToolActive = activeTool === 'gradient' && gradientStart && gradientCurrent;
 
   // Define the transform string for rotated/flipped elements
   const transformStyle = `rotateZ(${rotation || 0}deg) scaleX(${scaleX ?? 1}) scaleY(${scaleY ?? 1})`;
 
   // --- Filter String Generation ---
-  const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && currentEditState.selectiveBlurMask ? `url(#selective-blur-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
+  const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && selectiveBlurMask ? `url(#selective-blur-filter)` : ''} ${selectiveSharpenAmount > 0 && selectiveSharpenMask ? `url(#selective-sharpen-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
 
   // --- Layer Rendering ---
   const renderLayer = (layer: Layer): JSX.Element | null => {
@@ -209,8 +216,11 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
         <ChannelFilter channels={channels} />
         <CurvesFilter curves={curves} />
         <EffectsFilters effects={effects} />
-        {currentEditState.selectiveBlurMask && dimensions && (
-          <SelectiveBlurFilter maskDataUrl={currentEditState.selectiveBlurMask} blurAmount={selectiveBlurAmount} imageNaturalDimensions={dimensions} />
+        {selectiveBlurAmount > 0 && selectiveBlurMask && dimensions && (
+          <SelectiveBlurFilter maskDataUrl={selectiveBlurMask} blurAmount={selectiveBlurAmount} imageNaturalDimensions={dimensions} />
+        )}
+        {selectiveSharpenAmount > 0 && selectiveSharpenMask && dimensions && (
+          <SelectiveSharpenFilter maskDataUrl={selectiveSharpenMask} sharpenAmount={selectiveSharpenAmount} imageNaturalDimensions={dimensions} />
         )}
         {/* HslFilter and other filters are applied via CSS filter property */}
 
@@ -268,14 +278,16 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             >
               <LiveBrushCanvas
                 imageNaturalDimensions={dimensions}
-                onStrokeEnd={(strokeDataUrl, operation, historyStateName) => {
+                onStrokeEnd={(strokeDataUrl, layerId) => {
                   if (isHistoryBrushActive) {
-                    handleHistoryBrushStrokeEnd(strokeDataUrl, selectedLayerId || '', historyStateName || 'Current State');
+                    handleHistoryBrushStrokeEnd(strokeDataUrl, layerId, 'Current State');
                   } else {
-                    handleDrawingStrokeEnd(strokeDataUrl, selectedLayerId || '');
+                    handleDrawingStrokeEnd(strokeDataUrl, layerId);
                   }
                 }}
-                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush'}
+                onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
+                onSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
+                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'sharpenTool'}
                 brushState={brushState}
                 foregroundColor={foregroundColor}
                 backgroundColor={backgroundColor}
@@ -286,7 +298,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             </div>
           )}
 
-          {/* Live Brush Canvas for Selection/Blur Masking */}
+          {/* Live Brush Canvas for Selection/Blur/Sharpen Masking */}
           {isSelectionBrushToolActive && dimensions && (
             <div
               className="absolute inset-0 pointer-events-none"
@@ -297,8 +309,10 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
             >
               <LiveBrushCanvas
                 imageNaturalDimensions={dimensions}
-                onStrokeEnd={handleSelectionBrushStrokeEnd}
-                activeTool={activeTool as 'selectionBrush' | 'blurBrush'}
+                onStrokeEnd={handleDrawingStrokeEnd} // Placeholder, not used for selection/retouch tools
+                onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
+                onSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
+                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'sharpenTool'}
                 brushState={brushState}
                 foregroundColor={foregroundColor}
                 backgroundColor={backgroundColor}

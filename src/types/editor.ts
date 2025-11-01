@@ -203,6 +203,8 @@ export interface EditState {
   colorMode: 'RGB' | 'CMYK' | 'Grayscale';
   selectiveBlurMask: string | null;
   selectiveBlurAmount: number;
+  selectiveSharpenMask: string | null; // ADDED
+  selectiveSharpenAmount: number; // ADDED
   customHslColor: string;
   selectionSettings: SelectionSettings;
 }
@@ -211,7 +213,6 @@ export interface NewProjectSettings {
   width: number;
   height: number;
   dpi: number;
-  backgroundColor: string;
 }
 
 // --- Layer Types ---
@@ -441,11 +442,13 @@ export const initialEditState: EditState = {
   transforms: { rotation: 0, scaleX: 1, scaleY: 1, flipX: false, flipY: false },
   crop: null,
   frame: { type: 'none', width: 0, color: '#000000' },
-  colorMode: 'RGB',
   selectiveBlurMask: null,
   selectiveBlurAmount: 0,
+  selectiveSharpenMask: null, // ADDED
+  selectiveSharpenAmount: 0, // ADDED
   customHslColor: '#FF00FF',
   selectionSettings: initialSelectionSettings,
+  colorMode: 'RGB',
 };
 
 export const initialBrushState: BrushState = {

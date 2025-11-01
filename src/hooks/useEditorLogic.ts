@@ -13,7 +13,7 @@ import { useCurves } from './useCurves';
 import { useTransform } from './useTransform';
 import { useChannels } from './useChannels';
 import { useSelection } from './useSelection';
-import { useSelectiveBlur } from './useSelectiveBlur';
+import { useSelectiveRetouch } from './useSelectiveRetouch'; // RENAMED IMPORT
 import { useWorkspaceInteraction } from './useWorkspaceInteraction';
 import { useImageLoader } from './useImageLoader';
 import { useProjectSettings } from './useProjectSettings';
@@ -44,7 +44,7 @@ export const useEditorLogic = () => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, 
-    selectiveSharpenAmount, setSelectiveSharpenAmount, // NEW
+    selectiveSharpenAmount, setSelectiveSharpenAmount,
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
@@ -160,17 +160,28 @@ export const useEditorLogic = () => {
   const useFrameProps = { currentEditState, updateCurrentState, recordHistory, layers };
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame(useFrameProps);
 
-  const { selectiveBlurMask, handleSelectiveBlurStrokeEnd, applyPreset: applySelectiveBlurPreset } = useSelectiveBlur(
+  const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset: applySelectiveRetouchPreset } = useSelectiveRetouch(
     currentEditState, updateCurrentState, recordHistory, layers, dimensions
   );
 
   const onSelectiveSharpenAmountChange = useCallback((value: number) => {
     setSelectiveSharpenAmount(value);
-  }, [setSelectiveSharpenAmount]);
+    updateCurrentState({ selectiveSharpenAmount: value }); // Update EditState for live preview
+  }, [setSelectiveSharpenAmount, updateCurrentState]);
 
   const onSelectiveSharpenAmountCommit = useCallback((value: number) => {
     recordHistory(`Set Selective Sharpen Strength to ${value}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
+  
+  const onSelectiveBlurAmountChange = useCallback((value: number) => {
+    setSelectiveBlurAmount(value);
+    updateCurrentState({ selectiveBlurAmount: value }); // Update EditState for live preview
+  }, [setSelectiveBlurAmount, updateCurrentState]);
+
+  const onSelectiveBlurAmountCommit = useCallback((value: number) => {
+    recordHistory(`Set Selective Blur Strength to ${value}`, currentEditState, layers);
+  }, [currentEditState, layers, recordHistory]);
+
 
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // ADDED HOOK CALL
@@ -184,11 +195,11 @@ export const useEditorLogic = () => {
     applyTransformPreset(preset.state);
     applyCropPreset(preset.state);
     applyFramePreset(preset.state);
-    applySelectiveBlurPreset(preset.state);
+    applySelectiveRetouchPreset(preset.state);
     applyChannelsPreset(preset.state);
     recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     showSuccess(`Preset "${preset.name}" applied.`);
-  }, [currentEditState, layers, recordHistory, applyAdjustmentsPreset, applyEffectsPreset, applyGradingPreset, applyHslPreset, applyCurvesPreset, applyTransformPreset, applyCropPreset, applyFramePreset, applySelectiveBlurPreset, applyChannelsPreset]);
+  }, [currentEditState, layers, recordHistory, applyAdjustmentsPreset, applyEffectsPreset, applyGradingPreset, applyHslPreset, applyCurvesPreset, applyTransformPreset, applyCropPreset, applyFramePreset, applySelectiveRetouchPreset, applyChannelsPreset]);
 
   const handleSavePreset = useCallback((name: string) => {
     savePreset(name, currentEditState, layers);
@@ -273,10 +284,16 @@ export const useEditorLogic = () => {
     curves, onCurvesChange, onCurvesCommit, selectedFilter, onFilterChange, channels, onChannelChange,
     transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
     crop: cropState, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
-    // Selective Sharpening (NEW)
-    selectiveSharpenAmount,
+    // Selective Retouching
+    selectiveBlurAmount: currentEditState.selectiveBlurAmount, // Read from EditState for consistency
+    selectiveSharpenAmount: currentEditState.selectiveSharpenAmount, // Read from EditState for consistency
+    selectiveBlurMask: selectiveBlurMask,
+    selectiveSharpenMask: selectiveSharpenMask,
+    onSelectiveBlurAmountChange,
+    onSelectiveBlurAmountCommit,
     onSelectiveSharpenAmountChange,
     onSelectiveSharpenAmountCommit,
+    handleSelectiveRetouchStrokeEnd, // EXPOSED
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,
     // Gradient Presets (from useEditorState)
