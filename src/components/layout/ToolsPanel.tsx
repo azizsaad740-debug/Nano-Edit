@@ -28,9 +28,10 @@ import {
   Wand2, // Magic Wand icon
   ScanEye, // Object Selection icon
   MousePointer2, // Lasso icon
-  PaintBucket, // NEW
-  Stamp, // NEW
-  History, // NEW
+  PaintBucket, 
+  Stamp, 
+  History, 
+  Focus, // Used for Sharpen/Blur/Smudge
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -48,23 +49,6 @@ import { BlurBrushOptions } from "@/components/editor/BlurBrushOptions";
 
 type Tool = ActiveTool;
 
-interface ToolsPanelProps {
-  activeTool: Tool | null;
-  setActiveTool: (tool: Tool | null) => void;
-  selectedShapeType: ShapeType | null; // FIXED TYPE
-  setSelectedShapeType: (type: ShapeType | null) => void; // FIXED TYPE
-  foregroundColor: string;
-  onForegroundColorChange: (color: string) => void;
-  backgroundColor: string;
-  onBackgroundColorChange: (color: string) => void;
-  onSwapColors: () => void;
-  brushState: BrushState;
-  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
-  selectiveBlurStrength: number;
-  onSelectiveBlurStrengthChange: (value: number) => void;
-  onSelectiveBlurStrengthCommit: (value: number) => void;
-}
-
 // --- Tool Definitions ---
 
 const selectionTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'marquee' | 'lasso' | 'quick' | 'magic' | 'object' }[] = [
@@ -81,24 +65,25 @@ const selectionTools: { name: string; icon: React.ElementType; tool: Tool; short
   { name: "Object Selection", icon: ScanEye, tool: "objectSelect", shortcut: "A", group: 'object' },
 ];
 
-const paintAndFillTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'paint' }[] = [
+const paintAndFillTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'paint' | 'fill' | 'gradient' }[] = [
   { name: "Brush Tool", icon: Brush, tool: "brush", shortcut: "B", group: 'paint' },
-  { name: "Pencil Tool", icon: Pencil, tool: "pencil", shortcut: "N", group: 'paint' },
+  { name: "Pencil Tool", icon: Pencil, tool: "pencil", shortcut: "Shift+B", group: 'paint' },
   { name: "Eraser Tool", icon: Eraser, tool: "eraser", shortcut: "E", group: 'paint' },
-  { name: "Paint Bucket Tool", icon: PaintBucket, tool: "paintBucket", shortcut: "G", group: 'paint' },
-  { name: "Gradient Tool", icon: Palette, tool: "gradient", shortcut: "G", group: 'paint' },
+  { name: "Paint Bucket Tool", icon: PaintBucket, tool: "paintBucket", shortcut: "G", group: 'fill' },
+  { name: "Gradient Tool", icon: Palette, tool: "gradient", shortcut: "Shift+G", group: 'gradient' },
 ];
 
 const stampAndHistoryTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'stamp' | 'history' }[] = [
-  { name: "Pattern Stamp Tool", icon: Stamp, tool: "patternStamp", shortcut: "S", group: 'stamp' },
-  { name: "Clone Stamp Tool", icon: Stamp, tool: "cloneStamp", shortcut: "Shift+S", group: 'stamp' },
+  { name: "Clone Stamp Tool", icon: Stamp, tool: "cloneStamp", shortcut: "S", group: 'stamp' },
+  { name: "Pattern Stamp Tool", icon: Stamp, tool: "patternStamp", shortcut: "Shift+S", group: 'stamp' },
   { name: "History Brush Tool", icon: History, tool: "historyBrush", shortcut: "Y", group: 'history' },
   { name: "Art History Brush Tool", icon: History, tool: "artHistoryBrush", shortcut: "Shift+Y", group: 'history' },
 ];
 
-const maskTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'mask' }[] = [
-  { name: "Selection Brush", icon: Paintbrush, tool: "selectionBrush", shortcut: "S", group: 'mask' },
-  { name: "Blur Brush", icon: Droplet, tool: "blurBrush", shortcut: "U", group: 'mask' },
+const retouchAndMaskTools: { name: string; icon: React.ElementType; tool: Tool; shortcut: string; group: 'retouch' | 'mask' }[] = [
+  { name: "Blur Brush", icon: Droplet, tool: "blurBrush", shortcut: "U", group: 'retouch' },
+  { name: "Sharpen Tool", icon: Focus, tool: "sharpenTool", shortcut: "Shift+U", group: 'retouch' },
+  { name: "Selection Brush", icon: Paintbrush, tool: "selectionBrush", shortcut: "Q", group: 'mask' },
 ];
 
 const shapeSubTools: { name: string; icon: React.ElementType; type: ShapeType }[] = [ // FIXED TYPE
@@ -114,7 +99,7 @@ const shapeSubTools: { name: string; icon: React.ElementType; type: ShapeType }[
 // --- Helper Components ---
 
 interface ToolGroupDropdownProps {
-  tools: typeof selectionTools | typeof paintAndFillTools | typeof stampAndHistoryTools | typeof maskTools;
+  tools: typeof selectionTools | typeof paintAndFillTools | typeof stampAndHistoryTools | typeof retouchAndMaskTools;
   activeTool: Tool | null;
   setActiveTool: (tool: Tool | null) => void;
   defaultTool: Tool;
@@ -171,6 +156,23 @@ const ToolGroupDropdown: React.FC<ToolGroupDropdownProps> = ({
 
 
 // --- Main Tools Panel ---
+
+interface ToolsPanelProps {
+  activeTool: ActiveTool | null;
+  setActiveTool: (tool: ActiveTool | null) => void;
+  selectedShapeType: ShapeType | null;
+  setSelectedShapeType: (type: ShapeType | null) => void;
+  foregroundColor: string;
+  onForegroundColorChange: (color: string) => void;
+  backgroundColor: string;
+  onBackgroundColorChange: (color: string) => void;
+  onSwapColors: () => void;
+  brushState: BrushState;
+  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
+  selectiveBlurStrength: number;
+  onSelectiveBlurStrengthChange: (value: number) => void;
+  onSelectiveBlurStrengthCommit: (value: number) => void;
+}
 
 export const ToolsPanel = ({ 
   activeTool, 
@@ -230,45 +232,35 @@ export const ToolsPanel = ({
             </TooltipContent>
           </Tooltip>
           
-          {/* 2. Selection Tools Group */}
+          {/* 2. Selection Tools Group (Marquee, Lasso, Quick Select, Magic Wand, Object Select) */}
           <ToolGroupDropdown
-            tools={selectionTools.filter(t => t.group === 'marquee')}
+            tools={selectionTools}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
             defaultTool="marqueeRect"
             icon={SquareDashedMousePointer}
-            groupName="Marquee Selection"
-            shortcut="M"
-          />
-          <ToolGroupDropdown
-            tools={selectionTools.filter(t => t.group === 'lasso')}
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            defaultTool="lasso"
-            icon={MousePointer2}
-            groupName="Lasso Tools"
-            shortcut="L"
-          />
-          <ToolGroupDropdown
-            tools={selectionTools.filter(t => t.group === 'quick' || t.group === 'magic')}
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            defaultTool="quickSelect"
-            icon={MousePointer}
-            groupName="Quick Selection Tools"
-            shortcut="W"
-          />
-          <ToolGroupDropdown
-            tools={selectionTools.filter(t => t.group === 'object')}
-            activeTool={activeTool}
-            setActiveTool={setActiveTool}
-            defaultTool="objectSelect"
-            icon={ScanEye}
-            groupName="Object Selection Tools"
-            shortcut="A"
+            groupName="Selection Tools"
+            shortcut="M/L/W/A"
           />
 
-          {/* 3. Paint/Fill Tools Group */}
+          {/* 3. Crop Tool */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={activeTool === "crop" ? "secondary" : "ghost"}
+                size="icon"
+                onClick={() => setActiveTool("crop" === activeTool ? null : "crop")}
+                className={cn("w-10 h-10", activeTool === "crop" && "bg-secondary")}
+              >
+                <CropIcon className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Crop Tool (C)</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          {/* 4. Paint/Fill Tools Group (Brush, Pencil, Eraser, Paint Bucket, Gradient) */}
           <ToolGroupDropdown
             tools={paintAndFillTools}
             activeTool={activeTool}
@@ -276,32 +268,32 @@ export const ToolsPanel = ({
             defaultTool="brush"
             icon={Brush}
             groupName="Painting & Fill Tools"
-            shortcut="B/G"
+            shortcut="B/E/G"
           />
           
-          {/* 4. Stamp/History Tools Group */}
+          {/* 5. Stamp/History Tools Group */}
           <ToolGroupDropdown
             tools={stampAndHistoryTools}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
-            defaultTool="patternStamp"
+            defaultTool="cloneStamp"
             icon={Stamp}
             groupName="Stamp & History Tools"
             shortcut="S/Y"
           />
 
-          {/* 5. Masking Tools Group */}
+          {/* 6. Retouching & Masking Tools Group (Blur, Sharpen, Selection Brush) */}
           <ToolGroupDropdown
-            tools={maskTools}
+            tools={retouchAndMaskTools}
             activeTool={activeTool}
             setActiveTool={setActiveTool}
-            defaultTool="selectionBrush"
-            icon={Paintbrush}
-            groupName="Masking Tools"
-            shortcut="S/U"
+            defaultTool="blurBrush"
+            icon={Droplet}
+            groupName="Retouching & Masking"
+            shortcut="U/Q"
           />
           
-          {/* 6. Text Tool */}
+          {/* 7. Text Tool */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -318,7 +310,7 @@ export const ToolsPanel = ({
             </TooltipContent>
           </Tooltip>
 
-          {/* 7. Shape Tool Group */}
+          {/* 8. Shape Tool Group */}
           <DropdownMenu>
             <Tooltip>
               <DropdownMenuTrigger asChild>
@@ -346,23 +338,6 @@ export const ToolsPanel = ({
             </DropdownMenuContent>
           </DropdownMenu>
           
-          {/* 8. Crop Tool */}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant={activeTool === "crop" ? "secondary" : "ghost"}
-                size="icon"
-                onClick={() => setActiveTool("crop" === activeTool ? null : "crop")}
-                className={cn("w-10 h-10", activeTool === "crop" && "bg-secondary")}
-              >
-                <CropIcon className="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Crop Tool (C)</p>
-            </TooltipContent>
-          </Tooltip>
-
           {/* 9. Eyedropper Tool */}
           <Tooltip>
             <TooltipTrigger asChild>

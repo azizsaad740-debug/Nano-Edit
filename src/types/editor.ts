@@ -26,7 +26,8 @@ export type ActiveTool =
   | "patternStamp"
   | "cloneStamp"
   | "historyBrush"
-  | "artHistoryBrush";
+  | "artHistoryBrush"
+  | "sharpenTool";
 
 export interface Dimensions {
   width: number;

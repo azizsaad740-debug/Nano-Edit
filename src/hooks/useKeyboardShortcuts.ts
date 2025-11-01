@@ -40,21 +40,37 @@ export const useKeyboardShortcuts = ({
 }) => {
   // Tool selection shortcuts
   useHotkeys('v', () => setActiveTool('move'), { preventDefault: true }); // Move Tool
+  
+  // Selection Tools (M, L, W, A)
   useHotkeys('m', () => setActiveTool('marqueeRect'), { preventDefault: true }); // Marquee Tool (Rectangular)
   useHotkeys('shift+m', () => setActiveTool('marqueeEllipse'), { preventDefault: true }); // Marquee Tool (Elliptical)
   useHotkeys('l', () => setActiveTool('lasso'), { preventDefault: true }); // Lasso Tool (Freehand)
-  useHotkeys('shift+l', () => setActiveTool('lassoPoly'), { preventDefault: true }); // Polygonal Lasso (Stub)
+  useHotkeys('shift+l', () => setActiveTool('lassoPoly'), { preventDefault: true }); // Polygonal Lasso
   useHotkeys('w', () => setActiveTool('quickSelect'), { preventDefault: true }); // Quick Selection Tool
   useHotkeys('shift+w', () => setActiveTool('magicWand'), { preventDefault: true }); // Magic Wand Tool
   useHotkeys('a', () => setActiveTool('objectSelect'), { preventDefault: true }); // Object Selection Tool
   
+  // Paint & Fill Tools (B, E, G)
   useHotkeys('b', () => setActiveTool('brush'), { preventDefault: true });
+  useHotkeys('shift+b', () => setActiveTool('pencil'), { preventDefault: true }); // Pencil Tool
   useHotkeys('e', () => setActiveTool('eraser'), { preventDefault: true });
-  useHotkeys('s', () => setActiveTool('selectionBrush'), { preventDefault: true });
-  useHotkeys('u', () => setActiveTool('blurBrush'), { preventDefault: true });
+  useHotkeys('g', () => setActiveTool('paintBucket'), { preventDefault: true }); // Paint Bucket
+  useHotkeys('shift+g', () => setActiveTool('gradient'), { preventDefault: true }); // Gradient Tool
+  
+  // Stamp & History Tools (S, Y)
+  useHotkeys('s', () => setActiveTool('cloneStamp'), { preventDefault: true }); // Clone Stamp
+  useHotkeys('shift+s', () => setActiveTool('patternStamp'), { preventDefault: true }); // Pattern Stamp
+  useHotkeys('y', () => setActiveTool('historyBrush'), { preventDefault: true }); // History Brush
+  useHotkeys('shift+y', () => setActiveTool('artHistoryBrush'), { preventDefault: true }); // Art History Brush
+
+  // Retouch & Masking Tools (U, Q)
+  useHotkeys('u', () => setActiveTool('blurBrush'), { preventDefault: true }); // Blur Brush
+  useHotkeys('shift+u', () => setActiveTool('sharpenTool'), { preventDefault: true }); // Sharpen Tool (Stub)
+  useHotkeys('q', () => setActiveTool('selectionBrush'), { preventDefault: true }); // Selection Brush (Quick Mask)
+
+  // Other Tools
   useHotkeys('t', () => setActiveTool('text'), { preventDefault: true });
   useHotkeys('p', () => setActiveTool('shape'), { preventDefault: true });
-  useHotkeys('g', () => setActiveTool('gradient'), { preventDefault: true });
   useHotkeys('c', () => setActiveTool('crop'), { preventDefault: true });
   useHotkeys('i', () => setActiveTool('eyedropper'), { preventDefault: true });
 
