@@ -25,6 +25,7 @@ import { TextOptions } from "../editor/TextOptions"; // Import TextOptions
 import ShapeOptions from "../editor/ShapeOptions"; // Import ShapeOptions
 import { GradientOptions } from "../editor/GradientOptions"; // Import GradientOptions
 import { Label } from "@/components/ui/label";
+import { SharpenToolOptions } from "../editor/SharpenToolOptions"; // NEW IMPORT
 
 // We reuse the props interface from RightSidebarTabsProps for convenience
 interface MobileToolOptionsProps extends RightSidebarTabsProps {
@@ -42,6 +43,9 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     selectiveBlurAmount, 
     onSelectiveBlurAmountChange, 
     onSelectiveBlurAmountCommit, 
+    selectiveSharpenAmount, // NEW
+    onSelectiveSharpenAmountChange, // NEW
+    onSelectiveSharpenAmountCommit, // NEW
     selectionSettings, 
     onSelectionSettingChange, 
     onSelectionSettingCommit, 
@@ -143,6 +147,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
   const isPencilTool = activeTool === 'pencil';
   const isSelectionBrushTool = activeTool === 'selectionBrush';
   const isBlurBrushTool = activeTool === 'blurBrush';
+  const isSharpenTool = activeTool === 'sharpenTool'; // NEW CHECK
   const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
   const isGradientTool = activeTool === 'gradient';
@@ -196,6 +201,24 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
           selectiveBlurStrength={selectiveBlurAmount}
           onStrengthChange={onSelectiveBlurAmountChange}
           onStrengthCommit={onSelectiveBlurAmountCommit}
+        />
+      );
+    }
+    if (isBlurBrushTool) {
+      return (
+        <BlurBrushOptions
+          selectiveBlurStrength={selectiveBlurAmount}
+          onStrengthChange={onSelectiveBlurAmountChange}
+          onStrengthCommit={onSelectiveBlurAmountCommit}
+        />
+      );
+    }
+    if (isSharpenTool) { // NEW RENDER
+      return (
+        <SharpenToolOptions
+          selectiveSharpenStrength={selectiveSharpenAmount}
+          onStrengthChange={onSelectiveSharpenAmountChange}
+          onStrengthCommit={onSelectiveSharpenAmountCommit}
         />
       );
     }

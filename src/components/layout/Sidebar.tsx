@@ -13,9 +13,9 @@ export interface RightSidebarTabsProps {
   layers: Layer[];
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void;
-  toggleLayerVisibility: (id: string) => void;
-  renameLayer: (id: string, newName: string) => void;
-  deleteLayer: (id: string) => void;
+  toggleLayerVisibility: (id: string) => void; // Renamed from onToggleVisibility
+  renameLayer: (id: string, newName: string) => void; // Renamed from onRename
+  deleteLayer: (id: string) => void; // Renamed from onDelete
   onDuplicateLayer: (id: string) => void;
   onMergeLayerDown: (id: string) => void;
   onRasterizeLayer: (id: string) => void;
@@ -101,6 +101,10 @@ export interface RightSidebarTabsProps {
   selectiveBlurAmount: number;
   onSelectiveBlurAmountChange: (value: number) => void;
   onSelectiveBlurAmountCommit: (value: number) => void;
+  // Selective Sharpening (NEW)
+  selectiveSharpenAmount: number;
+  onSelectiveSharpenAmountChange: (value: number) => void;
+  onSelectiveSharpenAmountCommit: (value: number) => void;
   // HSL Custom Color
   customHslColor: string;
   setCustomHslColor: (color: string) => void;

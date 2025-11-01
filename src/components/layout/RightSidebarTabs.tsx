@@ -13,6 +13,7 @@ import { PaintBucketOptions } from "@/components/editor/PaintBucketOptions";
 import { StampOptions } from "@/components/editor/StampOptions";
 import { HistoryBrushOptions } from "@/components/editor/HistoryBrushOptions";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
+import { SharpenToolOptions } from "@/components/editor/SharpenToolOptions"; // NEW IMPORT
 import type { RightSidebarTabsProps } from "./Sidebar"; 
 import BrushesPanel from "../auxiliary/BrushesPanel"; // Import BrushesPanel
 import PathsPanel from "../auxiliary/PathsPanel"; // Import PathsPanel
@@ -20,7 +21,7 @@ import HistoryPanel from "../auxiliary/HistoryPanel"; // Import HistoryPanel
 import Crop from "@/components/editor/Crop"; // Import Crop
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
-  const { activeTool, selectedLayer, brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, history, cloneSourcePoint } = props;
+  const { activeTool, selectedLayer, brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, history, cloneSourcePoint, selectiveSharpenAmount, onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit } = props;
 
   const isLayerSelected = !!selectedLayer;
   
@@ -29,6 +30,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const isPencilTool = activeTool === 'pencil';
   const isSelectionBrushTool = activeTool === 'selectionBrush';
   const isBlurBrushTool = activeTool === 'blurBrush';
+  const isSharpenTool = activeTool === 'sharpenTool'; // NEW CHECK
   const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
   const isGradientTool = activeTool === 'gradient';
@@ -40,7 +42,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const isShapeTool = activeTool === 'shape';
   const isEyedropperTool = activeTool === 'eyedropper';
 
-  const isToolActive = isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isStampTool || isHistoryBrushTool || isGradientTool || isPaintBucketTool || isCropTool || isTransformTool || isSelectionTool || isTextTool || isShapeTool || isEyedropperTool;
+  const isToolActive = isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isSharpenTool || isStampTool || isHistoryBrushTool || isGradientTool || isPaintBucketTool || isCropTool || isTransformTool || isSelectionTool || isTextTool || isShapeTool || isEyedropperTool;
 
   const renderToolOptionsContent = () => {
     // 1. Brush/Eraser/Pencil
@@ -84,13 +86,31 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         />
       );
     }
-    // 3. Selection/Blur Brush
-    if (isSelectionBrushTool || isBlurBrushTool) {
+    // 3. Selection/Blur Brush / Sharpen Tool
+    if (isSelectionBrushTool) {
       return (
         <BlurBrushOptions
           selectiveBlurStrength={props.selectiveBlurAmount}
           onStrengthChange={props.onSelectiveBlurAmountChange}
           onStrengthCommit={props.onSelectiveBlurAmountCommit}
+        />
+      );
+    }
+    if (isBlurBrushTool) {
+      return (
+        <BlurBrushOptions
+          selectiveBlurStrength={props.selectiveBlurAmount}
+          onStrengthChange={props.onSelectiveBlurAmountChange}
+          onStrengthCommit={props.onSelectiveBlurAmountCommit}
+        />
+      );
+    }
+    if (isSharpenTool) { // NEW RENDER
+      return (
+        <SharpenToolOptions
+          selectiveSharpenStrength={props.selectiveSharpenAmount}
+          onStrengthChange={props.onSelectiveSharpenAmountChange}
+          onStrengthCommit={props.onSelectiveSharpenAmountCommit}
         />
       );
     }
@@ -301,7 +321,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             <div className="space-y-4">
               <h3 className="text-md font-semibold p-2">Tool Options</h3>
               {/* Render tool options here if a brush/stamp/history tool is active */}
-              {(isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isStampTool || isHistoryBrushTool) && (
+              {(isBrushTool || isEraserTool || isPencilTool || isSelectionBrushTool || isBlurBrushTool || isStampTool || isHistoryBrushTool || isSharpenTool) && (
                 <div className="px-2">
                   {renderToolOptionsContent()}
                 </div>

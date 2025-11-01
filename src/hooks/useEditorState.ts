@@ -50,6 +50,7 @@ export const useEditorState = () => {
   const [selectionPath, setSelectionPath] = useState<Point[] | null>(null);
   const [selectionMaskDataUrl, setSelectionMaskDataUrl] = useState<string | null>(null);
   const [selectiveBlurAmount, setSelectiveBlurAmount] = useState<number>(initialEditState.selectiveBlurAmount);
+  const [selectiveSharpenAmount, setSelectiveSharpenAmount] = useState<number>(0); // NEW STATE
   const [customHslColor, setCustomHslColor] = useState<string>(initialEditState.customHslColor);
   const [selectionSettings, setSelectionSettings] = useState<SelectionSettings>(initialSelectionSettings);
   const [cloneSourcePoint, setCloneSourcePoint] = useState<Point | null>(null);
@@ -133,6 +134,7 @@ export const useEditorState = () => {
     setCurrentHistoryIndex(0);
     setSelectedLayerId(null);
     clearSelectionState();
+    setSelectiveSharpenAmount(0); // RESET NEW STATE
     showSuccess("All edits reset.");
   }, []);
 
@@ -180,6 +182,7 @@ export const useEditorState = () => {
     marqueeCurrent, setMarqueeCurrent,
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
+    selectiveSharpenAmount, setSelectiveSharpenAmount, // NEW RETURN
     customHslColor, setCustomHslColor,
     selectionSettings, setSelectionSettings,
     cloneSourcePoint, setCloneSourcePoint,

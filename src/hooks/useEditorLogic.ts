@@ -43,11 +43,15 @@ export const useEditorLogic = () => {
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
-    selectiveBlurAmount, setSelectiveBlurAmount, customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
-    workspaceRef, imgRef, zoom, setZoom, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
-    cloneSourcePoint, setCloneSourcePoint,
-    setSelectedLayerId, clearSelectionState, updateCurrentState,
+    selectiveBlurAmount, setSelectiveBlurAmount, 
+    selectiveSharpenAmount, setSelectiveSharpenAmount, // NEW
+    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
+    currentEditState, updateCurrentState,
+    cloneSourcePoint,
+    marqueeStart, marqueeCurrent,
+    setSelectedLayerId, clearSelectionState,
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
+    workspaceRef, imgRef, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
     ...rest
   } = state;
 
@@ -160,6 +164,14 @@ export const useEditorLogic = () => {
     currentEditState, updateCurrentState, recordHistory, layers, dimensions
   );
 
+  const onSelectiveSharpenAmountChange = useCallback((value: number) => {
+    setSelectiveSharpenAmount(value);
+  }, [setSelectiveSharpenAmount]);
+
+  const onSelectiveSharpenAmountCommit = useCallback((value: number) => {
+    recordHistory(`Set Selective Sharpen Strength to ${value}`, currentEditState, layers);
+  }, [currentEditState, layers, recordHistory]);
+
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // ADDED HOOK CALL
 
@@ -227,7 +239,7 @@ export const useEditorLogic = () => {
   } = useWorkspaceInteraction(
     workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState,
     gradientToolState, setSelectedLayerId, layers, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
-    handleMarqueeSelectionComplete, currentEditState, setCloneSourcePoint,
+    handleMarqueeSelectionComplete, currentEditState, state.setCloneSourcePoint,
     // NEW:
     handleAddTextLayer,
     foregroundColor
@@ -261,6 +273,10 @@ export const useEditorLogic = () => {
     curves, onCurvesChange, onCurvesCommit, selectedFilter, onFilterChange, channels, onChannelChange,
     transforms, onTransformChange, rotation, onRotationChange, onRotationCommit,
     crop: cropState, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
+    // Selective Sharpening (NEW)
+    selectiveSharpenAmount,
+    onSelectiveSharpenAmountChange,
+    onSelectiveSharpenAmountCommit,
     // Presets
     presets, handleApplyPreset, handleSavePreset, deletePreset,
     // Gradient Presets (from useEditorState)
