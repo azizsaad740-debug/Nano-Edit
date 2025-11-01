@@ -649,8 +649,49 @@ export const useLayers = ({
   }, [layers, updateLayer, handleLayerPropertyCommit]);
 
   const handleDeleteHiddenLayers = useCallback(() => {
-    showError("Deleting hidden layers is currently a stub.");
-  }, []);
+    setLayers(prev => {
+      // Recursive function to filter out hidden layers
+      const filterHidden = (currentLayers: Layer[]): Layer[] => {
+        return currentLayers.filter(layer => {
+          if (layer.type === 'group' && layer.children) {
+            // Recursively filter children
+            const filteredChildren = filterHidden(layer.children);
+            
+            // Update the group with filtered children
+            (layer as GroupLayerData).children = filteredChildren;
+            
+            // Keep the group if it still has children
+            if (filteredChildren.length > 0) {
+              return true;
+            }
+            // If group is empty after filtering, remove the group itself
+            return false; 
+          }
+          
+          // Keep visible layers OR the locked background layer
+          if (layer.visible) {
+            return true;
+          }
+          if (layer.id === 'background' && layer.isLocked) {
+            return true;
+          }
+          
+          return false; // Delete hidden layer
+        });
+      };
+
+      const updatedLayers = filterHidden(prev);
+      
+      // Check if the selected layer was deleted
+      if (selectedLayerId && !findLayerLocation(selectedLayerId, updatedLayers)) {
+        setSelectedLayerId(null);
+      }
+
+      recordHistory("Delete Hidden Layers", currentEditState, updatedLayers);
+      showSuccess("Hidden layers deleted.");
+      return updatedLayers;
+    });
+  }, [recordHistory, currentEditState, selectedLayerId, setSelectedLayerId, setLayers]);
 
   const handleArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
     if (!selectedLayerId) {
