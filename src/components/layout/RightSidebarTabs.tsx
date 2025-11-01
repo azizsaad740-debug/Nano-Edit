@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid } from "lucide-react";
+import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid, PenTool, History } from "lucide-react";
 import { ChannelsPanel } from "@/components/editor/ChannelsPanel";
 import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
 import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
@@ -14,6 +14,9 @@ import { StampOptions } from "@/components/editor/StampOptions";
 import { HistoryBrushOptions } from "@/components/editor/HistoryBrushOptions";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
 import type { RightSidebarTabsProps } from "./Sidebar"; 
+import BrushesPanel from "../auxiliary/BrushesPanel"; // Import BrushesPanel
+import PathsPanel from "../auxiliary/PathsPanel"; // Import PathsPanel
+import HistoryPanel from "../auxiliary/HistoryPanel"; // Import HistoryPanel
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const { activeTool, selectedLayer, brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, history, cloneSourcePoint } = props;
@@ -125,17 +128,138 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
     );
   };
 
+  const renderToolOptionsContent = () => {
+    const isBrushTool = activeTool === 'brush';
+    const isEraserTool = activeTool === 'eraser';
+    const isPencilTool = activeTool === 'pencil';
+    const isSelectionBrushTool = activeTool === 'selectionBrush';
+    const isBlurBrushTool = activeTool === 'blurBrush';
+    const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
+    const isHistoryBrushTool = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
+    const isGradientTool = activeTool === 'gradient';
+    const isPaintBucketTool = activeTool === 'paintBucket';
+    const isSelectionTool = activeTool?.includes('marquee') || activeTool?.includes('lasso') || activeTool?.includes('select') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect' || activeTool === 'move';
+
+    if (isBrushTool || isEraserTool) {
+      return (
+        <BrushOptions
+          activeTool={isEraserTool ? 'eraser' : 'brush'}
+          brushSize={brushState.size}
+          setBrushSize={(size) => setBrushState({ size })}
+          brushOpacity={brushState.opacity}
+          setBrushOpacity={(opacity) => setBrushState({ opacity })}
+          foregroundColor={props.foregroundColor}
+          setForegroundColor={props.setForegroundColor}
+          brushHardness={brushState.hardness}
+          setBrushHardness={(hardness) => setBrushState({ hardness })}
+          brushSmoothness={brushState.smoothness}
+          setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
+          brushShape={brushState.shape}
+          setBrushShape={(shape) => setBrushState({ shape })}
+          brushFlow={brushState.flow}
+          setBrushFlow={(flow) => setBrushState({ flow })}
+          brushAngle={brushState.angle}
+          setBrushAngle={(angle) => setBrushState({ angle })}
+          brushRoundness={brushState.roundness}
+          setBrushRoundness={(roundness) => setBrushState({ roundness })}
+          brushSpacing={brushState.spacing}
+          setBrushSpacing={(spacing) => setBrushState({ spacing })}
+          brushBlendMode={brushState.blendMode}
+          setBrushBlendMode={(blendMode) => setBrushState({ blendMode })}
+        />
+      );
+    }
+    if (isPencilTool) {
+      return (
+        <PencilOptions
+          brushState={brushState}
+          setBrushState={setBrushState}
+          foregroundColor={props.foregroundColor}
+          setForegroundColor={props.setForegroundColor}
+        />
+      );
+    }
+    if (isSelectionBrushTool) {
+      return (
+        <BlurBrushOptions
+          selectiveBlurStrength={selectiveBlurAmount}
+          onStrengthChange={onSelectiveBlurAmountChange}
+          onStrengthCommit={onSelectiveBlurAmountCommit}
+        />
+      );
+    }
+    if (isStampTool) {
+      return <StampOptions cloneSourcePoint={cloneSourcePoint} />;
+    }
+    if (isHistoryBrushTool) {
+      return (
+        <HistoryBrushOptions
+          activeTool={activeTool as 'historyBrush' | 'artHistoryBrush'}
+          history={history}
+          brushSize={brushState.size}
+          setBrushSize={(size) => setBrushState({ size })}
+          brushOpacity={brushState.opacity}
+          setBrushOpacity={(opacity) => setBrushState({ opacity })}
+          brushFlow={brushState.flow}
+          setBrushFlow={(flow) => setBrushState({ flow })}
+          historyBrushSourceIndex={props.historyBrushSourceIndex}
+          setHistoryBrushSourceIndex={props.setHistoryBrushSourceIndex}
+        />
+      );
+    }
+    if (isGradientTool) {
+      return (
+        <GradientToolOptions
+          gradientToolState={props.gradientToolState}
+          setGradientToolState={props.setGradientToolState}
+          gradientPresets={props.gradientPresets}
+          onApplyGradientPreset={(preset) => props.setGradientToolState(preset.state)}
+          onSaveGradientPreset={props.onSaveGradientPreset}
+          onDeleteGradientPreset={props.onDeleteGradientPreset}
+        />
+      );
+    }
+    if (isPaintBucketTool) {
+      return <PaintBucketOptions />;
+    }
+    if (isSelectionTool) {
+      return (
+        <SelectionToolOptions
+          activeTool={activeTool}
+          settings={props.selectionSettings}
+          onSettingChange={props.onSelectionSettingChange}
+          onSettingCommit={props.onSelectionSettingCommit}
+        />
+      );
+    }
+    
+    return (
+      <p className="text-sm text-muted-foreground p-4">
+        Select a tool to view its options.
+      </p>
+    );
+  };
+
   return (
     <Tabs defaultValue="layers" className="w-full h-full flex flex-col">
       <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start">
         <TabsTrigger value="layers" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
           <Layers className="h-4 w-4 mr-1" /> Layers
         </TabsTrigger>
-        <TabsTrigger value="channels" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-          <Palette className="h-4 w-4 mr-1" /> Channels
-        </TabsTrigger>
         <TabsTrigger value="properties" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
           <Settings className="h-4 w-4 mr-1" /> Properties
+        </TabsTrigger>
+        <TabsTrigger value="brushes" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+          <Brush className="h-4 w-4 mr-1" /> Brushes
+        </TabsTrigger>
+        <TabsTrigger value="paths" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+          <PenTool className="h-4 w-4 mr-1" /> Paths
+        </TabsTrigger>
+        <TabsTrigger value="history" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+          <History className="h-4 w-4 mr-1" /> History
+        </TabsTrigger>
+        <TabsTrigger value="channels" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+          <Palette className="h-4 w-4 mr-1" /> Channels
         </TabsTrigger>
       </TabsList>
 
@@ -183,12 +307,36 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             />
           </TabsContent>
 
-          <TabsContent value="channels">
-            <ChannelsPanel channels={props.channels} onChannelChange={props.onChannelChange} />
-          </TabsContent>
-
           <TabsContent value="properties">
             {renderPropertiesContent()}
+          </TabsContent>
+          
+          <TabsContent value="brushes">
+            <div className="space-y-4">
+              <h3 className="text-md font-semibold">Tool Options</h3>
+              {renderToolOptionsContent()}
+            </div>
+            <BrushesPanel brushState={props.brushState} setBrushState={props.setBrushState} />
+          </TabsContent>
+          
+          <TabsContent value="paths">
+            <PathsPanel />
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <HistoryPanel
+              history={props.history}
+              currentIndex={props.currentHistoryIndex}
+              onJump={props.onHistoryJump}
+              onUndo={props.onUndo}
+              onRedo={props.onRedo}
+              canUndo={props.canUndo}
+              canRedo={props.canRedo}
+            />
+          </TabsContent>
+
+          <TabsContent value="channels">
+            <ChannelsPanel channels={props.channels} onChannelChange={props.onChannelChange} />
           </TabsContent>
         </div>
       </ScrollArea>

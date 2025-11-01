@@ -8,9 +8,10 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Palette, LayoutGrid, History } from "lucide-react";
+import { Palette, LayoutGrid, Info, Compass } from "lucide-react";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
-import HistoryPanel from "@/components/auxiliary/HistoryPanel";
+import InfoPanel from "@/components/auxiliary/InfoPanel"; // Import InfoPanel
+import NavigatorPanel from "@/components/auxiliary/NavigatorPanel"; // Import NavigatorPanel
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { EditState } from "@/types/editor";
@@ -22,14 +23,17 @@ interface BottomPanelProps {
   backgroundColor: string;
   onBackgroundColorChange: (color: string) => void;
   onSwapColors: () => void;
-  // History Props
-  history: { name: string }[];
-  currentHistoryIndex: number;
-  onHistoryJump: (index: number) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  canUndo: boolean;
-  canRedo: boolean;
+  // Info/Navigator Props
+  dimensions: { width: number; height: number } | null;
+  fileInfo: { name: string; size: number } | null;
+  imgRef: React.RefObject<HTMLImageElement>;
+  exifData: any;
+  colorMode: EditState['colorMode'];
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onFitScreen: () => void;
+  hasImage: boolean;
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = (props) => {
@@ -43,11 +47,14 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
             <TabsTrigger value="color" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
               <Palette className="h-4 w-4 mr-1" /> Color Palette
             </TabsTrigger>
+            <TabsTrigger value="info" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+              <Info className="h-4 w-4 mr-1" /> Info
+            </TabsTrigger>
+            <TabsTrigger value="navigator" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+              <Compass className="h-4 w-4 mr-1" /> Navigator
+            </TabsTrigger>
             <TabsTrigger value="templates" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
               <LayoutGrid className="h-4 w-4 mr-1" /> Templates
-            </TabsTrigger>
-            <TabsTrigger value="history" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <History className="h-4 w-4 mr-1" /> History
             </TabsTrigger>
           </TabsList>
 
@@ -63,6 +70,27 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
                 />
               </TabsContent>
               
+              <TabsContent value="info" className="mt-0">
+                <InfoPanel
+                  dimensions={props.dimensions}
+                  fileInfo={props.fileInfo}
+                  imgRef={props.imgRef}
+                  exifData={props.exifData}
+                  colorMode={props.colorMode}
+                />
+              </TabsContent>
+
+              <TabsContent value="navigator" className="mt-0">
+                <NavigatorPanel
+                  image={props.hasImage ? props.imgRef.current?.src || null : null}
+                  zoom={props.zoom}
+                  onZoomIn={props.onZoomIn}
+                  onZoomOut={props.onZoomOut}
+                  onFitScreen={props.onFitScreen}
+                  dimensions={props.dimensions}
+                />
+              </TabsContent>
+              
               <TabsContent value="templates" className="mt-0">
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
@@ -72,18 +100,6 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
                     Go to Community Templates
                   </Button>
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="history" className="mt-0">
-                <HistoryPanel
-                  history={props.history}
-                  currentIndex={props.currentHistoryIndex}
-                  onJump={props.onHistoryJump}
-                  onUndo={props.onUndo}
-                  onRedo={props.onRedo}
-                  canUndo={props.canUndo}
-                  canRedo={props.canRedo}
-                />
               </TabsContent>
             </div>
           </ScrollArea>

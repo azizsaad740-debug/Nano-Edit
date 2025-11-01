@@ -98,7 +98,7 @@ export const Index = () => {
     
     // Refs/External
     workspaceRef, imgRef,
-    systemFonts, customFonts, addCustomFont, removeCustomFont,
+    systemFonts, customFonts, addCustomFont, removeCustomFont, // Corrected destructuring
     setZoom,
     handleSwapColors,
   } = logic;
@@ -438,20 +438,23 @@ export const Index = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
         
-        {/* 4. Bottom Panel (Color/History/Ad) */}
+        {/* 4. Bottom Panel (Color/Info/Navigator/Templates) */}
         <BottomPanel 
           foregroundColor={foregroundColor} 
           onForegroundColorChange={setForegroundColor} 
           backgroundColor={backgroundColor} 
           onBackgroundColorChange={setBackgroundColor} 
           onSwapColors={handleSwapColors}
-          history={history}
-          currentHistoryIndex={currentHistoryIndex}
-          onHistoryJump={mobileOptionsProps.onHistoryJump}
-          onUndo={undo}
-          onRedo={redo}
-          canUndo={canUndo}
-          canRedo={canRedo}
+          dimensions={dimensions}
+          fileInfo={fileInfo}
+          imgRef={imgRef}
+          exifData={exifData}
+          colorMode={currentEditState.colorMode}
+          zoom={workspaceZoom}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onFitScreen={handleFitScreen}
+          hasImage={hasImage}
         />
       </div>
       {fileInput}

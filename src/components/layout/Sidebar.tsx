@@ -114,6 +114,13 @@ export interface RightSidebarTabsProps {
   history: { name: string }[];
   historyBrushSourceIndex: number;
   setHistoryBrushSourceIndex: (index: number) => void;
+  // History Panel Props (Fixes 1-6)
+  currentHistoryIndex: number;
+  onHistoryJump: (index: number) => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   // Layers Panel Component
   LayersPanel: React.ComponentType<any>;
   // Image Ref
@@ -128,15 +135,10 @@ export interface RightSidebarTabsProps {
 }
 
 const Sidebar = (props: RightSidebarTabsProps) => {
-  // The mobile check is now handled in Index.tsx for the overall layout structure.
-  // This component now represents the fixed Right Sidebar content.
-
   return (
-    <ScrollArea className="h-full">
-      <div className="p-4">
-        <RightSidebarTabs {...props} />
-      </div>
-    </ScrollArea>
+    <div className="h-full">
+      <RightSidebarTabs {...props} />
+    </div>
   );
 };
 
