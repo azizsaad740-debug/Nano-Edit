@@ -653,8 +653,49 @@ export const useLayers = ({
   }, []);
 
   const handleArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
-    showError(`Layer arrangement to ${direction} is currently a stub.`);
-  }, []);
+    if (!selectedLayerId) {
+      showError("Please select a layer to arrange.");
+      return;
+    }
+
+    setLayers(prev => {
+      const location = findLayerLocation(selectedLayerId, prev);
+      if (!location || location.layer.isLocked) return prev;
+
+      const { container, index, parentGroups, layer } = location;
+      const containerLength = container.length;
+      let newIndex = index;
+
+      // Determine the minimum index (1 if root array has a background layer at 0, else 0)
+      const minIndex = (parentGroups.length === 0 && container[0]?.id === 'background') ? 1 : 0;
+
+      if (direction === 'front') {
+        newIndex = containerLength - 1;
+      } else if (direction === 'back') {
+        newIndex = minIndex;
+      } else if (direction === 'forward') {
+        newIndex = Math.min(containerLength - 1, index + 1);
+      } else if (direction === 'backward') {
+        newIndex = Math.max(minIndex, index - 1);
+      }
+      
+      if (newIndex === index) return prev;
+
+      // Perform the move within the container
+      const movedContainer = arrayMove(container, index, newIndex);
+
+      let updatedLayers = prev;
+      if (parentGroups.length > 0) {
+        const parentIds = parentGroups.map(g => g.id);
+        updatedLayers = updateNestedContainer(prev, parentIds, movedContainer);
+      } else {
+        updatedLayers = movedContainer;
+      }
+
+      recordHistory(`Arrange Layer: ${layer.name} to ${direction}`, currentEditState, updatedLayers);
+      return updatedLayers;
+    });
+  }, [selectedLayerId, recordHistory, currentEditState, layers, setLayers]);
 
   // --- Drawing/Brush Handlers ---
 
