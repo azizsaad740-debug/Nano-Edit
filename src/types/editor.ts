@@ -177,6 +177,8 @@ export interface SelectionSettings {
   showTransformControls: boolean;
   autoSelectLayer: boolean;
   snapToPixels: boolean;
+  // Selection Mode (New based on miniPaint/Photoshop)
+  selectionMode: 'new' | 'add' | 'subtract' | 'intersect';
   // Refine Edge settings (Stub)
   refineFeather: number;
   refineSmooth: number;
@@ -377,6 +379,7 @@ export const initialSelectionSettings: SelectionSettings = {
   showTransformControls: true,
   autoSelectLayer: true,
   snapToPixels: true,
+  selectionMode: 'new', // Default to new selection
   refineFeather: 0,
   refineSmooth: 0,
   refineContrast: 0,

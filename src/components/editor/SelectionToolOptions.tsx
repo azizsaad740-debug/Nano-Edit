@@ -7,11 +7,16 @@ import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Settings, Move, SquareDashedMousePointer, MousePointer2, MousePointer, Wand2, ScanEye } from "lucide-react";
+import { RotateCcw, Settings, Move, SquareDashedMousePointer, MousePointer2, MousePointer, Wand2, ScanEye, Plus, Minus, Combine, Square } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { ActiveTool, SelectionSettings } from "@/types/editor";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SelectionToolOptionsProps {
   activeTool: ActiveTool | null;
@@ -57,6 +62,11 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
     const value = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value;
     onSettingCommit(key, value);
   };
+  
+  const handleSelectionModeChange = (mode: SelectionSettings['selectionMode']) => {
+    onSettingChange('selectionMode', mode);
+    onSettingCommit('selectionMode', mode);
+  };
 
   const renderToolIcon = () => {
     if (isMoveTool) return <Move className="h-5 w-5 mr-2" />;
@@ -67,6 +77,63 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
     if (isObjectSelect) return <ScanEye className="h-5 w-5 mr-2" />;
     return <Settings className="h-5 w-5 mr-2" />;
   };
+
+  const renderSelectionModeControls = () => (
+    <div className="flex gap-1 justify-between p-1 border rounded-md bg-muted/50">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant={settings.selectionMode === 'new' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => handleSelectionModeChange('new')}
+          >
+            <Square className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>New Selection</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant={settings.selectionMode === 'add' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => handleSelectionModeChange('add')}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Add to Selection</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant={settings.selectionMode === 'subtract' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => handleSelectionModeChange('subtract')}
+          >
+            <Minus className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Subtract from Selection</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button 
+            variant={settings.selectionMode === 'intersect' ? 'secondary' : 'ghost'} 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => handleSelectionModeChange('intersect')}
+          >
+            <Combine className="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Intersect with Selection</TooltipContent>
+      </Tooltip>
+    </div>
+  );
 
   const renderMoveToolOptions = () => (
     <div className="space-y-4">
@@ -105,6 +172,8 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
 
   const renderMarqueeOptions = () => (
     <div className="space-y-4">
+      {renderSelectionModeControls()}
+      <Separator />
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="feather">Feather</Label>
@@ -169,6 +238,8 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
 
   const renderLassoOptions = () => (
     <div className="space-y-4">
+      {renderSelectionModeControls()}
+      <Separator />
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="feather">Feather</Label>
@@ -216,6 +287,8 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
 
   const renderQuickMagicOptions = () => (
     <div className="space-y-4">
+      {renderSelectionModeControls()}
+      <Separator />
       <div className="flex items-center space-x-2">
         <Checkbox
           id="sampleAllLayers"
@@ -284,6 +357,8 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
 
   const renderObjectSelectionOptions = () => (
     <div className="space-y-4">
+      {renderSelectionModeControls()}
+      <Separator />
       <p className="text-sm text-muted-foreground">
         AI-powered object detection is active.
       </p>

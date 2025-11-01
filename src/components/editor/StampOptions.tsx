@@ -72,16 +72,21 @@ export const StampOptions: React.FC<StampOptionsProps> = ({ cloneSourcePoint }) 
       <Separator />
       
       <div className="grid gap-2">
-        <Label className="text-sm font-medium">Clone Source (Stub)</Label>
+        <Label className="text-sm font-medium">Clone Source</Label>
         <div className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">
-              {cloneSourcePoint 
-                ? `X: ${Math.round(cloneSourcePoint.x)}, Y: ${Math.round(cloneSourcePoint.y)}`
-                : "Not set (Alt + Click)"
-              }
-            </span>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                {cloneSourcePoint 
+                  ? `X: ${Math.round(cloneSourcePoint.x)}, Y: ${Math.round(cloneSourcePoint.y)}`
+                  : "Not set"
+                }
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Set source by holding <kbd>Alt</kbd> + Click
+            </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => showError("Set clone source is a stub.")}>
             <Image className="h-4 w-4 mr-2" /> Set Source
