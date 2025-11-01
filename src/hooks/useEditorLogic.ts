@@ -52,6 +52,7 @@ export const useEditorLogic = () => {
     setSelectedLayerId, clearSelectionState,
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
     workspaceRef, imgRef, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
+    history, currentHistoryIndex, // DESTRUCTURED HISTORY STATE
     ...rest
   } = state;
 
@@ -92,6 +93,9 @@ export const useEditorLogic = () => {
     selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl: state.setSelectionMaskDataUrl, clearSelectionState: state.clearSelectionState,
     brushState, activeTool,
     onBrushCommit: () => recordHistory("Update Brush Settings", currentEditState, layers), // Pass commit function
+    history, // PASSED
+    currentHistoryIndex, // PASSED
+    historyBrushSourceIndex, // PASSED
   });
 
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
@@ -142,10 +146,8 @@ export const useEditorLogic = () => {
       showError("No image loaded to export.");
       return;
     }
-// ... (rest of handleExport remains the same)
     const toastId = showLoading("Rasterizing image...");
     const filename = fileInfo?.name.split('.')[0] || 'nanoedit_export';
-// ... (rest of handleExport remains the same)
     try {
       const finalBase64 = await rasterizeEditedImageWithMask(layers, dimensions, currentEditState, imgRef.current);
       
@@ -172,65 +174,50 @@ export const useEditorLogic = () => {
       toast.dismiss(toastId);
     }
   };
-// ... (rest of useEditorLogic remains the same)
+
   const { crop: cropState, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const { transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset: applyTransformPreset } = useTransform(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, onFilterChange, applyPreset: applyAdjustmentsPreset } = useAdjustments(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const { effects, onEffectChange, onEffectCommit, applyPreset: applyEffectsPreset } = useEffects(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const { grading, onGradingChange, onGradingCommit, applyPreset: applyGradingPreset } = useColorGrading(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const { hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, applyPreset: applyHslPreset } = useHslAdjustments(
     currentEditState, updateCurrentState, recordHistory, layers
   );
-// ... (rest of useEditorLogic remains the same)
   const useCurvesProps = { currentEditState, updateCurrentState, recordHistory, layers };
   const { curves, onCurvesChange, onCurvesCommit, applyPreset: applyCurvesPreset } = useCurves(useCurvesProps);
-// ... (rest of useEditorLogic remains the same)
   const useChannelsProps = { currentEditState, updateCurrentState, recordHistory, layers };
   const { channels, onChannelChange, applyPreset: applyChannelsPreset } = useChannels(useChannelsProps);
-// ... (rest of useEditorLogic remains the same)
   const useFrameProps = { currentEditState, updateCurrentState, recordHistory, layers };
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame(useFrameProps);
-// ... (rest of useEditorLogic remains the same)
   const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset: applySelectiveRetouchPreset } = useSelectiveRetouch(
     currentEditState, updateCurrentState, recordHistory, layers, dimensions
   );
-// ... (rest of useEditorLogic remains the same)
   const onSelectiveSharpenAmountChange = useCallback((value: number) => {
     setSelectiveSharpenAmount(value);
     updateCurrentState({ selectiveSharpenAmount: value }); // Update EditState for live preview
   }, [setSelectiveSharpenAmount, updateCurrentState]);
-// ... (rest of useEditorLogic remains the same)
   const onSelectiveSharpenAmountCommit = useCallback((value: number) => {
     recordHistory(`Set Selective Sharpen Strength to ${value}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
-// ... (rest of useEditorLogic remains the same)
   const onSelectiveBlurAmountChange = useCallback((value: number) => {
     setSelectiveBlurAmount(value);
     updateCurrentState({ selectiveBlurAmount: value }); // Update EditState for live preview
   }, [setSelectiveBlurAmount, updateCurrentState]);
-// ... (rest of useEditorLogic remains the same)
   const onSelectiveBlurAmountCommit = useCallback((value: number) => {
     recordHistory(`Set Selective Blur Strength to ${value}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
-// ... (rest of useEditorLogic remains the same)
   const { presets, savePreset, deletePreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // ADDED HOOK CALL
-// ... (rest of useEditorLogic remains the same)
   const handleApplyPreset = useCallback((preset: typeof presets[0]) => {
     applyAdjustmentsPreset(preset.state);
     applyEffectsPreset(preset.state);
@@ -245,11 +232,9 @@ export const useEditorLogic = () => {
     recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     showSuccess(`Preset "${preset.name}" applied.`);
   }, [currentEditState, layers, recordHistory, applyAdjustmentsPreset, applyEffectsPreset, applyGradingPreset, applyHslPreset, applyCurvesPreset, applyTransformPreset, applyCropPreset, applyFramePreset, applySelectiveRetouchPreset, applyChannelsPreset]);
-// ... (rest of useEditorLogic remains the same)
   const handleSavePreset = useCallback((name: string) => {
     savePreset(name, currentEditState, layers);
   }, [savePreset, currentEditState, layers]);
-// ... (rest of useEditorLogic remains the same)
   const { handleBrushToolChange } = useBrush(setActiveTool, setBrushState, brushState, foregroundColor);
   const { handleTextToolChange } = useTextTool(setActiveTool);
   const { handleShapeToolChange } = useShapeTool(activeTool, setActiveTool, setSelectedShapeType, selectedShapeType);
@@ -257,7 +242,6 @@ export const useEditorLogic = () => {
   const { handleEyedropperToolChange } = useEyedropper(setActiveTool, setForegroundColor);
   const { handleMoveToolChange } = useMoveTool(setActiveTool);
   const { handleLassoToolChange } = useLassoTool(setActiveTool);
-// ... (rest of useEditorLogic remains the same)
   const handleCopy = useCallback(() => {
     if (!dimensions || !image) {
       showError("No image loaded to copy.");
@@ -266,18 +250,15 @@ export const useEditorLogic = () => {
     // Stub: In a real app, this would rasterize the image first.
     showSuccess("Image copied to clipboard (Stub).");
   }, [dimensions, image]);
-// ... (rest of useEditorLogic remains the same)
   const handleSwapColors = useCallback(() => {
     const temp = foregroundColor;
     setForegroundColor(backgroundColor);
     setBackgroundColor(temp);
   }, [foregroundColor, backgroundColor, setForegroundColor, setBackgroundColor]);
-// ... (rest of useEditorLogic remains the same)
   const handleMarqueeSelectionComplete = useCallback(async (start: Point, end: Point) => {
     // Placeholder logic to satisfy the interface
     console.log("Marquee selection complete:", start, end);
   }, []);
-// ... (rest of useEditorLogic remains the same)
   const {
     zoom: workspaceZoom,
     setZoom: setWorkspaceZoom,
@@ -303,9 +284,7 @@ export const useEditorLogic = () => {
     setForegroundColor,
     setActiveTool,
   );
-// ... (rest of useEditorLogic remains the same)
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;
-// ... (rest of useEditorLogic remains the same)
   return {
     ...state,
     // Core State

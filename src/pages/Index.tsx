@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/resizable";
 import type { Point, ActiveTool } from "@/types/editor";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
-import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileBottomNav";
+import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileNav";
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { Undo2, Redo2, ZoomIn, ZoomOut, X } from "lucide-react";
@@ -211,7 +211,7 @@ export const Index = () => {
   };
  
   const editorWorkspaceProps = {
-    workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
+    workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal, base64Image,
   };
   
   const toolOptionsBarProps = {

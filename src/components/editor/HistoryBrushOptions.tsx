@@ -1,3 +1,5 @@
+"use client";
+
 import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -6,7 +8,7 @@ import { Slider } from "@/components/ui/slider";
 
 interface HistoryBrushOptionsProps {
   activeTool: 'historyBrush' | 'artHistoryBrush';
-  history: { name: string }[];
+  history: { name: string }[]; // Use the history prop
   // Placeholder props for brush settings (Size, Opacity, Flow are shared with BrushOptions)
   brushSize: number;
   setBrushSize: (size: number) => void;
