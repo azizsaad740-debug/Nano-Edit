@@ -1,17 +1,69 @@
-const getRandomImageUrl = (width: number, height: number, prompt: string = "abstract") => {
-  const keywords = prompt.split(' ').slice(0, 2).join(','); // Use first two words of prompt as keywords
-  return `https://source.unsplash.com/random/${width}x${height}/?${keywords || 'abstract'}`;
-};
+import { supabase } from "@/integrations/supabase/client";
+import { showError } from "./toast";
 
+const EDGE_FUNCTION_URL = "https://bwgdgbgwkgiwkwabynvv.supabase.co/functions/v1/ai-orchestrator";
+
+/**
+ * Calls the AI Orchestrator Edge Function for image generation.
+ */
 export const generateImageApi = async (prompt: string, width: number, height: number): Promise<string> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  return getRandomImageUrl(width, height, prompt);
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Supabase client handles Authorization header automatically if session is active
+        'Authorization': `Bearer ${await supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
+      },
+      body: JSON.stringify({
+        command: 'generate_image',
+        prompt,
+        width,
+        height,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `AI Orchestrator failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.resultUrl;
+  } catch (error) {
+    console.error("Generate Image API Error:", error);
+    showError(error.message || "Failed to generate image via orchestrator.");
+    throw error;
+  }
 };
 
+/**
+ * Calls the AI Orchestrator Edge Function for generative fill.
+ */
 export const generativeFillApi = async (prompt: string): Promise<string> => {
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  // For generative fill, we'll just return a random image that will be masked
-  return getRandomImageUrl(512, 512, prompt); // Assuming a standard size for the generated fill piece
+  try {
+    const response = await fetch(EDGE_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
+      },
+      body: JSON.stringify({
+        command: 'generative_fill',
+        prompt,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `AI Orchestrator failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.resultUrl;
+  } catch (error) {
+    console.error("Generative Fill API Error:", error);
+    showError(error.message || "Failed to perform generative fill via orchestrator.");
+    throw error;
+  }
 };
