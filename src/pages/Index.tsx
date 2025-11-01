@@ -89,6 +89,8 @@ export const Index = () => {
     
     // AI
     geminiApiKey, handleGenerateImage, handleGenerativeFill,
+    handleImageResult, // NEW
+    handleMaskResult, // NEW
     
     // Workspace
     hasImage, hasActiveSelection,
@@ -200,8 +202,13 @@ export const Index = () => {
     onSelectiveBlurStrengthChange: setSelectiveBlurAmount,
     onSelectiveBlurStrengthCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers),
     setForegroundColor,
+    // AI Results Handlers (for Mobile Options)
+    geminiApiKey,
+    base64Image: image,
+    onImageResult: handleImageResult,
+    onMaskResult: handleMaskResult,
   };
-
+ 
   const editorWorkspaceProps = {
     workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
   };
@@ -212,12 +219,12 @@ export const Index = () => {
     setBrushState: setBrushStatePartial,
     onBrushCommit: () => recordHistory("Update Brush Settings", currentEditState, layers),
   };
-
+ 
   // Determine the bottom offset for the options panel
   // MobileBottomNav: h-20 (80px). MobileToolBar: h-16 (64px).
   const mobileOptionsBottomOffset = activeMobileTab === 'tools' ? 'bottom-[144px]' : 'bottom-[80px]';
-
-
+ 
+ 
   // --- Common Elements (File Input and Dialogs) ---
   const fileInput = (
     <input
@@ -239,7 +246,7 @@ export const Index = () => {
       }}
     />
   );
-
+ 
   const dialogs = (
     <>
       <NewProjectDialog
@@ -295,10 +302,10 @@ export const Index = () => {
       />
     </>
   );
-
-
+ 
+ 
   // --- Render Logic ---
-
+ 
   if (smartObjectEditingId) {
     const smartObjectLayer = layers.find(l => l.id === smartObjectEditingId);
     if (smartObjectLayer && smartObjectLayer.type === 'smart-object') {
@@ -326,7 +333,7 @@ export const Index = () => {
       );
     }
   }
-
+ 
   if (isMobile) {
     return (
       <>
@@ -345,7 +352,7 @@ export const Index = () => {
             onImportClick={() => setIsImportOpen(true)}
             onNewFromClipboard={() => showError("New from clipboard is a stub.")}
           />
-
+ 
           {/* 2. Main Workspace Area */}
           <main className="flex-1 relative min-h-0">
             <EditorWorkspace {...editorWorkspaceProps} />
@@ -386,12 +393,12 @@ export const Index = () => {
               </Button>
             </div>
           )}
-
+ 
           {/* 4. Secondary Tool Bar (Visible when 'Tools' is active) */}
           {activeMobileTab === 'tools' && (
             <MobileToolBar activeTool={activeTool} setActiveTool={handleSetActiveTool} />
           )}
-
+ 
           {/* 5. Bottom Navigation */}
           <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleSetActiveTab} />
         </div>
@@ -400,7 +407,7 @@ export const Index = () => {
       </>
     );
   }
-
+ 
   // Desktop Layout
   return (
     <>
@@ -423,7 +430,7 @@ export const Index = () => {
         
         {/* 2. Tool Options Bar */}
         <ToolOptionsBar {...toolOptionsBarProps} />
-
+ 
         {/* 3. Main Content Area (Left | Center | Right) */}
         <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0">
           
@@ -445,7 +452,7 @@ export const Index = () => {
           </ResizablePanel>
         </ResizablePanelGroup>
         
-        {/* 4. Bottom Panel (Color/Info/Navigator/Templates) */}
+        {/* 4. Bottom Panel (Color/Info/Navigator/Templates/AI) */}
         <BottomPanel 
           foregroundColor={foregroundColor} 
           onForegroundColorChange={setForegroundColor} 
@@ -462,7 +469,7 @@ export const Index = () => {
           onZoomOut={handleZoomOut}
           onFitScreen={handleFitScreen}
           hasImage={hasImage}
-          // NEW PROPS FOR COLOR CORRECTION
+          // Color Correction Props
           adjustments={adjustments}
           onAdjustmentChange={onAdjustmentChange}
           onAdjustmentCommit={onAdjustmentCommit}
@@ -477,6 +484,12 @@ export const Index = () => {
           onCurvesCommit={onCurvesCommit}
           customHslColor={customHslColor}
           setCustomHslColor={setCustomHslColor}
+          // AI Props (NEW)
+          geminiApiKey={geminiApiKey}
+          base64Image={image}
+          onImageResult={handleImageResult}
+          onMaskResult={handleMaskResult}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       </div>
       {fileInput}
