@@ -91,6 +91,7 @@ export const Index = () => {
     geminiApiKey, handleGenerateImage, handleGenerativeFill,
     handleImageResult, // NEW
     handleMaskResult, // NEW
+    base64Image, // NEW
     
     // Workspace
     hasImage, hasActiveSelection,
@@ -204,7 +205,7 @@ export const Index = () => {
     setForegroundColor,
     // AI Results Handlers (for Mobile Options)
     geminiApiKey,
-    base64Image: image,
+    base64Image: base64Image,
     onImageResult: handleImageResult,
     onMaskResult: handleMaskResult,
   };
@@ -486,7 +487,7 @@ export const Index = () => {
           setCustomHslColor={setCustomHslColor}
           // AI Props (NEW)
           geminiApiKey={geminiApiKey}
-          base64Image={image}
+          base64Image={base64Image}
           onImageResult={handleImageResult}
           onMaskResult={handleMaskResult}
           onOpenSettings={() => setIsSettingsOpen(true)}

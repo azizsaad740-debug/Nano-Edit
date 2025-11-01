@@ -31,7 +31,7 @@ import { downloadImage, rasterizeEditedImageWithMask } from '@/utils/imageUtils'
 import { upscaleImageApi } from '@/utils/stabilityApi';
 import { showError, showSuccess, showLoading } from '@/utils/toast';
 import type { ExportOptionsType } from '@/components/editor/ExportOptions';
-import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point, Layer } from '@/types/editor';
+import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point, Layer, isImageOrDrawingLayer } from '@/types/editor';
 import { useGradientPresets } from './useGradientPresets';
 import LeftSidebar from '@/components/layout/LeftSidebar';
 
@@ -54,6 +54,15 @@ export const useEditorLogic = () => {
     workspaceRef, imgRef, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
     ...rest
   } = state;
+
+  // --- Derived State ---
+  const base64Image = useMemo(() => {
+    const backgroundLayer = layers.find(l => l.id === 'background');
+    if (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) {
+      return backgroundLayer.dataUrl || null;
+    }
+    return null;
+  }, [layers]);
 
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
     state.setImage, state.setDimensions, state.setFileInfo, state.setExifData, state.setLayers, state.resetAllEdits,
@@ -344,6 +353,7 @@ export const useEditorLogic = () => {
     // AI Results Handlers
     handleImageResult,
     handleMaskResult,
+    base64Image, // EXPOSED
     // Workspace
     workspaceZoom, handleWheel, handleFitScreen, handleZoomIn, handleZoomOut, isMouseOverImage, setIsMouseOverImage,
     gradientStart, gradientCurrent, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
