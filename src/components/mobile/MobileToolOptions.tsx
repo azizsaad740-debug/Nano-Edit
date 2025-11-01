@@ -11,7 +11,8 @@ import { StampOptions } from "@/components/editor/StampOptions";
 import { HistoryBrushOptions } from "@/components/editor/HistoryBrushOptions";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
 import SelectionToolOptions from "@/components/editor/SelectionToolOptions";
-import GlobalAdjustmentsPanel from "@/components/editor/GlobalAdjustmentsPanel";
+import GlobalEffectsPanel from "@/components/editor/GlobalEffectsPanel";
+import ColorCorrectionPanel from "@/components/auxiliary/ColorCorrectionPanel";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Settings, Zap } from "lucide-react";
@@ -348,7 +349,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         return renderToolOptionsContent();
         
       case 'properties':
-        // If a layer is selected, show its properties. Otherwise, show the Layers Panel.
+        // If a layer is selected, show its properties. 
         if (selectedLayer) {
           return (
             <div className="p-4 space-y-4">
@@ -374,93 +375,56 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
             </div>
           );
         }
+        // If no layer is selected, show Global Effects/Transform
         return (
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle className="text-base">Layers</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <LayersPanel
-                layers={layers}
-                selectedLayerId={selectedLayerId}
-                onSelectLayer={onSelectLayer}
-                onReorder={onReorder}
-                toggleLayerVisibility={toggleLayerVisibility}
-                renameLayer={renameLayer}
-                deleteLayer={deleteLayer}
-                onDuplicateLayer={onDuplicateLayer}
-                onMergeLayerDown={onMergeLayerDown}
-                onRasterizeLayer={onRasterizeLayer}
-                onCreateSmartObject={onCreateSmartObject}
-                onOpenSmartObject={onOpenSmartObject}
-                onLayerPropertyCommit={onLayerPropertyCommit}
-                onLayerOpacityChange={onLayerOpacityChange}
-                onLayerOpacityCommit={onLayerOpacityCommit}
-                onAddTextLayer={(coords) => addTextLayer(coords, foregroundColor)}
-                onAddDrawingLayer={addDrawingLayer}
-                onAddLayerFromBackground={onAddLayerFromBackground}
-                onLayerFromSelection={onLayerFromSelection}
-                onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor)}
-                onAddGradientLayer={addGradientLayer}
-                onAddAdjustmentLayer={onAddAdjustmentLayer}
-                selectedShapeType={selectedShapeType}
-                groupLayers={groupLayers}
-                toggleGroupExpanded={toggleGroupExpanded}
-                hasActiveSelection={hasActiveSelection}
-                onApplySelectionAsMask={onApplySelectionAsMask}
-                onRemoveLayerMask={onRemoveLayerMask}
-                onInvertLayerMask={onInvertLayerMask}
-                onToggleClippingMask={onToggleClippingMask}
-                onToggleLayerLock={onToggleLayerLock}
-                onDeleteHiddenLayers={onDeleteHiddenLayers}
-                onRasterizeSmartObject={onRasterizeSmartObject}
-                onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
-                onExportSmartObjectContents={onExportSmartObjectContents}
-                onArrangeLayer={onArrangeLayer}
-                handleDestructiveOperation={handleDestructiveOperation}
-              />
-            </CardContent>
-          </Card>
+            <div className="p-4 space-y-4">
+                <h3 className="text-lg font-semibold">Global Effects</h3>
+                <GlobalEffectsPanel
+                    hasImage={hasImage}
+                    effects={effects}
+                    onEffectChange={onEffectChange}
+                    onEffectCommit={onEffectCommit}
+                    onFilterChange={onFilterChange}
+                    selectedFilter={selectedFilter}
+                    onTransformChange={onTransformChange}
+                    rotation={rotation}
+                    onRotationChange={onRotationChange}
+                    onRotationCommit={onRotationCommit}
+                    onAspectChange={onAspectChange}
+                    aspect={aspect}
+                    frame={frame}
+                    onFramePresetChange={onFramePresetChange}
+                    onFramePropertyChange={onFramePropertyChange}
+                    onFramePropertyCommit={onFramePropertyCommit}
+                    presets={presets}
+                    onApplyPreset={onApplyPreset}
+                    onSavePreset={(name) => onSavePreset(name)}
+                    onDeletePreset={onDeletePreset}
+                />
+            </div>
         );
       case 'adjustments':
         return (
-          <GlobalAdjustmentsPanel
-            hasImage={hasImage}
-            adjustments={adjustments}
-            onAdjustmentChange={onAdjustmentChange}
-            onAdjustmentCommit={onAdjustmentCommit}
-            effects={effects}
-            onEffectChange={onEffectChange}
-            onEffectCommit={onEffectCommit}
-            grading={grading}
-            onGradingChange={onGradingChange}
-            onGradingCommit={onGradingCommit}
-            hslAdjustments={hslAdjustments}
-            onHslAdjustmentChange={onHslAdjustmentChange}
-            onHslAdjustmentCommit={onHslAdjustmentCommit}
-            curves={curves}
-            onCurvesChange={onCurvesChange}
-            onCurvesCommit={onCurvesCommit}
-            onFilterChange={onFilterChange}
-            selectedFilter={selectedFilter}
-            onTransformChange={onTransformChange}
-            rotation={rotation}
-            onRotationChange={onRotationChange}
-            onRotationCommit={onRotationCommit}
-            onAspectChange={onAspectChange}
-            aspect={aspect}
-            frame={frame}
-            onFramePresetChange={onFramePresetChange}
-            onFramePropertyChange={onFramePropertyChange}
-            onFramePropertyCommit={onFramePropertyCommit}
-            imgRef={imgRef}
-            customHslColor={customHslColor}
-            setCustomHslColor={setCustomHslColor}
-            presets={presets}
-            onApplyPreset={onApplyPreset}
-            onSavePreset={onSavePreset}
-            onDeletePreset={onDeletePreset}
-          />
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Global Color Adjustments</h3>
+            <ColorCorrectionPanel
+              adjustments={adjustments}
+              onAdjustmentChange={onAdjustmentChange}
+              onAdjustmentCommit={onAdjustmentCommit}
+              grading={grading}
+              onGradingChange={onGradingChange}
+              onGradingCommit={onGradingCommit}
+              hslAdjustments={hslAdjustments}
+              onHslAdjustmentChange={onHslAdjustmentChange}
+              onHslAdjustmentCommit={onHslAdjustmentCommit}
+              curves={curves}
+              onCurvesChange={onCurvesChange}
+              onCurvesCommit={onCurvesCommit}
+              imgRef={imgRef}
+              customHslColor={customHslColor}
+              setCustomHslColor={setCustomHslColor}
+            />
+          </div>
         );
       case 'color':
         return (

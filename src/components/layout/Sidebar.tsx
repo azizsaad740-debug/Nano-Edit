@@ -1,6 +1,6 @@
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point, HslAdjustment, HslColorKey, AdjustmentState, GradingState, CurvesState } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
 
 // Renamed and exported interface
@@ -64,6 +64,25 @@ export interface RightSidebarTabsProps {
   onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
   onFramePropertyCommit: () => void;
+  
+  // --- Re-added Color Correction Props (Fixes TS2339 errors) ---
+  adjustments: AdjustmentState;
+  onAdjustmentChange: (adjustment: string, value: number) => void;
+  onAdjustmentCommit: (adjustment: string, value: number) => void;
+  
+  grading: GradingState;
+  onGradingChange: (gradingType: string, value: number) => void;
+  onGradingCommit: (gradingType: string, value: number) => void;
+  
+  hslAdjustments: EditState['hslAdjustments'];
+  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  
+  curves: EditState['curves'];
+  onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
+  onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
+  // -------------------------------------------------------------
+
   // Presets
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
