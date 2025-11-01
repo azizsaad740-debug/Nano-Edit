@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { EditState, Layer, HslAdjustment, HslColorKey } from '@/types/editor';
+import { showSuccess } from '@/utils/toast';
 
 export const useHslAdjustments = (
   currentEditState: EditState,
@@ -9,21 +10,26 @@ export const useHslAdjustments = (
 ) => {
   const hslAdjustments = currentEditState.hslAdjustments;
 
-  const onHslAdjustmentChange = useCallback((color: HslColorKey, key: keyof HslAdjustment, value: number) => {
-    const newHsl = { 
-      ...hslAdjustments, 
-      [color]: { ...hslAdjustments[color], [key]: value } 
-    };
-    updateCurrentState({ hslAdjustments: newHsl });
-  }, [hslAdjustments, updateCurrentState]);
+  const onHslAdjustmentChange = useCallback((color: HslColorKey, updates: Partial<HslAdjustment>) => {
+    updateCurrentState({
+      hslAdjustments: {
+        ...currentEditState.hslAdjustments,
+        [color]: {
+          ...currentEditState.hslAdjustments[color],
+          ...updates,
+        },
+      },
+    });
+  }, [currentEditState.hslAdjustments, updateCurrentState]);
 
   const onHslAdjustmentCommit = useCallback((color: HslColorKey, key: keyof HslAdjustment, value: number) => {
-    recordHistory(`Set HSL ${color}/${key} to ${value}`, currentEditState, layers);
+    recordHistory(`Set HSL ${color}/${String(key)} to ${value}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
     if (state.hslAdjustments) {
       updateCurrentState({ hslAdjustments: state.hslAdjustments });
+      showSuccess("HSL adjustments applied.");
     }
   }, [updateCurrentState]);
 
