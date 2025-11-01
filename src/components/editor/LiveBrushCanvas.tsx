@@ -16,6 +16,7 @@ interface LiveBrushCanvasProps {
   cloneSourcePoint?: Point | null;
   selectedLayerId: string | null;
   zoom: number;
+  baseImageSrc: string | null; // ADDED PROP
 }
 
 export const LiveBrushCanvas = ({
@@ -30,12 +31,14 @@ export const LiveBrushCanvas = ({
   cloneSourcePoint,
   selectedLayerId,
   zoom,
+  baseImageSrc, // DESTRUCTURED
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const tempCanvasRef = React.useRef<HTMLCanvasElement>(null); // For live preview
   const isDrawingRef = React.useRef(false);
   const lastPointRef = React.useRef<Point | null>(null);
   const [isDrawing, setIsDrawing] = React.useState(false);
+  const baseImageRef = React.useRef<HTMLImageElement | null>(null); // Ref to hold the base image element
 
   const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrush = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
@@ -47,6 +50,24 @@ export const LiveBrushCanvas = ({
   const isPencil = activeTool === 'pencil';
 
   const { size, hardness, opacity, flow, shape, angle, roundness, spacing } = brushState;
+
+  // Load base image when source changes
+  React.useEffect(() => {
+    if (baseImageSrc) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        baseImageRef.current = img;
+      };
+      img.onerror = () => {
+        baseImageRef.current = null;
+        console.error("Failed to load base image for stamping.");
+      };
+      img.src = baseImageSrc;
+    } else {
+      baseImageRef.current = null;
+    }
+  }, [baseImageSrc]);
 
   const getOperation = (): 'add' | 'subtract' => {
     // For selection/retouch tools, operation depends on foreground/background color swap
@@ -76,7 +97,7 @@ export const LiveBrushCanvas = ({
   const drawBrushStroke = React.useCallback((ctx: CanvasRenderingContext2D, start: Point, end: Point) => {
     if (!imageNaturalDimensions) return;
 
-    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
+    const distance = Math.sqrt(Math.pow(end.x - start.x) + Math.pow(end.y - start.y));
     const spacingPx = Math.max(1, size * (spacing / 100));
     const steps = Math.max(1, Math.ceil(distance / spacingPx));
 
@@ -104,16 +125,38 @@ export const LiveBrushCanvas = ({
 
       const radius = size / 2;
       
-      if (isStampTool && cloneSourcePoint) {
+      if (isStampTool && cloneSourcePoint && baseImageRef.current) {
         // --- Clone Stamp Logic ---
+        
+        // 1. Calculate offset: where the source pixel (cloneSourcePoint) should land (x, y)
+        const offsetX = cloneSourcePoint.x - x;
+        const offsetY = cloneSourcePoint.y - y;
+        
+        // 2. Clip the drawing to the brush shape
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
+        if (shape === 'circle') {
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+        } else {
+          ctx.rect(x - radius, y - radius, size, size);
+        }
+        ctx.clip();
+        
+        // 3. Draw the source image, offset to align the clone source point
+        // We draw the entire image, but only the clipped area is visible.
+        ctx.drawImage(baseImageRef.current, -offsetX, -offsetY, imageNaturalDimensions.width, imageNaturalDimensions.height);
+        
+        // Restore context to remove clip path
+        ctx.restore();
+        ctx.save(); // Save again for the next iteration
         
       } else if (isHistoryBrush) {
-        // --- History Brush Logic ---
+        // --- History Brush Logic (Stub: draws solid color for now) ---
         ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        if (shape === 'circle') {
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+        } else {
+          ctx.rect(x - radius, y - radius, size, size);
+        }
         ctx.fill();
       } else {
         // --- Standard Brush/Eraser/Selection Brush Logic ---
@@ -149,6 +192,12 @@ export const LiveBrushCanvas = ({
     
     // Prevent drawing if Alt/Meta key is pressed for stamp source selection
     if (isStampTool && (e.altKey || e.metaKey)) return;
+    
+    // Prevent stamping if source is not set
+    if (isStampTool && !cloneSourcePoint) {
+        console.warn("Clone source not set.");
+        return;
+    }
 
     const point = getPointOnCanvas(e);
     if (!point) return;
@@ -166,7 +215,7 @@ export const LiveBrushCanvas = ({
     
     // Draw the initial dot
     drawBrushStroke(ctx, point, point);
-  }, [getPointOnCanvas, drawBrushStroke, imageNaturalDimensions, isStampTool]);
+  }, [getPointOnCanvas, drawBrushStroke, imageNaturalDimensions, isStampTool, cloneSourcePoint]);
 
   const continueStroke = React.useCallback((e: MouseEvent) => {
     if (!isDrawingRef.current) return;
@@ -205,14 +254,14 @@ export const LiveBrushCanvas = ({
         onSelectiveRetouchStrokeEnd(strokeDataUrl, activeTool as 'blurBrush' | 'sharpenTool', operation);
     } else if (isSelectionBrush) { 
         onSelectionBrushStrokeEnd(strokeDataUrl, operation);
-    } else if (isHistoryBrush) {
-      // TS2554 Fix: onStrokeEnd expects 2 arguments
-      onStrokeEnd(strokeDataUrl, selectedLayerId || '');
+    } else if (isHistoryBrush || isStampTool) {
+      // For history brush and stamp tools, we merge the stroke onto the target layer
+      onStrokeEnd(strokeDataUrl, selectedLayerId || 'background');
     } else {
       // For drawing/erasing, we pass the selectedLayerId
-      onStrokeEnd(strokeDataUrl, selectedLayerId || '');
+      onStrokeEnd(strokeDataUrl, selectedLayerId || 'background');
     }
-  }, [onStrokeEnd, onSelectionBrushStrokeEnd, onSelectiveRetouchStrokeEnd, getOperation, isSelectiveRetouchTool, isSelectionBrush, isHistoryBrush, activeTool, selectedLayerId]);
+  }, [onStrokeEnd, onSelectionBrushStrokeEnd, onSelectiveRetouchStrokeEnd, getOperation, isSelectiveRetouchTool, isSelectionBrush, isHistoryBrush, isStampTool, activeTool, selectedLayerId]);
 
   // --- Setup and Cleanup ---
   React.useEffect(() => {
@@ -272,8 +321,25 @@ export const LiveBrushCanvas = ({
       tempCtx.stroke();
     }
     
+    // Draw clone source preview if stamping and source is set
+    if (isStampTool && cloneSourcePoint && baseImageRef.current) {
+        const sourceX = cloneSourcePoint.x;
+        const sourceY = cloneSourcePoint.y;
+        
+        // Draw a target icon at the source point
+        tempCtx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        tempCtx.lineWidth = 2;
+        tempCtx.beginPath();
+        tempCtx.arc(sourceX, sourceY, 5, 0, Math.PI * 2);
+        tempCtx.moveTo(sourceX - 10, sourceY);
+        tempCtx.lineTo(sourceX + 10, sourceY);
+        tempCtx.moveTo(sourceX, sourceY - 10);
+        tempCtx.lineTo(sourceX, sourceY + 10);
+        tempCtx.stroke();
+    }
+
     tempCtx.restore();
-  }, [getPointOnCanvas, size, hardness, isPencil, imageNaturalDimensions]);
+  }, [getPointOnCanvas, size, hardness, isPencil, imageNaturalDimensions, isStampTool, cloneSourcePoint]);
 
   React.useEffect(() => {
     document.addEventListener('mousemove', handleMouseMovePreview);
@@ -285,10 +351,15 @@ export const LiveBrushCanvas = ({
 
   // Determine cursor style
   let cursorStyle = 'crosshair';
-  if (isStampTool && (isDrawing || !cloneSourcePoint)) {
-    cursorStyle = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>\') 12 12, crosshair';
-  } else if (isStampTool && cloneSourcePoint) {
-    cursorStyle = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/><path d="M15 6l-3 3"/></svg>\') 0 24, crosshair';
+  if (isStampTool) {
+    if (isDrawing) {
+        cursorStyle = 'none';
+    } else if (cloneSourcePoint) {
+        cursorStyle = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>\') 12 12, crosshair';
+    } else {
+        // Alt/Option key required to set source
+        cursorStyle = 'url(\'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/><path d="M15 6l-3 3"/></svg>\') 0 24, crosshair';
+    }
   }
 
   return (

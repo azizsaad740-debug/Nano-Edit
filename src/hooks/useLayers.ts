@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
-import type { Layer, EditState, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData, ImageLayerData, Point, AdjustmentLayerData, SmartObjectLayerData } from "@/types/editor";
+import type { Layer, EditState, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData, ImageLayerData, Point, AdjustmentLayerData, SmartObjectLayerData, HistoryItem } from "@/types/editor";
 import { initialCurvesState, initialHslAdjustment } from "@/types/editor";
 import { saveProjectToFile } from "@/utils/projectUtils";
 import { rasterizeEditedImageWithMask, downloadImage, applyMaskDestructively } from "@/utils/imageUtils";
@@ -26,7 +26,10 @@ interface UseLayersProps {
   clearSelectionState: () => void;
   brushState: BrushState;
   activeTool: ActiveTool | null;
-  onBrushCommit: () => void; // ADDED PROP
+  onBrushCommit: () => void;
+  history: HistoryItem[]; // ADDED
+  currentHistoryIndex: number; // ADDED
+  historyBrushSourceIndex: number; // ADDED
 }
 
 // Helper function to recursively find a layer and its container/path
@@ -106,7 +109,8 @@ export const useLayers = ({
   layers, setLayers, selectedLayerId, setSelectedLayerId, dimensions,
   recordHistory, currentEditState, foregroundColor, backgroundColor,
   selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
-  brushState, activeTool, onBrushCommit, // DESTRUCTURED NEW PROP
+  brushState, activeTool, onBrushCommit,
+  history, currentHistoryIndex, historyBrushSourceIndex, // DESTRUCTURED
 }: UseLayersProps) => {
   
   const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]);
@@ -641,6 +645,9 @@ export const useLayers = ({
       // Apply composite operation based on tool (eraser uses destination-out)
       if (activeTool === 'eraser') {
         ctx.globalCompositeOperation = 'destination-out';
+      } else if (activeTool === 'cloneStamp' || activeTool === 'patternStamp') {
+        // Stamp tools already draw sampled pixels, use source-over
+        ctx.globalCompositeOperation = 'source-over';
       } else {
         ctx.globalCompositeOperation = 'source-over';
       }
@@ -704,22 +711,45 @@ export const useLayers = ({
     mergeMask();
   }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
 
-  const handleHistoryBrushStrokeEnd = useCallback((strokeDataUrl: string, layerId: string, historyStateName: string) => {
-    // 1. Determine the target layer ID, creating a new one if the selected layer is unsuitable.
-    let targetId = layerId;
-    const targetLayer = findLayerLocation(layerId, layers)?.layer;
-    
-    const isDrawable = targetLayer && (targetLayer.type === 'drawing' || targetLayer.id === 'background');
+  const handleHistoryBrushStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
+    if (!dimensions) return;
 
-    if (!isDrawable) {
-      // If no suitable layer is selected, create a new drawing layer.
-      targetId = handleAddDrawingLayer();
+    const targetHistoryIndex = historyBrushSourceIndex;
+    const targetHistoryState = history[targetHistoryIndex];
+
+    if (!targetHistoryState) {
+      showError("Invalid history state selected for brush.");
+      return;
     }
-    
-    // 2. Perform the merge operation on the determined layer.
+
+    // 1. Rasterize the target history state image
+    const rasterizeHistoryImage = async (): Promise<string | null> => {
+      // STUB: For simplicity, we assume the historical image is the background layer's dataUrl
+      // from that history state, ignoring all other layers/filters for now.
+      const historicalBackground = targetHistoryState.layers.find(l => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
+      return historicalBackground?.dataUrl || null;
+      
+      // A full implementation would require calling rasterizeEditedImageWithMask with historical state/layers.
+    };
+
     const mergeStroke = async () => {
+      const historicalImageSrc = await rasterizeHistoryImage();
+      if (!historicalImageSrc) {
+        showError("Could not retrieve historical image data.");
+        return;
+      }
+      
+      // 2. Determine the target layer (must be drawing or background)
+      let targetId = layerId;
+      const targetLayer = findLayerLocation(layerId, layers)?.layer;
+      const isDrawable = targetLayer && (targetLayer.type === 'drawing' || targetLayer.id === 'background');
+
+      if (!isDrawable) {
+        targetId = handleAddDrawingLayer(); // Creates new layer if needed
+      }
+      
       const finalTargetLayer = findLayerLocation(targetId, layers)?.layer as DrawingLayerData | ImageLayerData | undefined;
-      if (!finalTargetLayer || !dimensions) return;
+      if (!finalTargetLayer) return;
 
       const canvas = document.createElement('canvas');
       canvas.width = dimensions.width;
@@ -727,34 +757,41 @@ export const useLayers = ({
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // 1. Draw existing content (the current state of the layer)
+      // 3. Draw existing content (current state of the layer)
       if (finalTargetLayer.dataUrl) {
         const existingImg = new Image();
         await new Promise(resolve => { existingImg.onload = resolve; existingImg.src = finalTargetLayer.dataUrl; });
         ctx.drawImage(existingImg, 0, 0);
       }
-
-      // 2. Draw the stroke (which contains the history state pixels)
+      
+      // 4. Draw the historical image, clipped by the stroke mask
       const strokeImg = new Image();
       await new Promise(resolve => { strokeImg.onload = resolve; strokeImg.src = strokeDataUrl; });
       
-      // Use source-over, but the stroke image itself contains the blended history pixels
+      const historicalImg = new Image();
+      await new Promise(resolve => { historicalImg.onload = resolve; historicalImg.src = historicalImageSrc; });
+
+      ctx.save();
+      
+      // Use the stroke as a clipping mask (destination-in)
       ctx.globalCompositeOperation = 'source-over';
+      ctx.drawImage(strokeImg, 0, 0); // Draw the stroke mask (white area)
+      ctx.globalCompositeOperation = 'source-in'; // Clip the historical image to the stroke area
       
-      // STUB: In a real app, the strokeDataUrl would contain the pixels from the history state,
-      // blended with the current brush settings (opacity, flow, blend mode).
+      // Draw the historical image (which is full canvas size)
+      ctx.drawImage(historicalImg, 0, 0, dimensions.width, dimensions.height);
       
-      ctx.drawImage(strokeImg, 0, 0);
+      ctx.restore();
       
       const newLayerDataUrl = canvas.toDataURL();
       
       updateLayer(targetId, { dataUrl: newLayerDataUrl, type: 'drawing' });
       commitLayerChange(targetId);
-      showSuccess(`History brush applied (Stub: Restored pixels from ${historyStateName}).`);
+      showSuccess(`History brush applied (Restored pixels from ${targetHistoryState.name}).`);
     };
 
     mergeStroke();
-  }, [layers, dimensions, updateLayer, commitLayerChange, handleAddDrawingLayer]);
+  }, [dimensions, history, historyBrushSourceIndex, layers, updateLayer, commitLayerChange, handleAddDrawingLayer, recordHistory, currentEditState]);
 
 
   // --- Paint Bucket Logic ---
@@ -929,6 +966,6 @@ export const useLayers = ({
       showSuccess("Selection applied as layer mask.");
     }, [selectedLayerId, selectionMaskDataUrl, updateLayer, commitLayerChange, clearSelectionState]),
     handleDestructiveOperation,
-    onBrushCommit, // EXPOSED NEW PROP
+    onBrushCommit,
   };
 };
