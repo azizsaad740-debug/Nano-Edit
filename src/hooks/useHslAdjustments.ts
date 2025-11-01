@@ -10,13 +10,13 @@ export const useHslAdjustments = (
 ) => {
   const hslAdjustments = currentEditState.hslAdjustments;
 
-  const onHslAdjustmentChange = useCallback((color: HslColorKey, updates: Partial<HslAdjustment>) => {
+  const onHslAdjustmentChange = useCallback((color: HslColorKey, key: keyof HslAdjustment, value: number) => {
     updateCurrentState({
       hslAdjustments: {
         ...currentEditState.hslAdjustments,
         [color]: {
           ...currentEditState.hslAdjustments[color],
-          ...updates,
+          [key]: value,
         },
       },
     });

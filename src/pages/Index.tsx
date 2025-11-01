@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/resizable";
 import type { Point, ActiveTool } from "@/types/editor";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
-import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileNav";
+import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileBottomNav";
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { Undo2, Redo2, ZoomIn, ZoomOut, X } from "lucide-react";
