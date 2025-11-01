@@ -241,6 +241,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
               ref={imgRef}
               src={backgroundSrc}
               alt="Base Image"
+              crossOrigin="anonymous"
               className="absolute top-0 left-0 w-full h-full object-cover"
               style={{
                 transform: transformStyle, // Apply rotation/flip

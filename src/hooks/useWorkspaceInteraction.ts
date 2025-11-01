@@ -24,6 +24,9 @@ export const useWorkspaceInteraction = (
   // NEW PROPS for Text Tool:
   handleAddTextLayer: (coords: Point, color: string) => void,
   foregroundColor: string,
+  // ADDED PROPS for Eyedropper Tool:
+  setForegroundColor: (color: string) => void,
+  setActiveTool: (tool: ActiveTool | null) => void,
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
@@ -83,7 +86,7 @@ export const useWorkspaceInteraction = (
     const rect = imgRef.current.getBoundingClientRect();
     
     // Check if click is within the image bounds (scaled)
-    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+    if (e.clientX < rect.left || e.clientX > rect.right || e.clientY > rect.bottom || e.clientY < rect.top) {
       return null;
     }
 
@@ -203,6 +206,60 @@ export const useWorkspaceInteraction = (
     }
   }, [dimensions, currentEditState.selectionSettings.tolerance, setSelectionMaskDataUrl, setSelectionPath]);
 
+  const handleEyedropperClick = React.useCallback(async (clickPoint: Point) => {
+    if (!dimensions || !imgRef.current) return;
+
+    // We sample from the currently displayed image element (imgRef.current)
+    // which should contain the base image data URL.
+    const baseImageSrc = imgRef.current.src;
+    
+    // 1. Create a temporary canvas to read the pixel color
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    
+    if (!ctx) {
+      showError("Failed to get canvas context for color sampling.");
+      return;
+    }
+
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // Essential for reading pixel data from external sources
+    img.onload = () => {
+      try {
+        // Draw the image onto the canvas
+        ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
+        
+        // Read the pixel data at the clicked point
+        // Note: clickPoint is already in image pixel coordinates (0 to dimensions.width/height)
+        const pixelData = ctx.getImageData(clickPoint.x, clickPoint.y, 1, 1).data;
+        const [r, g, b] = pixelData;
+        
+        // Convert RGB to Hex
+        const componentToHex = (c: number) => {
+          const hex = c.toString(16);
+          return hex.length === 1 ? "0" + hex : hex;
+        };
+        const hexColor = "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        
+        setForegroundColor(hexColor);
+        showSuccess(`Color sampled: ${hexColor.toUpperCase()}`);
+        
+        // Reset tool after sampling
+        setActiveTool(null);
+      } catch (error) {
+        console.error("Error reading pixel data:", error);
+        showError("Failed to sample color. (CORS issue or image not fully loaded)");
+      }
+    };
+    img.onerror = () => {
+      showError("Failed to load image for color sampling.");
+    };
+    img.src = baseImageSrc;
+
+  }, [dimensions, imgRef, setForegroundColor, setActiveTool]);
+
 
   const handleWorkspaceMouseDown = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!imgRef.current || !dimensions) return;
@@ -215,6 +272,14 @@ export const useWorkspaceInteraction = (
     }
     
     const screenPoint: Point = { x: e.clientX, y: e.clientY };
+
+    // --- Eyedropper Tool ---
+    if (activeTool === 'eyedropper') {
+      handleEyedropperClick(clickPoint);
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
 
     // --- Stamp Tool Alt+Click to set source ---
     if ((activeTool === 'cloneStamp' || activeTool === 'patternStamp') && (e.altKey || e.metaKey)) {
@@ -252,7 +317,7 @@ export const useWorkspaceInteraction = (
       handleAddTextLayer(clickPoint, foregroundColor);
       e.stopPropagation();
     }
-  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick, setCloneSourcePoint, handleAddTextLayer, foregroundColor]);
+  }, [imgRef, dimensions, activeTool, setSelectedLayerId, clearSelectionState, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, getPointOnImage, setSelectionPath, handleMagicWandClick, handleObjectSelectClick, handlePaintBucketClick, setCloneSourcePoint, handleAddTextLayer, foregroundColor, handleEyedropperClick]);
 
   const handleWorkspaceMouseMove = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart) {
@@ -261,9 +326,9 @@ export const useWorkspaceInteraction = (
       setMarqueeCurrent({ x: e.clientX, y: e.clientY });
     } else if (activeTool === 'lassoPoly' && polygonalPathRef.current.length > 0) {
       // Update the visual path with the current mouse position (screen coordinates)
-      const currentPoint = getPointOnImage(e.nativeEvent);
-      if (currentPoint) {
-        setSelectionPath([...polygonalPathRef.current, currentPoint]);
+      const coords = getPointOnImage(e.nativeEvent);
+      if (coords) {
+        setSelectionPath([...polygonalPathRef.current, coords]);
       }
     }
   }, [activeTool, gradientStart, setGradientCurrent, setMarqueeCurrent, getPointOnImage, setSelectionPath]);

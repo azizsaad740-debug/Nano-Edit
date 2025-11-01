@@ -206,7 +206,8 @@ export const LiveBrushCanvas = ({
     } else if (isSelectionBrush) { 
         onSelectionBrushStrokeEnd(strokeDataUrl, operation);
     } else if (isHistoryBrush) {
-      onStrokeEnd(strokeDataUrl, selectedLayerId || '', getHistoryStateName());
+      // TS2554 Fix: onStrokeEnd expects 2 arguments
+      onStrokeEnd(strokeDataUrl, selectedLayerId || '');
     } else {
       // For drawing/erasing, we pass the selectedLayerId
       onStrokeEnd(strokeDataUrl, selectedLayerId || '');

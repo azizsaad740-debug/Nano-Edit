@@ -213,6 +213,7 @@ export interface NewProjectSettings {
   width: number;
   height: number;
   dpi: number;
+  backgroundColor: string; // ADDED
 }
 
 // --- Layer Types ---

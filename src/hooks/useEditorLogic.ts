@@ -38,7 +38,7 @@ import LeftSidebar from '@/components/layout/LeftSidebar';
 export const useEditorLogic = () => {
   const state = useEditorState();
   const {
-    image, dimensions, fileInfo, layers, currentEditState, recordHistory,
+    image, dimensions, fileInfo, layers, recordHistory,
     undo, redo, canUndo, canRedo,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
@@ -253,7 +253,10 @@ export const useEditorLogic = () => {
     handleMarqueeSelectionComplete, currentEditState, state.setCloneSourcePoint,
     // NEW:
     handleAddTextLayer,
-    foregroundColor
+    foregroundColor,
+    // ADDED:
+    setForegroundColor,
+    setActiveTool,
   );
 
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;

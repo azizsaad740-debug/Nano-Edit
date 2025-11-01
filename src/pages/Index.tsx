@@ -105,6 +105,9 @@ export const Index = () => {
     systemFonts, customFonts, addCustomFont, removeCustomFont, // Corrected destructuring
     setZoom,
     handleSwapColors,
+    handleSelectiveRetouchStrokeEnd, // ADDED
+    selectiveBlurMask, // ADDED
+    selectiveSharpenMask, // ADDED
   } = logic;
 
   const isMobile = useIsMobile();
@@ -200,7 +203,7 @@ export const Index = () => {
   };
 
   const editorWorkspaceProps = {
-    workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask: currentEditState.selectiveBlurMask, selectiveBlurAmount, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
+    workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal,
   };
   
   const toolOptionsBarProps = {
@@ -370,7 +373,7 @@ export const Index = () => {
           {isMobileOptionsOpen && (
             <div className={cn("absolute left-0 right-0 h-1/2 bg-background border-t border-border/50 z-20 shadow-2xl transition-all duration-300", mobileOptionsBottomOffset)}>
               <ScrollArea className="h-full">
-                <MobileToolOptions {...mobileOptionsProps} activeMobileTab={activeMobileTab} onApplyPreset={handleApplyPreset} />
+                <MobileToolOptions {...mobileOptionsProps} onApplyPreset={handleApplyPreset} />
               </ScrollArea>
               {/* Close button for the options panel */}
               <Button 
