@@ -455,6 +455,21 @@ export const Index = () => {
           onZoomOut={handleZoomOut}
           onFitScreen={handleFitScreen}
           hasImage={hasImage}
+          // NEW PROPS FOR COLOR CORRECTION
+          adjustments={adjustments}
+          onAdjustmentChange={onAdjustmentChange}
+          onAdjustmentCommit={onAdjustmentCommit}
+          grading={grading}
+          onGradingChange={onGradingChange}
+          onGradingCommit={onGradingCommit}
+          hslAdjustments={hslAdjustments}
+          onHslAdjustmentChange={onHslAdjustmentChange}
+          onHslAdjustmentCommit={onHslAdjustmentCommit}
+          curves={curves}
+          onCurvesChange={onCurvesChange}
+          onCurvesCommit={onCurvesCommit}
+          customHslColor={customHslColor}
+          setCustomHslColor={setCustomHslColor}
         />
       </div>
       {fileInput}

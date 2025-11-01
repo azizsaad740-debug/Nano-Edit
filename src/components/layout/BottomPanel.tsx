@@ -8,13 +8,16 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Palette, LayoutGrid, Info, Compass } from "lucide-react";
+import { Palette, LayoutGrid, Info, Compass, SlidersHorizontal } from "lucide-react";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
 import InfoPanel from "@/components/auxiliary/InfoPanel"; // Import InfoPanel
 import NavigatorPanel from "@/components/auxiliary/NavigatorPanel"; // Import NavigatorPanel
+import ColorCorrectionPanel from "@/components/auxiliary/ColorCorrectionPanel"; // NEW IMPORT
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import type { EditState } from "@/types/editor";
+import type { EditState, HslAdjustment, Point } from "@/types/editor";
+
+type HslColorKey = keyof EditState['hslAdjustments'];
 
 interface BottomPanelProps {
   // Color Props
@@ -34,6 +37,29 @@ interface BottomPanelProps {
   onZoomOut: () => void;
   onFitScreen: () => void;
   hasImage: boolean;
+  // Color Correction Props (NEW)
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+  onAdjustmentChange: (adjustment: string, value: number) => void;
+  onAdjustmentCommit: (adjustment: string, value: number) => void;
+  grading: {
+    grayscale: number;
+    sepia: number;
+    invert: number;
+  };
+  onGradingChange: (gradingType: string, value: number) => void;
+  onGradingCommit: (gradingType: string, value: number) => void;
+  hslAdjustments: EditState['hslAdjustments'];
+  onHslAdjustmentChange: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  onHslAdjustmentCommit: (color: HslColorKey, key: keyof HslAdjustment, value: number) => void;
+  curves: EditState['curves'];
+  onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
+  onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
+  customHslColor: string;
+  setCustomHslColor: (color: string) => void;
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = (props) => {
@@ -46,6 +72,9 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
           <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start">
             <TabsTrigger value="color" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
               <Palette className="h-4 w-4 mr-1" /> Color Palette
+            </TabsTrigger>
+            <TabsTrigger value="correction" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
+              <SlidersHorizontal className="h-4 w-4 mr-1" /> Color Correction
             </TabsTrigger>
             <TabsTrigger value="info" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
               <Info className="h-4 w-4 mr-1" /> Info
@@ -70,6 +99,26 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
                 />
               </TabsContent>
               
+              <TabsContent value="correction" className="mt-0">
+                <ColorCorrectionPanel
+                  adjustments={props.adjustments}
+                  onAdjustmentChange={props.onAdjustmentChange}
+                  onAdjustmentCommit={props.onAdjustmentCommit}
+                  grading={props.grading}
+                  onGradingChange={props.onGradingChange}
+                  onGradingCommit={props.onGradingCommit}
+                  hslAdjustments={props.hslAdjustments}
+                  onHslAdjustmentChange={props.onHslAdjustmentChange}
+                  onHslAdjustmentCommit={props.onHslAdjustmentCommit}
+                  curves={props.curves}
+                  onCurvesChange={props.onCurvesChange}
+                  onCurvesCommit={props.onCurvesCommit}
+                  imgRef={props.imgRef}
+                  customHslColor={props.customHslColor}
+                  setCustomHslColor={props.setCustomHslColor}
+                />
+              </TabsContent>
+
               <TabsContent value="info" className="mt-0">
                 <InfoPanel
                   dimensions={props.dimensions}
