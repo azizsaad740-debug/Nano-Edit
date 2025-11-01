@@ -248,9 +248,60 @@ export const useLayers = ({
   }, []);
 
   const rasterizeLayer = useCallback((id: string) => {
-    // Stub: Rasterizing vector/text layers requires rendering them to a canvas and replacing the layer with a drawing layer.
-    showError("Rasterizing vector/text layers is currently a stub.");
-  }, []);
+    const location = findLayerLocation(id, layers);
+    if (!location) return;
+    const layer = location.layer;
+
+    if (layer.type === 'image' || layer.type === 'drawing' || layer.type === 'group' || layer.type === 'adjustment' || layer.type === 'smart-object') {
+      showError(`Layer type ${layer.type} cannot be rasterized.`);
+      return;
+    }
+    
+    if (!dimensions) {
+      showError("Cannot rasterize without project dimensions.");
+      return;
+    }
+
+    const performRasterization = async () => {
+      const canvas = await rasterizeLayerToCanvas(layer, dimensions);
+      
+      if (!canvas) {
+        showError("Failed to render layer content for rasterization.");
+        return;
+      }
+      
+      const dataUrl = canvas.toDataURL();
+      
+      const newLayer: DrawingLayerData = {
+        id: layer.id,
+        name: `${layer.name} (Rasterized)`,
+        type: 'drawing',
+        visible: layer.visible,
+        opacity: layer.opacity,
+        blendMode: layer.blendMode,
+        dataUrl: dataUrl,
+        isLocked: layer.isLocked,
+        x: 50, // Rasterized layers usually cover the whole canvas
+        y: 50,
+        width: 100,
+        height: 100,
+        rotation: 0,
+        scaleX: 1,
+        scaleY: 1,
+        maskDataUrl: layer.maskDataUrl, // Keep mask if present
+        isClippingMask: layer.isClippingMask, // Keep clipping mask status
+      };
+
+      setLayers(prev => {
+        const updated = recursivelyUpdateLayer(prev, id, newLayer);
+        recordHistory(`Rasterize Layer: ${layer.name}`, currentEditState, updated);
+        return updated;
+      });
+      showSuccess(`Layer "${layer.name}" rasterized.`);
+    };
+
+    performRasterization();
+  }, [layers, dimensions, recordHistory, currentEditState, setLayers]);
 
   const reorderLayers = useCallback((activeId: string, overId: string) => {
     setLayers(prev => {
