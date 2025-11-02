@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showSuccess, showError } from "@/utils/toast";
@@ -30,6 +30,8 @@ interface UseLayersProps {
   history: HistoryItem[]; // ADDED
   currentHistoryIndex: number; // ADDED
   historyBrushSourceIndex: number; // ADDED
+  imgRef: React.RefObject<HTMLImageElement>; // <--- ADDED PROP
+  gradientToolState: GradientToolState; // <--- ADDED PROP
 }
 
 // Helper function to recursively find a layer and its container/path
@@ -110,7 +112,9 @@ export const useLayers = ({
   recordHistory, currentEditState, foregroundColor, backgroundColor,
   selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
   brushState, activeTool, onBrushCommit,
-  history, currentHistoryIndex, historyBrushSourceIndex, // DESTRUCTURED
+  history, currentHistoryIndex, historyBrushSourceIndex,
+  imgRef, // <--- DESTRUCTURED
+  gradientToolState, // <--- DESTRUCTURED
 }: UseLayersProps) => {
   
   const smartObjectEditingId = useMemo(() => layers.find(l => l.id === selectedLayerId && l.type === 'smart-object')?.id || null, [layers, selectedLayerId]);
@@ -493,7 +497,7 @@ export const useLayers = ({
     setSelectedLayerId(newLayer.id);
   }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerId]);
 
-  const handleAddGradientLayer = useCallback(() => {
+  const handleAddGradientLayer = useCallback((initialData: Partial<GradientLayerData> = {}) => {
     const newLayer: GradientLayerData = {
       id: uuidv4(),
       type: "gradient",
@@ -507,22 +511,78 @@ export const useLayers = ({
       height: 100,
       rotation: 0,
       scaleX: 1, scaleY: 1,
-      gradientType: 'linear',
-      gradientColors: [foregroundColor, backgroundColor],
-      gradientStops: [0, 1],
-      gradientAngle: 90,
-      gradientFeather: 0,
-      gradientInverted: false,
-      gradientCenterX: 50,
-      gradientCenterY: 50,
-      gradientRadius: 50,
+      gradientType: gradientToolState.type, // Use tool state defaults
+      gradientColors: gradientToolState.colors,
+      gradientStops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
       isLocked: false,
+      ...initialData, // Apply overrides
     };
     const updated = [...layers, newLayer];
     setLayers(updated);
     recordHistory("Add Gradient Layer", currentEditState, updated);
     setSelectedLayerId(newLayer.id);
-  }, [layers, recordHistory, currentEditState, foregroundColor, backgroundColor, setLayers, setSelectedLayerId]);
+    return newLayer.id;
+  }, [layers, recordHistory, currentEditState, foregroundColor, backgroundColor, gradientToolState, setLayers, setSelectedLayerId]);
+
+  const handleGradientSelectionComplete = useCallback((startScreen: Point, endScreen: Point) => {
+    if (!dimensions || !dimensions.width || !dimensions.height || !imgRef.current) {
+        showError("Cannot create gradient layer without image dimensions.");
+        return;
+    }
+    
+    const imageRect = imgRef.current.getBoundingClientRect();
+    
+    // 1. Convert screen coordinates to image pixel coordinates
+    const scaleX = dimensions.width / imageRect.width;
+    const scaleY = dimensions.height / imageRect.height;
+
+    const startX_px = (startScreen.x - imageRect.left) * scaleX;
+    const startY_px = (startScreen.y - imageRect.top) * scaleY;
+    const endX_px = (endScreen.x - imageRect.left) * scaleX;
+    const endY_px = (endScreen.y - imageRect.top) * scaleY;
+
+    // 2. Calculate Layer Properties (x, y, width, height, rotation)
+    
+    // Rotation (angle of the line)
+    const angleRad = Math.atan2(endY_px - startY_px, endX_px - startX_px);
+    let rotationDeg = angleRad * (180 / Math.PI) + 90; // 0deg is vertical up, 90deg is horizontal right
+    
+    // Normalize rotation to -180 to 180
+    rotationDeg = rotationDeg % 360;
+    if (rotationDeg > 180) rotationDeg -= 360;
+    if (rotationDeg < -180) rotationDeg += 360;
+
+    // If the tool is linear, we use the calculated angle.
+    let gradientUpdates: Partial<GradientLayerData> = {
+        x: 50, y: 50, width: 100, height: 100, rotation: 0, // Keep layer centered and full size
+    };
+    
+    if (gradientToolState.type === 'linear') {
+        // The angle is defined by the drawn line
+        gradientUpdates.gradientAngle = rotationDeg;
+    } else if (gradientToolState.type === 'radial') {
+        // The center is defined by the start point, and radius by the distance
+        const width_px = Math.sqrt(Math.pow(endX_px - startX_px, 2) + Math.pow(endY_px - startY_px, 2));
+        const radius_px = width_px / 2;
+        
+        // Use the start point as the center for radial gradient
+        gradientUpdates.gradientCenterX = (startX_px / dimensions.width) * 100;
+        gradientUpdates.gradientCenterY = (startY_px / dimensions.height) * 100;
+        
+        // Use the distance from start to end as the radius
+        gradientUpdates.gradientRadius = (width_px / Math.min(dimensions.width, dimensions.height)) * 100;
+    }
+    
+    handleAddGradientLayer(gradientUpdates);
+    
+  }, [dimensions, layers, recordHistory, currentEditState, gradientToolState, handleAddGradientLayer, imgRef]);
+
 
   const addAdjustmentLayer = useCallback((type: 'brightness' | 'curves' | 'hsl' | 'grading') => {
     const initialData: Partial<AdjustmentLayerData['adjustmentData']> = {};
@@ -1069,7 +1129,7 @@ export const useLayers = ({
     handleAddLayerFromBackground,
     handleLayerFromSelection,
     handleAddShapeLayer,
-    handleAddGradientLayer,
+    handleAddGradientLayer: () => handleAddGradientLayer(), // Keep original simple add function
     addAdjustmentLayer,
     groupLayers,
     toggleGroupExpanded,
@@ -1100,5 +1160,6 @@ export const useLayers = ({
     }, [selectedLayerId, selectionMaskDataUrl, updateLayer, commitLayerChange, clearSelectionState]),
     handleDestructiveOperation,
     onBrushCommit,
+    handleGradientSelectionComplete, // EXPOSED NEW FUNCTION
   };
 };

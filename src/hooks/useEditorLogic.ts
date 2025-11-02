@@ -244,6 +244,7 @@ export const useEditorLogic = () => {
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleDestructiveOperation, // EXPOSED
     onBrushCommit, // EXPOSED
+    handleGradientSelectionComplete, // EXPOSED
   } = useLayers({
     layers, setLayers: state.setLayers, selectedLayerId: state.selectedLayerId, setSelectedLayerId: state.setSelectedLayerId, dimensions,
     recordHistory, currentEditState, foregroundColor, backgroundColor,
@@ -253,6 +254,8 @@ export const useEditorLogic = () => {
     history, // PASSED
     currentHistoryIndex, // PASSED
     historyBrushSourceIndex, // PASSED
+    imgRef: state.imgRef, // <--- PASSING imgRef
+    gradientToolState: state.gradientToolState, // <--- PASSING gradientToolState
   });
 
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
@@ -493,6 +496,7 @@ export const useEditorLogic = () => {
     // ADDED:
     setForegroundColor,
     setActiveTool,
+    handleGradientSelectionComplete, // <--- NEW PROP PASS
   );
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;
   return {
@@ -507,13 +511,15 @@ export const useEditorLogic = () => {
     smartObjectEditingId, openSmartObjectEditor, closeSmartObjectEditor, saveSmartObjectChanges,
     updateLayer, commitLayerChange, handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
     handleToggleVisibility, renameLayer, deleteLayer, duplicateLayer, mergeLayerDown, rasterizeLayer, createSmartObject,
-    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
+    handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer: () => handleAddGradientLayer(), // Keep original simple add function
+    addAdjustmentLayer,
     groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // EXPOSED
     handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleDestructiveOperation, // EXPOSED
     onBrushCommit, // EXPOSED
+    handleGradientSelectionComplete, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
     grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit,

@@ -16,17 +16,18 @@ export const useWorkspaceInteraction = (
   layers: Layer[],
   initialZoom: number,
   setZoom: (zoom: number) => void,
-  setMarqueeStart: (point: Point | null) => void, // NEW
-  setMarqueeCurrent: (point: Point | null) => void, // NEW
-  onMarqueeSelectionComplete: (start: Point, end: Point) => void, // NEW
-  currentEditState: EditState, // NEW
-  setCloneSourcePoint: (point: Point | null) => void, // NEW: Setter for clone source
+  setMarqueeStart: (point: Point | null) => void,
+  setMarqueeCurrent: (point: Point | null) => void,
+  onMarqueeSelectionComplete: (start: Point, end: Point) => void,
+  currentEditState: EditState,
+  setCloneSourcePoint: (point: Point | null) => void,
   // NEW PROPS for Text Tool:
   handleAddTextLayer: (coords: Point, color: string) => void,
   foregroundColor: string,
   // ADDED PROPS for Eyedropper Tool:
   setForegroundColor: (color: string) => void,
   setActiveTool: (tool: ActiveTool | null) => void,
+  onGradientSelectionComplete: (start: Point, end: Point) => void, // <--- NEW PROP
 ) => {
   const [zoom, setLocalZoom] = React.useState(initialZoom);
   const [isMouseOverImage, setIsMouseOverImage] = React.useState(false);
@@ -335,7 +336,7 @@ export const useWorkspaceInteraction = (
 
   const handleWorkspaceMouseUp = React.useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (activeTool === 'gradient' && gradientStart && gradientCurrent) {
-      // Logic to commit gradient layer creation goes here (handled in Index.tsx)
+      onGradientSelectionComplete(gradientStart, gradientCurrent); // <--- CALL NEW PROP
       setGradientStart(null);
       setGradientCurrent(null);
     } else if (activeTool?.startsWith('marquee') && marqueeStartRef.current) {
@@ -353,7 +354,7 @@ export const useWorkspaceInteraction = (
       setMarqueeStart(null);
       setMarqueeCurrent(null);
     }
-  }, [activeTool, gradientStart, gradientCurrent, onMarqueeSelectionComplete, clearSelectionState, setMarqueeStart, setMarqueeCurrent]);
+  }, [activeTool, gradientStart, gradientCurrent, onMarqueeSelectionComplete, clearSelectionState, setMarqueeStart, setMarqueeCurrent, onGradientSelectionComplete]);
 
   // --- Polygonal Lasso Finalization ---
   React.useEffect(() => {
@@ -387,8 +388,8 @@ export const useWorkspaceInteraction = (
 
 
   return {
-    zoom,
-    setZoom: setLocalZoom, // Expose local setter for internal use
+    zoom: workspaceZoom,
+    setZoom: setWorkspaceZoom,
     handleWheel,
     handleFitScreen,
     handleZoomIn,
