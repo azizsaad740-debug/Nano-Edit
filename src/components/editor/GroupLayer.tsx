@@ -23,6 +23,8 @@ interface GroupLayerProps {
   renderChildren: (layer: Layer) => JSX.Element | null; // Updated signature
   globalSelectedLayerId: string | null; // New prop to track global selection
   zoom: number;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
 const GroupLayer = ({
@@ -36,6 +38,7 @@ const GroupLayer = ({
   renderChildren,
   globalSelectedLayerId,
   zoom,
+  setSelectedLayerId, // DESTRUCTURED
 }: GroupLayerProps) => {
   const groupLayer = layer as GroupLayerData;
 
@@ -54,6 +57,7 @@ const GroupLayer = ({
     activeTool,
     isSelected,
     zoom,
+    setSelectedLayerId, // PASSED
   });
 
   if (!groupLayer.visible || groupLayer.type !== "group" || !groupLayer.children || !parentDimensions) return null;
@@ -121,6 +125,7 @@ const GroupLayer = ({
               isSelected: globalSelectedLayerId === child.id, // Use globalSelectedLayerId for highlighting
               activeTool: activeTool,
               zoom: zoom,
+              setSelectedLayerId: setSelectedLayerId, // PASSED
             };
 
             if (!child.visible) return null;

@@ -17,6 +17,8 @@ interface GradientLayerProps {
   imageNaturalDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
   zoom: number;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
 export const GradientLayer = ({
@@ -28,6 +30,7 @@ export const GradientLayer = ({
   imageNaturalDimensions,
   activeTool,
   zoom,
+  setSelectedLayerId, // DESTRUCTURED
 }: GradientLayerProps) => {
   const [renderedDataUrl, setRenderedDataUrl] = React.useState<string | null>(null);
   const gradientLayer = layer as GradientLayerData;
@@ -47,6 +50,7 @@ export const GradientLayer = ({
     activeTool,
     isSelected,
     zoom,
+    setSelectedLayerId, // PASSED
   });
 
   // Render the gradient's content to a canvas

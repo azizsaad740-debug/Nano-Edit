@@ -78,6 +78,8 @@ interface EditorWorkspaceProps {
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   isPreviewingOriginal: boolean;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
 export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
@@ -129,6 +131,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   handleZoomIn,
   handleZoomOut,
   isPreviewingOriginal,
+  setSelectedLayerId, // DESTRUCTURED
 }) => {
   const { crop, transforms, frame, channels, curves, effects, grading, selectedFilter, hslAdjustments, colorMode } = currentEditState;
 
@@ -173,6 +176,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
       isSelected,
       activeTool,
       zoom: workspaceZoom,
+      setSelectedLayerId, // PASSED
     };
 
     if (!layer.visible) return null;

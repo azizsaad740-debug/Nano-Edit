@@ -115,7 +115,6 @@ export const Index = () => {
     workspaceZoom, handleWheel, handleFitScreen, handleZoomIn, handleZoomOut,
     isMouseOverImage, setIsMouseOverImage,
     gradientStart, gradientCurrent,
-    marqueeStart, marqueeCurrent,
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,
     clearSelectionState,
     isPreviewingOriginal, setIsPreviewingOriginal,
@@ -129,6 +128,7 @@ export const Index = () => {
     selectiveBlurMask, 
     selectiveSharpenMask, 
     setSelectionPath,
+    setSelectedLayerId, // DESTRUCTURED
     
     // Panel Management (NEW)
     panelLayout, togglePanelVisibility, reorderPanelTabs,
@@ -308,6 +308,7 @@ export const Index = () => {
   const editorWorkspaceProps = {
     workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal, base64Image,
     historyImageSrc,
+    setSelectedLayerId, // ADDED
   };
   
   const toolOptionsBarProps = {

@@ -18,6 +18,8 @@ interface SmartObjectWorkspaceProps {
   activeTool: ActiveTool | null;
   globalSelectedLayerId: string;
   zoom: number;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
 export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props) => {
@@ -31,6 +33,7 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
     activeTool,
     globalSelectedLayerId,
     zoom,
+    setSelectedLayerId, // DESTRUCTURED
   } = props;
 
   const renderLayer = (layer: Layer): JSX.Element | null => {
@@ -45,12 +48,18 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
       isSelected,
       activeTool,
       zoom,
+      setSelectedLayerId, // PASSED
     };
 
     if (!layer.visible) return null;
 
     if (layer.type === 'text') {
       return <TextLayer {...layerProps} />;
+    }
+    if (layer.type === 'drawing') {
+      // Drawing layer needs to be handled here too, but it doesn't use parentDimensions directly in its props
+      // We need to ensure DrawingLayerProps includes setSelectedLayerId
+      return <DrawingLayer {...layerProps} />;
     }
     if (layer.type === 'smart-object') {
       return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} />;

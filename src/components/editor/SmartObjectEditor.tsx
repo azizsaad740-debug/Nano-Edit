@@ -213,6 +213,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
                 activeTool={activeTool}
                 globalSelectedLayerId={selectedLayerId || ''}
                 zoom={zoom}
+                setSelectedLayerId={setSelectedLayerId} // ADDED
               />
             </div>
             <WorkspaceControls

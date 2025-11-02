@@ -15,9 +15,11 @@ interface DrawingLayerProps {
   isSelected: boolean;
   activeTool: ActiveTool | null;
   zoom: number;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
-export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom }: DrawingLayerProps) => {
+export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, activeTool, zoom, setSelectedLayerId }: DrawingLayerProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const [contentDimensions, setContentDimensions] = React.useState<{ width: number; height: number } | null>(null);
   const drawingLayer = layer as DrawingLayerData;
@@ -36,6 +38,7 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
     activeTool,
     isSelected,
     zoom,
+    setSelectedLayerId, // PASSED
   });
 
   // --- Canvas Rendering Logic ---

@@ -14,6 +14,8 @@ interface UseLayerTransformProps {
   activeTool: ActiveTool | null;
   isSelected: boolean;
   zoom: number;
+  // ADDED:
+  setSelectedLayerId: (id: string | null) => void;
 }
 
 export const useLayerTransform = ({
@@ -22,10 +24,12 @@ export const useLayerTransform = ({
   onUpdate,
   onCommit,
   type,
+  smartObjectData,
   parentDimensions,
   activeTool,
   isSelected,
   zoom,
+  setSelectedLayerId, // Destructure new prop
 }: UseLayerTransformProps) => {
   const layerRef = useRef<HTMLDivElement>(null);
   const dragStartInfo = useRef<{ x: number; y: number; initialX: number; initialY: number; initialWidth: number; initialHeight: number; initialRotation: number }>({ x: 0, y: 0, initialX: 0, initialY: 0, initialWidth: 0, initialHeight: 0, initialRotation: 0 });
@@ -96,6 +100,11 @@ export const useLayerTransform = ({
   const handleDragMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!isMovable || isDraggingPoint !== null) return;
     e.stopPropagation();
+    
+    // 1. Select the layer if it's not already selected
+    if (!isSelected) {
+        setSelectedLayerId(layer.id);
+    }
 
     const target = e.currentTarget;
     const rect = target.getBoundingClientRect();
@@ -121,7 +130,7 @@ export const useLayerTransform = ({
     };
 
     setIsDragging(true);
-  }, [layer, isMovable, isDraggingPoint, containerRef]);
+  }, [layer, isMovable, isDraggingPoint, containerRef, isSelected, setSelectedLayerId]); // Added isSelected, setSelectedLayerId
 
   const handleDragMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging || !containerRef.current) return;
