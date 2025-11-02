@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from "uuid";
+import { arrayMove } from "@dnd-kit/sortable";
 import {
   initialEditState,
   initialBrushState,
@@ -18,7 +19,7 @@ import {
   type HistoryItem,
   type SelectionSettings,
   type ShapeType,
-  type PanelTab, // ADDED
+  type PanelTab,
 } from "@/types/editor";
 import { showSuccess, showError, dismissToast } from "@/utils/toast";
 import { useFontManager } from "./useFontManager";
@@ -33,9 +34,9 @@ export const useEditorState = () => {
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isGenerativeFillOpen, setIsGenerativeFillOpen] = useState(false);
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false); // ADDED
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // ADDED
-  const [isMobile, setIsMobile] = useState(false); // ADDED (Stub for logic)
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export const useEditorState = () => {
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
   const [marqueeCurrent, setMarqueeCurrent] = useState<Point | null>(null);
   
-  // Gradient Drawing State (Fix 18, 20)
+  // Gradient Drawing State
   const [gradientStart, setGradientStart] = useState<Point | null>(null);
   const [gradientCurrent, setGradientCurrent] = useState<Point | null>(null);
   
@@ -78,10 +79,10 @@ export const useEditorState = () => {
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
-  // Panel Management State (Stubbed for logic)
-  const [panelLayout, setPanelLayout] = useState<PanelTab[]>([]); // Placeholder
-  const [activeRightTab, setActiveRightTab] = useState('layers'); // Placeholder
-  const [activeBottomTab, setActiveBottomTab] = useState('correction'); // Placeholder
+  // Panel Management State
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>([]); // Initialized as empty, populated by Index.tsx
+  const [activeRightTab, setActiveRightTab] = useState('layers');
+  const [activeBottomTab, setActiveBottomTab] = useState('correction');
   
   // External Hooks
   const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();

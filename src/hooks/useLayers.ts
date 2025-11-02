@@ -6,12 +6,12 @@ import type { Layer, ActiveTool, BrushState, GradientToolState, ShapeType, Group
 import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isDrawingLayer } from "@/types/editor";
 import { rasterizeLayerToCanvas, mergeStrokeOntoLayerDataUrl } from "@/utils/layerUtils";
 import { applyMaskDestructively } from "@/utils/imageUtils";
-import { polygonToMaskDataUrl, invertMaskDataUrl, objectSelectToMaskDataUrl, floodFillToMaskDataUrl, mergeMasks } from "@/utils/maskUtils"; // IMPORT mergeMasks
-import { initialCurvesState, initialHslAdjustment, initialGradingState } from "@/types/editor/initialState"; // Fix 1
+import { polygonToMaskDataUrl, invertMaskDataUrl, objectSelectToMaskDataUrl, floodFillToMaskDataUrl, mergeMasks } from "@/utils/maskUtils";
+import { initialCurvesState, initialHslAdjustment, initialGradingState } from "@/types/editor/initialState";
 
 interface UseLayersProps {
     layers: Layer[];
-    setLayers: (layers: Layer[]) => void;
+    setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
     recordHistory: (name: string, state: EditState, layers: Layer[]) => void;
     currentEditState: EditState;
     dimensions: Dimensions | null;
@@ -26,7 +26,7 @@ interface UseLayersProps {
     setImage: (image: string | null) => void;
     setFileInfo: (info: { name: string; size: number } | null) => void;
     setSelectedLayerId: (id: string | null) => void;
-    selectedLayerId: string | null; // ADDED to props
+    selectedLayerId: string | null;
 }
 
 export const useLayers = ({
@@ -46,7 +46,7 @@ export const useLayers = ({
     setImage,
     setFileInfo,
     setSelectedLayerId,
-    selectedLayerId, // Destructure here
+    selectedLayerId,
 }: UseLayersProps) => {
     // Helper function to recursively update a layer
     const recursivelyUpdateLayer = useCallback((currentLayers: Layer[], id: string, updates: Partial<Layer>): Layer[] => {
@@ -82,7 +82,7 @@ export const useLayers = ({
     // --- Core Layer Operations ---
 
     const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-        setLayers(prev => recursivelyUpdateLayer(prev, id, updates)); // Fix 2
+        setLayers(prev => recursivelyUpdateLayer(prev, id, updates));
     }, [setLayers, recursivelyUpdateLayer]);
 
     const commitLayerChange = useCallback((id: string, historyName?: string) => {
@@ -106,6 +106,17 @@ export const useLayers = ({
             commitLayerChange(selectedLayerId, `Change Opacity of ${layers.find(l => l.id === selectedLayerId)?.name}`);
         }
     }, [selectedLayerId, commitLayerChange, layers]);
+
+    const toggleLayerVisibility = useCallback((id: string) => {
+        setLayers(prev => {
+            const layer = prev.find(l => l.id === id);
+            if (!layer) return prev;
+            
+            const updated = recursivelyUpdateLayer(prev, id, { visible: !layer.visible });
+            recordHistory(`Toggle Visibility: ${layer.name}`, currentEditState, updated);
+            return updated;
+        });
+    }, [setLayers, recursivelyUpdateLayer, recordHistory, currentEditState]);
 
     const onApplySelectionAsMask = useCallback(async () => {
         if (!selectedLayerId || !selectionMaskDataUrl) {
@@ -140,7 +151,7 @@ export const useLayers = ({
                 layer.dataUrl,
                 strokeDataUrl,
                 dimensions,
-                currentEditState.brushState.blendMode // Fix 3, 4
+                currentEditState.brushState.blendMode
             );
 
             updateLayer(layerId, { dataUrl: newLayerDataUrl });
@@ -149,7 +160,7 @@ export const useLayers = ({
             console.error("Error merging brush stroke:", error);
             showError("Failed to apply brush stroke.");
         }
-    }, [layers, dimensions, currentEditState.brushState.blendMode, updateLayer, commitLayerChange]); // Fix 4
+    }, [layers, dimensions, currentEditState.brushState.blendMode, updateLayer, commitLayerChange]);
 
     const handleHistoryBrushStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
         const targetLayer = layers.find(l => l.id === layerId);
@@ -159,7 +170,7 @@ export const useLayers = ({
         }
         
         // 1. Get the historical image source (from the history state)
-        const historySourceLayer = currentEditState.history[currentEditState.historyBrushSourceIndex]?.layers.find(l => l.id === layerId) as DrawingLayerData | undefined; // Fix 5, 6
+        const historySourceLayer = currentEditState.history[currentEditState.historyBrushSourceIndex]?.layers.find(l => l.id === layerId) as DrawingLayerData | undefined;
         
         if (!historySourceLayer || !historySourceLayer.dataUrl) {
             showError("History source image not found.");
@@ -168,10 +179,6 @@ export const useLayers = ({
 
         try {
             // 2. Merge the stroke (which is a mask) onto the current layer, using the historical image as the source content.
-            // This is complex: we need to draw the current layer, then draw the historical image clipped by the stroke mask.
-            
-            // For simplicity in this stub, we will merge the historical image onto the current layer, 
-            // using the stroke as a mask to reveal the historical state.
             
             const canvas = document.createElement('canvas');
             canvas.width = dimensions.width;
@@ -220,7 +227,7 @@ export const useLayers = ({
             console.error("Error merging history brush stroke:", error);
             showError("Failed to apply history brush stroke.");
         }
-    }, [layers, dimensions, currentEditState.history, currentEditState.historyBrushSourceIndex, updateLayer, commitLayerChange]); // Fix 7, 8
+    }, [layers, dimensions, currentEditState.history, currentEditState.historyBrushSourceIndex, updateLayer, commitLayerChange]);
 
     const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
         if (!dimensions) {
@@ -470,7 +477,7 @@ export const useLayers = ({
             rotation: 0,
             scaleX: 1,
             scaleY: 1,
-            gradientType: gradientToolState.type as 'linear' | 'radial', // Fix 9
+            gradientType: gradientToolState.type as 'linear' | 'radial',
             gradientColors: gradientToolState.colors,
             gradientStops: gradientToolState.stops,
             gradientAngle: gradientToolState.angle,
@@ -546,7 +553,7 @@ export const useLayers = ({
             return;
         }
         
-        setLayers(prev => { // Fix 10
+        setLayers(prev => {
             const updated = prev.filter(l => l.id !== id);
             recordHistory(`Delete Layer: ${layer.name}`, currentEditState, updated);
             return updated;
@@ -566,7 +573,7 @@ export const useLayers = ({
             name: `${selectedLayer.name} Copy`,
         };
         
-        setLayers(prev => { // Fix 11
+        setLayers(prev => {
             const index = prev.findIndex(l => l.id === selectedLayer.id);
             const updated = [...prev.slice(0, index + 1), newLayer, ...prev.slice(index + 1)];
             recordHistory(`Duplicate Layer: ${selectedLayer.name}`, currentEditState, updated);
@@ -601,7 +608,7 @@ export const useLayers = ({
                 layerBelow.dataUrl,
                 strokeDataUrl,
                 dimensions,
-                targetLayer.blendMode // Use the target layer's blend mode for the merge
+                targetLayer.blendMode
             );
 
             // 3. Update the layer below and remove the target layer
@@ -650,7 +657,7 @@ export const useLayers = ({
                 maskDataUrl: layer.maskDataUrl,
             };
 
-            setLayers(prev => prev.map(l => l.id === id ? newLayer : l)); // Fix 12
+            setLayers(prev => prev.map(l => l.id === id ? newLayer : l));
             commitLayerChange(id, `Rasterize Layer: ${layer.name}`);
             showSuccess(`${layer.name} rasterized.`);
         } catch (error) {
@@ -718,9 +725,9 @@ export const useLayers = ({
 
 
     return {
-        toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, // Fix 13
+        toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
         onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
-        updateLayer, commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, // Fix 14
+        updateLayer, commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
         addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
         addShapeLayer, addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
         onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,

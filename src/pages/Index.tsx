@@ -28,26 +28,9 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useSession } from "@/integrations/supabase/session-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { EditorHeader } from "@/components/layout/EditorHeader";
-import type { PanelTab, ActiveTool } from "@/types/editor/core"; // Import ActiveTool
-import { Layers } from "lucide-react";
-import { cn } from "@/lib/utils"; // Import cn
-
-// Define initial panel layout (stubbed here, should ideally be in useEditorState)
-const initialPanelLayout: PanelTab[] = [
-  { id: 'layers', name: 'Layers', icon: Layers, location: 'right', visible: true, order: 1 },
-  { id: 'properties', name: 'Properties', icon: Layers, location: 'right', visible: true, order: 2 },
-  { id: 'correction', name: 'Correction', icon: Layers, location: 'bottom', visible: true, order: 3 },
-  { id: 'ai-xtra', name: 'AI Xtra', icon: Layers, location: 'bottom', visible: true, order: 4 },
-  { id: 'history', name: 'History', icon: Layers, location: 'right', visible: false, order: 5 },
-  { id: 'channels', name: 'Channels', icon: Layers, location: 'right', visible: false, order: 6 },
-  { id: 'color', name: 'Color', icon: Layers, location: 'bottom', visible: false, order: 7 },
-  { id: 'info', name: 'Info', icon: Layers, location: 'bottom', visible: false, order: 8 },
-  { id: 'navigator', name: 'Navigator', icon: Layers, location: 'bottom', visible: false, order: 9 },
-  { id: 'brushes', name: 'Brushes', icon: Layers, location: 'right', visible: false, order: 10 },
-  { id: 'paths', name: 'Paths', icon: Layers, location: 'right', visible: false, order: 11 },
-  { id: 'adjustments', name: 'Adjustments', icon: Layers, location: 'right', visible: false, order: 12 },
-  { id: 'templates', name: 'Templates', icon: Layers, location: 'right', visible: false, order: 13 },
-];
+import type { PanelTab, ActiveTool } from "@/types/editor/core";
+import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid, PenTool, History, Info, Compass, SquareStack, Zap } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Index: React.FC = () => {
   const navigate = useNavigate();
@@ -131,7 +114,7 @@ export const Index: React.FC = () => {
     onCropChange, onCropComplete,
     
     // Panel Management
-    panelLayout, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, setPanelLayout, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
     
     // Selection Drawing State
     marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
@@ -222,30 +205,51 @@ export const Index: React.FC = () => {
   const handleOpenGenerate = () => setIsGenerateOpen(true);
   const handleOpenGenerativeFill = () => setIsGenerativeFillOpen(true);
   
-  // --- Panel Management Logic (Stubbed for now, using initialPanelLayout) ---
-  const [panelLayoutState, setPanelLayoutState] = React.useState<PanelTab[]>(initialPanelLayout);
-
+  // --- Panel Management Logic ---
+  
+  // Initialize panel layout if empty (first load)
+  React.useEffect(() => {
+    if (panelLayoutState.length === 0) {
+      // Define initial panel layout structure here, mapping icons
+      const initialLayout: PanelTab[] = [
+        { id: 'layers', name: 'Layers', icon: Layers, location: 'right', visible: true, order: 1 },
+        { id: 'properties', name: 'Properties', icon: Settings, location: 'right', visible: true, order: 2 },
+        { id: 'correction', name: 'Correction', icon: SlidersHorizontal, location: 'bottom', visible: true, order: 3 },
+        { id: 'ai-xtra', name: 'AI Xtra', icon: Zap, location: 'bottom', visible: true, order: 4 },
+        { id: 'history', name: 'History', icon: History, location: 'right', visible: false, order: 5 },
+        { id: 'channels', name: 'Channels', icon: SquareStack, location: 'right', visible: false, order: 6 },
+        { id: 'color', name: 'Color', icon: Palette, location: 'bottom', visible: false, order: 7 },
+        { id: 'info', name: 'Info', icon: Info, location: 'bottom', visible: false, order: 8 },
+        { id: 'navigator', name: 'Navigator', icon: Compass, location: 'bottom', visible: false, order: 9 },
+        { id: 'brushes', name: 'Brushes', icon: Brush, location: 'right', visible: false, order: 10 },
+        { id: 'paths', name: 'Paths', icon: PenTool, location: 'right', visible: false, order: 11 },
+        { id: 'adjustments', name: 'Adjustments', icon: SlidersHorizontal, location: 'right', visible: false, order: 12 },
+        { id: 'templates', name: 'Templates', icon: LayoutGrid, location: 'right', visible: false, order: 13 },
+      ];
+      setPanelLayout(initialLayout);
+    }
+  }, [panelLayoutState.length, setPanelLayout]);
+  
   const togglePanelVisibility = (id: string) => {
-    setPanelLayoutState(prev => prev.map(tab => {
+    setPanelLayout(prev => prev.map(tab => {
       if (tab.id === id) {
         const newVisibility = !tab.visible;
         // If hiding, move to hidden location
-        const newLocation = newVisibility ? tab.location : 'hidden';
+        const newLocation = newVisibility ? (tab.location === 'hidden' ? 'right' : tab.location) : 'hidden';
         return { ...tab, visible: newVisibility, location: newLocation };
       }
       return tab;
     }));
   };
   
-  const reorderPanelTabs = (activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
-    setPanelLayoutState(prev => {
+  const reorderPanelTabsWrapper = (activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
+    setPanelLayout(prev => {
       const activeIndex = prev.findIndex(t => t.id === activeId);
       const overIndex = prev.findIndex(t => t.id === overId);
       
       if (activeIndex === -1 || overIndex === -1) return prev;
 
       const activeTab = prev[activeIndex];
-      const overTab = prev[overIndex];
       
       // 1. Change location if dropped onto a different panel
       if (activeTab.location !== newLocation) {
@@ -311,7 +315,7 @@ export const Index: React.FC = () => {
   }
 
   const rightSidebarProps: RightSidebarTabsProps = {
-    hasImage, activeTool, selectedLayerId, selectedLayer, layers, onSelectLayer: setSelectedLayerIdLogic, onReorder: handleReorder, // Use handleReorder for layers
+    hasImage, activeTool, selectedLayerId, selectedLayer, layers, onSelectLayer: setSelectedLayerIdLogic, onReorder: handleReorder,
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject: handleOpenSmartObject, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit,
     onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit,
@@ -324,18 +328,18 @@ export const Index: React.FC = () => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset,
     gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
-    brushState, setBrushState: (updates) => setBrushState(prev => ({ ...prev, ...updates })), // Wrapper for partial update
+    brushState, setBrushState: (updates) => setBrushState(prev => ({ ...prev, ...updates })),
     selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (v) => recordHistory(`Set Blur Amount to ${v}`, { ...currentEditState, selectiveBlurAmount: v }, layers),
     selectiveSharpenAmount, onSelectiveSharpenAmountChange: setSelectiveSharpenAmount, onSelectiveSharpenAmountCommit: (v) => recordHistory(`Set Sharpen Amount to ${v}`, { ...currentEditState, selectiveSharpenAmount: v }, layers),
     customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: handleOpenFontManager,
     cloneSourcePoint, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
     channels, onChannelChange, history, historyBrushSourceIndex, setHistoryBrushSourceIndex,
     currentHistoryIndex, onHistoryJump: handleHistoryJump, undo, redo, canUndo, canRedo,
-    LayersPanel: Sidebar, // Placeholder, actual LayersPanel is imported
+    LayersPanel: Sidebar,
     imgRef, foregroundColor, onForegroundColorChange: setForegroundColor, setForegroundColor: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors,
     dimensions, fileInfo, exifData, colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout: panelLayoutState, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabsWrapper, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
   };
 
   const bottomPanelProps = {
@@ -345,7 +349,7 @@ export const Index: React.FC = () => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     customHslColor, setCustomHslColor,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout: panelLayoutState, reorderPanelTabs, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabsWrapper, activeBottomTab, setActiveBottomTab,
   };
 
   return (
@@ -360,7 +364,7 @@ export const Index: React.FC = () => {
         const overData = over.data.current;
         
         if (activeData?.type === 'panel-tab' && overData?.location) {
-          reorderPanelTabs(active.id as string, over.id as string, overData.location as 'right' | 'bottom');
+          reorderPanelTabsWrapper(active.id as string, over.id as string, overData.location as 'right' | 'bottom');
         }
       }}
     >
