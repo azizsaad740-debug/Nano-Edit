@@ -4,6 +4,7 @@ import { useEditorLogic } from "@/hooks/useEditorLogic";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { loadProjectFromFile } from "@/utils/projectUtils";
 import { showError } from "@/utils/toast";
+import type { PanelTab } from "@/types/editor/core"; // Import PanelTab
 
 interface EditorHeaderProps {
   logic: ReturnType<typeof useEditorLogic>;
@@ -16,6 +17,13 @@ interface EditorHeaderProps {
   setIsProjectSettingsOpen: (open: boolean) => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  // ADDED Panel Management Props
+  panelLayout: PanelTab[];
+  togglePanelVisibility: (id: string) => void;
+  activeRightTab: string;
+  setActiveRightTab: (id: string) => void;
+  activeBottomTab: string;
+  setActiveBottomTab: (id: string) => void;
 }
 
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -29,6 +37,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   setIsProjectSettingsOpen,
   isFullscreen,
   onToggleFullscreen,
+  // ADDED Panel Management Props
+  panelLayout,
+  togglePanelVisibility,
+  activeRightTab,
+  setActiveRightTab,
+  activeBottomTab,
+  setActiveBottomTab,
 }) => {
   const {
     hasImage, fileInfo, dimensions,
@@ -91,6 +106,13 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       isFullscreen={isFullscreen}
       onSyncProject={() => showError("Cloud sync is a stub.")}
       setOpenProjectSettings={setIsProjectSettingsOpen}
+      // ADDED Panel Management Props
+      panelLayout={panelLayout}
+      togglePanelVisibility={togglePanelVisibility}
+      activeRightTab={activeRightTab}
+      setActiveRightTab={setActiveRightTab}
+      activeBottomTab={activeBottomTab}
+      setActiveBottomTab={setActiveBottomTab}
     >
       {/* Header Center Content (e.g., Project Name) */}
       <div className="flex items-center gap-2">

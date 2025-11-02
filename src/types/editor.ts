@@ -3,7 +3,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 // Core
-export type { ActiveTool, Dimensions, Point, ShapeType, NewProjectSettings } from './editor/core';
+export type { ActiveTool, Dimensions, Point, ShapeType, NewProjectSettings, PanelLocation } from './editor/core';
 
 // Tools
 export type { BrushState, GradientToolState, SelectionSettings } from './editor/tools';

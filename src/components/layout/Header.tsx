@@ -20,6 +20,7 @@ import {
   LayoutGrid, // Import LayoutGrid icon
   Plus, // Import Plus icon for new tab
   X, // Import X icon for close tab
+  Sparkles, // ADDED
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import React from "react";

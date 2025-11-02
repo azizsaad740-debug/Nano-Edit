@@ -296,6 +296,13 @@ export const Index = () => {
     base64Image: base64Image,
     onImageResult: handleImageResult,
     onMaskResult: handleMaskResult,
+    // Panel Management Props (NEW)
+    panelLayout,
+    reorderPanelTabs: logic.reorderPanelTabs,
+    activeRightTab,
+    setActiveRightTab,
+    activeBottomTab,
+    setActiveBottomTab,
   };
  
   const editorWorkspaceProps = {

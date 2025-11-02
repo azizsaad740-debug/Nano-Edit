@@ -181,8 +181,8 @@ export const useEditorLogic = () => {
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
-    selectiveBlurAmount, 
-    selectiveSharpenAmount, 
+    selectiveBlurAmount, setSelectiveBlurAmount, // FIX 1, 2
+    selectiveSharpenAmount, setSelectiveSharpenAmount, // FIX 3, 4
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
