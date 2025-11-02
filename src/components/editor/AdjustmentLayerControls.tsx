@@ -65,7 +65,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
   };
 
   // --- HSL Handlers ---
-  const handleHslAdjustmentChange = (color: HslColorKey, key: keyof HslAdjustment, value: number) => {
+  const handleHslAdjustmentChange = (color: keyof HslAdjustmentsState, key: keyof HslAdjustment, value: number) => {
     if (adjustmentData.hslAdjustments) {
       const newHsl: HslAdjustmentsState = { 
         ...adjustmentData.hslAdjustments, 
@@ -75,7 +75,7 @@ const AdjustmentLayerControls = ({ layer, onUpdate, onCommit, imgRef, customHslC
     }
   };
 
-  const handleHslAdjustmentCommit = (color: HslColorKey, key: keyof HslAdjustment, value: number) => {
+  const handleHslAdjustmentCommit = (color: keyof HslAdjustmentsState, key: keyof HslAdjustment, value: number) => {
     if (adjustmentData.hslAdjustments) {
       handleDataCommit();
     }
