@@ -115,7 +115,10 @@ export const useEditorLogic = (props: any) => {
   const { hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, applyPreset: applyHslPreset } = useHslAdjustments(currentEditState, updateCurrentState, recordHistory, layers);
   const { curves, onCurvesChange, onCurvesCommit, applyPreset: applyCurvesPreset } = useCurves({ currentEditState, updateCurrentState, recordHistory, layers });
   const { channels, onChannelChange: onChannelChangeHook, applyPreset: applyChannelsPreset } = useChannels({ currentEditState, updateCurrentState, recordHistory, layers });
+  
+  // Renamed to avoid redeclaration conflict with useLayers destructuring (Fixes Error 1, 2, 3)
   const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset: applySelectiveRetouchPreset } = useSelectiveRetouch(currentEditState, updateCurrentState, recordHistory, layers, dimensions);
+  
   const { presets: globalPresets, savePreset: saveGlobalPreset, deletePreset: deleteGlobalPreset } = usePresets();
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
   const { handleProjectSettingsUpdate } = useProjectSettings(currentEditState, updateCurrentState, recordHistory, layers, dimensions, setDimensions);
@@ -146,7 +149,7 @@ export const useEditorLogic = (props: any) => {
     addShapeLayer, addGradientLayer: addGradientLayerHook, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // Removed handleSelectiveRetouchStrokeEnd
     handleReorder, findLayer,
   } = useLayers({
     layers, setLayers, recordHistory, currentEditState, dimensions, 
@@ -393,7 +396,8 @@ export const useEditorLogic = (props: any) => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     
     // Presets (Mapped to RightSidebarTabsProps names)
-    presets: globalPresets, onApplyPreset: (preset: any) => {
+    presets: globalPresets, 
+    onApplyPreset: (preset: any) => {
         applyTransformPreset(preset.state);
         applyCropPreset(preset.state);
         applyAdjustmentsPreset(preset.state);
@@ -406,7 +410,9 @@ export const useEditorLogic = (props: any) => {
         applyEffectsPreset(preset.state);
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
-    }, onSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
+    }, 
+    onSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), 
+    onDeletePreset: deleteGlobalPreset,
     gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset,
     
     // Workspace Interaction
@@ -427,7 +433,7 @@ export const useEditorLogic = (props: any) => {
     activeBottomTab, setActiveBottomTab,
     
     // Internal State
-    marqueeStart, marqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint,
+    marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint,
     setSelectionSettings,
     selectiveBlurMask, selectiveSharpenMask,
     workspaceRef, imgRef,
@@ -455,5 +461,26 @@ export const useEditorLogic = (props: any) => {
     
     // History Panel Mappings
     onHistoryJump: setCurrentHistoryIndex,
+    
+    // Mapped properties for consuming components (Fixes Errors 4, 6, 7, 8, 9, 10, 11)
+    onLayerOpacityCommit: handleLayerOpacityCommit,
+    handleApplyPreset: (preset: any) => {
+        applyTransformPreset(preset.state);
+        applyCropPreset(preset.state);
+        applyAdjustmentsPreset(preset.state);
+        applyGradingPreset(preset.state);
+        applyHslPreset(preset.state);
+        applyCurvesPreset(preset.state);
+        applyChannelsPreset(preset.state);
+        applyFramePreset(preset.state);
+        applySelectiveRetouchPreset(preset.state);
+        applyEffectsPreset(preset.state);
+        if (preset.layers) setLayers(preset.layers);
+        recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
+    },
+    handleSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers),
+    panelLayout,
+    setMarqueeStart,
+    setMarqueeCurrent,
   };
 };

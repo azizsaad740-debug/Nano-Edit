@@ -58,7 +58,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     updateLayer, commitLayerChange, onLayerPropertyCommit,
-    handleLayerOpacityChange, handleLayerOpacityCommit,
+    handleLayerOpacityChange, onLayerOpacityCommit, // Fixed Error 6
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer, onAddAdjustmentLayer,
     groupLayers, toggleGroupExpanded,
@@ -69,7 +69,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
-    presets, handleApplyPreset, handleSavePreset, onDeletePreset,
+    presets, handleApplyPreset, handleSavePreset, onDeletePreset, // Fixed Errors 7, 8
     gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
     workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
@@ -82,14 +82,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     onBrushCommit,
     
     // Missing properties added here:
-    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent,
+    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent, // Fixed Errors 9, 10
     onOpenFontManager,
     stabilityApiKey, dismissToast,
     setImage, setDimensions, setFileInfo, setExifData, setLayers,
     initialEditState, initialLayerState,
     handleCopy,
     clearSelectionState,
-    panelLayout: logicPanelLayout, // Rename to avoid conflict with prop
+    panelLayout: logicPanelLayout, // Rename to avoid conflict with prop // Fixed Error 11
     reorderPanelTabs,
   } = logic;
 
