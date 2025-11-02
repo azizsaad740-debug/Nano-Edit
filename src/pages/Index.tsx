@@ -28,8 +28,9 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useSession } from "@/integrations/supabase/session-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { EditorHeader } from "@/components/layout/EditorHeader";
-import type { PanelTab } from "@/types/editor/core";
+import type { PanelTab, ActiveTool } from "@/types/editor/core"; // Import ActiveTool
 import { Layers } from "lucide-react";
+import { cn } from "@/lib/utils"; // Import cn
 
 // Define initial panel layout (stubbed here, should ideally be in useEditorState)
 const initialPanelLayout: PanelTab[] = [
@@ -70,10 +71,10 @@ export const Index: React.FC = () => {
   // Destructuring logic results
   const {
     // Core State
-    image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayer,
+    image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId: setSelectedLayerIdLogic, selectedLayer,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
-    selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
+    selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
     customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
     channels, onChannelChange,
@@ -93,6 +94,7 @@ export const Index: React.FC = () => {
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
+    handleReorder,
     
     // Effects/Transform
     effects, onEffectChange, onEffectCommit, onFilterChange, selectedFilter,
@@ -113,22 +115,30 @@ export const Index: React.FC = () => {
     
     // AI/Export/Project Management
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
-    handleGenerativeFill, handleGenerateImage, handleSwapColors,
-    
-    // Panel Management
-    panelLayout: initialPanelLayout, reorderPanelTabs: reorderPanelTabsStub, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     
     // Internal State
-    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
-    
-    // Misc
     workspaceRef, imgRef,
-    setIsFullscreen: setIsFullscreenLogic, setIsSettingsOpen: setIsSettingsOpenLogic,
-    currentEditState, updateCurrentState,
+    currentEditState, updateCurrentState, resetAllEdits,
     base64Image, historyImageSrc,
     isPreviewingOriginal, setIsPreviewingOriginal,
     clearSelectionState,
-    setSelectedLayerId: setSelectedLayerIdLogic,
+    
+    // External Hooks/Functions
+    systemFonts, customFonts, addCustomFont, removeCustomFont,
+    handleProjectSettingsUpdate,
+    onBrushCommit,
+    onCropChange, onCropComplete,
+    
+    // Panel Management
+    panelLayout, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    
+    // Selection Drawing State
+    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
+    
+    // Misc
+    selectiveBlurMask, selectiveSharpenMask,
+    setIsGenerateOpen, setIsGenerativeFillOpen,
     isMobile: isMobileLogic,
   } = logic;
 
@@ -213,10 +223,10 @@ export const Index: React.FC = () => {
   const handleOpenGenerativeFill = () => setIsGenerativeFillOpen(true);
   
   // --- Panel Management Logic (Stubbed for now, using initialPanelLayout) ---
-  const [panelLayout, setPanelLayout] = React.useState<PanelTab[]>(initialPanelLayout);
+  const [panelLayoutState, setPanelLayoutState] = React.useState<PanelTab[]>(initialPanelLayout);
 
   const togglePanelVisibility = (id: string) => {
-    setPanelLayout(prev => prev.map(tab => {
+    setPanelLayoutState(prev => prev.map(tab => {
       if (tab.id === id) {
         const newVisibility = !tab.visible;
         // If hiding, move to hidden location
@@ -228,7 +238,7 @@ export const Index: React.FC = () => {
   };
   
   const reorderPanelTabs = (activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
-    setPanelLayout(prev => {
+    setPanelLayoutState(prev => {
       const activeIndex = prev.findIndex(t => t.id === activeId);
       const overIndex = prev.findIndex(t => t.id === overId);
       
@@ -301,7 +311,7 @@ export const Index: React.FC = () => {
   }
 
   const rightSidebarProps: RightSidebarTabsProps = {
-    hasImage, activeTool, selectedLayerId, selectedLayer, layers, onSelectLayer: setSelectedLayerIdLogic, onReorder: reorderPanelTabs,
+    hasImage, activeTool, selectedLayerId, selectedLayer, layers, onSelectLayer: setSelectedLayerIdLogic, onReorder: handleReorder, // Use handleReorder for layers
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject: handleOpenSmartObject, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit,
     onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit,
@@ -314,17 +324,18 @@ export const Index: React.FC = () => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset,
     gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
-    brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (v) => recordHistory(`Set Blur Amount to ${v}`, { ...currentEditState, selectiveBlurAmount: v }, layers),
+    brushState, setBrushState: (updates) => setBrushState(prev => ({ ...prev, ...updates })), // Wrapper for partial update
+    selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (v) => recordHistory(`Set Blur Amount to ${v}`, { ...currentEditState, selectiveBlurAmount: v }, layers),
     selectiveSharpenAmount, onSelectiveSharpenAmountChange: setSelectiveSharpenAmount, onSelectiveSharpenAmountCommit: (v) => recordHistory(`Set Sharpen Amount to ${v}`, { ...currentEditState, selectiveSharpenAmount: v }, layers),
-    customHslColor, setCustomHslColor, systemFonts: logic.systemFonts, customFonts: logic.customFonts, onOpenFontManager,
+    customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: handleOpenFontManager,
     cloneSourcePoint, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
     channels, onChannelChange, history, historyBrushSourceIndex, setHistoryBrushSourceIndex,
-    currentHistoryIndex, onHistoryJump, undo, redo, canUndo, canRedo,
+    currentHistoryIndex, onHistoryJump: handleHistoryJump, undo, redo, canUndo, canRedo,
     LayersPanel: Sidebar, // Placeholder, actual LayersPanel is imported
     imgRef, foregroundColor, onForegroundColorChange: setForegroundColor, setForegroundColor: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors,
     dimensions, fileInfo, exifData, colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
   };
 
   const bottomPanelProps = {
@@ -334,7 +345,7 @@ export const Index: React.FC = () => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     customHslColor, setCustomHslColor,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout, reorderPanelTabs, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs, activeBottomTab, setActiveBottomTab,
   };
 
   return (
@@ -362,7 +373,7 @@ export const Index: React.FC = () => {
             onOpenProject={handleOpenProject}
             onSaveProject={handleSaveProject}
             onExportClick={() => setIsExportOpen(true)}
-            onReset={logic.resetAllEdits}
+            onReset={resetAllEdits}
             onSettingsClick={handleOpenSettings}
             onImportClick={() => setIsImportOpen(true)}
             onNewFromClipboard={() => handleNewFromClipboard(false)}
@@ -374,12 +385,12 @@ export const Index: React.FC = () => {
             setIsExportOpen={setIsExportOpen}
             setIsSettingsOpen={setIsSettingsOpen}
             setIsImportOpen={setIsImportOpen}
-            setIsGenerateOpen={logic.setIsGenerateOpen}
-            setIsGenerativeFillOpen={logic.setIsGenerativeFillOpen}
+            setIsGenerateOpen={handleOpenGenerate}
+            setIsGenerativeFillOpen={handleOpenGenerativeFill}
             setIsProjectSettingsOpen={setIsProjectSettingsOpen}
             isFullscreen={isFullscreen}
             onToggleFullscreen={handleToggleFullscreen}
-            panelLayout={panelLayout}
+            panelLayout={panelLayoutState}
             togglePanelVisibility={togglePanelVisibility}
             activeRightTab={activeRightTab}
             setActiveRightTab={setActiveRightTab}
@@ -406,7 +417,7 @@ export const Index: React.FC = () => {
                 onBackgroundColorChange={setBackgroundColor}
                 onSwapColors={handleSwapColors}
                 brushState={brushState}
-                setBrushState={setBrushState}
+                setBrushState={(updates) => setBrushState(prev => ({ ...prev, ...updates }))}
                 selectiveBlurAmount={selectiveBlurAmount}
                 onSelectiveBlurAmountChange={setSelectiveBlurAmount}
                 onSelectiveBlurAmountCommit={(v) => recordHistory(`Set Blur Amount to ${v}`, { ...currentEditState, selectiveBlurAmount: v }, layers)}
@@ -452,8 +463,8 @@ export const Index: React.FC = () => {
               cloneSourcePoint={cloneSourcePoint}
               base64Image={image}
               historyImageSrc={historyImageSrc}
-              onCropChange={logic.onCropChange}
-              onCropComplete={logic.onCropComplete}
+              onCropChange={onCropChange}
+              onCropComplete={onCropComplete}
               handleWorkspaceMouseDown={handleWorkspaceMouseDown}
               handleWorkspaceMouseMove={handleWorkspaceMouseMove}
               handleWorkspaceMouseUp={handleWorkspaceMouseUp}
@@ -479,7 +490,7 @@ export const Index: React.FC = () => {
             />
             
             {/* Bottom Panel (Desktop Only) */}
-            {!isMobile && panelLayout.some(t => t.location === 'bottom' && t.visible) && (
+            {!isMobile && panelLayoutState.some(t => t.location === 'bottom' && t.visible) && (
               <ResizablePanelGroup direction="vertical" className="shrink-0">
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
@@ -490,7 +501,7 @@ export const Index: React.FC = () => {
           </ResizablePanel>
 
           {/* Right Sidebar (Layers/Properties/Auxiliary) */}
-          {!isMobile && panelLayout.some(t => t.location === 'right' && t.visible) && (
+          {!isMobile && panelLayoutState.some(t => t.location === 'right' && t.visible) && (
             <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0">
               <Sidebar {...rightSidebarProps} />
             </ResizablePanel>
@@ -502,6 +513,8 @@ export const Index: React.FC = () => {
               <MobileToolOptions
                 {...rightSidebarProps}
                 activeMobileTab={activeMobileTab}
+                onOpenGenerate={handleOpenGenerate}
+                onOpenGenerativeFill={handleOpenGenerativeFill}
                 navigate={navigate}
               />
             </div>
@@ -531,15 +544,15 @@ export const Index: React.FC = () => {
         <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         <ImportPresetsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
         <GenerateImageDialog 
-          open={logic.isGenerateOpen} 
-          onOpenChange={logic.setIsGenerateOpen} 
+          open={isGenerateOpen} 
+          onOpenChange={setIsGenerateOpen} 
           onGenerate={handleGenerateImageWrapper} 
           apiKey={geminiApiKey || ''}
           imageNaturalDimensions={dimensions}
         />
         <GenerativeDialog 
-          open={logic.isGenerativeFillOpen} 
-          onOpenChange={logic.setIsGenerativeFillOpen} 
+          open={isGenerativeFillOpen} 
+          onOpenChange={setIsGenerativeFillOpen} 
           onApply={handleGenerativeFillWrapper} 
           apiKey={geminiApiKey || ''}
           originalImage={image}
@@ -552,15 +565,15 @@ export const Index: React.FC = () => {
           onOpenChange={setIsProjectSettingsOpen}
           currentDimensions={dimensions}
           currentColorMode={colorMode}
-          onUpdateSettings={logic.handleProjectSettingsUpdate}
+          onUpdateSettings={handleProjectSettingsUpdate}
         />
         <FontManagerDialog
           open={isFontManagerOpen}
           onOpenChange={setIsFontManagerOpen}
-          systemFonts={logic.systemFonts}
-          customFonts={logic.customFonts}
-          addCustomFont={logic.addCustomFont}
-          removeCustomFont={logic.removeCustomFont}
+          systemFonts={systemFonts}
+          customFonts={customFonts}
+          addCustomFont={addCustomFont}
+          removeCustomFont={removeCustomFont}
         />
 
         {/* Hidden File Input for Project/Image Loading */}
