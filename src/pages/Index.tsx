@@ -113,16 +113,19 @@ export const Index: React.FC = () => {
     onBrushCommit,
     onCropChange, onCropComplete,
     
-    // Panel Management
+    // Panel Management (Fixes 292, 293)
     panelLayout: panelLayoutState, setPanelLayout, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    reorderPanelTabs: reorderPanelTabsLogic, // Renamed to avoid conflict
     
     // Selection Drawing State
     marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
     
-    // Misc
+    // Misc (Fix 294)
     selectiveBlurMask, selectiveSharpenMask,
     setIsGenerateOpen, setIsGenerativeFillOpen,
+    isGenerateOpen, isGenerativeFillOpen,
     isMobile: isMobileLogic,
+    setZoom,
   } = logic;
 
   // --- Derived/Wrapper Logic ---
@@ -130,33 +133,33 @@ export const Index: React.FC = () => {
   const hasImage = !!image;
   const colorMode = currentEditState.colorMode;
   
-  const handleExport = (options: any) => {
+  const handleExport = React.useCallback((options: any) => {
     handleExportClick(options);
-  };
+  }, [handleExportClick]);
   
-  const handleNewProjectWrapper = (settings: any) => {
+  const handleNewProjectWrapper = React.useCallback((settings: any) => {
     handleNewProject(settings);
-  };
+  }, [handleNewProject]);
   
-  const handleFileLoad = (file: File) => {
+  const handleFileLoad = React.useCallback((file: File) => {
     if (file.name.endsWith('.nanoedit')) {
       handleLoadProject(file);
     } else {
       handleImageLoad(file);
     }
-  };
+  }, [handleLoadProject, handleImageLoad]);
   
-  const handleGenerativeFillWrapper = (resultUrl: string, maskDataUrl: string | null) => {
+  const handleGenerativeFillWrapper = React.useCallback((resultUrl: string, maskDataUrl: string | null) => {
     handleGenerativeFill(resultUrl, maskDataUrl);
-  };
+  }, [handleGenerativeFill]);
   
-  const handleGenerateImageWrapper = (resultUrl: string) => {
+  const handleGenerateImageWrapper = React.useCallback((resultUrl: string) => {
     handleGenerateImage(resultUrl);
-  };
+  }, [handleGenerateImage]);
   
-  const handleToggleFullscreen = () => {
+  const handleToggleFullscreen = React.useCallback(() => {
     setIsFullscreen(prev => !prev);
-  };
+  }, []);
   
   const handleOpenSmartObject = (id: string) => {
     const layer = layers.find(l => l.id === id);
@@ -242,36 +245,17 @@ export const Index: React.FC = () => {
     }));
   };
   
-  const reorderPanelTabsWrapper = (activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
-    setPanelLayout(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId);
-      const overIndex = prev.findIndex(t => t.id === overId);
-      
-      if (activeIndex === -1 || overIndex === -1) return prev;
-
-      const activeTab = prev[activeIndex];
-      
-      // 1. Change location if dropped onto a different panel
-      if (activeTab.location !== newLocation) {
-        const updated = prev.map(t => t.id === activeId ? { ...t, location: newLocation, visible: true } : t);
-        return updated;
-      }
-      
-      // 2. Reorder within the same panel
-      const itemsInPanel = prev.filter(t => t.location === newLocation).sort((a, b) => a.order - b.order);
-      const oldIndex = itemsInPanel.findIndex(t => t.id === activeId);
-      const newIndex = itemsInPanel.findIndex(t => t.id === overId);
-      
-      const reorderedItems = arrayMove(itemsInPanel, oldIndex, newIndex);
-      
-      // Re-apply order numbers
-      const updatedPanel = reorderedItems.map((t, index) => ({ ...t, order: index + 1 }));
-      
-      // Merge back into the full layout
-      const otherTabs = prev.filter(t => t.location !== newLocation);
-      return [...otherTabs, ...updatedPanel].sort((a, b) => a.order - b.order);
-    });
-  };
+  // 3-argument function used by DndContext in Index.tsx
+  const reorderDesktopPanelTabs = React.useCallback((activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
+    reorderPanelTabsLogic(activeId, overId, newLocation);
+  }, [reorderPanelTabsLogic]);
+  
+  // 2-argument function used by components like MobileToolOptions
+  const reorderPanelTabs = React.useCallback((activeId: string, overId: string) => {
+    const activeTab = panelLayoutState.find(t => t.id === activeId);
+    const newLocation = activeTab?.location || 'right'; // Default to right if unknown
+    reorderPanelTabsLogic(activeId, overId, newLocation as 'right' | 'bottom');
+  }, [reorderPanelTabsLogic, panelLayoutState]);
   
   // --- Render Logic ---
 
@@ -339,7 +323,7 @@ export const Index: React.FC = () => {
     imgRef, foregroundColor, onForegroundColorChange: setForegroundColor, setForegroundColor: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors,
     dimensions, fileInfo, exifData, colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabsWrapper, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
   };
 
   const bottomPanelProps = {
@@ -349,7 +333,7 @@ export const Index: React.FC = () => {
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     customHslColor, setCustomHslColor,
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, name) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(name, currentEditState, layers); }, onOpenSettings: handleOpenSettings,
-    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabsWrapper, activeBottomTab, setActiveBottomTab,
+    panelLayout: panelLayoutState, reorderPanelTabs: reorderPanelTabs, activeBottomTab, setActiveBottomTab,
   };
 
   return (
@@ -364,7 +348,7 @@ export const Index: React.FC = () => {
         const overData = over.data.current;
         
         if (activeData?.type === 'panel-tab' && overData?.location) {
-          reorderPanelTabsWrapper(active.id as string, over.id as string, overData.location as 'right' | 'bottom');
+          reorderDesktopPanelTabs(active.id as string, over.id as string, overData.location as 'right' | 'bottom');
         }
       }}
     >
@@ -548,16 +532,16 @@ export const Index: React.FC = () => {
         <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
         <ImportPresetsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
         <GenerateImageDialog 
-          open={isGenerateOpen} 
+          open={isGenerateOpen}
           onOpenChange={setIsGenerateOpen} 
-          onGenerate={handleGenerateImageWrapper} 
+          onGenerate={handleGenerateImageWrapper}
           apiKey={geminiApiKey || ''}
           imageNaturalDimensions={dimensions}
         />
         <GenerativeDialog 
-          open={isGenerativeFillOpen} 
+          open={isGenerativeFillOpen}
           onOpenChange={setIsGenerativeFillOpen} 
-          onApply={handleGenerativeFillWrapper} 
+          onApply={handleGenerativeFillWrapper}
           apiKey={geminiApiKey || ''}
           originalImage={image}
           selectionPath={selectionPath}

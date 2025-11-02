@@ -85,7 +85,7 @@ export const useEditorState = () => {
   const [activeBottomTab, setActiveBottomTab] = useState('correction');
   
   // External Hooks
-  const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
+  const { systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager } = useFontManager(); // Fix 32
   const { geminiApiKey, stabilityApiKey } = useSettings();
 
   const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
@@ -93,6 +93,14 @@ export const useEditorState = () => {
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     setCurrentEditState(prev => ({ ...prev, ...updates }));
   }, []);
+
+  // Define clearSelectionState before resetAllEdits
+  const clearSelectionState = useCallback(() => {
+    setSelectionPath(null);
+    setSelectionMaskDataUrl(null);
+    setMarqueeStart(null);
+    setMarqueeCurrent(null);
+  }, [setSelectionPath, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent]);
 
   const recordHistory = useCallback((name: string, state: EditState, currentLayers: Layer[]) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
@@ -179,22 +187,37 @@ export const useEditorState = () => {
     setBrushState(initialBrushState); // Reset brush state
     showSuccess("All edits reset.");
   }, [clearSelectionState, setBrushState]);
-
-  const clearSelectionState = useCallback(() => {
-    setSelectionPath(null);
-    setSelectionMaskDataUrl(null);
-  }, []);
   
-  const handleReorder = useCallback((activeId: string, overId: string) => {
-    const oldIndex = layers.findIndex((l) => l.id === activeId);
-    const newIndex = layers.findIndex((l) => l.id === overId);
+  const reorderPanelTabs = useCallback((activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
+    setPanelLayout(prev => {
+      const activeIndex = prev.findIndex(t => t.id === activeId);
+      const overIndex = prev.findIndex(t => t.id === overId);
+      
+      if (activeIndex === -1 || overIndex === -1) return prev;
 
-    if (oldIndex === -1 || newIndex === -1) return;
-    
-    const updated = arrayMove(layers, oldIndex, newIndex);
-    setLayers(updated);
-    recordHistory("Reorder Layers", currentEditState, updated);
-  }, [layers, recordHistory, currentEditState]);
+      const activeTab = prev[activeIndex];
+      
+      // 1. Change location if dropped onto a different panel
+      if (activeTab.location !== newLocation) {
+        const updated = prev.map(t => t.id === activeId ? { ...t, location: newLocation, visible: true } : t);
+        return updated;
+      }
+      
+      // 2. Reorder within the same panel
+      const itemsInPanel = prev.filter(t => t.location === newLocation).sort((a, b) => a.order - b.order);
+      const oldIndex = itemsInPanel.findIndex(t => t.id === activeId);
+      const newIndex = itemsInPanel.findIndex(t => t.id === overId);
+      
+      const reorderedItems = arrayMove(itemsInPanel, oldIndex, newIndex);
+      
+      // Re-apply order numbers
+      const updatedPanel = reorderedItems.map((t, index) => ({ ...t, order: index + 1 }));
+      
+      // Merge back into the full layout
+      const otherTabs = prev.filter(t => t.location !== newLocation);
+      return [...otherTabs, ...updatedPanel].sort((a, b) => a.order - b.order);
+    });
+  }, [setPanelLayout]);
 
   return {
     // Refs
@@ -225,7 +248,6 @@ export const useEditorState = () => {
     layers, setLayers,
     selectedLayerId, setSelectedLayerId,
     selectedLayer,
-    handleReorder,
     // Tools
     activeTool, setActiveTool,
     brushState, setBrushState,
@@ -253,10 +275,12 @@ export const useEditorState = () => {
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
+    onOpenFontManager, // Fix 32
     geminiApiKey, stabilityApiKey,
     dismissToast,
     // Panel Management
     panelLayout, setPanelLayout,
+    reorderPanelTabs,
     activeRightTab, setActiveRightTab,
     activeBottomTab, setActiveBottomTab,
   };

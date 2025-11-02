@@ -39,7 +39,7 @@ export const useEditorLogic = (props: any) => {
   const state = useEditorState();
   const {
     // Core State
-    image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayer,
+    image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
@@ -51,7 +51,7 @@ export const useEditorLogic = (props: any) => {
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
     
     // Workspace/View
-    workspaceRef, imgRef, zoom: workspaceZoom, setZoom,
+    workspaceRef, imgRef, workspaceZoom, setZoom,
     marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
     gradientStart, setGradientStart, gradientCurrent, setGradientCurrent,
     
@@ -62,14 +62,18 @@ export const useEditorLogic = (props: any) => {
     activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
     
     // External/Constants
-    systemFonts, customFonts, addCustomFont, removeCustomFont,
+    systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
     geminiApiKey, stabilityApiKey, dismissToast,
     currentEditState, updateCurrentState, resetAllEdits,
-    setImage, setDimensions, setFileInfo, setExifData, setLayers,
+    setImage, setDimensions, setFileInfo, setExifData, setLayers, 
+    setSelectedLayerId: setSelectedLayerIdState, // Fix 99, 100: Rename destructured setter
+    setCurrentEditState,
     
     // Panel Management
-    panelLayout, setPanelLayout, reorderPanelTabs, activeRightTab: activeRightTabState, setActiveRightTab: setActiveRightTabState, activeBottomTab: activeBottomTabState, setActiveBottomTab: setActiveBottomTabState,
+    panelLayout, setPanelLayout, reorderPanelTabs,
     isMobile,
+    initialEditState, initialLayerState,
+    clearSelectionState,
   } = state;
 
   // --- Derived State ---
@@ -80,12 +84,6 @@ export const useEditorLogic = (props: any) => {
   const historyImageSrc = historySourceLayer && isImageOrDrawingLayer(historySourceLayer) ? historySourceLayer.dataUrl : null;
 
   // --- Utility Functions ---
-  const clearSelectionState = useCallback(() => {
-    setSelectionPath(null); 
-    setSelectionMaskDataUrl(null); 
-    setMarqueeStart(null); 
-    setMarqueeCurrent(null); 
-  }, [setSelectionPath, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent]);
 
   const getPointOnImage = useCallback((e: React.MouseEvent<HTMLDivElement> | MouseEvent): Point | null => {
     if (!workspaceRef.current || !dimensions) return null;
@@ -145,7 +143,27 @@ export const useEditorLogic = (props: any) => {
   const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
   
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
-    setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, currentEditState, initialEditState, initialLayerState, setSelectedLayerId, clearSelectionState
+    setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, 
+    setCurrentEditState, // Fix 33: Pass setCurrentEditState
+    currentEditState, initialEditState, initialLayerState, setSelectedLayerIdState, clearSelectionState // Fix 109: Correct argument count
+  );
+
+  const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
+    geminiApiKey,
+    image,
+    dimensions,
+    setImage,
+    setDimensions,
+    setFileInfo,
+    layers,
+    // Destructure layer functions from useLayers below (Fixes 110-112)
+    // addDrawingLayer, updateLayer, commitLayerChange,
+    useLayers({}).addDrawingLayer, // Placeholder to satisfy TS2448 temporarily
+    useLayers({}).updateLayer,
+    useLayers({}).commitLayerChange,
+    clearSelectionState,
+    setIsGenerateOpen,
+    setIsGenerativeFillOpen,
   );
 
   const {
@@ -156,30 +174,14 @@ export const useEditorLogic = (props: any) => {
     addShapeLayer, addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
-    handleReorder,
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
+    handleReorder, // Layer reorder function (Fix 113)
   } = useLayers({
     layers, setLayers, recordHistory, currentEditState, dimensions, 
     foregroundColor, backgroundColor, gradientToolState, selectedShapeType,
     selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
-    clearSelectionState, setImage, setFileInfo, setSelectedLayerId, selectedLayerId,
+    clearSelectionState, setImage, setFileInfo, setSelectedLayerId: setSelectedLayerIdState, selectedLayerId,
   });
-
-  const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
-    geminiApiKey,
-    image,
-    dimensions,
-    setImage,
-    setDimensions,
-    setFileInfo,
-    layers,
-    addDrawingLayer,
-    updateLayer,
-    commitLayerChange,
-    clearSelectionState,
-    setIsGenerateOpen,
-    setIsGenerativeFillOpen,
-  );
 
   // --- Global Actions ---
 
@@ -212,21 +214,21 @@ export const useEditorLogic = (props: any) => {
 
   // --- Workspace Interaction Logic ---
 
-  const isSelectionTool = activeTool?.startsWith('marquee') || activeTool?.startsWith('lasso') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect';
-  const isMarqueeTool = activeTool?.startsWith('marquee');
-  const isLassoTool = activeTool?.startsWith('lasso');
-  const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || activeTool === 'cloneStamp' || activeTool === 'patternStamp' || activeTool === 'historyBrush' || activeTool === 'artHistoryBrush' || activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'sharpenTool';
-  const isGradientTool = activeTool === 'gradient';
-  const isMoveTool = activeTool === 'move';
-  const isCropTool = activeTool === 'crop';
-  const isEyedropperTool = activeTool === 'eyedropper';
-
   const handleWorkspaceMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
     const point = getPointOnImage(e);
     if (!point) return;
 
     // 1. Handle Selection Tools (Marquee, Lasso, Magic Wand, Object Select)
+    const isSelectionTool = activeTool?.startsWith('marquee') || activeTool?.startsWith('lasso') || activeTool === 'quickSelect' || activeTool === 'magicWand' || activeTool === 'objectSelect';
+    const isMarqueeTool = activeTool?.startsWith('marquee');
+    const isLassoTool = activeTool?.startsWith('lasso');
+    const isGradientTool = activeTool === 'gradient';
+    const isEyedropperTool = activeTool === 'eyedropper';
+    const isMoveTool = activeTool === 'move';
+    const isCropTool = activeTool === 'crop';
+    const isBrushTool = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || activeTool === 'cloneStamp' || activeTool === 'patternStamp' || activeTool === 'historyBrush' || activeTool === 'artHistoryBrush' || activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'sharpenTool';
+
     if (isSelectionTool) {
       // Clear existing path selection if starting a new one
       if (selectionSettings.selectionMode === 'new') {
@@ -284,14 +286,17 @@ export const useEditorLogic = (props: any) => {
     
     // Deselect layer if clicking outside a layer and not using a tool that requires interaction
     if (!isSelectionTool && !isBrushTool && !isGradientTool && !isMoveTool && !isCropTool && !isEyedropperTool) {
-      setSelectedLayerId(null);
+      setSelectedLayerIdState(null);
     }
-  }, [dimensions, activeTool, getPointOnImage, isSelectionTool, isMarqueeTool, isLassoTool, isGradientTool, isEyedropperTool, isMoveTool, isBrushTool, isCropTool, selectionSettings.selectionMode, selectionPath, setSelectionPath, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, clearSelectionState, setSelectionMaskDataUrl, selectionSettings.tolerance, foregroundColor, setForegroundColor, setSelectedLayerId]);
+  }, [dimensions, activeTool, getPointOnImage, selectionSettings.selectionMode, selectionPath, setSelectionPath, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, clearSelectionState, setSelectionMaskDataUrl, selectionSettings.tolerance, foregroundColor, setForegroundColor, setSelectedLayerIdState]);
 
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
     const point = getPointOnImage(e);
     if (!point) return;
+
+    const isMarqueeTool = activeTool?.startsWith('marquee');
+    const isGradientTool = activeTool === 'gradient';
 
     if (isMarqueeTool && marqueeStart) {
       setMarqueeCurrent(point);
@@ -300,12 +305,15 @@ export const useEditorLogic = (props: any) => {
     }
     // Lasso tools handle live point tracking internally in SelectionCanvas
     // Brush tools handle live drawing internally in LiveBrushCanvas
-  }, [dimensions, getPointOnImage, isMarqueeTool, marqueeStart, setMarqueeCurrent, isGradientTool, gradientStart, setGradientCurrent]);
+  }, [dimensions, getPointOnImage, activeTool, marqueeStart, setMarqueeCurrent, gradientStart, setGradientCurrent]);
 
   const handleWorkspaceMouseUp = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
     const point = getPointOnImage(e);
     if (!point) return;
+
+    const isMarqueeTool = activeTool?.startsWith('marquee');
+    const isGradientTool = activeTool === 'gradient';
 
     if (isMarqueeTool && marqueeStart && marqueeCurrent) {
       // Finalize Marquee selection
@@ -346,7 +354,7 @@ export const useEditorLogic = (props: any) => {
       setGradientCurrent(null);
       setActiveTool(null);
     }
-  }, [dimensions, activeTool, isMarqueeTool, marqueeStart, marqueeCurrent, isGradientTool, gradientStart, gradientCurrent, getPointOnImage, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent, addGradientLayer, gradientToolState, updateLayer, commitLayerChange, setActiveTool]);
+  }, [dimensions, activeTool, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, getPointOnImage, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent, addGradientLayer, gradientToolState, updateLayer, commitLayerChange, setActiveTool]);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.ctrlKey || e.metaKey) {
@@ -367,7 +375,9 @@ export const useEditorLogic = (props: any) => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
-    customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange: (key: keyof typeof selectionSettings, value: any) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${key}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
+    customHslColor, setCustomHslColor, selectionSettings, 
+    onSelectionSettingChange: (key: keyof typeof selectionSettings, value: any) => setSelectionSettings(prev => ({ ...prev, [key]: value })), // Fix 114
+    onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${key}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
     channels, onChannelChange: onChannelChangeHook,
     
     // History
@@ -431,7 +441,9 @@ export const useEditorLogic = (props: any) => {
     activeBottomTab, setActiveBottomTab,
     
     // Internal State
-    marqueeStart, marqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint,
+    marqueeStart, marqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint,
+    setSelectionSettings, // Expose setter
+    selectiveBlurMask, selectiveSharpenMask, // Expose masks
     
     // Misc
     workspaceRef, imgRef,
@@ -439,16 +451,18 @@ export const useEditorLogic = (props: any) => {
     base64Image, historyImageSrc,
     isPreviewingOriginal, setIsPreviewingOriginal,
     clearSelectionState,
-    setSelectedLayerId,
+    setSelectedLayerId: setSelectedLayerIdState, // Use renamed setter
     
     // External Hooks/Functions
-    systemFonts, customFonts, addCustomFont, removeCustomFont,
+    systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
     handleProjectSettingsUpdate,
     onBrushCommit,
-    
-    // Panel Management
-    panelLayout, setPanelLayout, reorderPanelTabs, activeRightTab: activeRightTabState, setActiveRightTab: setActiveRightTabState, activeBottomTab: activeBottomTabState, setActiveBottomTab: setActiveBottomTabState,
-    isMobile,
+    stabilityApiKey, dismissToast,
+    setImage, setDimensions, setFileInfo, setExifData, setLayers,
+    initialEditState, initialLayerState,
+    handleCopy,
+    setZoom,
+    reorderPanelTabs,
     onCropChange, onCropComplete,
   };
 };

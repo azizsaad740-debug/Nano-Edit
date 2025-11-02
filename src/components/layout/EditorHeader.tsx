@@ -1,10 +1,11 @@
-import React, { useState } from "react";
-import Header from "./Header";
+import React from "react";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { loadProjectFromFile } from "@/utils/projectUtils";
-import { showError } from "@/utils/toast";
-import type { PanelTab } from "@/types/editor/core"; // Import PanelTab
+import Header from "./Header";
+import { MenuBar } from "./MenuBar";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import type { PanelTab } from "@/types/editor/core";
+import { showError } from "@/utils/toast"; // Import showError
 
 interface EditorHeaderProps {
   logic: ReturnType<typeof useEditorLogic>;
@@ -17,13 +18,12 @@ interface EditorHeaderProps {
   setIsProjectSettingsOpen: (open: boolean) => void;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
-  // ADDED Panel Management Props
   panelLayout: PanelTab[];
   togglePanelVisibility: (id: string) => void;
   activeRightTab: string;
-  setActiveRightTab: (id: string) => void;
+  setActiveRightTab: (tab: string) => void;
   activeBottomTab: string;
-  setActiveBottomTab: (id: string) => void;
+  setActiveBottomTab: (tab: string) => void;
 }
 
 export const EditorHeader: React.FC<EditorHeaderProps> = ({
@@ -37,7 +37,6 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   setIsProjectSettingsOpen,
   isFullscreen,
   onToggleFullscreen,
-  // ADDED Panel Management Props
   panelLayout,
   togglePanelVisibility,
   activeRightTab,
@@ -45,73 +44,102 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   activeBottomTab,
   setActiveBottomTab,
 }) => {
+  // Destructuring logic results
   const {
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
-    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, cloneSourcePoint, setCloneSourcePoint,
+    customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
+    channels, onChannelChange,
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
-    workspaceRef, imgRef, workspaceZoom, setZoom,
-    marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
-    gradientStart, setGradientStart, gradientCurrent, setGradientCurrent,
-    setIsGenerateOpen: setIsGenerateOpenLogic, setIsGenerativeFillOpen: setIsGenerativeFillOpenLogic, isPreviewingOriginal, setIsPreviewingOriginal,
-    systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
-    geminiApiKey, stabilityApiKey, dismissToast,
+    toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
+    onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    updateLayer, commitLayerChange, onLayerPropertyCommit,
+    handleLayerOpacityChange, handleLayerOpacityCommit,
+    addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
+    addShapeLayer, addGradientLayer, onAddAdjustmentLayer,
+    groupLayers, toggleGroupExpanded,
+    onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
+    hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
+    effects, onEffectChange, onEffectCommit, onFilterChange, selectedFilter,
+    onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect,
+    frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
+    adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
+    hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
+    presets, handleApplyPreset, handleSavePreset, onDeletePreset,
+    gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
+    workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
+    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
+    handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
+    workspaceRef, imgRef,
     currentEditState, updateCurrentState, resetAllEdits,
+    base64Image, historyImageSrc,
+    isPreviewingOriginal, setIsPreviewingOriginal,
+    handleProjectSettingsUpdate,
+    onBrushCommit,
+    
+    // Missing properties added here:
+    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent, // Fix 286, 287
+    onOpenFontManager,
+    stabilityApiKey, dismissToast,
     setImage, setDimensions, setFileInfo, setExifData, setLayers,
     initialEditState, initialLayerState,
-    setIsFullscreen: setIsFullscreenLogic, setIsSettingsOpen: setIsSettingsOpenLogic, handleReorder, isMobile,
-    handleCopy, handleLayerDelete, onBrushCommit, handleZoomIn, handleZoomOut, handleFitScreen,
-    onCropChange: onCropChangeLogic, onCropComplete: onCropCompleteLogic, handleProjectSettingsUpdate,
+    handleCopy,
+    clearSelectionState,
   } = logic;
 
-  // --- Keyboard Shortcuts ---
+  // Wrapper for handleLoadProject to match expected signature (Fix 288, 290)
+  const handleOpenProjectWrapper = useCallback(() => {
+    // Trigger file input click, which calls handleFileLoad in Index.tsx
+    document.getElementById('file-upload-input')?.click();
+  }, []);
+
+  // Keyboard shortcuts hook
   useKeyboardShortcuts({
-    activeTool,
-    setActiveTool,
+    activeTool, setActiveTool,
     onUndo: undo,
     onRedo: redo,
     onZoomIn: handleZoomIn,
     onZoomOut: handleZoomOut,
     onFitScreen: handleFitScreen,
-    onDownloadClick: () => setIsExportOpen(true),
-    onCopy: handleCopy,
-    onTransformChange: onTransformChange,
     onSwapColors: handleSwapColors,
-    onNewProjectClick: () => setIsNewProjectOpen(true),
-    onOpenProject: () => document.getElementById('file-upload-input')?.click(),
-    onSaveProject: () => showError("Project saving is a stub."),
-    onGenerativeFill: () => setIsGenerativeFillOpen(true),
-    onDelete: handleLayerDelete,
     onDeselect: clearSelectionState,
+    onDelete: handleLayerDelete,
+    onCopy: handleCopy,
+    onOpenSettings: () => setIsSettingsOpen(true),
+    onOpenGenerate: () => setIsGenerateOpen(true),
+    onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
+    onOpenProjectSettings: () => setIsProjectSettingsOpen(true),
+    onExport: () => setIsExportOpen(true),
+    onNewProject: () => setIsNewProjectOpen(true),
+    onOpenProject: handleOpenProjectWrapper, // Use wrapper
+    onSaveProject: () => showError("Project saving is a stub."),
+    onReset: resetAllEdits,
   });
 
   return (
     <Header
+      onNewProjectClick={() => setIsNewProjectOpen(true)}
+      onOpenProject={handleOpenProjectWrapper} // Use wrapper
+      onSaveProject={() => showError("Project saving is a stub.")} // Fix 289, 291
+      onExportClick={() => setIsExportOpen(true)}
+      onSettingsClick={() => setIsSettingsOpen(true)}
+      onImportClick={() => setIsImportOpen(true)}
+      onGenerateClick={() => setIsGenerateOpen(true)}
+      onGenerativeFillClick={() => setIsGenerativeFillOpen(true)}
+      onProjectSettingsClick={() => setIsProjectSettingsOpen(true)}
       onReset={resetAllEdits}
-      onDownloadClick={() => setIsExportOpen(true)}
-      onCopy={handleCopy}
-      hasImage={!!image} // FIXED: Use !!image
-      onTogglePreview={setIsPreviewingOriginal}
       onUndo={undo}
       onRedo={redo}
       canUndo={canUndo}
       canRedo={canRedo}
-      setOpenSettings={setIsSettingsOpen}
-      setOpenImport={setIsImportOpen}
-      onGenerateClick={() => setIsGenerateOpen(true)}
-      onNewProjectClick={() => setIsNewProjectOpen(true)}
-      onNewFromClipboard={() => showError("New from clipboard is a stub.")}
-      onSaveProject={() => showError("Project saving is a stub.")}
-      onOpenProject={() => document.getElementById('file-upload-input')?.click()}
+      hasImage={!!image}
+      onCopy={handleCopy}
       onToggleFullscreen={onToggleFullscreen}
       isFullscreen={isFullscreen}
-      onSyncProject={() => showError("Cloud sync is a stub.")}
-      setOpenProjectSettings={setIsProjectSettingsOpen}
-      // ADDED Panel Management Props
       panelLayout={panelLayout}
       togglePanelVisibility={togglePanelVisibility}
       activeRightTab={activeRightTab}
@@ -119,15 +147,24 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       activeBottomTab={activeBottomTab}
       setActiveBottomTab={setActiveBottomTab}
     >
-      {/* Header Center Content (e.g., Project Name) */}
-      <div className="flex items-center gap-2">
-        <h1 className="text-lg font-semibold truncate max-w-xs">
-          {fileInfo?.name || "Untitled Project"}
-        </h1>
-        <span className="text-sm text-muted-foreground">
-          {dimensions ? `(${dimensions.width}x${dimensions.height})` : ''}
-        </span>
-      </div>
+      <MenuBar
+        logic={logic}
+        setIsNewProjectOpen={setIsNewProjectOpen}
+        setIsExportOpen={setIsExportOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
+        setIsImportOpen={setIsImportOpen}
+        setIsGenerateOpen={setIsGenerateOpen}
+        setIsGenerativeFillOpen={setIsGenerativeFillOpen}
+        setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={onToggleFullscreen}
+        panelLayout={panelLayout}
+        togglePanelVisibility={togglePanelVisibility}
+        activeRightTab={activeRightTab}
+        setActiveRightTab={setActiveRightTab}
+        activeBottomTab={activeBottomTab}
+        setActiveBottomTab={setActiveBottomTab}
+      />
     </Header>
   );
 };
