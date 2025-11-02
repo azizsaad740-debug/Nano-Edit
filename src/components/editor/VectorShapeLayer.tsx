@@ -38,7 +38,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
 
   if (!layer.visible || layer.type !== "vector-shape") return null;
 
-  const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points, starPoints, lineThickness } = layer;
+  const { x, y, width, height, rotation, fillColor, strokeColor, strokeWidth, borderRadius, shapeType, points, starPoints, lineThickness, strokeDasharray, strokeLinecap, strokeLinejoin } = layer;
 
   const defaultWidth = 10; // Default percentage width
   const defaultHeight = 10; // Default percentage height
@@ -69,6 +69,9 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     fill: fillColor || "none",
     stroke: strokeColor || "none",
     strokeWidth: finalStrokeWidth,
+    strokeDasharray: strokeDasharray, // NEW
+    strokeLinecap: strokeLinecap, // NEW
+    strokeLinejoin: strokeLinejoin, // NEW
   };
 
   const renderShape = () => {
@@ -109,7 +112,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
             y1="50%" 
             x2="100%" 
             y2="50%" 
-            strokeLinecap="round"
+            strokeLinecap={strokeLinecap || "round"}
             fill="none"
           />
         );
@@ -124,7 +127,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
               y1="50%" 
               x2="100%" 
               y2="50%" 
-              strokeLinecap="round"
+              strokeLinecap={strokeLinecap || "round"}
               fill="none"
             />
             {/* Arrowhead at 100% x, 50% y. Points: tip, bottom-back, top-back */}

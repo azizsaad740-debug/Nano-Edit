@@ -77,6 +77,9 @@ export interface VectorShapeLayerData extends BaseLayerData {
   points?: Point[];
   starPoints?: number;
   lineThickness?: number;
+  strokeDasharray?: string; // NEW: e.g., "10 5"
+  strokeLinecap?: 'butt' | 'round' | 'square'; // NEW
+  strokeLinejoin?: 'miter' | 'round' | 'bevel'; // NEW
 }
 
 export interface GradientLayerData extends BaseLayerData {

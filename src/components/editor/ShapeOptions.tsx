@@ -186,6 +186,64 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
             onValueCommit={() => handleCommit("Change Stroke Width")}
           />
         </div>
+        
+        {/* Advanced Stroke Properties */}
+        <Accordion type="single" collapsible className="w-full pt-2 border-t">
+          <AccordionItem value="advanced-stroke">
+            <AccordionTrigger>Advanced Stroke</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+              {/* Stroke Dash Array */}
+              <div className="grid gap-2">
+                <Label htmlFor="stroke-dasharray">Dash Array (e.g., 10 5)</Label>
+                <Input
+                  id="stroke-dasharray"
+                  type="text"
+                  placeholder="e.g., 10 5"
+                  value={shapeLayer.strokeDasharray || ""}
+                  onChange={(e) => handleUpdate({ strokeDasharray: e.target.value })}
+                  onBlur={() => handleCommit("Change Stroke Dash Array")}
+                />
+              </div>
+              
+              {/* Stroke Line Cap */}
+              <div className="grid gap-2">
+                <Label htmlFor="stroke-linecap">Line Cap</Label>
+                <Select
+                  value={shapeLayer.strokeLinecap || 'butt'}
+                  onValueChange={(v) => handleUpdate({ strokeLinecap: v as VectorShapeLayerData['strokeLinecap'] })}
+                >
+                  <SelectTrigger id="stroke-linecap">
+                    <SelectValue placeholder="Butt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="butt">Butt (Flat)</SelectItem>
+                    <SelectItem value="round">Round</SelectItem>
+                    <SelectItem value="square">Square</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Stroke Line Join */}
+              <div className="grid gap-2">
+                <Label htmlFor="stroke-linejoin">Line Join</Label>
+                <Select
+                  value={shapeLayer.strokeLinejoin || 'miter'}
+                  onValueChange={(v) => handleUpdate({ strokeLinejoin: v as VectorShapeLayerData['strokeLinejoin'] })}
+                >
+                  <SelectTrigger id="stroke-linejoin">
+                    <SelectValue placeholder="Miter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="miter">Miter (Sharp)</SelectItem>
+                    <SelectItem value="round">Round</SelectItem>
+                    <SelectItem value="bevel">Bevel (Flat)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+
 
         {/* Shape Specific Controls */}
         {shapeLayer.shapeType === 'rect' && (
