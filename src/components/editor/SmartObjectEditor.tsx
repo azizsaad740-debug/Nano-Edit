@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 import type { Layer, ActiveTool, ShapeType } from "@/types/editor";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
-import { LayerPropertiesContent } from "@/components/editor/LayerPropertiesContent";
 import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
@@ -17,6 +16,7 @@ import { WorkspaceControls } from "./WorkspaceControls";
 import type { BrushState, GradientToolState, SmartObjectLayerData } from "@/types/editor";
 import { SlidersHorizontal, Layers } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { SmartObjectLayerProperties } from "./SmartObjectLayerProperties"; // IMPORT NEW COMPONENT
 
 
 interface SmartObjectEditorProps {
@@ -135,25 +135,9 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   const systemFonts: string[] = ["Roboto", "Arial"];
   const customFonts: string[] = [];
   const onOpenFontManager = () => console.log("Font Manager stub in SO Editor");
+  const onRemoveLayerMask = () => console.log("Remove Mask stub in SO Editor");
+  const onInvertLayerMask = () => console.log("Invert Mask stub in SO Editor");
 
-  const propertiesContentProps = {
-    selectedLayer,
-    imgRef: React.useRef(null), // Not strictly needed for SO layers, but required by component interface
-    onLayerUpdate: handleLayerUpdateWrapper,
-    onLayerCommit: handleLayerCommitWrapper,
-    systemFonts,
-    customFonts,
-    onOpenFontManager,
-    gradientToolState,
-    setGradientToolState,
-    gradientPresets: [], // Stub
-    onSaveGradientPreset: () => console.log("Save Gradient Preset stub in SO Editor"), // Stub
-    onDeleteGradientPreset: () => console.log("Delete Gradient Preset stub in SO Editor"), // Stub
-    customHslColor: foregroundColor, // Stub
-    setCustomHslColor: () => console.log("Set Custom HSL Color stub in SO Editor"), // Stub
-    onRemoveLayerMask: () => console.log("Remove Mask stub in SO Editor"), // Stub
-    onInvertLayerMask: () => console.log("Invert Mask stub in SO Editor"), // Stub
-  };
 
   return (
     <div className={cn("flex flex-col h-screen w-screen bg-background", isFullscreen ? 'absolute inset-0 z-50' : 'relative')}>
@@ -276,7 +260,20 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
                   </TabsContent>
 
                   <TabsContent value="properties">
-                    {selectedLayer && <LayerPropertiesContent {...propertiesContentProps} />}
+                    <div className="p-2">
+                      <SmartObjectLayerProperties 
+                        selectedLayer={selectedLayer}
+                        onLayerUpdate={handleLayerUpdateWrapper}
+                        onLayerCommit={handleLayerCommitWrapper}
+                        systemFonts={systemFonts}
+                        customFonts={customFonts}
+                        onOpenFontManager={onOpenFontManager}
+                        gradientToolState={gradientToolState}
+                        setGradientToolState={setGradientToolState}
+                        onRemoveLayerMask={onRemoveLayerMask}
+                        onInvertLayerMask={onInvertLayerMask}
+                      />
+                    </div>
                   </TabsContent>
                 </div>
               </ScrollArea>
