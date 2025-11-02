@@ -241,12 +241,6 @@ export const useEditorLogic = (props: any) => {
     const point = getPointOnImage(e.clientX, e.clientY);
     if (!point) return;
 
-    // Example: Start Marquee selection
-    if (activeTool === 'marqueeRect' || activeTool === 'marqueeEllipse') {
-      setMarqueeStart({ x: e.clientX, y: e.clientY });
-      setMarqueeCurrent({ x: e.clientX, y: e.clientY });
-    }
-    
     // Example: Start Gradient drawing
     if (activeTool === 'gradient') {
       setGradientStart({ x: e.clientX, y: e.clientY });
@@ -272,48 +266,25 @@ export const useEditorLogic = (props: any) => {
     }
     
     // Prevent default behavior for drag/selection
-    e.preventDefault();
-  }, [dimensions, getPointOnImage, activeTool, setMarqueeStart, setMarqueeCurrent, setGradientStart, setGradientCurrent, setForegroundColor, setActiveTool, selectionPath, setSelectionPath]);
+    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
+    if (activeTool === 'gradient' || activeTool === 'eyedropper' || activeTool === 'lassoPoly') {
+        e.preventDefault();
+    }
+  }, [dimensions, getPointOnImage, activeTool, setGradientStart, setGradientCurrent, setForegroundColor, setActiveTool, selectionPath, setSelectionPath]);
 
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
-    
-    // Live Marquee update
-    if (marqueeStart && (activeTool === 'marqueeRect' || activeTool === 'marqueeEllipse')) {
-      setMarqueeCurrent({ x: e.clientX, y: e.clientY });
-    }
     
     // Live Gradient update
     if (gradientStart && activeTool === 'gradient') {
       setGradientCurrent({ x: e.clientX, y: e.clientY });
     }
     
-  }, [dimensions, marqueeStart, activeTool, setMarqueeCurrent, gradientStart, setGradientCurrent]);
+    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
+  }, [dimensions, activeTool, gradientStart, setGradientCurrent]);
 
   const handleWorkspaceMouseUp = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
-    
-    // End Marquee selection
-    if (marqueeStart && marqueeCurrent && (activeTool === 'marqueeRect' || activeTool === 'marqueeEllipse')) {
-      const startPoint = getPointOnImage(marqueeStart.x, marqueeStart.y);
-      const endPoint = getPointOnImage(marqueeCurrent.x, marqueeCurrent.y);
-      
-      if (startPoint && endPoint) {
-        let maskDataUrl: string | null = null;
-        if (activeTool === 'marqueeRect') {
-          maskDataUrl = await rectToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
-        } else if (activeTool === 'marqueeEllipse') {
-          maskDataUrl = await ellipseToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
-        }
-        
-        if (maskDataUrl) {
-          setSelectionMaskDataUrl(maskDataUrl);
-          recordHistory(`Marquee Selection (${activeTool})`, currentEditState, layers);
-        }
-      }
-      setMarqueeStart(null);
-      setMarqueeCurrent(null);
-    }
     
     // End Gradient drawing
     if (gradientStart && gradientCurrent && activeTool === 'gradient') {
@@ -328,7 +299,8 @@ export const useEditorLogic = (props: any) => {
       setActiveTool(null);
     }
     
-  }, [dimensions, marqueeStart, marqueeCurrent, activeTool, getPointOnImage, setSelectionMaskDataUrl, recordHistory, currentEditState, layers, setMarqueeStart, setMarqueeCurrent, gradientStart, gradientCurrent, addGradientLayerWithCoords, setGradientStart, setGradientCurrent, setActiveTool]);
+    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
+  }, [dimensions, gradientStart, gradientCurrent, activeTool, getPointOnImage, addGradientLayerWithCoords, setGradientStart, setGradientCurrent, setActiveTool]);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.ctrlKey || e.metaKey) {
