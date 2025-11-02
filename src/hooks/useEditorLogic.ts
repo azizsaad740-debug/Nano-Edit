@@ -146,7 +146,7 @@ export const useEditorLogic = (props: any) => {
     addShapeLayer, addGradientLayer: addGradientLayerHook, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
     handleReorder, findLayer,
   } = useLayers({
     layers, setLayers, recordHistory, currentEditState, dimensions, 
@@ -343,6 +343,12 @@ export const useEditorLogic = (props: any) => {
     }
   }, [handleZoomIn, handleZoomOut]);
   
+  // Wrapper for layer selection to match LayersPanel signature
+  const handleSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    // Simplified selection logic: just set the ID
+    setSelectedLayerIdState(id);
+  }, [setSelectedLayerIdState]);
+  
   // --- Return all necessary state and handlers ---
   return {
     // Core State
@@ -360,20 +366,22 @@ export const useEditorLogic = (props: any) => {
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
     
-    // Layer Management
-    toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
+    // Layer Management (Mapped to RightSidebarTabsProps names)
+    onSelectLayer: handleSelectLayer, // Mapped
+    toggleLayerVisibility, renameLayer, deleteLayer, 
+    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
-    updateLayer, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+    updateLayer, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit,
     addTextLayer: (coords: Point, color: string) => addTextLayer(coords, color),
     addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, fillColor, strokeColor),
-    addGradientLayer: addGradientLayerWithCoords, // Keep the full signature for tool interaction
-    addGradientLayerNoArgs, // ADDED for LayersPanel button
+    addGradientLayer: addGradientLayerWithCoords,
+    addGradientLayerNoArgs,
     onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
-    onLayerReorder: handleReorder, // RENAMED
+    onLayerReorder: handleReorder,
     
     // Effects/Transform
     effects, onEffectChange, onEffectCommit, onFilterChange, selectedFilter,
@@ -384,8 +392,8 @@ export const useEditorLogic = (props: any) => {
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     
-    // Presets
-    presets: globalPresets, handleApplyPreset: (preset: any) => {
+    // Presets (Mapped to RightSidebarTabsProps names)
+    presets: globalPresets, onApplyPreset: (preset: any) => {
         applyTransformPreset(preset.state);
         applyCropPreset(preset.state);
         applyAdjustmentsPreset(preset.state);
@@ -398,7 +406,7 @@ export const useEditorLogic = (props: any) => {
         applyEffectsPreset(preset.state);
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
-    }, handleSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
+    }, onSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
     gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset,
     
     // Workspace Interaction
@@ -408,7 +416,7 @@ export const useEditorLogic = (props: any) => {
     // AI/Export/Project Management
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
-    handleNewFromClipboard, // ADDED
+    handleNewFromClipboard,
     
     // UI/Layout
     isFullscreen, setIsFullscreen,
@@ -443,11 +451,9 @@ export const useEditorLogic = (props: any) => {
     onCropChange, onCropComplete,
     isMobile,
     setIsMouseOverImage,
-    hasImage, // ADDED
+    hasImage,
     
-    // Missing properties from useEditorState (Errors 3, 4, 7-15 source)
-    panelLayout,
-    setMarqueeStart,
-    setMarqueeCurrent,
+    // History Panel Mappings
+    onHistoryJump: setCurrentHistoryIndex,
   };
 };

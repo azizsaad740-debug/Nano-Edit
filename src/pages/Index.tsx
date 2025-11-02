@@ -354,7 +354,7 @@ const Index: React.FC = () => {
         <SavePresetDialog
           open={isSavePresetOpen}
           onOpenChange={setIsSavePresetOpen}
-          onSave={logic.handleSavePreset}
+          onSave={logic.onSavePreset}
         />
         <SaveGradientPresetDialog
           open={isSaveGradientPresetOpen}
