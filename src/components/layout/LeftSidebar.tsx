@@ -19,14 +19,14 @@ interface LeftSidebarProps {
   brushState: BrushState;
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
   selectiveBlurAmount: number;
-  onSelectiveBlurStrengthChange: (value: number) => void;
-  onSelectiveBlurStrengthCommit: (value: number) => void;
+  onSelectiveBlurAmountChange: (value: number) => void;
+  onSelectiveBlurAmountCommit: (value: number) => void;
 }
 
 const LeftSidebar = ({ 
   activeTool, setActiveTool, selectedShapeType, setSelectedShapeType,
   foregroundColor, onForegroundColorChange, backgroundColor, onBackgroundColorChange, onSwapColors,
-  brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurStrengthChange, onSelectiveBlurStrengthCommit
+  brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit
 }: LeftSidebarProps) => {
   const isMobile = useIsMobile();
 
@@ -47,9 +47,9 @@ const LeftSidebar = ({
           onSwapColors={onSwapColors}
           brushState={brushState}
           setBrushState={setBrushState}
-          selectiveBlurStrength={selectiveBlurAmount}
-          onSelectiveBlurStrengthChange={onSelectiveBlurStrengthChange}
-          onSelectiveBlurStrengthCommit={onSelectiveBlurStrengthCommit}
+          selectiveBlurAmount={selectiveBlurAmount}
+          onSelectiveBlurAmountChange={onSelectiveBlurAmountChange}
+          onSelectiveBlurAmountCommit={onSelectiveBlurAmountCommit}
         />
       </div>
     </ScrollArea>

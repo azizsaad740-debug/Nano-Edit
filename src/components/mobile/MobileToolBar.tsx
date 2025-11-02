@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { Brush, Eraser, Crop, Type, MousePointer2, Move, Pencil, Palette, PaintBucket, Stamp, History, Focus, Pipette, SquareDashedMousePointer, Wand2, ScanEye, Square, Circle, Triangle, Minus, ArrowRight, PenTool } from "lucide-react";
+import { Brush, Eraser, Crop, Type, MousePointer2, Move, Pencil, Palette, PaintBucket, Stamp, History, Focus, Pipette, SquareDashedMousePointer, Wand2, ScanEye, Square, Circle, Triangle, Minus, ArrowRight, PenTool, Droplet, Paintbrush } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ActiveTool } from "@/types/editor";
 import {
@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button"; // Import Button
 
 interface MobileToolBarProps {
   activeTool: ActiveTool | null;
@@ -96,7 +97,7 @@ const toolGroups: {
 
 const singleTools: { name: string; icon: React.ElementType; tool: ActiveTool }[] = [
   { name: "Move", icon: Move, tool: "move" },
-  { name: "Crop", icon: CropIcon, tool: "crop" },
+  { name: "Crop", icon: Crop, tool: "crop" }, // Fixed: used Crop instead of CropIcon
   { name: "Text", icon: Type, tool: "text" },
   { name: "Eyedropper", icon: Pipette, tool: "eyedropper" },
 ];

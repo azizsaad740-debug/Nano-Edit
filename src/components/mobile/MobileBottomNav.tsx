@@ -6,7 +6,7 @@ import { Settings, SlidersHorizontal, Palette, LayoutGrid, Brush, Home, Zap, Lay
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-export type MobileTab = 'layers' | 'properties' | 'adjustments' | 'color' | 'ai' | 'history' | 'channels' | 'brushes' | 'paths' | 'info' | 'navigator' | 'templates';
+export type MobileTab = 'layers' | 'properties' | 'adjustments' | 'color' | 'ai' | 'history' | 'channels' | 'brushes' | 'paths' | 'info' | 'navigator' | 'templates' | 'tools';
 
 interface MobileBottomNavProps {
   activeTab: MobileTab;

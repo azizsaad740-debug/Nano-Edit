@@ -55,13 +55,10 @@ const selectionTools: { name: string; icon: React.ElementType; tool: Tool; short
   // Marquee Group (M)
   { name: "Rectangular Marquee", icon: SquareDashedMousePointer, tool: "marqueeRect", shortcut: "M", group: 'marquee' },
   { name: "Elliptical Marquee", icon: Circle, tool: "marqueeEllipse", shortcut: "Shift+M", group: 'marquee' },
-  // Lasso Group (L)
   { name: "Lasso Tool (Freehand)", icon: MousePointer2, tool: "lasso", shortcut: "L", group: 'lasso' },
   { name: "Polygonal Lasso", icon: PenTool, tool: "lassoPoly", shortcut: "Shift+L", group: 'lasso' },
-  // Quick Selection Group (W)
   { name: "Quick Selection", icon: MousePointer, tool: "quickSelect", shortcut: "W", group: 'quick' },
   { name: "Magic Wand", icon: Wand2, tool: "magicWand", shortcut: "Shift+W", group: 'magic' },
-  // Object Selection Group (A)
   { name: "Object Selection", icon: ScanEye, tool: "objectSelect", shortcut: "A", group: 'object' },
 ];
 
@@ -138,7 +135,7 @@ const ToolGroupDropdown: React.FC<ToolGroupDropdownProps> = ({
             <ChevronDown className="h-3 w-3 ml-1" />
           </Button>
         </DropdownMenuTrigger>
-        <TooltipContent side="right">
+        <TooltipContent side="right" className="z-50">
           <p>{groupName} ({shortcut})</p>
         </TooltipContent>
       </Tooltip>
@@ -169,9 +166,9 @@ interface ToolsPanelProps {
   onSwapColors: () => void;
   brushState: BrushState;
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
-  selectiveBlurStrength: number;
-  onSelectiveBlurStrengthChange: (value: number) => void;
-  onSelectiveBlurStrengthCommit: (value: number) => void;
+  selectiveBlurAmount: number; // Renamed to Amount
+  onSelectiveBlurAmountChange: (value: number) => void; // Renamed to Amount
+  onSelectiveBlurAmountCommit: (value: number) => void; // Renamed to Amount
 }
 
 export const ToolsPanel = ({ 
@@ -186,9 +183,9 @@ export const ToolsPanel = ({
   onSwapColors,
   brushState,
   setBrushState,
-  selectiveBlurStrength,
-  onSelectiveBlurStrengthChange,
-  onSelectiveBlurStrengthCommit,
+  selectiveBlurAmount,
+  onSelectiveBlurAmountChange,
+  onSelectiveBlurAmountCommit,
 }: ToolsPanelProps) => {
   const currentShapeIcon = React.useMemo(() => {
     const subTool = shapeSubTools.find(st => st.type === selectedShapeType);

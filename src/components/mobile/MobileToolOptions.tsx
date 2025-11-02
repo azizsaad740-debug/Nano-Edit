@@ -39,6 +39,7 @@ interface MobileToolOptionsProps extends RightSidebarTabsProps {
   onOpenSettings: () => void;
   onOpenGenerate: () => void;
   onOpenGenerativeFill: () => void;
+  navigate: (path: string) => void; // Added navigate prop
 }
 
 export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
@@ -152,16 +153,17 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     onRedo,
     canUndo,
     canRedo,
-    dimensions,
-    fileInfo,
-    exifData,
-    colorMode,
-    zoom,
-    onZoomIn,
-    onZoomOut,
-    onFitScreen,
+    dimensions, // ADDED
+    fileInfo, // ADDED
+    exifData, // ADDED
+    colorMode, // ADDED
+    zoom, // ADDED
+    onZoomIn, // ADDED
+    onZoomOut, // ADDED
+    onFitScreen, // ADDED
     channels,
     onChannelChange,
+    navigate,
   } = props;
 
   const isBrushTool = activeTool === 'brush';
@@ -383,7 +385,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
 
     return (
       <p className="text-sm text-muted-foreground p-4">
-        Select a tool from the bottom bar.
+        Select a tool to view its options.
       </p>
     );
   };
@@ -614,16 +616,18 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
             <p className="text-sm text-muted-foreground">
               Browse and load community templates to start your project.
             </p>
-            <Button onClick={() => props.navigate('/community')}>
+            <Button onClick={() => navigate('/community')}>
               Go to Community Templates
             </Button>
           </div>
         );
-      default:
-        // If a tool is active, show its options here
+      case 'tools':
+        // If 'tools' tab is active, render the tool options content based on activeTool
         const toolOptions = renderToolOptionsContent();
         if (toolOptions) return toolOptions;
         
+        return <p className="text-sm text-muted-foreground p-4">Select a tool from the bottom bar.</p>;
+      default:
         return <p className="text-sm text-muted-foreground p-4">Select a tool or panel from the bottom bar.</p>;
     }
   };
