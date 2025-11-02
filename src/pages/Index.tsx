@@ -20,7 +20,8 @@ import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav, type MobileTab } from "@/components/mobile/MobileBottomNav";
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { useNavigate } from "react-router-dom";
-import { Layers } from "lucide-react";
+import { Layers as LayersIcon } from "lucide-react";
+import LayersPanelComponent from "@/components/editor/LayersPanel";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DraggableTab } from "@/components/layout/DraggableTab";
@@ -34,18 +35,18 @@ export const Index = () => {
   
   // Panel Management State
   const initialPanelLayout: PanelTab[] = [
-    { id: 'layers', name: 'Layers', icon: Layers, location: 'right', visible: true, order: 1 },
-    { id: 'properties', name: 'Properties', icon: Layers, location: 'right', visible: true, order: 2 },
-    { id: 'correction', name: 'Correction', icon: Layers, location: 'right', visible: true, order: 3 },
-    { id: 'ai-xtra', name: 'AI Xtra', icon: Layers, location: 'right', visible: true, order: 4 },
-    { id: 'brushes', name: 'Brushes', icon: Layers, location: 'right', visible: false, order: 5 },
-    { id: 'paths', name: 'Paths', icon: Layers, location: 'right', visible: false, order: 6 },
-    { id: 'history', name: 'History', icon: Layers, location: 'bottom', visible: true, order: 7 },
-    { id: 'channels', name: 'Channels', icon: Layers, location: 'bottom', visible: false, order: 8 },
-    { id: 'color', name: 'Color', icon: Layers, location: 'bottom', visible: true, order: 9 },
-    { id: 'info', name: 'Info', icon: Layers, location: 'bottom', visible: true, order: 10 },
-    { id: 'navigator', name: 'Navigator', icon: Layers, location: 'bottom', visible: true, order: 11 },
-    { id: 'templates', name: 'Templates', icon: Layers, location: 'bottom', visible: false, order: 12 },
+    { id: 'layers', name: 'Layers', icon: LayersIcon, location: 'right', visible: true, order: 1 },
+    { id: 'properties', name: 'Properties', icon: LayersIcon, location: 'right', visible: true, order: 2 },
+    { id: 'correction', name: 'Correction', icon: LayersIcon, location: 'right', visible: true, order: 3 },
+    { id: 'ai-xtra', name: 'AI Xtra', icon: LayersIcon, location: 'right', visible: true, order: 4 },
+    { id: 'brushes', name: 'Brushes', icon: LayersIcon, location: 'right', visible: false, order: 5 },
+    { id: 'paths', name: 'Paths', icon: LayersIcon, location: 'right', visible: false, order: 6 },
+    { id: 'history', name: 'History', icon: LayersIcon, location: 'bottom', visible: true, order: 7 },
+    { id: 'channels', name: 'Channels', icon: LayersIcon, location: 'bottom', visible: false, order: 8 },
+    { id: 'color', name: 'Color', icon: LayersIcon, location: 'bottom', visible: true, order: 9 },
+    { id: 'info', name: 'Info', icon: LayersIcon, location: 'bottom', visible: true, order: 10 },
+    { id: 'navigator', name: 'Navigator', icon: LayersIcon, location: 'bottom', visible: true, order: 11 },
+    { id: 'templates', name: 'Templates', icon: LayersIcon, location: 'bottom', visible: false, order: 12 },
   ];
   const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout);
   const [activeRightTab, setActiveRightTab] = useState('layers');
@@ -305,7 +306,7 @@ export const Index = () => {
     // AI
     geminiApiKey, base64Image: image, onImageResult: handleGenerateImageWrapper, onMaskResult: (maskDataUrl, historyName) => { setSelectionMaskDataUrl(maskDataUrl); recordHistory(historyName, currentEditState, layers); }, onOpenSettings: () => setIsSettingsOpen(true),
     // Layers Panel Component
-    LayersPanel: Layers,
+    LayersPanel: LayersPanelComponent,
     // Panel Management
     panelLayout, reorderPanelTabs, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
   };
