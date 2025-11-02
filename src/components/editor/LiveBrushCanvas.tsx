@@ -52,7 +52,7 @@ export const LiveBrushCanvas = ({
   const isSelectiveRetouchTool = isBlurBrush || isSharpenTool;
   const isPencil = activeTool === 'pencil';
 
-  const { size, hardness, opacity, flow, shape, angle, roundness, spacing } = brushState;
+  const { size, hardness, opacity, flow, shape, angle, roundness, spacing, blendMode } = brushState;
 
   // Load base image when source changes (used for Clone/Pattern Stamp)
   React.useEffect(() => {
@@ -130,7 +130,8 @@ export const LiveBrushCanvas = ({
       // Use source-over for 'add' (white) and destination-out for 'subtract' (black)
       ctx.globalCompositeOperation = getOperation() === 'add' ? 'source-over' : 'destination-out';
     } else {
-      ctx.globalCompositeOperation = 'source-over';
+      // Use brush blend mode for drawing/stamping/history brush
+      ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation;
     }
     
     ctx.filter = 'none'; 
@@ -198,7 +199,7 @@ export const LiveBrushCanvas = ({
     }
     
     ctx.restore();
-  }, [size, opacity, flow, shape, isEraser, isSelectionBrush, isSelectiveRetouchTool, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation, isHistoryBrush, historyImageRef]);
+  }, [size, opacity, flow, shape, isEraser, isSelectionBrush, isSelectiveRetouchTool, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation, isHistoryBrush, historyImageRef, blendMode]);
 
   const getPointOnCanvas = React.useCallback((e: MouseEvent): Point | null => {
     if (!canvasRef.current || !imageNaturalDimensions) return null;
