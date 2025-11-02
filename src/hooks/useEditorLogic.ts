@@ -252,6 +252,8 @@ export const useEditorLogic = () => {
     foregroundColor,
     setForegroundColor,
     setActiveTool,
+    selectionSettings, // PASSED
+    recordHistory, // PASSED
   });
   
   const hasActiveSelection = !!selectionMaskDataUrl || !!selectionPath;

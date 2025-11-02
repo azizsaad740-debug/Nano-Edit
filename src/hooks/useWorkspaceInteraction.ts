@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { showError, showSuccess } from '@/utils/toast';
 import type { Point, Dimensions, ActiveTool, GradientToolState, Layer } from '@/types/editor';
 import { useSelection } from './useSelection';
+import { floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 
 // Define WorkspaceRef locally as it seems missing from types/editor
 type WorkspaceRef = HTMLDivElement;
@@ -28,6 +29,8 @@ interface UseWorkspaceInteractionProps {
   foregroundColor: string;
   setForegroundColor: (color: string) => void;
   setActiveTool: (tool: ActiveTool | null) => void;
+  selectionSettings: any; // Added selectionSettings
+  recordHistory: (name: string, state: any, layers: Layer[]) => void; // Added recordHistory
 }
 
 export const useWorkspaceInteraction = ({
@@ -52,6 +55,8 @@ export const useWorkspaceInteraction = ({
   foregroundColor,
   setForegroundColor,
   setActiveTool,
+  selectionSettings,
+  recordHistory,
 }: UseWorkspaceInteractionProps) => {
   const [workspaceZoom, setWorkspaceZoom] = useState(externalZoom);
   
@@ -119,7 +124,7 @@ export const useWorkspaceInteraction = ({
   }, [setExternalZoom, workspaceZoom]);
   
   // --- Interaction Handlers ---
-  const handleWorkspaceMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleWorkspaceMouseDown = useCallback(async (e: React.MouseEvent) => {
     if (!dimensions) return;
     
     const point = getPointOnImage(e);
@@ -155,7 +160,42 @@ export const useWorkspaceInteraction = ({
         return;
     }
     
-    // 4. Gradient Tool Start
+    // 4. Magic Wand / Quick Select / Object Select
+    if (activeTool === 'magicWand' || activeTool === 'quickSelect' || activeTool === 'objectSelect') {
+        if (!point) {
+            showError("Click inside the image bounds to select.");
+            return;
+        }
+        
+        let maskDataUrl: string | null = null;
+        let historyName = "";
+        
+        if (activeTool === 'magicWand') {
+            // Magic Wand uses flood fill logic (stubbed in maskUtils)
+            maskDataUrl = await floodFillToMaskDataUrl(point, dimensions, selectionSettings.tolerance);
+            historyName = "Magic Wand Selection";
+        } else if (activeTool === 'quickSelect') {
+            // Quick Select uses brush/drag logic (stubbed as a simple area selection)
+            maskDataUrl = await floodFillToMaskDataUrl(point, dimensions, 64); // Use a fixed tolerance for quick select stub
+            historyName = "Quick Selection";
+        } else if (activeTool === 'objectSelect') {
+            // Object Select uses AI (stubbed in maskUtils)
+            maskDataUrl = await objectSelectToMaskDataUrl(dimensions);
+            historyName = "Object Selection (AI)";
+        }
+        
+        if (maskDataUrl) {
+            setSelectionMaskDataUrl(maskDataUrl);
+            setSelectionPath(null);
+            recordHistory(historyName, currentEditState, layers);
+            showSuccess("Selection created.");
+        } else {
+            showError("Failed to create selection mask.");
+        }
+        return;
+    }
+    
+    // 5. Gradient Tool Start
     if (activeTool === 'gradient' && point) {
         setGradientStart({ x: e.clientX, y: e.clientY });
         setGradientCurrent({ x: e.clientX, y: e.clientY });
@@ -163,7 +203,7 @@ export const useWorkspaceInteraction = ({
         return;
     }
     
-    // 5. Marquee Start
+    // 6. Marquee Start
     if (activeTool?.startsWith('marquee')) {
         setMarqueeStartScreen({ x: e.clientX, y: e.clientY });
         setMarqueeStart({ x: e.clientX, y: e.clientY });
@@ -172,11 +212,11 @@ export const useWorkspaceInteraction = ({
         return;
     }
     
-    // 6. Panning (Fallback)
+    // 7. Panning (Fallback)
     setIsPanning(true);
     setPanOrigin({ x: e.clientX, y: e.clientY });
     
-  }, [dimensions, activeTool, getPointOnImage, setCloneSourcePoint, imgRef, setForegroundColor, handleAddTextLayer, setActiveTool, setGradientStart, setGradientCurrent, setMarqueeStart, setMarqueeCurrent]);
+  }, [dimensions, activeTool, getPointOnImage, setCloneSourcePoint, imgRef, setForegroundColor, handleAddTextLayer, setActiveTool, setGradientStart, setGradientCurrent, setMarqueeStart, setMarqueeCurrent, selectionSettings.tolerance, recordHistory, currentEditState, layers, setSelectionMaskDataUrl, setSelectionPath]);
 
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent) => {
     // 1. Panning
