@@ -10,7 +10,7 @@ import type {
   CropState,
   FrameState,
 } from './adjustments'; // REVERT
-import type { SelectionSettings } from './tools'; // REVERT
+import type { SelectionSettings, BrushState } from './tools'; // REVERT
 import type { Layer } from './layers'; // REVERT
 
 export interface EditState {
@@ -31,6 +31,11 @@ export interface EditState {
   selectiveSharpenAmount: number;
   customHslColor: string;
   selectionSettings: SelectionSettings;
+  
+  // Properties related to tool state and history tracking
+  brushState: BrushState; // ADDED
+  history: HistoryItem[]; // ADDED
+  historyBrushSourceIndex: number; // ADDED
 }
 
 export interface HistoryItem {

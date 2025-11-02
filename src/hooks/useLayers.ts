@@ -2,16 +2,16 @@ import { useState, useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showError, showSuccess } from "@/utils/toast";
-import type { Layer, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData, Dimensions, EditState, Point, AdjustmentLayerData, AdjustmentState } from "@/types/editor";
+import type { Layer, ActiveTool, BrushState, GradientToolState, ShapeType, GroupLayerData, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData, Dimensions, EditState, Point, AdjustmentLayerData, AdjustmentState, Dispatch, SetStateAction } from "@/types/editor";
 import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isDrawingLayer } from "@/types/editor";
 import { rasterizeLayerToCanvas, mergeStrokeOntoLayerDataUrl } from "@/utils/layerUtils";
 import { applyMaskDestructively } from "@/utils/imageUtils";
 import { polygonToMaskDataUrl, invertMaskDataUrl, objectSelectToMaskDataUrl, floodFillToMaskDataUrl, mergeMasks } from "@/utils/maskUtils"; // IMPORT mergeMasks
-import { initialCurvesState, initialHslAdjustment, initialGradingState } from "@/types/editor/initialState"; 
+import { initialCurvesState, initialHslAdjustment } from "@/types/editor/initialState"; 
 
 interface UseLayersProps {
     layers: Layer[];
-    setLayers: (layers: Layer[]) => void;
+    setLayers: Dispatch<SetStateAction<Layer[]>>;
     recordHistory: (name: string, state: EditState, layers: Layer[]) => void;
     currentEditState: EditState;
     dimensions: Dimensions | null;
@@ -470,7 +470,7 @@ export const useLayers = ({
             rotation: 0,
             scaleX: 1,
             scaleY: 1,
-            gradientType: gradientToolState.type,
+            gradientType: gradientToolState.type as GradientLayerData['gradientType'],
             gradientColors: gradientToolState.colors,
             gradientStops: gradientToolState.stops,
             gradientAngle: gradientToolState.angle,
@@ -716,15 +716,32 @@ export const useLayers = ({
         // ... (implementation remains the same)
     }, [layers, dimensions, selectionMaskDataUrl, foregroundColor, updateLayer, commitLayerChange, clearSelectionState]);
 
+    const handleReorder = useCallback((activeId: string, overId: string) => {
+        const oldIndex = layers.findIndex((l) => l.id === activeId);
+        const newIndex = layers.findIndex((l) => l.id === overId);
+
+        if (oldIndex === -1 || newIndex === -1) {
+            return;
+        }
+        
+        setLayers(prev => {
+            const updated = arrayMove(prev as Layer[], oldIndex, newIndex);
+            recordHistory(`Reorder Layer: ${layers.find(l => l.id === activeId)?.name}`, currentEditState, updated);
+            return updated;
+        });
+    }, [layers, recordHistory, currentEditState, setLayers]);
+
 
     return {
-        toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
+        toggleLayerVisibility: (id: string) => updateLayer(id, { visible: !layers.find(l => l.id === id)?.visible }),
+        renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
         onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
-        updateLayer, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+        updateLayer, commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
         addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
         addShapeLayer, addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
         onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
         hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
-        handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
+        handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => console.log(`Selective Retouch Stroke End stub: ${tool}`), handleHistoryBrushStrokeEnd,
+        handleReorder,
     };
 };

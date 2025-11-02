@@ -32,6 +32,8 @@ export const useEditorState = () => {
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [isGenerativeFillOpen, setIsGenerativeFillOpen] = useState(false);
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -61,6 +63,8 @@ export const useEditorState = () => {
   // Selection Drawing State
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
   const [marqueeCurrent, setMarqueeCurrent] = useState<Point | null>(null);
+  const [gradientStart, setGradientStart] = useState<Point | null>(null);
+  const [gradientCurrent, setGradientCurrent] = useState<Point | null>(null);
   
   // Zoom State (Managed here for global access)
   const [zoom, setZoom] = useState(1);
@@ -70,17 +74,31 @@ export const useEditorState = () => {
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
+  // UI/Layout State
+  const [activeRightTab, setActiveRightTab] = useState('layers');
+  const [activeBottomTab, setActiveBottomTab] = useState('correction');
+
   // External Hooks
   const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
   const { geminiApiKey, stabilityApiKey } = useSettings();
+
+  const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     setCurrentEditState(prev => ({ ...prev, ...updates }));
   }, []);
 
   const recordHistory = useCallback((name: string, state: EditState, currentLayers: Layer[]) => {
+    // 1. Capture current tool/history state to save in the EditState object
+    const stateWithTools: EditState = {
+        ...state,
+        brushState: brushState,
+        history: history,
+        historyBrushSourceIndex: currentHistoryIndex,
+    };
+
     const newHistory = history.slice(0, currentHistoryIndex + 1);
-    const newEntry: HistoryItem = { name, state, layers: currentLayers };
+    const newEntry: HistoryItem = { name, state: stateWithTools, layers: currentLayers };
     
     // Prevent duplicate history entries if state hasn't changed significantly
     if (newHistory.length > 0 && newHistory[newHistory.length - 1].name === name) {
@@ -89,7 +107,7 @@ export const useEditorState = () => {
 
     setHistory([...newHistory, newEntry]);
     setCurrentHistoryIndex(newHistory.length);
-  }, [history, currentHistoryIndex]);
+  }, [history, currentHistoryIndex, brushState]);
 
   const undo = useCallback((steps: number = 1) => {
     const newIndex = Math.max(0, currentHistoryIndex - steps);
@@ -103,6 +121,11 @@ export const useEditorState = () => {
       setLayers(entry.layers);
       setCurrentHistoryIndex(newIndex);
       setSelectedLayerId(null);
+      
+      // Restore tool/history state from entry
+      setBrushState(entry.state.brushState);
+      setHistory(entry.state.history);
+      setHistoryBrushSourceIndex(entry.state.historyBrushSourceIndex);
       
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
@@ -127,6 +150,11 @@ export const useEditorState = () => {
       setCurrentHistoryIndex(newIndex);
       setSelectedLayerId(null);
       
+      // Restore tool/history state from entry
+      setBrushState(entry.state.brushState);
+      setHistory(entry.state.history);
+      setHistoryBrushSourceIndex(entry.state.historyBrushSourceIndex);
+      
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
       setSelectiveSharpenAmount(entry.state.selectiveSharpenAmount);
@@ -147,6 +175,7 @@ export const useEditorState = () => {
     setCurrentHistoryIndex(0);
     setSelectedLayerId(null);
     clearSelectionState();
+    setBrushState(initialBrushState);
     setSelectiveBlurAmount(initialEditState.selectiveBlurAmount);
     setSelectiveSharpenAmount(initialEditState.selectiveSharpenAmount);
     showSuccess("All edits reset.");
@@ -164,6 +193,8 @@ export const useEditorState = () => {
     isGenerateOpen, setIsGenerateOpen,
     isGenerativeFillOpen, setIsGenerativeFillOpen,
     isPreviewingOriginal, setIsPreviewingOriginal,
+    isSettingsOpen, setIsSettingsOpen,
+    isFullscreen, setIsFullscreen,
     // Core State
     image, setImage,
     dimensions, setDimensions,
@@ -182,6 +213,7 @@ export const useEditorState = () => {
     // Layers
     layers, setLayers,
     selectedLayerId, setSelectedLayerId,
+    selectedLayer, // ADDED
     // Tools
     activeTool, setActiveTool,
     brushState, setBrushState,
@@ -194,6 +226,8 @@ export const useEditorState = () => {
     selectionMaskDataUrl, setSelectionMaskDataUrl,
     marqueeStart, setMarqueeStart,
     marqueeCurrent, setMarqueeCurrent,
+    gradientStart, setGradientStart,
+    gradientCurrent, setGradientCurrent,
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
     selectiveSharpenAmount, setSelectiveSharpenAmount,
@@ -202,6 +236,9 @@ export const useEditorState = () => {
     cloneSourcePoint, setCloneSourcePoint,
     // Zoom
     zoom, setZoom,
+    // UI/Layout
+    activeRightTab, setActiveRightTab,
+    activeBottomTab, setActiveBottomTab,
     // Constants
     initialLayerState, initialHistoryItem,
     // External

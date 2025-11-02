@@ -11,6 +11,7 @@ import type {
 import type {
   HslAdjustment,
   CurvesState,
+  GradingState,
 } from './adjustments'; // REVERT
 import type {
   Layer,
@@ -30,6 +31,18 @@ export const initialCurvesState: CurvesState = {
   r: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
   g: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
   b: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
+};
+
+export const initialGradingState: GradingState = {
+  grayscale: 0,
+  sepia: 0,
+  invert: 0,
+  shadowsColor: '#000000',
+  midtonesColor: '#808080',
+  highlightsColor: '#FFFFFF',
+  shadowsLuminance: 0,
+  highlightsLuminance: 0,
+  blending: 50,
 };
 
 export const initialSelectionSettings: SelectionSettings = {
@@ -53,6 +66,57 @@ export const initialSelectionSettings: SelectionSettings = {
   decontaminateColors: false,
   edgeDetection: 50,
 };
+
+export const initialBrushState: BrushState = {
+  size: 20,
+  opacity: 100,
+  hardness: 50,
+  smoothness: 10,
+  shape: 'circle',
+  color: '#000000',
+  flow: 100,
+  angle: 0,
+  roundness: 100,
+  spacing: 25,
+  blendMode: 'normal',
+};
+
+export const initialLayerState: Layer[] = [
+  {
+    id: 'background',
+    name: 'Background',
+    type: 'image',
+    visible: true,
+    opacity: 100,
+    blendMode: 'normal',
+    dataUrl: '',
+    isLocked: true,
+    x: 50, y: 50, width: 100, height: 100, rotation: 0,
+    scaleX: 1, scaleY: 1,
+    isClippingMask: false,
+  } as ImageLayerData,
+];
+
+export const initialHistoryItem: HistoryItem = {
+  name: 'Initial State',
+  state: {} as EditState, // Placeholder, will be filled below
+  layers: initialLayerState,
+};
+
+export const initialGradientToolState: GradientToolState = {
+  type: 'linear',
+  colors: ['#FFFFFF', '#000000'],
+  stops: [0, 1],
+  angle: 90,
+  centerX: 50,
+  centerY: 50,
+  radius: 50,
+  feather: 0,
+  inverted: false,
+  dither: true,
+  transparency: true,
+};
+
 
 export const initialEditState: EditState = {
   adjustments: {
@@ -78,17 +142,7 @@ export const initialEditState: EditState = {
     clarity: 0,
     grain: 0,
   },
-  grading: {
-    grayscale: 0,
-    sepia: 0,
-    invert: 0,
-    shadowsColor: '#000000',
-    midtonesColor: '#808080',
-    highlightsColor: '#FFFFFF',
-    shadowsLuminance: 0,
-    highlightsLuminance: 0,
-    blending: 50,
-  },
+  grading: initialGradingState,
   hslAdjustments: {
     global: { ...initialHslAdjustment },
     red: { ...initialHslAdjustment },
@@ -113,54 +167,12 @@ export const initialEditState: EditState = {
   customHslColor: '#FF00FF',
   selectionSettings: initialSelectionSettings,
   colorMode: 'RGB',
+  
+  // Added for persistence
+  brushState: initialBrushState,
+  history: [initialHistoryItem], // Self-reference placeholder
+  historyBrushSourceIndex: 0,
 };
 
-export const initialBrushState: BrushState = {
-  size: 20,
-  opacity: 100,
-  hardness: 50,
-  smoothness: 10,
-  shape: 'circle',
-  color: '#000000',
-  flow: 100,
-  angle: 0,
-  roundness: 100,
-  spacing: 25,
-  blendMode: 'normal',
-};
-
-export const initialGradientToolState: GradientToolState = {
-  type: 'linear',
-  colors: ['#FFFFFF', '#000000'],
-  stops: [0, 1],
-  angle: 90,
-  centerX: 50,
-  centerY: 50,
-  radius: 50,
-  feather: 0,
-  inverted: false,
-  dither: true,
-  transparency: true,
-};
-
-export const initialLayerState: Layer[] = [
-  {
-    id: 'background',
-    name: 'Background',
-    type: 'image',
-    visible: true,
-    opacity: 100,
-    blendMode: 'normal',
-    dataUrl: '',
-    isLocked: true,
-    x: 50, y: 50, width: 100, height: 100, rotation: 0,
-    scaleX: 1, scaleY: 1,
-    isClippingMask: false,
-  } as ImageLayerData,
-];
-
-export const initialHistoryItem: HistoryItem = {
-  name: 'Initial State',
-  state: initialEditState,
-  layers: initialLayerState,
-};
+// Fix circular dependency placeholder for initialHistoryItem
+initialHistoryItem.state = initialEditState;
