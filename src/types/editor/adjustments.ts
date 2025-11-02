@@ -42,8 +42,8 @@ export type HslColorKey = 'global' | 'red' | 'orange' | 'yellow' | 'green' | 'aq
 
 export interface HslAdjustment {
   hue: number;
-  saturation: 100;
-  luminance: 0;
+  saturation: number;
+  lightness: number;
 }
 
 export interface HslAdjustmentsState {
