@@ -1,9 +1,9 @@
 import React from 'react';
-import type { ReturnType } from '@/hooks/useEditorLogic';
+import type { useEditorLogic } from '@/hooks/useEditorLogic'; // Fix 67
 
 interface MenuBarProps {
-    logic: ReturnType<typeof import('@/hooks/useEditorLogic').useEditorLogic>;
-    setIsNewProjectOpen: (open: boolean) => void;
+    logic: ReturnType<typeof useEditorLogic>;
+    setIsNewProjectOpen: (open: boolean) => void; // Fix 43
     setIsExportOpen: (open: boolean) => void;
     setIsSettingsOpen: (open: boolean) => void;
     setIsImportOpen: (open: boolean) => void;

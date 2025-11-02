@@ -4,7 +4,8 @@ import { initialEditState, initialLayerState, initialCurvesState, initialSelecti
 // ... (rest of imports)
 
 const template1: TemplateProjectData = {
-    // ...
+    layers: initialLayerState, // Fix 79
+    dimensions: { width: 1920, height: 1080 }, // Fix 79
     editState: {
         ...initialEditState,
         adjustments: { ...initialAdjustmentState, brightness: 100, contrast: 110, saturation: 120 },
@@ -16,7 +17,8 @@ const template1: TemplateProjectData = {
 };
 
 const template2: TemplateProjectData = {
-    // ...
+    layers: initialLayerState, // Fix 80
+    dimensions: { width: 1920, height: 1080 }, // Fix 80
     editState: {
         ...initialEditState,
         adjustments: { ...initialAdjustmentState, brightness: 100, contrast: 100, saturation: 100 },
@@ -27,3 +29,14 @@ const template2: TemplateProjectData = {
 };
 
 // ... (rest of file)
+
+// Assuming fetchCommunityTemplates is defined here
+export const fetchCommunityTemplates = async (): Promise<CommunityTemplate[]> => {
+    // Stub implementation
+    return [
+        { id: 't1', name: 'Template 1', description: 'A high contrast template.', previewUrl: '', data: template1 },
+        { id: 't2', name: 'Template 2', description: 'A grayscale template.', previewUrl: '', data: template2 },
+    ];
+};
+
+export { fetchCommunityTemplates }; // Fix 81

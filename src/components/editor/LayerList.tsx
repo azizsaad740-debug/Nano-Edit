@@ -1,94 +1,55 @@
-"use client";
-
-import * as React from "react";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import type { Layer, GroupLayerData } from "@/types/editor";
-import LayerItem from "./LayerItem";
+import React from 'react';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { useDndContext } from '@dnd-kit/core';
+import LayerItem from './LayerItem';
+import type { Layer, GroupLayerData } from '@/types/editor';
+import { isGroupLayer } from '@/types/editor';
 
 interface LayerListProps {
-  layersToRender: Layer[];
-  depth: number;
-  editingId: string | null;
-  tempName: string;
-  setTempName: (name: string) => void;
-  startRename: (layer: Layer) => void;
-  confirmRename: (id: string) => void;
-  cancelRename: () => void;
-  onToggleVisibility: (id: string) => void;
-  selectedLayerIds: string[];
-  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
-  onToggleGroupExpanded: (id: string) => void;
-  onRemoveLayerMask: (id: string) => void;
-  onToggleLayerLock: (id: string) => void;
+  layers: Layer[];
+  selectedLayerId: string | null;
+  onSelectLayer: (id: string) => void;
+  onReorder: (activeId: string, overId: string) => void;
+  toggleLayerVisibility: (id: string) => void;
+  toggleGroupExpanded: (id: string) => void;
 }
 
-// Recursive component to render the layer tree
-const LayerList: React.FC<LayerListProps> = ({
-  layersToRender,
-  depth,
-  editingId,
-  tempName,
-  setTempName,
-  startRename,
-  confirmRename,
-  cancelRename,
-  onToggleVisibility,
-  selectedLayerIds,
-  onSelectLayer,
-  onToggleGroupExpanded,
-  onRemoveLayerMask,
-  onToggleLayerLock,
-}) => {
-  // Render layers in reverse order (bottom layer in array is rendered first/last in list)
+const LayerList: React.FC<LayerListProps> = ({ layers, selectedLayerId, onSelectLayer, onReorder, toggleLayerVisibility, toggleGroupExpanded }) => {
+  const { active } = useDndContext();
+  const activeId = active?.id;
+
   return (
-    <>
-      {layersToRender.slice().reverse().map((layer) => (
+    <div className="flex flex-col">
+      {layers.map((layer) => (
         <React.Fragment key={layer.id}>
           <LayerItem
             layer={layer}
-            isEditing={editingId === layer.id}
-            tempName={tempName}
-            setTempName={setTempName}
-            startRename={startRename}
-            confirmRename={confirmRename}
-            cancelRename={cancelRename}
-            onToggleVisibility={onToggleVisibility}
-            isSelected={selectedLayerIds.includes(layer.id)}
-            onSelect={(e) => onSelectLayer(layer.id, e.ctrlKey || e.metaKey, e.shiftKey)}
-            onToggleGroupExpanded={onToggleGroupExpanded}
-            depth={depth}
-            onRemoveMask={onRemoveLayerMask}
-            onToggleLock={onToggleLayerLock}
+            isSelected={selectedLayerId === layer.id}
+            onSelect={onSelectLayer}
+            toggleVisibility={toggleLayerVisibility}
+            toggleGroupExpanded={toggleGroupExpanded}
+            isDragging={activeId === layer.id}
           />
-          {layer.type === 'group' && (layer as GroupLayerData).expanded && (layer as GroupLayerData).children && (
-            <SortableContext
+          {layer.type === 'group' && (layer as GroupLayerData).isExpanded && (layer as GroupLayerData).children && ( // Fix 176-180
+            <SortableContext // Fix 181
               items={(layer as GroupLayerData).children.map(c => c.id)}
               strategy={verticalListSortingStrategy}
             >
-              <LayerList
-                layersToRender={(layer as GroupLayerData).children}
-                depth={depth + 1}
-                editingId={editingId}
-                tempName={tempName}
-                setTempName={setTempName}
-                startRename={startRename}
-                confirmRename={confirmRename}
-                cancelRename={cancelRename}
-                onToggleVisibility={onToggleVisibility}
-                selectedLayerIds={selectedLayerIds}
-                onSelectLayer={onSelectLayer}
-                onToggleGroupExpanded={onToggleGroupExpanded}
-                onRemoveLayerMask={onRemoveLayerMask}
-                onToggleLayerLock={onToggleLayerLock}
-              />
+              <div className="ml-4 border-l border-muted">
+                <LayerList
+                  layers={(layer as GroupLayerData).children}
+                  selectedLayerId={selectedLayerId}
+                  onSelectLayer={onSelectLayer}
+                  onReorder={onReorder}
+                  toggleLayerVisibility={toggleLayerVisibility}
+                  toggleGroupExpanded={toggleGroupExpanded}
+                />
+              </div>
             </SortableContext>
           )}
         </React.Fragment>
       ))}
-    </>
+    </div>
   );
 };
 

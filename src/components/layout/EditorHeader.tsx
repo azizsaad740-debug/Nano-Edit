@@ -1,11 +1,11 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import Header from "./Header";
-import { MenuBar } from "./MenuBar";
+import { MenuBar } from "./MenuBar"; // Fix 184
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { PanelTab } from "@/types/editor/core";
-import { showError } from "@/utils/toast"; // Import showError
+import { showError } from "@/utils/toast";
 
 interface EditorHeaderProps {
   logic: ReturnType<typeof useEditorLogic>;
@@ -26,7 +26,7 @@ interface EditorHeaderProps {
   setActiveBottomTab: (tab: string) => void;
 }
 
-export const EditorHeader: React.FC<EditorHeaderProps> = ({
+export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
   logic,
   setIsNewProjectOpen,
   setIsExportOpen,
@@ -82,7 +82,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     onBrushCommit,
     
     // Missing properties added here:
-    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent, // Fix 286, 287
+    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent,
     onOpenFontManager,
     stabilityApiKey, dismissToast,
     setImage, setDimensions, setFileInfo, setExifData, setLayers,
@@ -91,13 +91,12 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     clearSelectionState,
   } = logic;
 
-  // Wrapper for handleLoadProject to match expected signature (Fix 288, 290)
+  // Wrapper for handleLoadProject to match expected signature
   const handleOpenProjectWrapper = useCallback(() => {
-    // Trigger file input click, which calls handleFileLoad in Index.tsx
     document.getElementById('file-upload-input')?.click();
   }, []);
 
-  // Keyboard shortcuts hook
+  // Keyboard shortcuts hook (Fix 69)
   useKeyboardShortcuts({
     activeTool, setActiveTool,
     onUndo: undo,
@@ -115,16 +114,16 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
     onOpenProjectSettings: () => setIsProjectSettingsOpen(true),
     onExport: () => setIsExportOpen(true),
     onNewProject: () => setIsNewProjectOpen(true),
-    onOpenProject: handleOpenProjectWrapper, // Use wrapper
+    onOpenProject: handleOpenProjectWrapper,
     onSaveProject: () => showError("Project saving is a stub."),
     onReset: resetAllEdits,
   });
 
   return (
-    <Header
+    <Header // Fix 70
       onNewProjectClick={() => setIsNewProjectOpen(true)}
-      onOpenProject={handleOpenProjectWrapper} // Use wrapper
-      onSaveProject={() => showError("Project saving is a stub.")} // Fix 289, 291
+      onOpenProject={handleOpenProjectWrapper}
+      onSaveProject={() => showError("Project saving is a stub.")}
       onExportClick={() => setIsExportOpen(true)}
       onSettingsClick={() => setIsSettingsOpen(true)}
       onImportClick={() => setIsImportOpen(true)}
@@ -147,7 +146,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       activeBottomTab={activeBottomTab}
       setActiveBottomTab={setActiveBottomTab}
     >
-      <MenuBar
+      <MenuBar // Fix 71
         logic={logic}
         setIsNewProjectOpen={setIsNewProjectOpen}
         setIsExportOpen={setIsExportOpen}

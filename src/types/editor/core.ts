@@ -5,9 +5,10 @@ import type { Icon as LucideIcon } from "lucide-react";
 // --- Core Types ---
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
-export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom';
-export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line';
-export type HslColorKey = 'red' | 'yellow' | 'green' | 'cyan' | 'blue' | 'magenta' | 'master';
+// Expanded ActiveTool and ShapeType
+export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic'; // Added lassoMagnetic
+export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'circle' | 'arrow' | 'custom';
+export type HslColorKey = 'red' | 'yellow' | 'green' | 'cyan' | 'blue' | 'magenta' | 'master'; // Standard HSL keys
 
 export interface Point {
   x: number;
@@ -29,6 +30,7 @@ export interface BaseLayer {
   blendMode: BlendMode;
   isLocked: boolean;
   maskDataUrl: string | null;
+  isClippingMask?: boolean;
   // Transform properties (relative to canvas size 0-100)
   x: number;
   y: number;
@@ -56,12 +58,16 @@ export interface TextLayerData extends BaseLayer {
   fontSize: number;
   color: string;
   fontFamily: string;
-  fontWeight: string;
+  fontWeight: string | number; // Allow number for font weight
   fontStyle: string;
-  textAlign: 'left' | 'center' | 'right';
+  textAlign: 'left' | 'center' | 'right' | 'justify';
   letterSpacing: number;
   lineHeight: number;
   padding: number;
+  // Fixed textShadow properties (Fixes 23, 24, 25, 26)
+  textShadow?: { color: string; blur: number; offsetX: number; offsetY: number } | null;
+  stroke?: { color: string; width: number } | null;
+  backgroundColor?: string | null;
 }
 
 export interface VectorShapeLayerData extends BaseLayer {
@@ -72,13 +78,18 @@ export interface VectorShapeLayerData extends BaseLayer {
   strokeWidth: number;
   borderRadius: number;
   points?: Point[]; // For polygon/star
+  starPoints?: number;
+  lineThickness?: number;
+  strokeDasharray?: string;
+  strokeLinecap?: 'butt' | 'round' | 'square';
+  strokeLinejoin?: 'miter' | 'round' | 'bevel';
 }
 
 export interface GradientLayerData extends BaseLayer {
   type: 'gradient';
   gradientType: 'linear' | 'radial';
   gradientColors: string[];
-  gradientStops: number[];
+  stops: number[];
   gradientAngle: number;
   gradientFeather: number;
   gradientInverted: boolean;
@@ -103,6 +114,8 @@ export interface SmartObjectLayerData extends BaseLayer {
   smartObjectData: {
     sourceLayerId: string;
     layers: Layer[]; // Layers contained within the smart object
+    width?: number;
+    height?: number;
   };
 }
 
@@ -113,18 +126,6 @@ export interface GroupLayerData extends BaseLayer {
 }
 
 export type Layer = ImageLayerData | DrawingLayerData | TextLayerData | VectorShapeLayerData | GradientLayerData | AdjustmentLayerData | SmartObjectLayerData | GroupLayerData;
-
-// --- Type Guards ---
-
-export const isImageLayer = (layer: Layer): layer is ImageLayerData => layer.type === 'image';
-export const isDrawingLayer = (layer: Layer): layer is DrawingLayerData => layer.type === 'drawing';
-export const isImageOrDrawingLayer = (layer: Layer): layer is ImageLayerData | DrawingLayerData => isImageLayer(layer) || isDrawingLayer(layer);
-export const isTextLayer = (layer: Layer): layer is TextLayerData => layer.type === 'text';
-export const isVectorShapeLayer = (layer: Layer): layer is VectorShapeLayerData => layer.type === 'vector-shape';
-export const isGradientLayer = (layer: Layer): layer is GradientLayerData => layer.type === 'gradient';
-export const isAdjustmentLayer = (layer: Layer): layer is AdjustmentLayerData => layer.type === 'adjustment';
-export const isSmartObjectLayer = (layer: Layer): layer is SmartObjectLayerData => layer.type === 'smart-object';
-export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.type === 'group';
 
 // --- State Interfaces ---
 
@@ -155,6 +156,7 @@ export interface BrushState {
   mix: number;
   load: number;
   historySource: 'current' | 'snapshot';
+  smoothness?: number;
 }
 
 export interface GradientToolState {
@@ -167,6 +169,8 @@ export interface GradientToolState {
   centerX: number;
   centerY: number;
   radius: number;
+  dither?: boolean;
+  transparency?: boolean;
 }
 
 export interface AdjustmentState {
@@ -183,6 +187,8 @@ export interface AdjustmentState {
   blacks: number;
   clarity: number;
   dehaze: number;
+  gamma?: number; // Fix 47 dependency
+  grain?: number; // Fix 47 dependency
 }
 
 export interface GradingState {
@@ -194,12 +200,18 @@ export interface GradingState {
   grayscale: number;
   sepia: number;
   invert: number;
+  shadowsColor?: string; // Fix 49 dependency
+  midtonesColor?: string; // Fix 49 dependency
+  highlightsColor?: string; // Fix 49 dependency
+  shadowsLuminance?: number; // Fix 49 dependency
+  highlightsLuminance?: number; // Fix 49 dependency
 }
 
 export interface HslAdjustment {
   hue: number;
   saturation: number;
   lightness: number;
+  luminance?: number;
 }
 
 export type HslAdjustmentsState = Record<HslColorKey, HslAdjustment>;
@@ -212,13 +224,15 @@ export interface CurvesState {
 }
 
 export interface FrameState {
-  type: 'none' | 'border' | 'vignette';
+  type: 'none' | 'border' | 'vignette' | 'solid';
   color: string;
   size: number;
   opacity: number;
   roundness: number;
   vignetteAmount: number;
   vignetteRoundness: number;
+  width?: number;
+  options?: any;
 }
 
 export interface SelectionSettings {
@@ -227,6 +241,20 @@ export interface SelectionSettings {
   feather: number;
   antiAlias: boolean;
   contiguous: boolean;
+  autoSelectLayer?: boolean;
+  showTransformControls?: boolean;
+  snapToPixels?: boolean;
+  fixedRatio?: boolean;
+  fixedWidth?: number;
+  fixedHeight?: number;
+  edgeDetection?: number;
+  sampleAllLayers?: boolean;
+  refineFeather?: number;
+  refineSmooth?: number;
+  refineContrast?: number;
+  refineShiftEdge?: number;
+  decontaminateColors?: boolean;
+  autoEnhanceEdges?: boolean; // Fix 52, 54 dependency
 }
 
 export interface EditState {
@@ -251,7 +279,7 @@ export interface EditState {
     unit: 'px' | '%';
     aspect: number | null;
   };
-  transform: {
+  transform: { // Fix 15, 33: Renamed from 'transforms'
     scaleX: number;
     scaleY: number;
     skewX: number;
@@ -262,7 +290,7 @@ export interface EditState {
   rotation: number;
   aspect: number | null;
   selectedFilter: string;
-  colorMode: 'rgb' | 'cmyk' | 'grayscale';
+  colorMode: 'rgb' | 'cmyk' | 'grayscale' | 'Grayscale' | 'CMYK';
   selectiveBlurAmount: number;
   selectiveSharpenAmount: number;
   customHslColor: string;
@@ -272,11 +300,15 @@ export interface EditState {
     green: boolean;
     blue: boolean;
     alpha: boolean;
+    r?: boolean;
+    g?: boolean;
+    b?: boolean;
   };
-  // History state is managed externally but included here for type consistency
   history: HistoryItem[];
   historyBrushSourceIndex: number;
   brushState: BrushState;
+  selectiveBlurMask?: string | null;
+  selectiveSharpenMask?: string | null;
 }
 
 export interface HistoryItem {
@@ -295,7 +327,7 @@ export interface NewProjectSettings {
 export interface PanelTab {
   id: string;
   name: string;
-  icon: LucideIcon;
+  icon: typeof LucideIcon;
   location: 'right' | 'bottom' | 'hidden';
   visible: boolean;
   order: number;

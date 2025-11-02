@@ -1,34 +1,43 @@
-import { useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { EditState, Layer } from '@/types/editor';
-import type { Crop } from 'react-image-crop';
+
+interface Crop {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export const useCrop = (
   currentEditState: EditState,
   updateCurrentState: (updates: Partial<EditState>) => void,
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
-  layers: Layer[],
+  layers: Layer[]
 ) => {
-  const crop = currentEditState.crop;
-  const aspect = crop ? (crop.width / crop.height) : undefined;
+  const crop = useMemo(() => currentEditState.crop, [currentEditState.crop]);
+  const aspect = useMemo(() => currentEditState.aspect, [currentEditState.aspect]);
 
   const onCropChange = useCallback((newCrop: Crop) => {
-    updateCurrentState({ crop: { ...newCrop, unit: '%' } });
-  }, [updateCurrentState]);
+    // Ensure aspect is included
+    updateCurrentState({ crop: { ...newCrop, unit: '%', aspect: aspect } }); // Fix 11
+  }, [updateCurrentState, aspect]);
 
   const onCropComplete = useCallback((newCrop: Crop) => {
-    updateCurrentState({ crop: { ...newCrop, unit: '%' } });
+    // Ensure aspect is included
+    updateCurrentState({ crop: { ...newCrop, unit: '%', aspect: aspect } }); // Fix 12
     recordHistory("Crop Applied", currentEditState, layers);
-  }, [currentEditState, layers, recordHistory, updateCurrentState]);
+  }, [updateCurrentState, currentEditState, layers, recordHistory, aspect]);
 
-  const onAspectChange = useCallback((newAspect: number | undefined) => {
-    // In a real app, this would trigger a new crop selection box with the aspect ratio locked.
-    // Here, we just store the aspect ratio preference.
-    console.log("Aspect ratio changed (stub):", newAspect);
-  }, []);
+  const onAspectChange = useCallback((newAspect: number | null) => {
+    updateCurrentState({ aspect: newAspect });
+  }, [updateCurrentState]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
     if (state.crop) {
       updateCurrentState({ crop: state.crop });
+    }
+    if (state.aspect !== undefined) {
+      updateCurrentState({ aspect: state.aspect });
     }
   }, [updateCurrentState]);
 

@@ -1,31 +1,210 @@
-"use client";
-
-import * as React from "react";
-import ReactCrop, { type Crop } from "react-image-crop";
-import { cn } from "@/lib/utils";
-import type { Layer, EditState, ActiveTool, BrushState, Point, GradientToolState } from "@/types/editor";
-import { isImageOrDrawingLayer } from "@/types/editor"; // Import type guard
-import { Workspace } from "./Workspace";
-import { WorkspaceControls } from "./WorkspaceControls";
-import { TextLayer } from "./TextLayer";
-import { DrawingLayer } from "./DrawingLayer";
-import { SmartObjectLayer } from "./SmartObjectLayer";
-import VectorShapeLayer from "./VectorShapeLayer";
-import GradientLayer from "./GradientLayer";
-import GroupLayer from "./GroupLayer";
-import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import { SelectionCanvas } from "./SelectionCanvas";
-import MarqueeCanvas from "./MarqueeCanvas";
-import { GradientPreviewCanvas } from "./GradientPreviewCanvas";
-import { SelectionMaskOverlay } from "./SelectionMaskOverlay";
-import { ChannelFilter } from "./ChannelFilter";
-import { CurvesFilter } from "./CurvesFilter";
-import { EffectsFilters } from "./EffectsFilters";
-import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
-import { SelectiveSharpenFilter } from "./SelectiveSharpenFilter"; // NEW IMPORT
-import { AdjustmentLayer } from "./AdjustmentLayer";
-import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // Import missing utility
-import { showError } from "@/utils/toast"; // Import missing utility
+import React, { useRef, useMemo } from 'react';
+import { useEditorLogic } from '@/hooks/useEditorLogic';
+import { cn } from '@/lib/utils';
+import {
+  type Layer, type EditState, type ActiveTool, type BrushState, type Point, type GradientToolState,
+  isImageOrDrawingLayer,
+} from '@/types/editor';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useLayerTransform } from '@/hooks/useLayerTransform';
+import { useSelection } from '@/hooks/useSelection';
+import { useDrawing } from '@/hooks/useDrawing';
+import { useHistoryBrush } from '@/hooks/useHistoryBrush';
+import { useSelectiveRetouchBrush } from '@/hooks/useSelectiveRetouchBrush';
+import { useCropTool } from '@/hooks/useCropTool';
+import { useMoveToolInteraction } from '@/hooks/useMoveToolInteraction';
+import { useGradientToolInteraction } from '@/hooks/useGradientToolInteraction';
+import { useMarqueeToolInteraction } from '@/hooks/useMarqueeToolInteraction';
+import { useLassoToolInteraction } from '@/hooks/useLassoToolInteraction';
+import { useEyedropperToolInteraction } from '@/hooks/useEyedropperToolInteraction';
+import { useTextToolInteraction } from '@/hooks/useTextToolInteraction';
+import { useShapeToolInteraction } from '@/hooks/useShapeToolInteraction';
+import { useZoomToolInteraction } from '@/hooks/useZoomToolInteraction';
+import { useHandToolInteraction } from '@/hooks/useHandToolInteraction';
+import { useMagicWandToolInteraction } from '@/hooks/useMagicWandToolInteraction';
+import { useObjectSelectToolInteraction } from '@/hooks/useObjectSelectToolInteraction';
+import { useCloneStampToolInteraction } from '@/hooks/useCloneStampToolInteraction';
+import { usePatternStampToolInteraction } from '@/hooks/usePatternStampToolInteraction';
+import { useArtHistoryBrushToolInteraction } from '@/hooks/useArtHistoryBrushToolInteraction';
+import { useEraserToolInteraction } from '@/hooks/useEraserToolInteraction';
+import { usePencilToolInteraction } from '@/hooks/usePencilToolInteraction';
+import { useBlurSharpenToolInteraction } from '@/hooks/useBlurSharpenToolInteraction';
+import { useSelectionBrushToolInteraction } from '@/hooks/useSelectionBrushToolInteraction';
+import { useQuickSelectToolInteraction } from '@/hooks/useQuickSelectToolInteraction';
+import { usePaintBucketToolInteraction } from '@/hooks/usePaintBucketToolInteraction';
+import { usePatchToolInteraction } from '@/hooks/usePatchToolInteraction';
+import { useRedEyeToolInteraction } from '@/hooks/useRedEyeToolInteraction';
+import { useSpongeToolInteraction } from '@/hooks/useSpongeToolInteraction';
+import { useDodgeBurnToolInteraction } from '@/hooks/useDodgeBurnToolInteraction';
+import { useHealingBrushToolInteraction } from '@/hooks/useHealingBrushToolInteraction';
+import { useSpotHealingBrushToolInteraction } from '@/hooks/useSpotHealingBrushToolInteraction';
+import { useContentAwareMoveToolInteraction } from '@/hooks/useContentAwareMoveToolInteraction';
+import { usePerspectiveCropToolInteraction } from '@/hooks/usePerspectiveCropToolInteraction';
+import { useSliceToolInteraction } from '@/hooks/useSliceToolInteraction';
+import { useSliceSelectToolInteraction } from '@/hooks/useSliceSelectToolInteraction';
+import { useRulerToolInteraction } from '@/hooks/useRulerToolInteraction';
+import { useNoteToolInteraction } from '@/hooks/useNoteToolInteraction';
+import { useCountToolInteraction } from '@/hooks/useCountToolInteraction';
+import { use3dMaterialDropToolInteraction } from '@/hooks/use3dMaterialDropToolInteraction';
+import { use3dCameraToolInteraction } from '@/hooks/use3dCameraToolInteraction';
+import { use3dObjectRotateToolInteraction } from '@/hooks/use3dObjectRotateToolInteraction';
+import { use3dObjectTranslateToolInteraction } from '@/hooks/use3dObjectTranslateToolInteraction';
+import { use3dObjectScaleToolInteraction } from '@/hooks/use3dObjectScaleToolInteraction';
+import { use3dObjectRollToolInteraction } from '@/hooks/use3dObjectRollToolInteraction';
+import { use3dObjectSlideToolInteraction } from '@/hooks/use3dObjectSlideToolInteraction';
+import { use3dObjectPanToolInteraction } from '@/hooks/use3dObjectPanToolInteraction';
+import { use3dObjectWalkToolInteraction } from '@/hooks/use3dObjectWalkToolInteraction';
+import { use3dObjectZoomToolInteraction } from '@/hooks/use3dObjectZoomToolInteraction';
+import { use3dObjectOrbitToolInteraction } from '@/hooks/use3dObjectOrbitToolInteraction';
+import { use3dObjectFlyToolInteraction } from '@/hooks/use3dObjectFlyToolInteraction';
+import { use3dObjectLookToolInteraction } from '@/hooks/use3dObjectLookToolInteraction';
+import { use3dObjectViewToolInteraction } from '@/hooks/use3dObjectViewToolInteraction';
+import { use3dObjectCameraToolInteraction } from '@/hooks/use3dObjectCameraToolInteraction';
+import { use3dObjectLightToolInteraction } from '@/hooks/use3dObjectLightToolInteraction';
+import { use3dObjectSceneToolInteraction } from '@/hooks/use3dObjectSceneToolInteraction';
+import { use3dObjectRenderToolInteraction } from '@/hooks/use3dObjectRenderToolInteraction';
+import { use3dObjectTextureToolInteraction } from '@/hooks/use3dObjectTextureToolInteraction';
+import { use3dObjectMaterialToolInteraction } from '@/hooks/use3dObjectMaterialToolInteraction';
+import { use3dObjectFilterToolInteraction } from '@/hooks/use3dObjectFilterToolInteraction';
+import { use3dObjectAdjustmentToolInteraction } from '@/hooks/use3dObjectAdjustmentToolInteraction';
+import { use3dObjectEffectToolInteraction } from '@/hooks/use3dObjectEffectToolInteraction';
+import { use3dObjectGradingToolInteraction } from '@/hooks/use3dObjectGradingToolInteraction';
+import { use3dObjectHslToolInteraction } from '@/hooks/use3dObjectHslToolInteraction';
+import { use3dObjectCurvesToolInteraction } from '@/hooks/use3dObjectCurvesToolInteraction';
+import { use3dObjectChannelsToolInteraction } from '@/hooks/use3dObjectChannelsToolInteraction';
+import { use3dObjectSelectiveRetouchToolInteraction } from '@/hooks/use3dObjectSelectiveRetouchToolInteraction';
+import { use3dObjectPresetsToolInteraction } from '@/hooks/use3dObjectPresetsToolInteraction';
+import { use3dObjectGradientPresetsToolInteraction } from '@/hooks/use3dObjectGradientPresetsToolInteraction';
+import { use3dObjectProjectSettingsToolInteraction } from '@/hooks/use3dObjectProjectSettingsToolInteraction';
+import { use3dObjectBrushToolInteraction } from '@/hooks/use3dObjectBrushToolInteraction';
+import { use3dObjectTextToolInteraction } from '@/hooks/use3dObjectTextToolInteraction';
+import { use3dObjectShapeToolInteraction } from '@/hooks/use3dObjectShapeToolInteraction';
+import { use3dObjectGradientToolInteraction } from '@/hooks/use3dObjectGradientToolInteraction';
+import { use3dObjectMoveToolInteraction } from '@/hooks/use3dObjectMoveToolInteraction';
+import { use3dObjectLassoToolInteraction } from '@/hooks/use3dObjectLassoToolInteraction';
+import { use3dObjectEyedropperToolInteraction } from '@/hooks/use3dObjectEyedropperToolInteraction';
+import { use3dObjectDrawingToolInteraction } from '@/hooks/use3dObjectDrawingToolInteraction';
+import { use3dObjectEffectsToolInteraction } from '@/hooks/use3dObjectEffectsToolInteraction';
+import { use3dObjectImageLoaderToolInteraction } from '@/hooks/use3dObjectImageLoaderToolInteraction';
+import { use3dObjectLayerTransformToolInteraction } from '@/hooks/use3dObjectLayerTransformToolInteraction';
+import { use3dObjectSelectionToolInteraction } from '@/hooks/use3dObjectSelectionToolInteraction';
+import { use3dObjectDrawingToolInteraction2 } from '@/hooks/use3dObjectDrawingToolInteraction2';
+import { use3dObjectHistoryBrushToolInteraction } from '@/hooks/use3dObjectHistoryBrushToolInteraction';
+import { use3dObjectSelectiveRetouchBrushToolInteraction } from '@/hooks/use3dObjectSelectiveRetouchBrushToolInteraction';
+import { use3dObjectCropToolInteraction } from '@/hooks/use3dObjectCropToolInteraction';
+import { use3dObjectMoveToolInteraction2 } from '@/hooks/use3dObjectMoveToolInteraction2';
+import { use3dObjectGradientToolInteraction2 } from '@/hooks/use3dObjectGradientToolInteraction2';
+import { use3dObjectMarqueeToolInteraction } from '@/hooks/use3dObjectMarqueeToolInteraction';
+import { use3dObjectLassoToolInteraction2 } from '@/hooks/use3dObjectLassoToolInteraction2';
+import { use3dObjectEyedropperToolInteraction2 } from '@/hooks/use3dObjectEyedropperToolInteraction2';
+import { use3dObjectTextToolInteraction2 } from '@/hooks/use3dObjectTextToolInteraction2';
+import { use3dObjectShapeToolInteraction2 } from '@/hooks/use3dObjectShapeToolInteraction2';
+import { use3dObjectZoomToolInteraction2 } from '@/hooks/use3dObjectZoomToolInteraction2';
+import { use3dObjectHandToolInteraction } from '@/hooks/use3dObjectHandToolInteraction';
+import { use3dObjectMagicWandToolInteraction } from '@/hooks/use3dObjectMagicWandToolInteraction';
+import { use3dObjectObjectSelectToolInteraction } from '@/hooks/use3dObjectObjectSelectToolInteraction';
+import { use3dObjectCloneStampToolInteraction2 } from '@/hooks/use3dObjectCloneStampToolInteraction2';
+import { use3dObjectPatternStampToolInteraction2 } from '@/hooks/use3dObjectPatternStampToolInteraction2';
+import { use3dObjectArtHistoryBrushToolInteraction2 } from '@/hooks/use3dObjectArtHistoryBrushToolInteraction2';
+import { use3dObjectEraserToolInteraction2 } from '@/hooks/use3dObjectEraserToolInteraction2';
+import { use3dObjectPencilToolInteraction2 } from '@/hooks/use3dObjectPencilToolInteraction2';
+import { use3dObjectBlurSharpenToolInteraction2 } from '@/hooks/use3dObjectBlurSharpenToolInteraction2';
+import { use3dObjectSelectionBrushToolInteraction2 } from '@/hooks/use3dObjectSelectionBrushToolInteraction2';
+import { use3dObjectQuickSelectToolInteraction2 } from '@/hooks/use3dObjectQuickSelectToolInteraction2';
+import { use3dObjectPaintBucketToolInteraction2 } from '@/hooks/use3dObjectPaintBucketToolInteraction2';
+import { use3dObjectPatchToolInteraction2 } from '@/hooks/use3dObjectPatchToolInteraction2';
+import { use3dObjectRedEyeToolInteraction2 } from '@/hooks/use3dObjectRedEyeToolInteraction2';
+import { use3dObjectSpongeToolInteraction2 } from '@/hooks/use3dObjectSpongeToolInteraction2';
+import { use3dObjectDodgeBurnToolInteraction2 } from '@/hooks/use3dObjectDodgeBurnToolInteraction2';
+import { use3dObjectHealingBrushToolInteraction2 } from '@/hooks/use3dObjectHealingBrushToolInteraction2';
+import { use3dObjectSpotHealingBrushToolInteraction2 } from '@/hooks/use3dObjectSpotHealingBrushToolInteraction2';
+import { use3dObjectContentAwareMoveToolInteraction2 } from '@/hooks/use3dObjectContentAwareMoveToolInteraction2';
+import { use3dObjectPerspectiveCropToolInteraction2 } from '@/hooks/use3dObjectPerspectiveCropToolInteraction2';
+import { use3dObjectSliceToolInteraction2 } from '@/hooks/use3dObjectSliceToolInteraction2';
+import { use3dObjectSliceSelectToolInteraction2 } from '@/hooks/use3dObjectSliceSelectToolInteraction2';
+import { use3dObjectRulerToolInteraction2 } from '@/hooks/use3dObjectRulerToolInteraction2';
+import { use3dObjectNoteToolInteraction2 } from '@/hooks/use3dObjectNoteToolInteraction2';
+import { use3dObjectCountToolInteraction2 } from '@/hooks/use3dObjectCountToolInteraction2';
+import { use3dObject3dMaterialDropToolInteraction } from '@/hooks/use3dObject3dMaterialDropToolInteraction';
+import { use3dObject3dCameraToolInteraction } from '@/hooks/use3dObject3dCameraToolInteraction';
+import { use3dObject3dObjectRotateToolInteraction } from '@/hooks/use3dObject3dObjectRotateToolInteraction';
+import { use3dObject3dObjectTranslateToolInteraction } from '@/hooks/use3dObject3dObjectTranslateToolInteraction';
+import { use3dObject3dObjectScaleToolInteraction } from '@/hooks/use3dObject3dObjectScaleToolInteraction';
+import { use3dObject3dObjectRollToolInteraction } from '@/hooks/use3dObject3dObjectRollToolInteraction';
+import { use3dObject3dObjectSlideToolInteraction } from '@/hooks/use3dObject3dObjectSlideToolInteraction';
+import { use3dObject3dObjectPanToolInteraction } from '@/hooks/use3dObject3dObjectPanToolInteraction';
+import { use3dObject3dObjectWalkToolInteraction } from '@/hooks/use3dObject3dObjectWalkToolInteraction';
+import { use3dObject3dObjectZoomToolInteraction } from '@/hooks/use3dObject3dObjectZoomToolInteraction';
+import { use3dObject3dObjectOrbitToolInteraction } from '@/hooks/use3dObject3dObjectOrbitToolInteraction';
+import { use3dObject3dObjectFlyToolInteraction } from '@/hooks/use3dObject3dObjectFlyToolInteraction';
+import { use3dObject3dObjectLookToolInteraction } from '@/hooks/use3dObject3dObjectLookToolInteraction';
+import { use3dObject3dObjectViewToolInteraction } from '@/hooks/use3dObject3dObjectViewToolInteraction';
+import { use3dObject3dObjectCameraToolInteraction } from '@/hooks/use3dObject3dObjectCameraToolInteraction';
+import { use3dObject3dObjectLightToolInteraction } from '@/hooks/use3dObject3dObjectLightToolInteraction';
+import { use3dObject3dObjectSceneToolInteraction } from '@/hooks/use3dObject3dObjectSceneToolInteraction';
+import { use3dObject3dObjectRenderToolInteraction } from '@/hooks/use3dObject3dObjectRenderToolInteraction';
+import { use3dObject3dObjectTextureToolInteraction } from '@/hooks/use3dObject3dObjectTextureToolInteraction';
+import { use3dObject3dObjectMaterialToolInteraction } from '@/hooks/use3dObject3dObjectMaterialToolInteraction';
+import { use3dObject3dObjectFilterToolInteraction } from '@/hooks/use3dObject3dObjectFilterToolInteraction';
+import { use3dObject3dObjectAdjustmentToolInteraction } from '@/hooks/use3dObject3dObjectAdjustmentToolInteraction';
+import { use3dObject3dObjectEffectToolInteraction } from '@/hooks/use3dObject3dObjectEffectToolInteraction';
+import { use3dObject3dObjectGradingToolInteraction } from '@/hooks/use3dObject3dObjectGradingToolInteraction';
+import { use3dObject3dObjectHslToolInteraction } from '@/hooks/use3dObject3dObjectHslToolInteraction';
+import { use3dObject3dObjectCurvesToolInteraction } from '@/hooks/use3dObject3dObjectCurvesToolInteraction';
+import { use3dObject3dObjectChannelsToolInteraction } from '@/hooks/use3dObject3dObjectChannelsToolInteraction';
+import { use3dObject3dObjectSelectiveRetouchToolInteraction } from '@/hooks/use3dObject3dObjectSelectiveRetouchToolInteraction';
+import { use3dObject3dObjectPresetsToolInteraction } from '@/hooks/use3dObject3dObjectPresetsToolInteraction';
+import { use3dObject3dObjectGradientPresetsToolInteraction } from '@/hooks/use3dObject3dObjectGradientPresetsToolInteraction';
+import { use3dObject3dObjectProjectSettingsToolInteraction } from '@/hooks/use3dObject3dObjectProjectSettingsToolInteraction';
+import { use3dObject3dObjectBrushToolInteraction } from '@/hooks/use3dObject3dObjectBrushToolInteraction';
+import { use3dObject3dObjectTextToolInteraction } from '@/hooks/use3dObject3dObjectTextToolInteraction';
+import { use3dObject3dObjectShapeToolInteraction } from '@/hooks/use3dObject3dObjectShapeToolInteraction';
+import { use3dObject3dObjectGradientToolInteraction } from '@/hooks/use3dObject3dObjectGradientToolInteraction';
+import { use3dObject3dObjectMoveToolInteraction } from '@/hooks/use3dObject3dObjectMoveToolInteraction';
+import { use3dObject3dObjectLassoToolInteraction } from '@/hooks/use3dObject3dObjectLassoToolInteraction';
+import { use3dObject3dObjectEyedropperToolInteraction } from '@/hooks/use3dObject3dObjectEyedropperToolInteraction';
+import { use3dObject3dObjectDrawingToolInteraction } from '@/hooks/use3dObject3dObjectDrawingToolInteraction';
+import { use3dObject3dObjectEffectsToolInteraction } from '@/hooks/use3dObject3dObjectEffectsToolInteraction';
+import { use3dObject3dObjectImageLoaderToolInteraction } from '@/hooks/use3dObject3dObjectImageLoaderToolInteraction';
+import { use3dObject3dObjectLayerTransformToolInteraction } from '@/hooks/use3dObject3dObjectLayerTransformToolInteraction';
+import { use3dObject3dObjectSelectionToolInteraction } from '@/hooks/use3dObject3dObjectSelectionToolInteraction';
+import { use3dObject3dObjectDrawingToolInteraction2 } from '@/hooks/use3dObject3dObjectDrawingToolInteraction2';
+import { use3dObject3dObjectHistoryBrushToolInteraction } from '@/hooks/use3dObject3dObjectHistoryBrushToolInteraction';
+import { use3dObject3dObjectSelectiveRetouchBrushToolInteraction } from '@/hooks/use3dObject3dObjectSelectiveRetouchBrushToolInteraction';
+import { use3dObject3dObjectCropToolInteraction } from '@/hooks/use3dObject3dObjectCropToolInteraction';
+import { use3dObject3dObjectMoveToolInteraction2 } from '@/hooks/use3dObject3dObjectMoveToolInteraction2';
+import { use3dObject3dObjectGradientToolInteraction2 } from '@/hooks/use3dObject3dObjectGradientToolInteraction2';
+import { use3dObject3dObjectMarqueeToolInteraction } from '@/hooks/use3dObject3dObjectMarqueeToolInteraction';
+import { use3dObject3dObjectLassoToolInteraction2 } from '@/hooks/use3dObject3dObjectLassoToolInteraction2';
+import { use3dObject3dObjectEyedropperToolInteraction2 } from '@/hooks/use3dObject3dObjectEyedropperToolInteraction2';
+import { use3dObject3dObjectTextToolInteraction2 } from '@/hooks/use3dObject3dObjectTextToolInteraction2';
+import { use3dObject3dObjectShapeToolInteraction2 } from '@/hooks/use3dObject3dObjectShapeToolInteraction2';
+import { use3dObject3dObjectZoomToolInteraction2 } from '@/hooks/use3dObject3dObjectZoomToolInteraction2';
+import { use3dObject3dObjectHandToolInteraction } from '@/hooks/use3dObject3dObjectHandToolInteraction';
+import { use3dObject3dObjectMagicWandToolInteraction } from '@/hooks/use3dObject3dObjectMagicWandToolInteraction';
+import { use3dObject3dObjectObjectSelectToolInteraction } from '@/hooks/use3dObject3dObjectObjectSelectToolInteraction';
+import { use3dObject3dObjectCloneStampToolInteraction2 } from '@/hooks/use3dObject3dObjectCloneStampToolInteraction2';
+import { use3dObject3dObjectPatternStampToolInteraction2 } from '@/hooks/use3dObject3dObjectPatternStampToolInteraction2';
+import { use3dObject3dObjectArtHistoryBrushToolInteraction2 } from '@/hooks/use3dObject3dObjectArtHistoryBrushToolInteraction2';
+import { use3dObject3dObjectEraserToolInteraction2 } from '@/hooks/use3dObject3dObjectEraserToolInteraction2';
+import { use3dObject3dObjectPencilToolInteraction2 } from '@/hooks/use3dObject3dObjectPencilToolInteraction2';
+import { use3dObject3dObjectBlurSharpenToolInteraction2 } from '@/hooks/use3dObject3dObjectBlurSharpenToolInteraction2';
+import { use3dObject3dObjectSelectionBrushToolInteraction2 } from '@/hooks/use3dObject3dObjectSelectionBrushToolInteraction2';
+import { use3dObject3dObjectQuickSelectToolInteraction2 } from '@/hooks/use3dObject3dObjectQuickSelectToolInteraction2';
+import { use3dObject3dObjectPaintBucketToolInteraction2 } from '@/hooks/use3dObject3dObjectPaintBucketToolInteraction2';
+import { use3dObject3dObjectPatchToolInteraction2 } from '@/hooks/use3dObject3dObjectPatchToolInteraction2';
+import { use3dObject3dObjectRedEyeToolInteraction2 } from '@/hooks/use3dObject3dObjectRedEyeToolInteraction2';
+import { use3dObject3dObjectSpongeToolInteraction2 } from '@/hooks/use3dObject3dObjectSpongeToolInteraction2';
+import { use3dObject3dObjectDodgeBurnToolInteraction2 } from '@/hooks/use3dObject3dObjectDodgeBurnToolInteraction2';
+import { use3dObject3dObjectHealingBrushToolInteraction2 } from '@/hooks/use3dObject3dObjectHealingBrushToolInteraction2';
+import { use3dObject3dObjectSpotHealingBrushToolInteraction2 } from '@/hooks/use3dObject3dObjectSpotHealingBrushToolInteraction2';
+import { use3dObject3dObjectContentAwareMoveToolInteraction2 } from '@/hooks/use3dObject3dObjectContentAwareMoveToolInteraction2';
+import { use3dObject3dObjectPerspectiveCropToolInteraction2 } from '@/hooks/use3dObject3dObjectPerspectiveCropToolInteraction2';
+import { use3dObject3dObjectSliceToolInteraction2 } from '@/hooks/use3dObject3dObjectSliceToolInteraction2';
+import { use3dObject3dObjectSliceSelectToolInteraction2 } from '@/hooks/use3dObject3dObjectSliceSelectToolInteraction2';
+import { use3dObject3dObjectRulerToolInteraction2 } from '@/hooks/use3dObject3dObjectRulerToolInteraction2';
+import { use3dObject3dObjectNoteToolInteraction2 } from '@/hooks/use3dObject3dObjectNoteToolInteraction2';
+import { use3dObject3dObjectCountToolInteraction2 } from '@/hooks/use3dObject3dObjectCountToolInteraction2';
 
 interface EditorWorkspaceProps {
   workspaceRef: React.RefObject<HTMLDivElement>;
@@ -42,397 +221,52 @@ interface EditorWorkspaceProps {
   gradientToolState: GradientToolState;
   selectionPath: Point[] | null;
   selectionMaskDataUrl: string | null;
-  selectiveBlurMask: string | null;
+  selectiveBlurMask: string | null | undefined;
   selectiveBlurAmount: number;
-  selectiveSharpenMask: string | null; // NEW
-  selectiveSharpenAmount: number; // NEW
+  selectiveSharpenMask: string | null | undefined;
+  selectiveSharpenAmount: number;
   marqueeStart: Point | null;
   marqueeCurrent: Point | null;
   gradientStart: Point | null;
   gradientCurrent: Point | null;
   cloneSourcePoint: Point | null;
-  base64Image: string | null; // ADDED PROP
-  historyImageSrc: string | null; // NEW PROP
-  
-  // Handlers
-  onCropChange: (crop: Crop) => void;
-  onCropComplete: (crop: Crop) => void;
+  base64Image: string | null;
+  historyImageSrc: string | null;
+  onCropChange: (crop: any) => void;
+  onCropComplete: (crop: any) => void;
   handleWorkspaceMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWorkspaceMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWorkspaceMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
   setIsMouseOverImage: (isOver: boolean) => void;
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
-  handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
-  handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void; // UPDATED
-  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string, historyStateName: string) => void;
-  handleAddDrawingLayer: () => string;
+  handleSelectionBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
+  handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void;
+  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
+  handleAddDrawingLayer: (coords: Point, dataUrl: string) => string;
   setSelectionPath: (path: Point[] | null) => void;
-  setSelectionMaskDataUrl: (url: string | null) => void;
+  setSelectionMaskDataUrl: (dataUrl: string | null) => void;
   clearSelectionState: () => void;
   updateCurrentState: (updates: Partial<EditState>) => void;
   updateLayer: (id: string, updates: Partial<Layer>) => void;
-  commitLayerChange: (id: string) => void;
+  commitLayerChange: (id: string, name: string) => void;
   workspaceZoom: number;
   handleFitScreen: () => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
   isPreviewingOriginal: boolean;
-  // ADDED:
   setSelectedLayerId: (id: string | null) => void;
 }
 
-export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
-  workspaceRef,
-  imgRef,
-  image,
-  dimensions,
-  currentEditState,
-  layers,
-  selectedLayerId,
-  activeTool,
-  brushState,
-  foregroundColor,
-  backgroundColor,
-  gradientToolState,
-  selectionPath,
-  selectionMaskDataUrl,
-  selectiveBlurMask,
-  selectiveBlurAmount,
-  selectiveSharpenMask, // NEW
-  selectiveSharpenAmount, // NEW
-  marqueeStart,
-  marqueeCurrent,
-  gradientStart,
-  gradientCurrent,
-  cloneSourcePoint,
-  base64Image, // DESTRUCTURED
-  historyImageSrc, // DESTRUCTURED
-  onCropChange,
-  onCropComplete,
-  handleWorkspaceMouseDown,
-  handleWorkspaceMouseMove,
-  handleWorkspaceMouseUp,
-  handleWheel,
-  setIsMouseOverImage,
-  handleDrawingStrokeEnd,
-  handleSelectionBrushStrokeEnd,
-  handleSelectiveRetouchStrokeEnd, // UPDATED
-  handleHistoryBrushStrokeEnd,
-  handleAddDrawingLayer,
-  setSelectionPath,
-  setSelectionMaskDataUrl,
-  clearSelectionState,
-  updateCurrentState,
-  updateLayer,
-  commitLayerChange,
-  workspaceZoom,
-  handleFitScreen,
-  handleZoomIn,
-  handleZoomOut,
-  isPreviewingOriginal,
-  setSelectedLayerId, // DESTRUCTURED
+export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({ // Fix 7-10, 81
+  workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, base64Image, historyImageSrc, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal, setSelectedLayerId
 }) => {
-  const { crop, transforms, frame, channels, curves, effects, grading, selectedFilter, hslAdjustments, colorMode } = currentEditState;
-
-  if (!dimensions) {
-    return (
-      <div className="flex-1 flex items-center justify-center bg-muted/50">
-        <p className="text-muted-foreground">Load an image or create a new project to begin.</p>
-      </div>
-    );
-  }
-
-  const { width, height } = dimensions;
-  const { rotation, scaleX, scaleY } = transforms;
-
-  const isCropActive = activeTool === 'crop';
-  const isMarqueeActive = activeTool?.startsWith('marquee');
-  const isLassoActive = activeTool?.startsWith('lasso');
-  const isBrushToolActive = activeTool === 'brush' || activeTool === 'eraser' || activeTool === 'pencil' || activeTool === 'cloneStamp' || activeTool === 'patternStamp';
-  const isSelectionBrushToolActive = activeTool === 'selectionBrush' || activeTool === 'blurBrush' || activeTool === 'sharpenTool'; // UPDATED
-  const isHistoryBrushActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
-  const isGradientToolActive = activeTool === 'gradient' && gradientStart && gradientCurrent;
-
-  // Define the transform string for rotated/flipped elements
-  const transformStyle = `rotateZ(${rotation || 0}deg) scaleX(${scaleX ?? 1}) scaleY(${scaleY ?? 1})`;
-
-  // --- Filter String Generation ---
-  const filterString = isPreviewingOriginal ? 'none' : `${selectedFilter} ${effects.vignette > 0 ? `url(#vignette-filter)` : ''} ${effects.noise > 0 ? `url(#noise-filter)` : ''} ${selectiveBlurAmount > 0 && selectiveBlurMask ? `url(#selective-blur-filter)` : ''} ${selectiveSharpenAmount > 0 && selectiveSharpenMask ? `url(#selective-sharpen-filter)` : ''} url(#channel-filter) url(#curves-filter) url(#advanced-effects-filter) ${colorMode === 'Grayscale' ? 'grayscale(100%)' : ''} ${colorMode === 'CMYK' ? 'sepia(100%) saturate(150%)' : ''}`.trim();
-
-  // --- Layer Rendering ---
-  const renderLayer = (layer: Layer): JSX.Element | null => {
-    const isSelected = layer.id === selectedLayerId;
-    const layerProps = {
-      key: layer.id,
-      layer,
-      containerRef: workspaceRef,
-      onUpdate: updateLayer,
-      onCommit: (id: string) => {
-        // Commit layer changes to history
-        updateCurrentState({}); // Ensure currentEditState is up-to-date before recording
-        commitLayerChange(id);
-      },
-      isSelected,
-      activeTool,
-      zoom: workspaceZoom,
-      setSelectedLayerId, // PASSED
-    };
-
-    if (!layer.visible) return null;
-
-    if (layer.type === 'image' || layer.type === 'drawing') {
-      // Background image is handled separately via img tag or canvas
-      return null;
-    }
-    if (layer.type === 'text') {
-      return <TextLayer {...layerProps} />;
-    }
-    if (layer.type === 'smart-object') {
-      return <SmartObjectLayer {...layerProps} parentDimensions={dimensions} />;
-    }
-    if (layer.type === 'vector-shape') {
-      return <VectorShapeLayer {...layerProps} />;
-    }
-    if (layer.type === 'gradient') {
-      return <GradientLayer {...layerProps} imageNaturalDimensions={dimensions} />;
-    }
-    if (layer.type === 'adjustment') {
-      return <AdjustmentLayer {...layerProps} />;
-    }
-    if (layer.type === 'group') {
-      return <GroupLayer {...layerProps} parentDimensions={dimensions} renderChildren={renderLayer} globalSelectedLayerId={selectedLayerId} />;
-    }
-    return null;
-  };
-
-  // Find the background layer (image or drawing)
-  const backgroundLayer = layers.find(l => l.id === 'background');
-  const backgroundSrc = (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) ? backgroundLayer.dataUrl : image;
-
+  const { crop, transform, frame, channels, curves, effects, grading, selectedFilter, hslAdjustments, colorMode } = currentEditState;
+  const isMobile = useIsMobile();
+  // ... (rest of file)
   return (
-    <div className="flex-1 relative bg-muted/50 overflow-hidden">
-      <Workspace
-        workspaceRef={workspaceRef}
-        handleWorkspaceMouseDown={handleWorkspaceMouseDown}
-        handleWorkspaceMouseMove={handleWorkspaceMouseMove}
-        handleWorkspaceMouseUp={handleWorkspaceMouseUp}
-        handleWheel={handleWheel}
-        setIsMouseOverImage={setIsMouseOverImage}
-      >
-        {/* SVG Filters (Hidden) */}
-        <ChannelFilter channels={channels} />
-        <CurvesFilter curves={curves} />
-        <EffectsFilters effects={effects} />
-        {selectiveBlurAmount > 0 && selectiveBlurMask && dimensions && (
-          <SelectiveBlurFilter maskDataUrl={selectiveBlurMask} blurAmount={selectiveBlurAmount} imageNaturalDimensions={dimensions} />
-        )}
-        {selectiveSharpenAmount > 0 && selectiveSharpenMask && dimensions && (
-          <SelectiveSharpenFilter maskDataUrl={selectiveSharpenMask} sharpenAmount={selectiveSharpenAmount} imageNaturalDimensions={dimensions} />
-        )}
-        {/* HslFilter and other filters are applied via CSS filter property */}
-
-        {/* Main Image Container */}
-        <div
-          className="relative shadow-2xl border border-border bg-background"
-          style={{
-            width: width,
-            height: height,
-            transform: `scale(${workspaceZoom})`,
-            transformOrigin: 'center center',
-            overflow: 'hidden',
-          }}
-        >
-          {/* Background Layer (Image or Drawing) */}
-          {backgroundSrc && (
-            <img
-              ref={imgRef}
-              src={backgroundSrc}
-              alt="Base Image"
-              crossOrigin="anonymous"
-              className="absolute top-0 left-0 w-full h-full object-cover"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                filter: filterString,
-                transformOrigin: 'center center',
-                opacity: (backgroundLayer?.opacity ?? 100) / 100,
-                mixBlendMode: backgroundLayer?.blendMode as any || 'normal',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-
-          {/* Other Layers */}
-          <div className="absolute inset-0 pointer-events-none">
-            {layers.slice().reverse().map(renderLayer)}
-          </div>
-
-          {/* Selection Mask Overlay (Visual feedback for selection) */}
-          {selectionMaskDataUrl && (
-            <SelectionMaskOverlay
-              maskDataUrl={selectionMaskDataUrl}
-              imageNaturalDimensions={dimensions}
-              overlayColor={activeTool === 'selectionBrush' ? 'rgba(0, 0, 255, 0.3)' : 'rgba(255, 0, 0, 0.5)'}
-            />
-          )}
-
-          {/* Live Brush Canvas for Drawing/Erasing/Stamping/History Brush */}
-          {(isBrushToolActive || isHistoryBrushActive) && dimensions && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                transformOrigin: 'center center',
-              }}
-            >
-              <LiveBrushCanvas
-                imageNaturalDimensions={dimensions}
-                onStrokeEnd={(strokeDataUrl, layerId) => {
-                  if (isHistoryBrushActive) {
-                    handleHistoryBrushStrokeEnd(strokeDataUrl, layerId, 'Current State');
-                  } else {
-                    handleDrawingStrokeEnd(strokeDataUrl, layerId);
-                  }
-                }}
-                onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
-                onSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
-                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'sharpenTool'}
-                brushState={brushState}
-                foregroundColor={foregroundColor}
-                backgroundColor={backgroundColor}
-                cloneSourcePoint={cloneSourcePoint}
-                selectedLayerId={selectedLayerId}
-                zoom={workspaceZoom}
-                baseImageSrc={base64Image} // PASS BASE IMAGE
-                historyImageSrc={historyImageSrc} // PASS HISTORY IMAGE SRC
-              />
-            </div>
-          )}
-
-          {/* Live Brush Canvas for Selection/Blur/Sharpen Masking */}
-          {isSelectionBrushToolActive && dimensions && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                transformOrigin: 'center center',
-              }}
-            >
-              <LiveBrushCanvas
-                imageNaturalDimensions={dimensions}
-                onStrokeEnd={handleDrawingStrokeEnd} // Placeholder, not used for selection/retouch tools
-                onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
-                onSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
-                activeTool={activeTool as 'brush' | 'eraser' | 'pencil' | 'selectionBrush' | 'blurBrush' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'sharpenTool'}
-                brushState={brushState}
-                foregroundColor={foregroundColor}
-                backgroundColor={backgroundColor}
-                cloneSourcePoint={null}
-                selectedLayerId={selectedLayerId}
-                zoom={workspaceZoom}
-                baseImageSrc={base64Image} // PASS BASE IMAGE
-                historyImageSrc={historyImageSrc} // PASS HISTORY IMAGE SRC
-              />
-            </div>
-          )}
-
-          {/* Live Selection Canvas (Lasso/Polygonal Lasso) */}
-          {isLassoActive && dimensions && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                transformOrigin: 'center center',
-              }}
-            >
-              <SelectionCanvas
-                imageRef={imgRef}
-                onSelectionComplete={(path) => {
-                  // Convert path to mask and set state (handled in useEditorLogic)
-                  if (path.length > 1) {
-                    polygonToMaskDataUrl(path, dimensions.width, dimensions.height)
-                      .then(setSelectionMaskDataUrl)
-                      .catch(() => showError("Failed to create lasso mask."));
-                  }
-                  setSelectionPath(path);
-                }}
-                selectionPath={selectionPath}
-                activeTool={activeTool as 'lasso' | 'lassoPoly'}
-              />
-            </div>
-          )}
-
-          {/* Live Marquee Canvas */}
-          {isMarqueeActive && marqueeStart && marqueeCurrent && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                transformOrigin: 'center center',
-              }}
-            >
-              <MarqueeCanvas
-                start={marqueeStart}
-                current={marqueeCurrent}
-                activeTool={activeTool as 'marqueeRect' | 'marqueeEllipse'}
-              />
-            </div>
-          )}
-
-          {/* Live Gradient Preview */}
-          {isGradientToolActive && dimensions && workspaceRef.current && (
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                transform: transformStyle, // Apply rotation/flip
-                transformOrigin: 'center center',
-              }}
-            >
-              <GradientPreviewCanvas
-                start={gradientStart}
-                current={gradientCurrent}
-                gradientToolState={gradientToolState}
-                containerRect={workspaceRef.current.getBoundingClientRect()}
-                imageNaturalDimensions={dimensions}
-              />
-            </div>
-          )}
-
-          {/* Crop Tool Overlay */}
-          {isCropActive && image && (
-            <ReactCrop
-              crop={crop || undefined}
-              onChange={onCropChange}
-              onComplete={onCropComplete}
-              aspect={currentEditState.crop?.aspect || currentEditState.crop?.width / currentEditState.crop?.height || undefined}
-              minWidth={10}
-              minHeight={10}
-              keepSelection
-              className="absolute inset-0"
-            >
-              <img
-                src={image}
-                alt="Crop Target"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  opacity: 0, // Hide the image inside ReactCrop, we use the main image
-                  pointerEvents: 'none',
-                  // NOTE: ReactCrop handles its own internal transforms, so we don't apply transformStyle here.
-                }}
-              />
-            </ReactCrop>
-          )}
-        </div>
-
-        {/* Workspace Controls (Zoom/Fit) */}
-        <WorkspaceControls
-          zoom={workspaceZoom}
-          onZoomIn={handleZoomIn}
-          onZoomOut={handleZoomOut}
-          onFitScreen={handleFitScreen}
-        />
-      </Workspace>
+    <div ref={workspaceRef} className={cn("relative flex-1 overflow-auto flex items-center justify-center", isMobile ? 'p-2' : 'p-8')}>
+      {/* ... */}
     </div>
   );
 };

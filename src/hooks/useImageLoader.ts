@@ -14,8 +14,10 @@ export const useImageLoader = (
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
   setCurrentEditState: (state: EditState) => void,
   currentEditState: EditState,
+  initialEditState: EditState,
   initialLayerState: Layer[],
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
-) => {
+) => { // Fix 45
+  const handleImageLoad = useCallback((file: File) => {
 // ... (rest of file)

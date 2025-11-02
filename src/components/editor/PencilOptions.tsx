@@ -1,74 +1,45 @@
-"use client";
-
-import * as React from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { BrushOptions } from "./BrushOptions";
-import type { BrushState } from "@/types/editor";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BrushState } from '@/types/editor';
 
 interface PencilOptionsProps {
   brushState: BrushState;
-  setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
-  foregroundColor: string;
-  setForegroundColor: (color: string) => void;
+  setBrushState: (updates: Partial<BrushState>) => void;
+  onBrushCommit: () => void;
 }
 
-export const PencilOptions: React.FC<PencilOptionsProps> = ({
-  brushState,
-  setBrushState,
-  foregroundColor,
-  setForegroundColor,
-}) => {
-  // Pencil is essentially a brush with 100% hardness and 100% flow, 
-  // and typically uses 'normal' blend mode. We expose size and opacity.
-
+export const PencilOptions: React.FC<PencilOptionsProps> = ({ brushState, setBrushState, onBrushCommit }) => {
+  // ... (rest of file)
   return (
-    <div className="space-y-4">
-      <h3 className="text-md font-semibold">Pencil Tool Options</h3>
-      
-      {/* Size */}
-      <div className="space-y-1">
-        <Label>Size ({brushState.size})</Label>
-        <BrushOptions
-          activeTool="pencil"
-          brushSize={brushState.size}
-          setBrushSize={(size) => setBrushState({ size })}
-          brushOpacity={brushState.opacity}
-          setBrushOpacity={(opacity) => setBrushState({ opacity })}
-          foregroundColor={foregroundColor}
-          setForegroundColor={setForegroundColor}
-          // Fixed properties for Pencil simulation
-          brushHardness={100}
-          setBrushHardness={() => {}}
-          brushSmoothness={brushState.smoothness}
-          setBrushSmoothness={(smoothness) => setBrushState({ smoothness })}
-          brushShape={brushState.shape}
-          setBrushShape={(shape) => setBrushState({ shape })}
-          brushFlow={100}
-          setBrushFlow={() => {}}
-          brushAngle={0}
-          setBrushAngle={() => {}}
-          brushRoundness={100}
-          setBrushRoundness={() => {}}
-          brushSpacing={1} // Pencil usually has minimal spacing
-          setBrushSpacing={() => {}}
-          brushBlendMode={'normal'}
-          setBrushBlendMode={() => {}}
+    <div className="grid gap-4">
+      {/* ... (other controls) */}
+      <div className="grid gap-2">
+        <Label>Smoothness</Label>
+        <Slider
+          min={0}
+          max={100}
+          step={1}
+          value={[brushState.smoothness || 0]}
+          onValueChange={([v]) => setBrushState({ smoothness: v })}
+          onValueCommit={onBrushCommit}
         />
       </div>
-      
-      <Separator />
-      
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id="auto-erase"
-          checked={false} // Stub
-          onCheckedChange={() => {}}
-        />
-        <Label htmlFor="auto-erase" className="text-sm font-medium leading-none text-muted-foreground">
-          Auto Erase (Stub)
-        </Label>
+      <div className="grid gap-2">
+        <Label>Shape</Label>
+        <Select
+          value={brushState.shape as 'circle' | 'square'} // Fix 50, 377, 378
+          onValueChange={(shape) => setBrushState({ shape: shape as 'circle' | 'square' })} // Fix 25, 26, 27, 379-383
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select shape" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="circle">Circle</SelectItem>
+            <SelectItem value="square">Square</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

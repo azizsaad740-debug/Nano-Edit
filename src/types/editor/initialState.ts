@@ -3,7 +3,7 @@
 import type { Layer, EditState, BrushState, GradientToolState, HistoryItem, SelectionSettings, PanelTab, HslAdjustment, CurvesState, GradingState, AdjustmentState, FrameState } from "./core";
 import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid, PenTool, History, Info, Compass, SquareStack, Zap } from "lucide-react";
 
-// Define initial states and export them (Fix 1)
+// Define initial states and export them
 export const initialBrushState: BrushState = {
     size: 20,
     hardness: 50,
@@ -31,6 +31,7 @@ export const initialBrushState: BrushState = {
     mix: 0,
     load: 0,
     historySource: 'current',
+    smoothness: 0, // Added
 };
 
 export const initialAdjustmentState: AdjustmentState = {
@@ -47,6 +48,8 @@ export const initialAdjustmentState: AdjustmentState = {
     blacks: 0,
     clarity: 0,
     dehaze: 0,
+    gamma: 100, // Added
+    grain: 0, // Added
 };
 
 export const initialGradingState: GradingState = {
@@ -58,12 +61,18 @@ export const initialGradingState: GradingState = {
     grayscale: 0,
     sepia: 0,
     invert: 0,
+    shadowsColor: '#000000', // Added
+    midtonesColor: '#808080', // Added
+    highlightsColor: '#FFFFFF', // Added
+    shadowsLuminance: 0, // Added
+    highlightsLuminance: 0, // Added
 };
 
 export const initialHslAdjustment: HslAdjustment = {
     hue: 0,
     saturation: 0,
     lightness: 0,
+    luminance: 0, // Added
 };
 
 export const initialHslAdjustmentsState = {
@@ -99,6 +108,20 @@ export const initialSelectionSettings: SelectionSettings = {
     feather: 0,
     antiAlias: true,
     contiguous: true,
+    autoSelectLayer: false,
+    showTransformControls: true,
+    snapToPixels: true,
+    fixedRatio: false,
+    fixedWidth: 0,
+    fixedHeight: 0,
+    edgeDetection: 50,
+    sampleAllLayers: false,
+    refineFeather: 0,
+    refineSmooth: 0,
+    refineContrast: 0,
+    refineShiftEdge: 0,
+    decontaminateColors: false,
+    autoEnhanceEdges: false,
 };
 
 export const initialEditState: EditState = {
@@ -148,6 +171,8 @@ export const initialEditState: EditState = {
     history: [],
     historyBrushSourceIndex: 0,
     brushState: initialBrushState,
+    selectiveBlurMask: null,
+    selectiveSharpenMask: null,
 };
 
 export const initialGradientToolState: GradientToolState = {

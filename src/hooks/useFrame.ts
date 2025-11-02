@@ -1,33 +1,57 @@
-import { useCallback } from 'react';
-import type { EditState, Layer } from '@/types/editor';
+import { useState, useCallback, useMemo } from 'react';
+import type { EditState, Layer, FrameState } from '@/types/editor';
 
-interface UseFrameProps {
+export const useFrame = ({
+  currentEditState,
+  updateCurrentState,
+  recordHistory,
+  layers,
+}: {
   currentEditState: EditState;
   updateCurrentState: (updates: Partial<EditState>) => void;
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void;
   layers: Layer[];
-}
+}) => {
+  const frame = useMemo(() => currentEditState.frame, [currentEditState.frame]);
 
-export const useFrame = ({ currentEditState, updateCurrentState, recordHistory, layers }: UseFrameProps) => {
-  const frame = currentEditState.frame;
-
-  const onFramePresetChange = useCallback((type: string, name: string, options?: { width: number; color: string }) => {
+  const onFramePresetChange = useCallback((type: FrameState['type'], options?: any) => {
+    let frameUpdate: Partial<FrameState>;
+    
     if (type === 'none') {
-      updateCurrentState({ frame: { type: 'none', width: 0, color: '#000000' } });
+      frameUpdate = { 
+        type: 'none', 
+        color: '#000000', 
+        size: 0, 
+        opacity: 100, 
+        roundness: 0, 
+        vignetteAmount: 0, 
+        vignetteRoundness: 0 
+      }; // Fix 13: Provide all required properties
     } else if (options) {
       // Assuming 'solid' was intended to mean a border frame
-      updateCurrentState({ frame: { type: 'border', width: options.width, color: options.color } });
+      frameUpdate = { 
+        type: 'border', 
+        color: options.color, 
+        size: options.width || 10, // Use size, provide default
+        opacity: options.opacity || 100, 
+        roundness: options.roundness || 0, 
+        vignetteAmount: 0, 
+        vignetteRoundness: 0 
+      }; // Fix 14: Provide all required properties
+    } else {
+      return;
     }
-    recordHistory(`Applied Frame Preset: ${name}`, currentEditState, layers);
+    
+    updateCurrentState({ frame: { ...currentEditState.frame, ...frameUpdate } });
+    recordHistory(`Set Frame Preset: ${type}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory, updateCurrentState]);
 
-  const onFramePropertyChange = useCallback((key: 'width' | 'color', value: any) => {
-    // Ensure type is 'border' if properties are being changed
-    updateCurrentState({ frame: { ...frame, type: 'border', [key]: value } });
-  }, [frame, updateCurrentState]);
+  const onFramePropertyChange = useCallback((key: keyof FrameState, value: any) => {
+    updateCurrentState({ frame: { ...currentEditState.frame, [key]: value } });
+  }, [currentEditState.frame, updateCurrentState]);
 
-  const onFramePropertyCommit = useCallback(() => {
-    recordHistory("Adjusted Frame Properties", currentEditState, layers);
+  const onFramePropertyCommit = useCallback((key: keyof FrameState, value: any) => {
+    recordHistory(`Set Frame ${key}`, { ...currentEditState, frame: { ...currentEditState.frame, [key]: value } }, layers);
   }, [currentEditState, layers, recordHistory]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
