@@ -310,16 +310,18 @@ export const ToolsPanel = ({
           {/* 8. Shape Tool Group */}
           <DropdownMenu>
             <Tooltip>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant={activeTool === "shape" ? "secondary" : "ghost"}
-                  size="icon"
-                  className={cn("w-10 h-10", activeTool === "shape" && "bg-secondary")}
-                  onClick={() => setActiveTool(activeTool === "shape" ? null : "shape")}
-                >
-                  {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
-                  <ChevronDown className="h-3 w-3 ml-1" />
-                </Button>
+              <TooltipTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant={activeTool === "shape" ? "secondary" : "ghost"}
+                    size="icon"
+                    className={cn("w-10 h-10", activeTool === "shape" && "bg-secondary")}
+                    onClick={() => setActiveTool(activeTool === "shape" ? null : "shape")}
+                  >
+                    {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
               </TooltipTrigger>
               <TooltipContent side="right">
                 <p>Shape Tool (P)</p>

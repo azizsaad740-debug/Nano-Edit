@@ -25,7 +25,7 @@ interface SelectionToolOptionsProps {
   onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
 }
 
-const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
+export const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
   activeTool,
   settings,
   onSettingChange,

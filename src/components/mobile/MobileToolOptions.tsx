@@ -193,7 +193,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
               onAddTextLayer={(coords) => addTextLayer(coords, foregroundColor)}
               onAddDrawingLayer={addDrawingLayer}
               onAddLayerFromBackground={onAddLayerFromBackground}
-              onAddLayerFromSelection={onLayerFromSelection}
+              onLayerFromSelection={onLayerFromSelection}
               onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor)}
               onAddGradientLayer={addGradientLayer}
               onAddAdjustmentLayer={onAddAdjustmentLayer}

@@ -201,9 +201,9 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
           onSwapColors={() => {}} // Stub
           brushState={brushState}
           setBrushState={(updates) => setBrushState(prev => ({ ...prev, ...updates }))}
-          selectiveBlurStrength={0} // Not applicable in SO Editor
-          onSelectiveBlurStrengthChange={() => {}} // Not applicable
-          onSelectiveBlurStrengthCommit={() => {}} // Not applicable
+          selectiveBlurAmount={0} // Corrected prop name
+          onSelectiveBlurAmountChange={() => {}} // Stubbed handler
+          onSelectiveBlurAmountCommit={() => {}} // Stubbed handler
         />
 
         {/* Main Workspace Area */}

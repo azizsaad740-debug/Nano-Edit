@@ -8,14 +8,14 @@ import { PaintBucketOptions } from "@/components/editor/PaintBucketOptions";
 import { StampOptions } from "@/components/editor/StampOptions";
 import { HistoryBrushOptions } from "@/components/editor/HistoryBrushOptions";
 import { GradientToolOptions } from "@/components/editor/GradientToolOptions";
-import SelectionToolOptions from "@/components/editor/SelectionToolOptions";
+import { SelectionToolOptions } from "@/components/editor/SelectionToolOptions";
 import { SharpenToolOptions } from "@/components/editor/SharpenToolOptions";
 import Crop from "@/components/editor/Crop";
 import type { ActiveTool, BrushState, SelectionSettings, GradientToolState, Point } from "@/types/editor";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
 import { Label } from "@/components/ui/label";
 
-interface ToolOptionsContentProps {
+export interface ToolOptionsContentProps {
   activeTool: ActiveTool | null;
   brushState: BrushState;
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
