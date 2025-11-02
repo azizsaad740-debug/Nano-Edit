@@ -173,6 +173,42 @@ export const ellipseToMaskDataUrl = async (
 };
 
 /**
+ * Converts a rectangular area defined by two points into a binary mask data URL.
+ *
+ * @param start The starting point of the rectangle bounding box (in image pixels).
+ * @param end The ending point of the rectangle bounding box (in image pixels).
+ * @param width The natural width of the image.
+ * @param height The natural height of the image.
+ * @returns A Promise that resolves to a data URL of the binary mask.
+ */
+export const rectToMaskDataUrl = async (
+  start: Point,
+  end: Point,
+  width: number,
+  height: number
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      return reject(new Error("Failed to get canvas context."));
+    }
+
+    const x = Math.min(start.x, end.x);
+    const y = Math.min(start.y, end.y);
+    const w = Math.abs(start.x - end.x);
+    const h = Math.abs(start.y - end.y);
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(x, y, w, h);
+
+    resolve(canvas.toDataURL());
+  });
+};
+
+/**
  * Simulates generating a mask using an AI object selection algorithm.
  *
  * @param dimensions The dimensions of the image.
