@@ -26,6 +26,12 @@ import ShapeOptions from "../editor/ShapeOptions"; // Import ShapeOptions
 import { GradientOptions } from "../editor/GradientOptions"; // Import GradientOptions
 import { Label } from "@/components/ui/label";
 import { SharpenToolOptions } from "../editor/SharpenToolOptions"; // NEW IMPORT
+import HistoryPanel from "../auxiliary/HistoryPanel"; // NEW IMPORT
+import { ChannelsPanel } from "../editor/ChannelsPanel"; // NEW IMPORT
+import BrushesPanel from "../auxiliary/BrushesPanel"; // NEW IMPORT
+import PathsPanel from "../auxiliary/PathsPanel"; // NEW IMPORT
+import InfoPanel from "../auxiliary/InfoPanel"; // NEW IMPORT
+import NavigatorPanel from "../auxiliary/NavigatorPanel"; // NEW IMPORT
 
 // We reuse the props interface from RightSidebarTabsProps for convenience
 interface MobileToolOptionsProps extends RightSidebarTabsProps {
@@ -140,6 +146,22 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     onForegroundColorChange, 
     onBackgroundColorChange, 
     onSwapColors,
+    currentHistoryIndex,
+    onHistoryJump,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
+    dimensions,
+    fileInfo,
+    exifData,
+    colorMode,
+    zoom,
+    onZoomIn,
+    onZoomOut,
+    onFitScreen,
+    channels,
+    onChannelChange,
   } = props;
 
   const isBrushTool = activeTool === 'brush';
@@ -286,7 +308,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
       return (
         <div className="p-4 space-y-4">
           <h3 className="text-lg font-semibold">Crop Tool Options</h3>
-          <Crop onAspectChange={props.onAspectChange} currentAspect={props.aspect} />
+          <Crop onAspectChange={onAspectChange} currentAspect={aspect} />
         </div>
       );
     }
@@ -368,8 +390,51 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
 
   const renderTabContent = () => {
     switch (activeMobileTab) {
-      case 'tools':
-        return renderToolOptionsContent();
+      case 'layers':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Layers</h3>
+            <LayersPanel
+              layers={layers}
+              selectedLayerId={selectedLayerId}
+              onSelectLayer={onSelectLayer}
+              onReorder={onReorder}
+              toggleLayerVisibility={toggleLayerVisibility}
+              renameLayer={renameLayer}
+              deleteLayer={deleteLayer}
+              onDuplicateLayer={onDuplicateLayer}
+              onMergeLayerDown={onMergeLayerDown}
+              onRasterizeLayer={onRasterizeLayer}
+              onCreateSmartObject={onCreateSmartObject}
+              onOpenSmartObject={onOpenSmartObject}
+              onLayerPropertyCommit={onLayerPropertyCommit}
+              onLayerOpacityChange={onLayerOpacityChange}
+              onLayerOpacityCommit={onLayerOpacityCommit}
+              onAddTextLayer={(coords) => addTextLayer(coords, foregroundColor)}
+              onAddDrawingLayer={addDrawingLayer}
+              onAddLayerFromBackground={onAddLayerFromBackground}
+              onLayerFromSelection={onLayerFromSelection}
+              onAddShapeLayer={(coords, shapeType, initialWidth, initialHeight) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor)}
+              onAddGradientLayer={addGradientLayer}
+              onAddAdjustmentLayer={onAddAdjustmentLayer}
+              selectedShapeType={selectedShapeType}
+              groupLayers={groupLayers}
+              toggleGroupExpanded={toggleGroupExpanded}
+              hasActiveSelection={hasActiveSelection}
+              onApplySelectionAsMask={onApplySelectionAsMask}
+              onRemoveLayerMask={onRemoveLayerMask}
+              onInvertLayerMask={onInvertLayerMask}
+              onToggleClippingMask={onToggleClippingMask}
+              onToggleLayerLock={onToggleLayerLock}
+              onDeleteHiddenLayers={onDeleteHiddenLayers}
+              onRasterizeSmartObject={onRasterizeSmartObject}
+              onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
+              onExportSmartObjectContents={onExportSmartObjectContents}
+              onArrangeLayer={onArrangeLayer}
+              handleDestructiveOperation={handleDestructiveOperation}
+            />
+          </div>
+        );
         
       case 'properties':
         // If a layer is selected, show its properties. 
@@ -451,13 +516,16 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
         );
       case 'color':
         return (
-          <ColorPanel
-            foregroundColor={foregroundColor}
-            onForegroundColorChange={onForegroundColorChange}
-            backgroundColor={backgroundColor}
-            onBackgroundColorChange={onBackgroundColorChange}
-            onSwapColors={onSwapColors}
-          />
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Color Palette</h3>
+            <ColorPanel
+              foregroundColor={foregroundColor}
+              onForegroundColorChange={onForegroundColorChange}
+              backgroundColor={backgroundColor}
+              onBackgroundColorChange={onBackgroundColorChange}
+              onSwapColors={onSwapColors}
+            />
+          </div>
         );
       case 'ai':
         return (
@@ -476,8 +544,87 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
             </Button>
           </div>
         );
+      case 'history':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">History</h3>
+            <HistoryPanel
+              history={history}
+              currentIndex={currentHistoryIndex}
+              onJump={onHistoryJump}
+              onUndo={onUndo}
+              onRedo={onRedo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+            />
+          </div>
+        );
+      case 'channels':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Channels</h3>
+            <ChannelsPanel channels={channels} onChannelChange={onChannelChange} />
+          </div>
+        );
+      case 'brushes':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Brushes</h3>
+            <BrushesPanel brushState={brushState} setBrushState={setBrushState} />
+          </div>
+        );
+      case 'paths':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Paths</h3>
+            <PathsPanel />
+          </div>
+        );
+      case 'info':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Document Info</h3>
+            <InfoPanel
+              dimensions={dimensions}
+              fileInfo={fileInfo}
+              imgRef={imgRef}
+              exifData={exifData}
+              colorMode={colorMode}
+            />
+          </div>
+        );
+      case 'navigator':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Navigator</h3>
+            <NavigatorPanel
+              image={hasImage ? imgRef.current?.src || null : null}
+              zoom={zoom}
+              onZoomIn={onZoomIn}
+              onZoomOut={onZoomOut}
+              onFitScreen={onFitScreen}
+              dimensions={dimensions}
+            />
+          </div>
+        );
+      case 'templates':
+        return (
+          <div className="p-4 space-y-4">
+            <h3 className="text-lg font-semibold">Templates</h3>
+            <p className="text-sm text-muted-foreground">
+              Browse and load community templates to start your project.
+            </p>
+            <Button onClick={() => props.navigate('/community')}>
+              Go to Community Templates
+            </Button>
+          </div>
+        );
       default:
-        return null;
+        // If a tool is active, show its options here
+        const toolOptions = renderToolOptionsContent();
+        if (toolOptions) return toolOptions;
+        
+        return <p className="text-sm text-muted-foreground p-4">Select a tool or panel from the bottom bar.</p>;
     }
   };
 

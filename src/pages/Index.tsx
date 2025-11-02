@@ -21,7 +21,7 @@ import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { showError } from "@/utils/toast";
 import LayersPanel from "@/components/editor/LayersPanel";
 import {
@@ -41,11 +41,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export const Index = () => {
   const logic = useEditorLogic();
+  const navigate = useNavigate();
   const {
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
-    selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
+    selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, 
     selectiveSharpenAmount, setSelectiveSharpenAmount, // NEW
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
@@ -126,31 +127,32 @@ export const Index = () => {
   const [isFontManagerOpen, setIsFontManagerOpen] = React.useState(false);
   
   // --- Mobile State ---
-  const [activeMobileTab, setActiveMobileTab] = React.useState<MobileTab>('tools');
+  const [activeMobileTab, setActiveMobileTab] = React.useState<MobileTab>('layers');
   const [isMobileOptionsOpen, setIsMobileOptionsOpen] = React.useState(false);
 
   // Define which tools should automatically open the options panel
   const toolsThatOpenOptions: ActiveTool[] = [
     'brush', 'eraser', 'pencil', 'crop', 'text', 
     'lasso', 'marqueeRect', 'marqueeEllipse', 'lassoPoly', 'quickSelect', 'magicWand', 'objectSelect',
-    'selectionBrush', 'blurBrush', 'cloneStamp', 'patternStamp', 'historyBrush', 'artHistoryBrush', 'sharpenTool', // ADDED sharpenTool
-    'shape', 'gradient', 'paintBucket'
+    'selectionBrush', 'blurBrush', 'cloneStamp', 'patternStamp', 'historyBrush', 'artHistoryBrush', 'sharpenTool',
+    'shape', 'gradient', 'paintBucket', 'eyedropper', 'move'
   ];
 
   const handleSetActiveTool = React.useCallback((tool: ActiveTool | null) => {
-      // Note: The MobileToolBar now handles the toggle logic (setting tool to null if clicked again).
-      // We just need to react to the new tool state.
-      
       setActiveTool(tool);
       
       const toolRequiresOptions = tool && toolsThatOpenOptions.includes(tool);
       
       if (toolRequiresOptions) {
+          setActiveMobileTab('tools'); // Switch to tools tab when a tool is selected
           setIsMobileOptionsOpen(true);
       } else {
-          setIsMobileOptionsOpen(false);
+          // If tool is deselected, keep options open but switch to layers/properties if applicable
+          if (isMobileOptionsOpen) {
+             setActiveMobileTab('layers');
+          }
       }
-  }, [setActiveTool, setIsMobileOptionsOpen]);
+  }, [setActiveTool, setIsMobileOptionsOpen, activeMobileTab]);
 
   // --- Template Loading from Community Page ---
   React.useEffect(() => {
@@ -192,11 +194,12 @@ export const Index = () => {
   // --- Props for Sidebars and Workspace ---
   // Consolidate all props needed for MobileToolOptions (which reuses RightSidebarTabsProps structure)
   const mobileOptionsProps = {
-    hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, onDeleteHiddenLayers: handleDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers), selectiveSharpenAmount, onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit, customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
+    hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, handleDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange: setSelectiveBlurAmount, onSelectiveBlurAmountCommit: (value: number) => recordHistory("Change Selective Blur Strength", currentEditState, layers), selectiveSharpenAmount, onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit, customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
     activeMobileTab,
     onOpenSettings: () => setIsSettingsOpen(true),
     onOpenGenerate: () => setIsGenerateOpen(true),
     onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
+    navigate, // Pass navigate for template tab
     // Added missing props for LeftSidebarProps (TS2739 fix)
     setActiveTool,
     setSelectedShapeType,
@@ -222,8 +225,8 @@ export const Index = () => {
   };
  
   // Determine the bottom offset for the options panel
-  // MobileBottomNav: h-20 (80px). MobileToolBar: h-16 (64px).
-  const mobileOptionsBottomOffset = activeMobileTab === 'tools' ? 'bottom-[144px]' : 'bottom-[80px]';
+  // MobileBottomNav: h-16 (64px). MobileToolBar: h-16 (64px).
+  const mobileOptionsBottomOffset = activeMobileTab === 'tools' ? 'bottom-[128px]' : 'bottom-[64px]';
  
  
   // --- Common Elements (File Input and Dialogs) ---
@@ -355,7 +358,7 @@ export const Index = () => {
           />
  
           {/* 2. Main Workspace Area */}
-          <main className="flex-1 relative min-h-0">
+          <main className="flex-1 relative min-h-0 overflow-hidden">
             <EditorWorkspace {...editorWorkspaceProps} />
             
             {/* Floating Controls (Undo/Redo/Zoom) */}
@@ -396,9 +399,7 @@ export const Index = () => {
           )}
  
           {/* 4. Secondary Tool Bar (Visible when 'Tools' is active) */}
-          {activeMobileTab === 'tools' && (
-            <MobileToolBar activeTool={activeTool} setActiveTool={handleSetActiveTool} />
-          )}
+          <MobileToolBar activeTool={activeTool} setActiveTool={handleSetActiveTool} />
  
           {/* 5. Bottom Navigation */}
           <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleSetActiveTab} />

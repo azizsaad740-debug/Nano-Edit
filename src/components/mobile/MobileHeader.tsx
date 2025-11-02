@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Upload, Settings, ChevronDown, FilePlus, FolderOpen, Save, Download, FilePlus2, ClipboardPaste, RotateCcw, LogOut } from "lucide-react";
+import { Upload, Settings, ChevronDown, FilePlus, FolderOpen, Save, Download, FilePlus2, ClipboardPaste, RotateCcw, LogOut, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -15,6 +15,7 @@ import { useSession } from "@/integrations/supabase/session-provider";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { showSuccess, showError } from "@/utils/toast";
+import { useTheme } from "../layout/ThemeProvider"; // Import useTheme
 
 interface MobileHeaderProps {
   hasImage: boolean;
@@ -41,6 +42,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 }) => {
   const { isGuest, setIsGuest } = useSession();
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
     if (isGuest) {
@@ -57,6 +59,10 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       showSuccess("Logged out successfully.");
       navigate('/login', { replace: true });
     }
+  };
+  
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
   };
 
   return (
@@ -104,6 +110,14 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
             <DropdownMenuItem onClick={onSettingsClick}>
               <Settings className="h-4 w-4 mr-2" />
               AI Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleTheme}>
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4 mr-2" />
+              ) : (
+                <Moon className="h-4 w-4 mr-2" />
+              )}
+              Toggle Theme ({theme === 'dark' ? 'Light' : 'Dark'})
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>

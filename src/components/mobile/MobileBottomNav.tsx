@@ -2,10 +2,11 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Settings, SlidersHorizontal, Palette, LayoutGrid, Brush, Home, Zap } from "lucide-react";
+import { Settings, SlidersHorizontal, Palette, LayoutGrid, Brush, Home, Zap, Layers, History, PenTool, Info, Compass, SquareStack } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
-export type MobileTab = 'tools' | 'properties' | 'adjustments' | 'color' | 'ai';
+export type MobileTab = 'layers' | 'properties' | 'adjustments' | 'color' | 'ai' | 'history' | 'channels' | 'brushes' | 'paths' | 'info' | 'navigator' | 'templates';
 
 interface MobileBottomNavProps {
   activeTab: MobileTab;
@@ -13,31 +14,43 @@ interface MobileBottomNavProps {
 }
 
 const tabs: { name: string; icon: React.ElementType; tab: MobileTab }[] = [
-  { name: "Tools", icon: Brush, tab: "tools" },
-  { name: "Properties", icon: Home, tab: "properties" },
+  { name: "Layers", icon: Layers, tab: "layers" },
+  { name: "Properties", icon: Settings, tab: "properties" },
   { name: "Adjustments", icon: SlidersHorizontal, tab: "adjustments" },
   { name: "Color", icon: Palette, tab: "color" },
   { name: "AI Tools", icon: Zap, tab: "ai" },
+  { name: "History", icon: History, tab: "history" },
+  { name: "Channels", icon: SquareStack, tab: "channels" },
+  { name: "Brushes", icon: Brush, tab: "brushes" },
+  { name: "Paths", icon: PenTool, tab: "paths" },
+  { name: "Info", icon: Info, tab: "info" },
+  { name: "Navigator", icon: Compass, tab: "navigator" },
+  { name: "Templates", icon: LayoutGrid, tab: "templates" },
 ];
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <footer className="w-full h-20 bg-background border-t border-border/50 flex justify-around items-center shrink-0">
-      {tabs.map(({ name, icon: Icon, tab }) => (
-        <Button
-          key={name}
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "flex flex-col h-full w-1/5 p-1 rounded-none",
-            activeTab === tab ? "text-primary" : "text-muted-foreground hover:text-foreground"
-          )}
-          onClick={() => setActiveTab(tab)}
-        >
-          <Icon className="h-6 w-6" />
-          <span className="text-xs mt-1 font-medium">{name}</span>
-        </Button>
-      ))}
+    <footer className="w-full h-16 bg-background border-t border-border/50 flex shrink-0">
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex h-full items-center justify-start space-x-1 p-1">
+          {tabs.map(({ name, icon: Icon, tab }) => (
+            <Button
+              key={name}
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "flex flex-col h-14 w-16 p-1 shrink-0",
+                activeTab === tab ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={() => setActiveTab(tab)}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-xs mt-1 font-medium">{name}</span>
+            </Button>
+          ))}
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
     </footer>
   );
 };

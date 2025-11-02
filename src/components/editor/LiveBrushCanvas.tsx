@@ -97,7 +97,7 @@ export const LiveBrushCanvas = ({
   const drawBrushStroke = React.useCallback((ctx: CanvasRenderingContext2D, start: Point, end: Point) => {
     if (!imageNaturalDimensions) return;
 
-    const distance = Math.sqrt(Math.pow(end.x - start.x) + Math.pow(end.y - start.y));
+    const distance = Math.sqrt(Math.pow(end.x - start.x, 2) + Math.pow(end.y - start.y, 2));
     const spacingPx = Math.max(1, size * (spacing / 100));
     const steps = Math.max(1, Math.ceil(distance / spacingPx));
 
