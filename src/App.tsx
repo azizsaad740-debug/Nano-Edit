@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Index } from "./pages/Index"; // Assuming Index is now correctly exported as named React.FC
+import Index from "./pages/Index"; // Changed to default import
 import NotFound from "./pages/NotFound";
 
 export const App = () => {

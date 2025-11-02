@@ -3,12 +3,379 @@ import { useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
-import { EditorWorkspace } from "@/components/editor/EditorWorkspace"; // Fix 186
+import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import LeftSidebar from "@/components/layout/LeftSidebar";
-import Sidebar, { RightSidebarTabsProps } from "@/components/layout/Sidebar";
+import Sidebar from "@/components/layout/Sidebar";
 import BottomPanel from "@/components/layout/BottomPanel";
-// ... (dialog imports)
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
-import MobileToolOptions from "@/components/mobile/MobileToolOptions"; // Fix 187
+import MobileToolOptions from "@/components/mobile/MobileToolOptions";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
-// ... (rest of file)
+import { MobileHeader } from "@/components/mobile/MobileHeader";
+import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
+import { EditorHeader } from "@/components/layout/EditorHeader";
+import { SettingsDialog } from "@/components/layout/SettingsDialog";
+import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
+import { ExportOptions } from "@/components/editor/ExportOptions";
+import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
+import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
+import { GenerativeDialog } from "@/components/editor/GenerativeDialog";
+import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog";
+import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
+import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
+import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
+import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { showError } from "@/utils/toast";
+
+const Index: React.FC = () => {
+  const logic = useEditorLogic({});
+  const isMobile = useIsMobile();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // State for dialogs
+  const [isNewProjectOpen, setIsNewProjectOpen] = React.useState(false);
+  const [isExportOpen, setIsExportOpen] = React.useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
+  const [isImportOpen, setIsImportOpen] = React.useState(false);
+  const [isGenerateOpen, setIsGenerateOpen] = React.useState(false);
+  const [isGenerativeFillOpen, setIsGenerativeFillOpen] = React.useState(false);
+  const [isProjectSettingsOpen, setIsProjectSettingsOpen] = React.useState(false);
+  const [isFontManagerOpen, setIsFontManagerOpen] = React.useState(false);
+  const [isSavePresetOpen, setIsSavePresetOpen] = React.useState(false);
+  const [isSaveGradientPresetOpen, setIsSaveGradientPresetOpen] = React.useState(false);
+  const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = React.useState<string | null>(null);
+
+  // DND setup
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active.id === over?.id) return;
+
+    const activeData = active.data.current;
+    const overData = over?.data.current;
+
+    if (activeData?.layerId && overData?.layerId) {
+      logic.handleReorder(activeData.layerId, overData.layerId, 'right'); // Assuming default location
+    } else if (activeData?.tabId && overData?.tabId && activeData?.location && overData?.location) {
+      logic.reorderPanelTabs(activeData.tabId, overData.tabId, overData.location);
+    }
+  };
+
+  // Placeholder for fullscreen toggle
+  const onToggleFullscreen = React.useCallback(() => {
+    logic.setIsFullscreen(prev => !prev);
+  }, [logic]);
+  
+  // Placeholder for mobile tab state
+  const [mobileActiveTab, setMobileActiveTab] = React.useState<any>('layers');
+
+  // Handlers for dialogs
+  const handleNewProjectClick = React.useCallback(() => setIsNewProjectOpen(true), []);
+  const handleExportClick = React.useCallback(() => setIsExportOpen(true), []);
+  const handleOpenProject = React.useCallback(() => document.getElementById('file-upload-input')?.click(), []);
+  const handleImportClick = React.useCallback(() => setIsImportOpen(true), []);
+  const handleGenerateClick = React.useCallback(() => {
+    if (!logic.dimensions) {
+      showError("Please load an image or create a new project first.");
+      return;
+    }
+    setIsGenerateOpen(true);
+  }, [logic.dimensions]);
+  const handleGenerativeFillClick = React.useCallback(() => {
+    if (!logic.selectionMaskDataUrl) {
+      showError("Please make a selection first.");
+      return;
+    }
+    setIsGenerativeFillOpen(true);
+  }, [logic.selectionMaskDataUrl]);
+  
+  const handleSavePreset = React.useCallback(() => setIsSavePresetOpen(true), []);
+  const handleSaveGradientPreset = React.useCallback(() => setIsSaveGradientPresetOpen(true), []);
+
+  // Render logic based on mobile/desktop
+  if (isMobile) {
+    return (
+      <TooltipProvider>
+        <div className="flex flex-col h-screen overflow-hidden">
+          <MobileHeader
+            hasImage={logic.hasImage}
+            onNewProjectClick={handleNewProjectClick}
+            onOpenProject={handleOpenProject}
+            onSaveProject={() => showError("Project saving is a stub.")}
+            onExportClick={handleExportClick}
+            onReset={logic.resetAllEdits}
+            onSettingsClick={() => setIsSettingsOpen(true)}
+            onImportClick={handleImportClick}
+            onNewFromClipboard={() => logic.handleNewFromClipboard(false)}
+          />
+          <MobileToolBar
+            activeTool={logic.activeTool}
+            setActiveTool={logic.setActiveTool}
+          />
+          <div className="flex-1 relative overflow-hidden">
+            <EditorWorkspace
+              {...logic}
+              workspaceRef={logic.workspaceRef}
+              imgRef={logic.imgRef}
+              workspaceZoom={logic.workspaceZoom}
+              handleWorkspaceMouseDown={logic.handleWorkspaceMouseDown}
+              handleWorkspaceMouseMove={logic.handleWorkspaceMouseMove}
+              handleWorkspaceMouseUp={logic.handleWorkspaceMouseUp}
+              handleWheel={logic.handleWheel}
+              setIsMouseOverImage={logic.setIsMouseOverImage}
+              handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
+              handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
+              handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd}
+              handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
+              handleAddDrawingLayer={logic.addDrawingLayer}
+              onCropChange={logic.onCropChange}
+              onCropComplete={logic.onCropComplete}
+            />
+          </div>
+          <MobileToolOptions
+            activeTab={mobileActiveTab}
+            setActiveTab={setMobileActiveTab}
+            logic={logic}
+            onOpenFontManager={() => setIsFontManagerOpen(true)}
+            onSavePreset={handleSavePreset}
+            onSaveGradientPreset={handleSaveGradientPreset}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
+          />
+          <MobileBottomNav
+            activeTab={mobileActiveTab}
+            setActiveTab={setMobileActiveTab}
+          />
+        </div>
+        <Toaster />
+      </TooltipProvider>
+    );
+  }
+
+  // Desktop Layout
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <TooltipProvider>
+        <div className="flex flex-col h-screen overflow-hidden">
+          <EditorHeader
+            logic={logic}
+            setIsNewProjectOpen={setIsNewProjectOpen}
+            setIsExportOpen={setIsExportOpen}
+            setIsSettingsOpen={setIsSettingsOpen}
+            setIsImportOpen={setIsImportOpen}
+            setIsGenerateOpen={setIsGenerateOpen}
+            setIsGenerativeFillOpen={setIsGenerativeFillOpen}
+            setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+            isFullscreen={logic.isFullscreen}
+            onToggleFullscreen={onToggleFullscreen}
+            panelLayout={logic.panelLayout}
+            togglePanelVisibility={logic.togglePanelVisibility}
+            activeRightTab={logic.activeRightTab}
+            setActiveRightTab={logic.setActiveRightTab}
+            activeBottomTab={logic.activeBottomTab}
+            setActiveBottomTab={logic.setActiveBottomTab}
+          />
+
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            {/* Left Sidebar (Tools) */}
+            <ResizablePanel defaultSize={5} minSize={4} maxSize={8} className="min-w-[60px]">
+              <LeftSidebar
+                activeTool={logic.activeTool}
+                setActiveTool={logic.setActiveTool}
+                selectedShapeType={logic.selectedShapeType}
+                setSelectedShapeType={logic.setSelectedShapeType}
+                foregroundColor={logic.foregroundColor}
+                onForegroundColorChange={logic.setForegroundColor}
+                backgroundColor={logic.backgroundColor}
+                onBackgroundColorChange={logic.setBackgroundColor}
+                onSwapColors={logic.handleSwapColors}
+                brushState={logic.brushState}
+                setBrushState={logic.setBrushState}
+                selectiveBlurAmount={logic.selectiveBlurAmount}
+                onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
+                onSelectiveBlurAmountCommit={(v) => logic.updateCurrentState({ selectiveBlurAmount: v })}
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+
+            {/* Main Workspace */}
+            <ResizablePanel defaultSize={75} minSize={50}>
+              <ResizablePanelGroup direction="vertical">
+                <ResizablePanel defaultSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 75 : 100} minSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 50 : 100}>
+                  <EditorWorkspace
+                    {...logic}
+                    workspaceRef={logic.workspaceRef}
+                    imgRef={logic.imgRef}
+                    workspaceZoom={logic.workspaceZoom}
+                    handleWorkspaceMouseDown={logic.handleWorkspaceMouseDown}
+                    handleWorkspaceMouseMove={logic.handleWorkspaceMouseMove}
+                    handleWorkspaceMouseUp={logic.handleWorkspaceMouseUp}
+                    handleWheel={logic.handleWheel}
+                    setIsMouseOverImage={logic.setIsMouseOverImage}
+                    handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
+                    handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
+                    handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd}
+                    handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
+                    handleAddDrawingLayer={logic.addDrawingLayer}
+                    onCropChange={logic.onCropChange}
+                    onCropComplete={logic.onCropComplete}
+                  />
+                </ResizablePanel>
+                
+                {logic.panelLayout.some(t => t.location === 'bottom' && t.visible) && (
+                  <>
+                    <ResizableHandle withHandle />
+                    <ResizablePanel defaultSize={25} minSize={15} maxSize={50}>
+                      <BottomPanel
+                        foregroundColor={logic.foregroundColor}
+                        onForegroundColorChange={logic.setForegroundColor}
+                        backgroundColor={logic.backgroundColor}
+                        onBackgroundColorChange={logic.setBackgroundColor}
+                        onSwapColors={logic.handleSwapColors}
+                        dimensions={logic.dimensions}
+                        fileInfo={logic.fileInfo}
+                        imgRef={logic.imgRef}
+                        exifData={logic.exifData}
+                        colorMode={logic.currentEditState.colorMode}
+                        zoom={logic.workspaceZoom}
+                        onZoomIn={logic.handleZoomIn}
+                        onZoomOut={logic.handleZoomOut}
+                        onFitScreen={logic.handleFitScreen}
+                        hasImage={logic.hasImage}
+                        adjustments={logic.adjustments}
+                        onAdjustmentChange={logic.onAdjustmentChange}
+                        onAdjustmentCommit={logic.onAdjustmentCommit}
+                        grading={logic.grading}
+                        onGradingChange={logic.onGradingChange}
+                        onGradingCommit={logic.onGradingCommit}
+                        hslAdjustments={logic.hslAdjustments}
+                        onHslAdjustmentChange={logic.onHslAdjustmentChange}
+                        onHslAdjustmentCommit={logic.onHslAdjustmentCommit}
+                        curves={logic.curves}
+                        onCurvesChange={logic.onCurvesChange}
+                        onCurvesCommit={logic.onCurvesCommit}
+                        customHslColor={logic.customHslColor}
+                        setCustomHslColor={logic.setCustomHslColor}
+                        geminiApiKey={logic.geminiApiKey}
+                        base64Image={logic.base64Image}
+                        onImageResult={logic.handleGenerateImage}
+                        onMaskResult={() => {}} // Stub
+                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        panelLayout={logic.panelLayout}
+                        reorderPanelTabs={logic.reorderPanelTabs}
+                        activeBottomTab={logic.activeBottomTab}
+                        setActiveBottomTab={logic.setActiveBottomTab}
+                      />
+                    </ResizablePanel>
+                  </>
+                )}
+              </ResizablePanelGroup>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+
+            {/* Right Sidebar (Layers/Properties) */}
+            {logic.panelLayout.some(t => t.location === 'right' && t.visible) && (
+              <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
+                <Sidebar
+                  {...logic}
+                  LayersPanel={() => <div>Layers Panel Stub</div>} // Stub LayersPanel
+                  onOpenFontManager={() => setIsFontManagerOpen(true)}
+                  onSavePreset={handleSavePreset}
+                  onSaveGradientPreset={handleSaveGradientPreset}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
+                  activeRightTab={logic.activeRightTab}
+                  setActiveRightTab={logic.setActiveRightTab}
+                  reorderPanelTabs={logic.reorderPanelTabs}
+                  togglePanelVisibility={logic.togglePanelVisibility}
+                  activeBottomTab={logic.activeBottomTab}
+                  setActiveBottomTab={logic.setActiveBottomTab}
+                />
+              </ResizablePanel>
+            )}
+          </ResizablePanelGroup>
+        </div>
+        
+        {/* Dialogs */}
+        <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
+        <NewProjectDialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen} onNewProject={logic.handleNewProject} />
+        <ExportOptions open={isExportOpen} onOpenChange={setIsExportOpen} onExport={logic.handleExportClick} dimensions={logic.dimensions} />
+        <ImportPresetsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
+        <GenerateImageDialog 
+          open={isGenerateOpen} 
+          onOpenChange={setIsGenerateOpen} 
+          onGenerate={logic.handleGenerateImage} 
+          apiKey={logic.geminiApiKey} 
+          imageNaturalDimensions={logic.dimensions}
+        />
+        <GenerativeDialog
+          open={isGenerativeFillOpen}
+          onOpenChange={setIsGenerativeFillOpen}
+          onApply={logic.handleGenerativeFill}
+          apiKey={logic.geminiApiKey}
+          originalImage={logic.base64Image}
+          selectionPath={logic.selectionPath}
+          selectionMaskDataUrl={logic.selectionMaskDataUrl}
+          imageNaturalDimensions={logic.dimensions}
+        />
+        <ProjectSettingsDialog
+          open={isProjectSettingsOpen}
+          onOpenChange={setIsProjectSettingsOpen}
+          currentDimensions={logic.dimensions}
+          currentColorMode={logic.currentEditState.colorMode}
+          onUpdateSettings={logic.handleProjectSettingsUpdate}
+        />
+        <FontManagerDialog
+          open={isFontManagerOpen}
+          onOpenChange={setIsFontManagerOpen}
+          systemFonts={logic.systemFonts}
+          customFonts={logic.customFonts}
+          addCustomFont={logic.addCustomFont}
+          removeCustomFont={logic.removeCustomFont}
+        />
+        <SavePresetDialog
+          open={isSavePresetOpen}
+          onOpenChange={setIsSavePresetOpen}
+          onSave={logic.handleSavePreset}
+        />
+        <SaveGradientPresetDialog
+          open={isSaveGradientPresetOpen}
+          onOpenChange={setIsSaveGradientPresetOpen}
+          onSave={(name) => logic.onSaveGradientPreset(name, logic.gradientToolState)}
+        />
+        {isSmartObjectEditorOpen && (
+          <SmartObjectEditor
+            layerId={isSmartObjectEditorOpen}
+            onClose={() => setIsSmartObjectEditorOpen(null)}
+            onSave={logic.commitLayerChange}
+            layers={logic.layers}
+            updateLayer={logic.updateLayer}
+            recordHistory={logic.recordHistory}
+            currentEditState={logic.currentEditState}
+            dimensions={logic.dimensions}
+            foregroundColor={logic.foregroundColor}
+            backgroundColor={logic.backgroundColor}
+            gradientToolState={logic.gradientToolState}
+            selectedShapeType={logic.selectedShapeType}
+            selectionPath={logic.selectionPath}
+            selectionMaskDataUrl={logic.selectionMaskDataUrl}
+            clearSelectionState={logic.clearSelectionState}
+            setImage={logic.setImage}
+            setFileInfo={logic.setFileInfo}
+            setSelectedLayerId={logic.setSelectedLayerId}
+            selectedLayerId={logic.selectedLayerId}
+          />
+        )}
+        <Toaster />
+      </TooltipProvider>
+    </DndContext>
+  );
+};
+
+export default Index;
