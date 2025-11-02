@@ -19,6 +19,7 @@ import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortabl
 import { useDroppable } from "@dnd-kit/core";
 import type { RightSidebarTabsProps } from "./Sidebar";
 import type { PanelTab } from "@/types/editor/core";
+import { Button } from '@/components/ui/button'; // ADDED
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const {

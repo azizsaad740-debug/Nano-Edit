@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type { Layer } from "@/types/editor";
+import type { Layer, EditState } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdjustmentLayerControls } from "./AdjustmentLayerControls";
 import { LayerGeneralProperties } from "./LayerGeneralProperties";
@@ -13,6 +13,7 @@ interface AdjustmentOptionsProps {
   imgRef: React.RefObject<HTMLImageElement>; // Required for Curves component
   customHslColor: string; // NEW
   setCustomHslColor: (color: string) => void; // NEW
+  currentEditState: EditState; // ADDED
 }
 
 export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
@@ -22,6 +23,7 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
   imgRef,
   customHslColor,
   setCustomHslColor,
+  currentEditState,
 }) => {
   const isAdjustment = layer.type === 'adjustment';
 
@@ -55,6 +57,7 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
             imgRef={imgRef}
             customHslColor={customHslColor}
             setCustomHslColor={setCustomHslColor}
+            currentEditState={currentEditState} // PASSED
           />
         </CardContent>
       </Card>

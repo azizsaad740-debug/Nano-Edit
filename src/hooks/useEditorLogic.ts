@@ -128,7 +128,7 @@ export const useEditorLogic = (props: any) => {
 
   const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
   
-  const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
+  const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard } = useImageLoader(
     setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, 
     setCurrentEditState, 
     currentEditState, initialEditState, initialLayerState, setSelectedLayerIdState, clearSelectionState
@@ -377,14 +377,14 @@ export const useEditorLogic = (props: any) => {
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     }, handleSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
-    gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGlobalPreset,
+    gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset,
     
     // Workspace Interaction
     workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel,
     
     // AI/Export/Project Management
-    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
+    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     
     // UI/Layout

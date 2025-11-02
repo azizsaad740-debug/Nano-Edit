@@ -53,7 +53,7 @@ export const GradientLayer = ({ layer, containerRef, onUpdate, onCommit, isSelec
 
     ctx.save();
     ctx.globalAlpha = (gradientLayer.opacity ?? 100) / 100;
-    ctx.globalCompositeOperation = gradientLayer.blendMode as GlobalCompositeOperation || 'normal';
+    ctx.globalCompositeOperation = gradientLayer.blendMode as GlobalCompositeOperation || 'source-over';
 
     let colors = [...gradientColors];
     let stopValues = [...stops];

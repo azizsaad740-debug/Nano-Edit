@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import type { ActiveTool, BrushState } from "@/types/editor";
+import type { ActiveTool, BrushState, BlendMode } from "@/types/editor";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -40,7 +40,7 @@ const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
       opacity: 100, 
       flow: 100, 
       smoothness: 10,
-      blendMode: 'normal',
+      blendMode: 'normal' as BlendMode, // Cast to BlendMode
     });
     onBrushCommit();
   };
@@ -87,7 +87,7 @@ const ToolOptionsBar: React.FC<ToolOptionsBarProps> = ({
         <Label className="text-sm text-muted-foreground">Mode:</Label>
         <Select
           value={brushState.blendMode}
-          onValueChange={(value) => setBrushState({ blendMode: value })}
+          onValueChange={(value) => setBrushState({ blendMode: value as BlendMode })} // Fixed casting
           onOpenChange={(open) => !open && onBrushCommit()}
         >
           <SelectTrigger className="w-[120px] h-7 text-sm">

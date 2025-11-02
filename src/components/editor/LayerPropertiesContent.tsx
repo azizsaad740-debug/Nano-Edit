@@ -29,6 +29,7 @@ interface LayerPropertiesContentProps {
   setCustomHslColor: (color: string) => void;
   onRemoveLayerMask: (id: string) => void;
   onInvertLayerMask: (id: string) => void;
+  currentEditState: EditState; // ADDED
 }
 
 export const LayerPropertiesContent: React.FC<LayerPropertiesContentProps> = (props) => {
@@ -104,6 +105,7 @@ export const LayerPropertiesContent: React.FC<LayerPropertiesContentProps> = (pr
           imgRef={imgRef}
           customHslColor={props.customHslColor}
           setCustomHslColor={props.setCustomHslColor}
+          currentEditState={props.currentEditState}
         />
       )}
 

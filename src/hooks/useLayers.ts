@@ -8,7 +8,7 @@ import {
   type EditState, type Point, type AdjustmentLayerData, type AdjustmentState,
 } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-import { rasterizeLayer } from '@/utils/imageUtils';
+// import { rasterizeLayer } from '@/utils/imageUtils'; // Removed unused import
 
 interface UseLayersProps {
     layers: Layer[];
@@ -105,7 +105,7 @@ export const useLayers = ({
       // Convert pixel coordinates (startPoint, endPoint) to percentage (0-100)
       startPoint: { x: (startPoint.x / dimensions.width) * 100, y: (startPoint.y / dimensions.height) * 100 },
       endPoint: { x: (endPoint.x / dimensions.width) * 100, y: (endPoint.y / dimensions.height) * 100 },
-    } as Layer; // Cast to Layer to satisfy return type
+    }; // Removed redundant 'as Layer' cast
     
     setLayers(prev => [newLayer, ...prev]);
     setSelectedLayerId(newLayer.id);

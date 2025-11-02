@@ -81,7 +81,7 @@ export const ToolOptionsContent: React.FC<ToolOptionsContentProps> = (props) => 
           brushSpacing={brushState.spacing}
           setBrushSpacing={(spacing) => setBrushState({ spacing })}
           brushBlendMode={brushState.blendMode}
-          setBrushBlendMode={(blendMode) => setBrushState({ blendMode })}
+          setBrushBlendMode={(blendMode) => setBrushState({ blendMode: blendMode as BlendMode })} // Fixed casting
         />
       );
     }

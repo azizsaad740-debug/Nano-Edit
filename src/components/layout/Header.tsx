@@ -59,7 +59,7 @@ interface HeaderProps {
   setOpenImport: (open: boolean) => void;
   onGenerateClick: () => void;
   onNewProjectClick: () => void;
-  onNewFromClipboard: (importInSameProject: boolean) => void;
+  onNewFromClipboard: () => void; // Fixed signature
   onSaveProject: () => void;
   onOpenProject: () => void; // Simplified signature
   onToggleFullscreen: () => void;
@@ -155,7 +155,7 @@ const Header = ({
                 <FolderOpen className="h-4 w-4 mr-2" />
                 Open Image/Project
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => onNewFromClipboard(false)}>
+              <DropdownMenuItem onClick={onNewFromClipboard}>
                 <ClipboardPaste className="h-4 w-4 mr-2" />
                 New from Clipboard
               </DropdownMenuItem>

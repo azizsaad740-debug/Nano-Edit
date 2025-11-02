@@ -80,9 +80,9 @@ export interface VectorShapeLayerData extends BaseLayer {
   points?: Point[]; // For polygon/star
   starPoints?: number;
   lineThickness?: number;
-  strokeDasharray?: string;
-  strokeLinecap?: 'butt' | 'round' | 'square';
-  strokeLinejoin?: 'miter' | 'round' | 'bevel';
+  strokeDasharray?: string; // NEW: e.g., "10 5"
+  strokeLinecap?: 'butt' | 'round' | 'square'; // NEW
+  strokeLinejoin?: 'miter' | 'round' | 'bevel'; // NEW
 }
 
 export interface GradientLayerData extends BaseLayer {
@@ -96,6 +96,8 @@ export interface GradientLayerData extends BaseLayer {
   gradientCenterX: number;
   gradientCenterY: number;
   gradientRadius: number;
+  startPoint?: Point; // ADDED
+  endPoint?: Point; // ADDED
 }
 
 export interface AdjustmentLayerData extends BaseLayer {

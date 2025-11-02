@@ -53,9 +53,9 @@ export const initialAdjustmentState: AdjustmentState = {
 };
 
 export const initialGradingState: GradingState = {
-    shadows: { hue: 0, saturation: 0, lightness: 0 },
-    midtones: { hue: 0, saturation: 0, lightness: 0 },
-    highlights: { hue: 0, saturation: 0, lightness: 0 },
+    shadows: { hue: 0, saturation: 0, luminosity: 0 },
+    midtones: { hue: 0, saturation: 0, luminosity: 0 },
+    highlights: { hue: 0, saturation: 0, luminosity: 0 },
     blending: 50,
     balance: 0,
     grayscale: 0,
@@ -177,7 +177,7 @@ export const initialEditState: EditState = {
 export const initialGradientToolState: GradientToolState = {
     type: 'linear',
     colors: ['#000000', '#FFFFFF'],
-    stops: [0, 100],
+    stops: [0, 1],
     angle: 90,
     feather: 0,
     inverted: false,

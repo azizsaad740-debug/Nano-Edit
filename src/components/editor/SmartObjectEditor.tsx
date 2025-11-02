@@ -1,7 +1,206 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Save } from 'lucide-react';
-import type { Layer, ActiveTool, ShapeType } from "@/types/editor";
+import type { Layer, ActiveTool, ShapeType, Dimensions, GradientToolState, Point } from "@/types/editor";
 import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers"; // Fix 168
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
-// ... (rest of file)
+import { ScrollArea } from "@/components/ui/scroll-area";
+import SmartObjectLayersPanel from "./SmartObjectLayersPanel";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import { showError, showSuccess } from "@/utils/toast";
+
+interface SmartObjectEditorProps {
+  layerId: string;
+  onClose: () => void;
+  onSave: (id: string, name: string) => void;
+  layers: Layer[]; // Global layers
+  updateLayer: (id: string, updates: Partial<Layer>) => void;
+  recordHistory: (name: string, state: any, layers: Layer[]) => void;
+  currentEditState: any;
+  dimensions: Dimensions | null;
+  foregroundColor: string;
+  backgroundColor: string;
+  gradientToolState: GradientToolState;
+  selectedShapeType: ShapeType | null;
+  selectionPath: Point[] | null;
+  selectionMaskDataUrl: string | null;
+  clearSelectionState: () => void;
+  setImage: (image: string | null) => void;
+  setFileInfo: (info: { name: string; size: number } | null) => void;
+  setSelectedLayerId: (id: string | null) => void;
+  selectedLayerId: string | null;
+}
+
+export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
+  layerId,
+  onClose,
+  onSave,
+  layers: globalLayers,
+  updateLayer: updateGlobalLayer,
+  recordHistory,
+  currentEditState,
+  dimensions,
+  foregroundColor,
+  backgroundColor,
+  gradientToolState,
+  selectedShapeType,
+  selectionPath,
+  selectionMaskDataUrl,
+  clearSelectionState,
+  setImage,
+  setFileInfo,
+  setSelectedLayerId,
+  selectedLayerId: globalSelectedLayerId,
+}) => {
+  const smartObjectLayer = globalLayers.find(l => l.id === layerId);
+  const [internalLayers, setInternalLayers] = React.useState<Layer[]>(smartObjectLayer?.type === 'smart-object' ? smartObjectLayer.smartObjectData.layers : []);
+  const [internalSelectedLayerId, setInternalSelectedLayerId] = React.useState<string | null>(null);
+  const { createTextLayerStub, createDrawingLayerStub, createVectorShapeLayerStub, createGradientLayerStub } = useSmartObjectLayers();
+
+  React.useEffect(() => {
+    if (smartObjectLayer?.type === 'smart-object') {
+      setInternalLayers(smartObjectLayer.smartObjectData.layers);
+    }
+  }, [smartObjectLayer]);
+
+  const handleSave = () => {
+    if (smartObjectLayer?.type === 'smart-object') {
+      updateGlobalLayer(layerId, {
+        smartObjectData: {
+          ...smartObjectLayer.smartObjectData,
+          layers: internalLayers,
+        }
+      });
+      onSave(layerId, `Edit Smart Object: ${smartObjectLayer.name}`);
+    }
+    onClose();
+  };
+
+  const handleAddLayer = (type: 'text' | 'drawing' | 'vector-shape' | 'gradient') => {
+    let newLayer: Layer | null = null;
+    if (type === 'text') newLayer = createTextLayerStub();
+    if (type === 'drawing') newLayer = createDrawingLayerStub();
+    if (type === 'vector-shape') newLayer = createVectorShapeLayerStub();
+    if (type === 'gradient') newLayer = createGradientLayerStub();
+
+    if (newLayer) {
+      setInternalLayers(prev => [newLayer, ...prev]);
+      setInternalSelectedLayerId(newLayer.id);
+      showSuccess(`Added ${newLayer.name} to Smart Object.`);
+    }
+  };
+
+  const handleDeleteLayer = (id: string) => {
+    setInternalLayers(prev => prev.filter(l => l.id !== id));
+    setInternalSelectedLayerId(null);
+  };
+
+  const handleReorder = (activeId: string, overId: string) => {
+    const oldIndex = internalLayers.findIndex(l => l.id === activeId);
+    const newIndex = internalLayers.findIndex(l => l.id === overId);
+    if (oldIndex === -1 || newIndex === -1) return;
+    setInternalLayers(prev => arrayMove(prev, oldIndex, newIndex));
+  };
+
+  const handleUpdateInternalLayer = (id: string, updates: Partial<Layer>) => {
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+  };
+  
+  const handleCommitInternalLayer = (id: string) => {
+    // No history recording inside SO editor, commit happens on save
+  };
+  
+  const handleToggleVisibility = (id: string) => {
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, visible: !l.visible } : l));
+  };
+  
+  const handleToggleLock = (id: string) => {
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, isLocked: !l.isLocked } : l));
+  };
+  
+  const handleRenameLayer = (id: string, newName: string) => {
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, name: newName } : l));
+  };
+  
+  const handleToggleGroupExpanded = (id: string) => {
+    setInternalLayers(prev => prev.map(l => l.id === id && l.type === 'group' ? { ...l, isExpanded: !l.isExpanded } : l) as Layer[]);
+  };
+  
+  const handleGroupLayers = () => showError("Grouping inside Smart Object is a stub.");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  if (smartObjectLayer?.type !== 'smart-object') {
+    return <div className="p-4">Error: Not a valid Smart Object layer.</div>;
+  }
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleReorder(e.active.id as string, e.over?.id as string)}>
+      <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur-sm flex flex-col">
+        <header className="flex items-center justify-between h-12 px-4 border-b">
+          <h2 className="text-lg font-semibold">Editing Smart Object: {smartObjectLayer.name}</h2>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleSave}>
+              <Save className="h-4 w-4 mr-2" /> Save & Close
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              <X className="h-4 w-4 mr-2" /> Cancel
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex-1 flex min-h-0">
+          {/* Left Panel: Tools (Stub) */}
+          <div className="w-16 border-r p-2">
+            <p className="text-xs text-muted-foreground text-center">Tools</p>
+            {/* Placeholder for tools panel */}
+          </div>
+
+          {/* Center Panel: Workspace */}
+          <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-muted/50">
+            <div
+              className="relative shadow-xl bg-background border border-border"
+              style={{ width: '80%', height: '80%', maxWidth: '1000px', maxHeight: '800px' }}
+            >
+              <SmartObjectWorkspace
+                layers={internalLayers}
+                parentDimensions={dimensions}
+                containerRef={React.useRef(null)} // Stub container ref
+                onUpdate={handleUpdateInternalLayer}
+                onCommit={handleCommitInternalLayer}
+                selectedLayerId={internalSelectedLayerId}
+                activeTool={null} // Tools disabled in SO editor stub
+                globalSelectedLayerId={globalSelectedLayerId}
+                zoom={1}
+                setSelectedLayerId={setInternalSelectedLayerId}
+              />
+            </div>
+          </div>
+
+          {/* Right Panel: Layers */}
+          <div className="w-64 border-l flex flex-col">
+            <h3 className="text-sm font-semibold p-3 border-b">Internal Layers</h3>
+            <ScrollArea className="flex-1">
+              <SmartObjectLayersPanel
+                layers={internalLayers}
+                selectedLayerId={internalSelectedLayerId}
+                onSelectLayer={(id) => setInternalSelectedLayerId(id)}
+                onReorder={handleReorder}
+                onAddLayer={handleAddLayer}
+                onDeleteLayer={handleDeleteLayer}
+                onGroupLayers={handleGroupLayers}
+                toggleLayerVisibility={handleToggleVisibility}
+                toggleGroupExpanded={handleToggleGroupExpanded}
+                onToggleLayerLock={handleToggleLock}
+                renameLayer={handleRenameLayer}
+              />
+            </ScrollArea>
+          </div>
+        </div>
+      </div>
+    </DndContext>
+  );
+};

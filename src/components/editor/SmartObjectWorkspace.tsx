@@ -8,6 +8,7 @@ import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
 import { GradientLayer } from "./GradientLayer";
 import GroupLayer from "./GroupLayer";
+import { ImageLayer } from "./ImageLayer"; // ADDED
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -48,7 +49,7 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
           layer,
           containerRef,
           onUpdate,
-          onCommit,
+          onCommit: (id: string) => onCommit(id), // Fixed onCommit signature
           isSelected,
           activeTool,
           zoom,
@@ -62,6 +63,9 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
         }
         if (layer.type === 'drawing') {
           return <DrawingLayer {...layerProps} />;
+        }
+        if (layer.type === 'image' && layer.id !== 'background') {
+          return <ImageLayer {...layerProps} />;
         }
         if (layer.type === 'smart-object') {
           return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} />;

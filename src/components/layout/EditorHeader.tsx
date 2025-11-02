@@ -95,6 +95,30 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
   const handleOpenProjectWrapper = useCallback(() => {
     document.getElementById('file-upload-input')?.click();
   }, []);
+  
+  const handleDownloadClick = useCallback(() => {
+    setIsExportOpen(true);
+  }, [setIsExportOpen]);
+  
+  const handleGenerativeFillWrapper = useCallback(() => {
+    setIsGenerativeFillOpen(true);
+  }, [setIsGenerativeFillOpen]);
+  
+  const handleGenerateImageWrapper = useCallback(() => {
+    setIsGenerateOpen(true);
+  }, [setIsGenerateOpen]);
+  
+  const handleNewProjectClickWrapper = useCallback(() => {
+    setIsNewProjectOpen(true);
+  }, [setIsNewProjectOpen]);
+  
+  const handleSaveProjectWrapper = useCallback(() => {
+    showError("Project saving is a stub.");
+  }, []);
+  
+  const handleNewFromClipboardWrapper = useCallback(() => {
+    logic.handleNewFromClipboard(false);
+  }, [logic]);
 
   // Keyboard shortcuts hook (Fix 69)
   useKeyboardShortcuts({
@@ -108,29 +132,23 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     onDeselect: clearSelectionState,
     onDelete: handleLayerDelete,
     onCopy: handleCopy,
-    onOpenSettings: () => setIsSettingsOpen(true),
-    onOpenGenerate: () => setIsGenerateOpen(true),
-    onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
-    onOpenProjectSettings: () => setIsProjectSettingsOpen(true),
-    onExport: () => setIsExportOpen(true),
-    onNewProject: () => setIsNewProjectOpen(true),
+    onTransformChange: onTransformChange,
+    onDownloadClick: handleDownloadClick,
+    onGenerativeFill: handleGenerativeFillWrapper,
+    onNewProjectClick: handleNewProjectClickWrapper,
     onOpenProject: handleOpenProjectWrapper,
-    onSaveProject: () => showError("Project saving is a stub."),
-    onReset: resetAllEdits,
+    onSaveProject: handleSaveProjectWrapper,
   });
 
   return (
     <Header // Fix 70
-      onNewProjectClick={() => setIsNewProjectOpen(true)}
+      onNewProjectClick={handleNewProjectClickWrapper}
       onOpenProject={handleOpenProjectWrapper}
-      onSaveProject={() => showError("Project saving is a stub.")}
-      onExportClick={() => setIsExportOpen(true)}
-      onSettingsClick={() => setIsSettingsOpen(true)}
-      onImportClick={() => setIsImportOpen(true)}
-      onGenerateClick={() => setIsGenerateOpen(true)}
-      onGenerativeFillClick={() => setIsGenerativeFillOpen(true)}
-      onProjectSettingsClick={() => setIsProjectSettingsOpen(true)}
-      onReset={resetAllEdits}
+      onSaveProject={handleSaveProjectWrapper}
+      onExportClick={handleDownloadClick}
+      onNewFromClipboard={handleNewFromClipboardWrapper}
+      onGenerateClick={handleGenerateImageWrapper}
+      onTogglePreview={setIsPreviewingOriginal}
       onUndo={undo}
       onRedo={redo}
       canUndo={canUndo}
@@ -139,6 +157,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
       onCopy={handleCopy}
       onToggleFullscreen={onToggleFullscreen}
       isFullscreen={isFullscreen}
+      onSyncProject={() => showError("Sync to Cloud is a stub.")}
+      setOpenSettings={setIsSettingsOpen}
+      setOpenImport={setIsImportOpen}
+      setOpenProjectSettings={setIsProjectSettingsOpen}
       panelLayout={panelLayout}
       togglePanelVisibility={togglePanelVisibility}
       activeRightTab={activeRightTab}

@@ -100,6 +100,13 @@ interface EditorWorkspaceProps {
   handleZoomOut: () => void;
   isPreviewingOriginal: boolean;
   setSelectedLayerId: (id: string | null) => void;
+  recordHistory: (name: string, state: EditState, layers: Layer[]) => void; // ADDED
+  setGradientStart: (point: Point | null) => void; // ADDED
+  setGradientCurrent: (point: Point | null) => void; // ADDED
+  setMarqueeStart: (point: Point | null) => void; // ADDED
+  setMarqueeCurrent: (point: Point | null) => void; // ADDED
+  setForegroundColor: (color: string) => void; // ADDED
+  setCloneSourcePoint: (point: Point | null) => void; // ADDED
 }
 
 // Helper component to render layers recursively
@@ -117,7 +124,7 @@ const renderLayer = (
     layer,
     containerRef,
     onUpdate: props.updateLayer,
-    onCommit: props.commitLayerChange,
+    onCommit: (id: string) => props.commitLayerChange(id, `Update Layer: ${layer.name}`), // Fixed onCommit signature
     isSelected,
     activeTool: props.activeTool,
     zoom: props.workspaceZoom,
@@ -206,18 +213,17 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   const backgroundDataUrl = backgroundLayer && isImageOrDrawingLayer(backgroundLayer) ? backgroundLayer.dataUrl : null;
 
   // --- Tool Interaction Hooks (Stubs for now, but needed for event handling) ---
-  // We only need to ensure the handlers are defined, the logic is in useEditorLogic
   useCropTool({ activeTool: props.activeTool, dimensions: props.dimensions, crop: crop, onCropChange: props.onCropChange, onCropComplete: props.onCropComplete, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom });
   useDrawing({ activeTool: props.activeTool, brushState: props.brushState, foregroundColor: props.foregroundColor, dimensions: props.dimensions, onStrokeEnd: props.handleDrawingStrokeEnd, selectedLayerId: props.selectedLayerId, baseImageSrc: props.base64Image });
   useHistoryBrush({ activeTool: props.activeTool, brushState: props.brushState, dimensions: props.dimensions, onStrokeEnd: props.handleHistoryBrushStrokeEnd, selectedLayerId: props.selectedLayerId, historyImageSrc: props.historyImageSrc });
   useSelectiveRetouchBrush({ activeTool: props.activeTool, brushState: props.brushState, dimensions: props.dimensions, onStrokeEnd: props.handleSelectiveRetouchStrokeEnd, selectedLayerId: props.selectedLayerId });
   useMoveToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectedLayerId: props.selectedLayerId, updateLayer: props.updateLayer, commitLayerChange: props.commitLayerChange, layers: props.layers });
-  useGradientToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, gradientStart: props.gradientStart, gradientCurrent: props.gradientCurrent, setGradientStart: props.setGradientStart, setGradientCurrent: props.setGradientCurrent, addGradientLayer: props.handleAddDrawingLayer });
+  useGradientToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, gradientStart: props.gradientStart, gradientCurrent: props.gradientCurrent, setGradientStart: props.setGradientStart, setGradientCurrent: props.setGradientCurrent, addGradientLayer: props.addGradientLayer });
   useMarqueeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, marqueeStart: props.marqueeStart, marqueeCurrent: props.marqueeCurrent, setMarqueeStart: props.setMarqueeStart, setMarqueeCurrent: props.setMarqueeCurrent, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
   useLassoToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectionPath: props.selectionPath, setSelectionPath: props.setSelectionPath, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
   useEyedropperToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setForegroundColor: props.setForegroundColor });
-  useTextToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addTextLayer: props.handleAddDrawingLayer, foregroundColor: props.foregroundColor });
-  useShapeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addShapeLayer: props.handleAddDrawingLayer, selectedShapeType: props.currentEditState.selectedShapeType });
+  useTextToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addTextLayer: props.addTextLayer, foregroundColor: props.foregroundColor });
+  useShapeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addShapeLayer: props.addShapeLayer, selectedShapeType: props.currentEditState.selectedShapeType });
   useZoomToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, handleZoomIn: props.handleZoomIn, handleZoomOut: props.handleZoomOut });
   useHandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom });
   useMagicWandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
@@ -254,8 +260,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   // Apply global filters via SVG filters
   const filterString = showOriginal ? 'none' : props.currentEditState.selectedFilter;
   const filterUrl = showOriginal ? 'none' : (
-    (props.currentEditState.selectiveBlurMask && props.currentEditState.selectiveBlurAmount > 0) ? 'url(#selective-blur-filter)' :
-    (props.currentEditState.selectiveSharpenMask && props.currentEditState.selectiveSharpenAmount > 0) ? 'url(#selective-sharpen-filter)' :
+    (props.selectiveBlurMask && props.selectiveBlurAmount > 0) ? 'url(#selective-blur-filter)' :
+    (props.selectiveSharpenMask && props.selectiveSharpenAmount > 0) ? 'url(#selective-sharpen-filter)' :
     (props.currentEditState.channels.r === false || props.currentEditState.channels.g === false || props.currentEditState.channels.b === false) ? 'url(#channel-filter)' :
     (props.currentEditState.effects.blur > 0 || props.currentEditState.effects.hueShift !== 0 || props.currentEditState.effects.sharpen > 0 || props.currentEditState.effects.clarity > 0) ? 'url(#advanced-effects-filter)' :
     'none'
@@ -264,8 +270,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   const imageStyle: React.CSSProperties = {
     filter: `${filterString} ${filterUrl === 'none' ? '' : filterUrl}`,
     transform: `rotate(${props.currentEditState.rotation}deg) scaleX(${props.currentEditState.transform.scaleX}) scaleY(${props.currentEditState.transform.scaleY})`,
-    mixBlendMode: props.currentEditState.layers.find(l => l.id === 'background')?.blendMode as any || 'normal',
-    opacity: (props.currentEditState.layers.find(l => l.id === 'background')?.opacity ?? 100) / 100,
+    mixBlendMode: props.layers.find(l => l.id === 'background')?.blendMode as any || 'normal', // Fixed access to layers
+    opacity: (props.layers.find(l => l.id === 'background')?.opacity ?? 100) / 100, // Fixed access to layers
   };
   
   // Apply CMYK simulation filter if active

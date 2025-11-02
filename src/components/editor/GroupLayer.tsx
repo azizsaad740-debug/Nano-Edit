@@ -11,6 +11,7 @@ import { DrawingLayer } from "./DrawingLayer";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
 import { GradientLayer } from "./GradientLayer";
+import { ImageLayer } from "./ImageLayer"; // ADDED
 
 interface GroupLayerProps {
   layer: Layer;
@@ -50,8 +51,8 @@ const GroupLayer = ({
   } = useLayerTransform({
     layer,
     containerRef,
-    onUpdate,
-    onCommit,
+    onUpdate: (id, updates) => onUpdate(id, updates), // Pass through onUpdate
+    onCommit: (id) => onCommit(id), // Pass through onCommit
     type: "group", // Specify type as 'group'
     parentDimensions,
     activeTool,
@@ -107,21 +108,24 @@ const GroupLayer = ({
         <div style={childrenStyle}>
           {/* Recursively render children layers */}
           {groupLayer.children.map(child => {
-            // Props wrapper for nested layers
+            // Helper function to update the child layer within the group's children array
+            const updateChildLayer = (id: string, updates: Partial<Layer>) => {
+              onUpdate(groupLayer.id, {
+                children: groupLayer.children?.map(c => c.id === id ? { ...c, ...updates } : c) as Layer[]
+              });
+            };
+            
+            // Helper function to commit the group layer when a child is committed
+            const commitChildLayer = (id: string) => {
+              onCommit(groupLayer.id);
+            };
+
             const childProps = {
               key: child.id,
               layer: child,
               containerRef: layerRef, // The group's div is the container for its children
-              onUpdate: (id: string, updates: Partial<Layer>) => {
-                // This update needs to go up to the parent useLayers hook
-                // to modify the children array of this group layer
-                onUpdate(groupLayer.id, {
-                  children: groupLayer.children?.map(c => c.id === id ? { ...c, ...updates } : c) as Layer[]
-                });
-              },
-              onCommit: (id: string) => {
-                onCommit(groupLayer.id); // Commit the group layer when a child is committed
-              },
+              onUpdate: updateChildLayer,
+              onCommit: commitChildLayer,
               isSelected: globalSelectedLayerId === child.id, // Use globalSelectedLayerId for highlighting
               activeTool: activeTool,
               zoom: zoom,
@@ -135,6 +139,9 @@ const GroupLayer = ({
             }
             if (child.type === 'drawing') {
               return <DrawingLayer {...childProps} />;
+            }
+            if (child.type === 'image' && child.id !== 'background') {
+              return <ImageLayer {...childProps} />;
             }
             if (child.type === 'smart-object') {
               return <SmartObjectLayer {...childProps} parentDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} />;

@@ -7,6 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Separator } from "@/components/ui/separator";
+import type { BlendMode } from "@/types/editor";
 
 interface BrushOptionsProps {
   activeTool: "brush" | "eraser" | "pencil";
@@ -197,7 +198,7 @@ export const BrushOptions: React.FC<BrushOptionsProps> = ({
         <Label>Blend Mode</Label>
         <Select
           value={brushBlendMode}
-          onValueChange={setBrushBlendMode}
+          onValueChange={(value) => setBrushBlendMode(value as BlendMode)} // Fixed casting
         >
           <SelectTrigger>
             <SelectValue placeholder="Normal" />
