@@ -8,13 +8,27 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Palette, LayoutGrid, Info, Compass, SlidersHorizontal, Zap } from "lucide-react";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
-import InfoPanel from "@/components/auxiliary/InfoPanel"; // Import InfoPanel
-import NavigatorPanel from "@/components/auxiliary/NavigatorPanel"; // Import NavigatorPanel
-import ColorCorrectionPanel from "@/components/auxiliary/ColorCorrectionPanel"; // NEW IMPORT
-import XtraAiPanel from "@/components/auxiliary/XtraAiPanel"; // NEW IMPORT
+import InfoPanel from "@/components/auxiliary/InfoPanel";
+import NavigatorPanel from "@/components/auxiliary/NavigatorPanel";
+import ColorCorrectionPanel from "@/components/auxiliary/ColorCorrectionPanel";
+import XtraAiPanel from "@/components/auxiliary/XtraAiPanel";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { EditState, HslAdjustment, Point } from "@/types/editor";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { DraggableTab } from "./DraggableTab";
+import type { PanelTab } from "@/types/editor/core";
 
 type HslColorKey = keyof EditState['hslAdjustments'];
 
@@ -65,111 +79,155 @@ interface BottomPanelProps {
   onImageResult: (resultUrl: string, historyName: string) => void;
   onMaskResult: (maskDataUrl: string, historyName: string) => void;
   onOpenSettings: () => void;
+  // Panel Management Props (NEW)
+  panelLayout: PanelTab[];
+  reorderPanelTabs: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => void;
+  activeBottomTab: string;
+  setActiveBottomTab: (id: string) => void;
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = (props) => {
   const navigate = useNavigate();
-  
+  const {
+    panelLayout, reorderPanelTabs, activeBottomTab, setActiveBottomTab,
+  } = props;
+
+  const bottomTabs = React.useMemo(() => {
+    return panelLayout
+      .filter(t => t.location === 'bottom' && t.visible)
+      .sort((a, b) => a.order - b.order);
+  }, [panelLayout]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    
+    // Reorder within the bottom panel
+    reorderPanelTabs(active.id as string, over.id as string, 'bottom');
+  };
+
+  const renderTabContent = (tabId: string) => {
+    switch (tabId) {
+      case 'color':
+        return (
+          <ColorPanel
+            foregroundColor={props.foregroundColor}
+            onForegroundColorChange={props.onForegroundColorChange}
+            backgroundColor={props.backgroundColor}
+            onBackgroundColorChange={props.onBackgroundColorChange}
+            onSwapColors={props.onSwapColors}
+          />
+        );
+      case 'correction':
+        return (
+          <ColorCorrectionPanel
+            adjustments={props.adjustments}
+            onAdjustmentChange={props.onAdjustmentChange}
+            onAdjustmentCommit={props.onAdjustmentCommit}
+            grading={props.grading}
+            onGradingChange={props.onGradingChange}
+            onGradingCommit={props.onGradingCommit}
+            hslAdjustments={props.hslAdjustments}
+            onHslAdjustmentChange={props.onHslAdjustmentChange}
+            onHslAdjustmentCommit={props.onHslAdjustmentCommit}
+            curves={props.curves}
+            onCurvesChange={props.onCurvesChange}
+            onCurvesCommit={props.onCurvesCommit}
+            imgRef={props.imgRef}
+            customHslColor={props.customHslColor}
+            setCustomHslColor={props.setCustomHslColor}
+          />
+        );
+      case 'ai-xtra':
+        return (
+          <XtraAiPanel
+            hasImage={props.hasImage}
+            base64Image={props.base64Image}
+            dimensions={props.dimensions}
+            geminiApiKey={props.geminiApiKey}
+            onImageResult={props.onImageResult}
+            onMaskResult={props.onMaskResult}
+            onOpenSettings={props.onOpenSettings}
+          />
+        );
+      case 'info':
+        return (
+          <InfoPanel
+            dimensions={props.dimensions}
+            fileInfo={props.fileInfo}
+            imgRef={props.imgRef}
+            exifData={props.exifData}
+            colorMode={props.colorMode}
+          />
+        );
+      case 'navigator':
+        return (
+          <NavigatorPanel
+            image={props.hasImage ? props.imgRef.current?.src || null : null}
+            zoom={props.zoom}
+            onZoomIn={props.onZoomIn}
+            onZoomOut={props.onZoomOut}
+            onFitScreen={props.onFitScreen}
+            dimensions={props.dimensions}
+          />
+        );
+      case 'templates':
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Browse and load community templates to start your project.
+            </p>
+            <Button onClick={() => navigate('/community')}>
+              Go to Community Templates
+            </Button>
+          </div>
+        );
+      default:
+        return <div className="p-4 text-muted-foreground">Panel not found.</div>;
+    }
+  };
+
   return (
     <div className="w-full h-48 border-t bg-background flex shrink-0">
       <div className="flex-1 min-w-0 h-full">
-        <Tabs defaultValue="color" className="w-full h-full flex flex-col">
-          <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start">
-            <TabsTrigger value="color" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <Palette className="h-4 w-4 mr-1" /> Color Palette
-            </TabsTrigger>
-            <TabsTrigger value="correction" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <SlidersHorizontal className="h-4 w-4 mr-1" /> Color Correction
-            </TabsTrigger>
-            <TabsTrigger value="ai-xtra" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <Zap className="h-4 w-4 mr-1" /> Xtra AI
-            </TabsTrigger>
-            <TabsTrigger value="info" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <Info className="h-4 w-4 mr-1" /> Info
-            </TabsTrigger>
-            <TabsTrigger value="navigator" className="h-full flex-1 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <Compass className="h-4 w-4 mr-1" /> Navigator
-            </TabsTrigger>
-            <TabsTrigger value="templates" className="h-full rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-background">
-              <LayoutGrid className="h-4 w-4 mr-1" /> Templates
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeBottomTab} onValueChange={setActiveBottomTab} className="w-full h-full flex flex-col">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0">
+              <SortableContext
+                items={bottomTabs.map(t => t.id)}
+                strategy={horizontalListSortingStrategy}
+              >
+                {bottomTabs.map((tab) => (
+                  <DraggableTab
+                    key={tab.id}
+                    tab={tab}
+                    isActive={activeBottomTab === tab.id}
+                    onSelect={setActiveBottomTab}
+                  />
+                ))}
+              </SortableContext>
+            </TabsList>
+          </DndContext>
 
           <ScrollArea className="flex-1">
             <div className="p-4">
-              <TabsContent value="color" className="mt-0">
-                <ColorPanel
-                  foregroundColor={props.foregroundColor}
-                  onForegroundColorChange={props.onForegroundColorChange}
-                  backgroundColor={props.backgroundColor}
-                  onBackgroundColorChange={props.onBackgroundColorChange}
-                  onSwapColors={props.onSwapColors}
-                />
-              </TabsContent>
-              
-              <TabsContent value="correction" className="mt-0">
-                <ColorCorrectionPanel
-                  adjustments={props.adjustments}
-                  onAdjustmentChange={props.onAdjustmentChange}
-                  onAdjustmentCommit={props.onAdjustmentCommit}
-                  grading={props.grading}
-                  onGradingChange={props.onGradingChange}
-                  onGradingCommit={props.onGradingCommit}
-                  hslAdjustments={props.hslAdjustments}
-                  onHslAdjustmentChange={props.onHslAdjustmentChange}
-                  onHslAdjustmentCommit={props.onHslAdjustmentCommit}
-                  curves={props.curves}
-                  onCurvesChange={props.onCurvesChange}
-                  onCurvesCommit={props.onCurvesCommit}
-                  imgRef={props.imgRef}
-                  customHslColor={props.customHslColor}
-                  setCustomHslColor={props.setCustomHslColor}
-                />
-              </TabsContent>
-              
-              <TabsContent value="ai-xtra" className="mt-0">
-                <XtraAiPanel
-                  hasImage={props.hasImage}
-                  base64Image={props.base64Image}
-                  dimensions={props.dimensions}
-                  geminiApiKey={props.geminiApiKey}
-                  onImageResult={props.onImageResult}
-                  onMaskResult={props.onMaskResult}
-                  onOpenSettings={props.onOpenSettings}
-                />
-              </TabsContent>
-
-              <TabsContent value="info" className="mt-0">
-                <InfoPanel
-                  dimensions={props.dimensions}
-                  fileInfo={props.fileInfo}
-                  imgRef={props.imgRef}
-                  exifData={props.exifData}
-                  colorMode={props.colorMode}
-                />
-              </TabsContent>
-
-              <TabsContent value="navigator" className="mt-0">
-                <NavigatorPanel
-                  image={props.hasImage ? props.imgRef.current?.src || null : null}
-                  zoom={props.zoom}
-                  onZoomIn={props.onZoomIn}
-                  onZoomOut={props.onZoomOut}
-                  onFitScreen={props.onFitScreen}
-                  dimensions={props.dimensions}
-                />
-              </TabsContent>
-              
-              <TabsContent value="templates" className="mt-0">
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Browse and load community templates to start your project.
-                  </p>
-                  <Button onClick={() => navigate('/community')}>
-                    Go to Community Templates
-                  </Button>
-                </div>
-              </TabsContent>
+              {bottomTabs.map((tab) => (
+                <TabsContent key={tab.id} value={tab.id} className="mt-0">
+                  {renderTabContent(tab.id)}
+                </TabsContent>
+              ))}
             </div>
           </ScrollArea>
         </Tabs>

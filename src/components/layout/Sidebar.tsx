@@ -2,6 +2,7 @@ import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point, HslAdjustment, HslColorKey, AdjustmentState, GradingState, CurvesState } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
+import type { PanelTab } from "@/types/editor/core"; // NEW IMPORT
 
 // Renamed and exported interface
 export interface RightSidebarTabsProps {
@@ -153,6 +154,21 @@ export interface RightSidebarTabsProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitScreen: () => void;
+  
+  // AI Props
+  geminiApiKey: string;
+  base64Image: string | null;
+  onImageResult: (resultUrl: string, historyName: string) => void;
+  onMaskResult: (maskDataUrl: string, historyName: string) => void;
+  onOpenSettings: () => void;
+
+  // Panel Management Props (NEW)
+  panelLayout: PanelTab[];
+  reorderPanelTabs: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => void;
+  activeRightTab: string;
+  setActiveRightTab: (id: string) => void;
+  activeBottomTab: string;
+  setActiveBottomTab: (id: string) => void;
 }
 
 const Sidebar = (props: RightSidebarTabsProps) => {

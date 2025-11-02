@@ -65,7 +65,7 @@ export const Index = () => {
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
     groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
-    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers, // Destructured handleDeleteHiddenLayers
+    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleDestructiveOperation,
     onBrushCommit,
@@ -95,7 +95,7 @@ export const Index = () => {
     handleImageResult, 
     handleMaskResult, 
     base64Image, 
-    historyImageSrc, // DESTRUCTURED
+    historyImageSrc,
     
     // Workspace
     hasImage, hasActiveSelection,
@@ -115,7 +115,10 @@ export const Index = () => {
     handleSelectiveRetouchStrokeEnd, 
     selectiveBlurMask, 
     selectiveSharpenMask, 
-    setSelectionPath, // Destructured setSelectionPath (Fixes 19)
+    setSelectionPath,
+    
+    // Panel Management (NEW)
+    panelLayout, togglePanelVisibility, reorderPanelTabs,
   } = logic;
 
   const isMobile = useIsMobile();
@@ -129,6 +132,23 @@ export const Index = () => {
   const [isGenerativeFillOpen, setIsGenerativeFillOpen] = React.useState(false);
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = React.useState(false);
   const [isFontManagerOpen, setIsFontManagerOpen] = React.useState(false);
+  
+  // --- Panel State Management (NEW) ---
+  const rightTabs = React.useMemo(() => panelLayout.filter(t => t.location === 'right' && t.visible).sort((a, b) => a.order - b.order), [panelLayout]);
+  const bottomTabs = React.useMemo(() => panelLayout.filter(t => t.location === 'bottom' && t.visible).sort((a, b) => a.order - b.order), [panelLayout]);
+  
+  const [activeRightTab, setActiveRightTab] = React.useState(rightTabs[0]?.id || 'layers');
+  const [activeBottomTab, setActiveBottomTab] = React.useState(bottomTabs[0]?.id || 'color');
+
+  // Ensure active tabs are always visible and default to the first visible tab if the current one is hidden
+  React.useEffect(() => {
+    if (rightTabs.length > 0 && !rightTabs.some(t => t.id === activeRightTab)) {
+      setActiveRightTab(rightTabs[0].id);
+    }
+    if (bottomTabs.length > 0 && !bottomTabs.some(t => t.id === activeBottomTab)) {
+      setActiveBottomTab(bottomTabs[0].id);
+    }
+  }, [rightTabs, bottomTabs, activeRightTab, activeBottomTab]);
   
   // --- Mobile State ---
   const [activeMobileTab, setActiveMobileTab] = React.useState<MobileTab>('layers');
@@ -148,7 +168,7 @@ export const Index = () => {
       const toolRequiresOptions = tool && toolsThatOpenOptions.includes(tool);
       
       if (toolRequiresOptions) {
-          setActiveMobileTab('tools' as MobileTab); // Explicit cast (Fixes 18)
+          setActiveMobileTab('tools' as MobileTab); // Explicit cast
           setIsMobileOptionsOpen(true);
       } else {
           // If tool is deselected, keep options open but switch to layers/properties if applicable
@@ -156,7 +176,7 @@ export const Index = () => {
              setActiveMobileTab('layers');
           }
       }
-  }, [setActiveTool, setIsMobileOptionsOpen, activeMobileTab]);
+  }, [setActiveTool, setIsMobileOptionsOpen]);
 
   // --- Template Loading from Community Page ---
   React.useEffect(() => {
@@ -203,12 +223,10 @@ export const Index = () => {
     onOpenSettings: () => setIsSettingsOpen(true),
     onOpenGenerate: () => setIsGenerateOpen(true),
     onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
-    navigate, // Passed navigate (Fixes 17)
-    // Added missing props for LeftSidebarProps (TS2739 fix)
+    navigate,
     setActiveTool: handleSetActiveTool,
     setSelectedShapeType,
     setForegroundColor,
-    // AI Results Handlers (for Mobile Options)
     geminiApiKey,
     base64Image: base64Image,
     onImageResult: handleImageResult,
@@ -217,7 +235,7 @@ export const Index = () => {
  
   const editorWorkspaceProps = {
     workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal, base64Image,
-    historyImageSrc, // ADDED
+    historyImageSrc,
   };
   
   const toolOptionsBarProps = {
@@ -366,18 +384,18 @@ export const Index = () => {
             
             {/* Floating Controls (Undo/Redo/Zoom) */}
             <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => undo()} disabled={!canUndo}>
+              <Button variant="secondary" size="icon" onClick={() => undo()} disabled={!canUndo}>
                 <Undo2 className="h-5 w-5" />
               </Button>
-              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={() => redo()} disabled={!canRedo}>
+              <Button variant="secondary" size="icon" onClick={() => redo()} disabled={!canRedo}>
                 <Redo2 className="h-5 w-5" />
               </Button>
             </div>
             <div className="absolute bottom-4 right-4 z-10 flex flex-col gap-2">
-              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomIn}>
+              <Button variant="secondary" size="icon" onClick={handleZoomIn}>
                 <ZoomIn className="h-5 w-5" />
               </Button>
-              <Button variant="secondary" size="icon" className="h-10 w-10" onClick={handleZoomOut}>
+              <Button variant="secondary" size="icon" onClick={handleZoomOut}>
                 <ZoomOut className="h-5 w-5" />
               </Button>
             </div>
@@ -431,6 +449,13 @@ export const Index = () => {
           setIsProjectSettingsOpen={setIsProjectSettingsOpen}
           isFullscreen={isFullscreen}
           onToggleFullscreen={handleToggleFullscreen}
+          // Panel Management Props (NEW)
+          panelLayout={panelLayout}
+          togglePanelVisibility={togglePanelVisibility}
+          activeRightTab={activeRightTab}
+          setActiveRightTab={setActiveRightTab}
+          activeBottomTab={activeBottomTab}
+          setActiveBottomTab={setActiveBottomTab}
         />
         
         {/* 2. Tool Options Bar */}
@@ -453,7 +478,17 @@ export const Index = () => {
           
           {/* Right Sidebar Panel (Layers/Channels/Properties) */}
           <ResizablePanel defaultSize={25} minSize={15} maxSize={30} className="shrink-0 border-l bg-sidebar">
-            <Sidebar {...mobileOptionsProps} onApplyPreset={handleApplyPreset} />
+            <Sidebar 
+              {...mobileOptionsProps} 
+              onApplyPreset={handleApplyPreset} 
+              // Panel Management Props (NEW)
+              panelLayout={panelLayout}
+              reorderPanelTabs={reorderPanelTabs}
+              activeRightTab={activeRightTab}
+              setActiveRightTab={setActiveRightTab}
+              activeBottomTab={activeBottomTab}
+              setActiveBottomTab={setActiveBottomTab}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
         
@@ -495,6 +530,11 @@ export const Index = () => {
           onImageResult={handleImageResult}
           onMaskResult={handleMaskResult}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          // Panel Management Props (NEW)
+          panelLayout={panelLayout}
+          reorderPanelTabs={reorderPanelTabs}
+          activeBottomTab={activeBottomTab}
+          setActiveBottomTab={setActiveBottomTab}
         />
       </div>
       {fileInput}

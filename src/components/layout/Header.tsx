@@ -8,7 +8,6 @@ import {
   Redo2,
   Settings,
   FilePlus2,
-  Sparkles,
   FilePlus,
   Save,
   FolderOpen,
@@ -42,6 +41,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate, Link } from "react-router-dom"; // Import Link
 import { showSuccess, showError } from "@/utils/toast"; // ADDED: Import toast utilities
 import { cn } from "@/lib/utils";
+import { WindowsDropdown } from "./WindowsDropdown"; // NEW IMPORT
+import type { PanelTab } from "@/types/editor/core"; // NEW IMPORT
 
 interface HeaderProps {
   onReset: () => void;
@@ -64,7 +65,13 @@ interface HeaderProps {
   isFullscreen: boolean;
   onSyncProject: () => void;
   setOpenProjectSettings: (open: boolean) => void;
-  // Multi-project props removed
+  // Panel Management Props (NEW)
+  panelLayout: PanelTab[];
+  togglePanelVisibility: (id: string) => void;
+  activeRightTab: string;
+  setActiveRightTab: (id: string) => void;
+  activeBottomTab: string;
+  setActiveBottomTab: (id: string) => void;
   children: React.ReactNode;
 }
 
@@ -89,6 +96,12 @@ const Header = ({
   isFullscreen,
   onSyncProject,
   setOpenProjectSettings,
+  panelLayout, // NEW
+  togglePanelVisibility, // NEW
+  activeRightTab, // NEW
+  setActiveRightTab, // NEW
+  activeBottomTab, // NEW
+  setActiveBottomTab, // NEW
   children,
 }: HeaderProps) => {
   const [isHoveringPreview, setIsHoveringPreview] = React.useState(false);
@@ -189,6 +202,15 @@ const Header = ({
         {children}
 
         <div className="flex items-center gap-2">
+          <WindowsDropdown
+            panelLayout={panelLayout}
+            togglePanelVisibility={togglePanelVisibility}
+            activeRightTab={activeRightTab}
+            setActiveRightTab={setActiveRightTab}
+            activeBottomTab={activeBottomTab}
+            setActiveBottomTab={setActiveBottomTab}
+          />
+          
           <Tooltip>
             <TooltipTrigger asChild>
               <Button

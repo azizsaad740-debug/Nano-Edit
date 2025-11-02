@@ -37,10 +37,13 @@ export const WindowsDropdown: React.FC<WindowsDropdownProps> = ({
     if (tab.visible) {
         const visibleTabsInPanel = panelLayout.filter(t => t.location === tab.location && t.id !== tab.id && t.visible);
         if (tab.location === 'right' && tab.id === activeRightTab && visibleTabsInPanel.length > 0) {
-            setActiveRightTab(visibleTabsInPanel[0].id);
+            // Find the next visible tab in the correct order
+            const nextTab = visibleTabsInPanel.sort((a, b) => a.order - b.order)[0];
+            setActiveRightTab(nextTab.id);
         }
         if (tab.location === 'bottom' && tab.id === activeBottomTab && visibleTabsInPanel.length > 0) {
-            setActiveBottomTab(visibleTabsInPanel[0].id);
+            const nextTab = visibleTabsInPanel.sort((a, b) => a.order - b.order)[0];
+            setActiveBottomTab(nextTab.id);
         }
     }
   };
