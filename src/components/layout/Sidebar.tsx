@@ -2,7 +2,7 @@ import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point, HslAdjustment, HslColorKey, AdjustmentState, GradingState, CurvesState } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
-import type { PanelTab } from "@/types/editor/core"; // NEW IMPORT
+import type { PanelTab } from "@/types/editor/core";
 
 // Renamed and exported interface
 export interface RightSidebarTabsProps {
@@ -28,7 +28,7 @@ export interface RightSidebarTabsProps {
   onLayerOpacityChange: (opacity: number) => void;
   onLayerOpacityCommit: () => void;
   addTextLayer: (coords: Point, color: string) => void;
-  addDrawingLayer: () => string;
+  addDrawingLayer: (coords: Point, dataUrl: string) => string;
   onAddLayerFromBackground: () => void;
   onLayerFromSelection: () => void;
   addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void;

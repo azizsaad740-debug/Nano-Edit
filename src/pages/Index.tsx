@@ -27,6 +27,7 @@ import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { showError } from "@/utils/toast";
+import { LayersPanel } from "@/components/editor/LayersPanel"; // Import the actual LayersPanel
 
 const Index: React.FC = () => {
   const logic = useEditorLogic({});
@@ -282,7 +283,7 @@ const Index: React.FC = () => {
               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
                 <Sidebar
                   {...logic}
-                  LayersPanel={() => <div>Layers Panel Stub</div>} // Stub LayersPanel
+                  LayersPanel={LayersPanel} // Pass the actual LayersPanel component
                   onOpenFontManager={() => setIsFontManagerOpen(true)}
                   onSavePreset={handleSavePreset}
                   onSaveGradientPreset={handleSaveGradientPreset}
