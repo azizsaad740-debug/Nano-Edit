@@ -68,7 +68,7 @@ interface GlobalEffectsPanelProps {
   // Preset Props
   presets: Preset[];
   onApplyPreset: (preset: Preset) => void;
-  onSavePreset: (name: string) => void;
+  onSavePreset: () => void; // CHANGED: Expects dialog opener function
   onDeletePreset: (name: string) => void;
 }
 
@@ -88,7 +88,7 @@ const GlobalEffectsPanel = (props: GlobalEffectsPanelProps) => {
     aspect,
     presets,
     onApplyPreset,
-    onSavePreset,
+    onSavePreset, // Now the dialog opener
     onDeletePreset,
     frame,
     onFramePresetChange,
@@ -143,7 +143,7 @@ const GlobalEffectsPanel = (props: GlobalEffectsPanelProps) => {
               <Presets
                 presets={presets}
                 onApplyPreset={onApplyPreset}
-                onSavePreset={() => onSavePreset("New Preset")}
+                onSavePreset={onSavePreset} // CORRECTED: Pass the dialog opener directly
                 onDeletePreset={onDeletePreset}
               />
             </AccordionContent>

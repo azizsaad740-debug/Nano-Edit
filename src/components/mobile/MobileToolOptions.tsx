@@ -200,7 +200,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             dimensions={logic.dimensions}
             geminiApiKey={logic.geminiApiKey}
             onImageResult={logic.handleGenerateImage}
-            onMaskResult={() => {}} // Stub
+            onMaskResult={logic.handleMaskResult} // Pass the actual handler
             onOpenSettings={onOpenSettings}
           />
         );
@@ -246,7 +246,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
         return (
           <NavigatorPanel
             image={logic.hasImage ? logic.imgRef.current?.src || null : null}
-            zoom={logic.workspaceZoom}
+            zoom={logic.zoom} // Use 'zoom' alias
             onZoomIn={logic.handleZoomIn}
             onZoomOut={logic.handleZoomOut}
             onFitScreen={logic.handleFitScreen}

@@ -69,9 +69,9 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
-    presets, handleApplyPreset, handleSavePreset, onDeletePreset, // Fixed Errors 7, 8
+    presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset, // Fixed Errors 7, 8
     gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
-    workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
+    zoom, handleZoomIn, handleZoomOut, handleFitScreen,
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     workspaceRef, imgRef,

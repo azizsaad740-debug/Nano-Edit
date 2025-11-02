@@ -126,7 +126,7 @@ const Index: React.FC = () => {
               {...logic}
               workspaceRef={logic.workspaceRef}
               imgRef={logic.imgRef}
-              workspaceZoom={logic.workspaceZoom}
+              workspaceZoom={logic.zoom} // Use 'zoom' alias
               handleWorkspaceMouseDown={logic.handleWorkspaceMouseDown}
               handleWorkspaceMouseMove={logic.handleWorkspaceMouseMove}
               handleWorkspaceMouseUp={logic.handleWorkspaceMouseUp}
@@ -144,6 +144,9 @@ const Index: React.FC = () => {
               addShapeLayer={logic.addShapeLayer}
               setMarqueeStart={logic.setMarqueeStart} // ADDED
               setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
+              setGradientStart={logic.setGradientStart} // ADDED
+              setGradientCurrent={logic.setGradientCurrent} // ADDED
+              setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
             />
           </div>
           <MobileToolOptions
@@ -219,7 +222,7 @@ const Index: React.FC = () => {
                     {...logic}
                     workspaceRef={logic.workspaceRef}
                     imgRef={logic.imgRef}
-                    workspaceZoom={logic.workspaceZoom}
+                    workspaceZoom={logic.zoom} // Use 'zoom' alias
                     handleWorkspaceMouseDown={logic.handleWorkspaceMouseDown}
                     handleWorkspaceMouseMove={logic.handleWorkspaceMouseMove}
                     handleWorkspaceMouseUp={logic.handleWorkspaceMouseUp}
@@ -237,6 +240,9 @@ const Index: React.FC = () => {
                     addShapeLayer={logic.addShapeLayer}
                     setMarqueeStart={logic.setMarqueeStart} // ADDED
                     setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
+                    setGradientStart={logic.setGradientStart} // ADDED
+                    setGradientCurrent={logic.setGradientCurrent} // ADDED
+                    setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
                   />
                 </ResizablePanel>
                 
@@ -255,7 +261,7 @@ const Index: React.FC = () => {
                         imgRef={logic.imgRef}
                         exifData={logic.exifData}
                         colorMode={logic.currentEditState.colorMode}
-                        zoom={logic.workspaceZoom}
+                        zoom={logic.zoom} // Use 'zoom' alias
                         onZoomIn={logic.handleZoomIn}
                         onZoomOut={logic.handleZoomOut}
                         onFitScreen={logic.handleFitScreen}
@@ -277,7 +283,7 @@ const Index: React.FC = () => {
                         geminiApiKey={logic.geminiApiKey}
                         base64Image={logic.base64Image}
                         onImageResult={logic.handleGenerateImage}
-                        onMaskResult={() => {}} // Stub
+                        onMaskResult={logic.handleMaskResult} // ADDED
                         onOpenSettings={() => setIsSettingsOpen(true)}
                         panelLayout={logic.panelLayout}
                         reorderPanelTabs={logic.reorderPanelTabs}
@@ -298,7 +304,7 @@ const Index: React.FC = () => {
                   {...logic}
                   LayersPanel={LayersPanel} // Pass the actual LayersPanel component
                   onOpenFontManager={() => setIsFontManagerOpen(true)}
-                  onSavePreset={handleSavePreset}
+                  onSavePreset={handleSavePreset} // Pass dialog opener
                   onSaveGradientPreset={handleSaveGradientPreset}
                   onOpenSettings={() => setIsSettingsOpen(true)}
                   onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
@@ -319,7 +325,7 @@ const Index: React.FC = () => {
                   onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
                   onSelectiveSharpenAmountCommit={(v) => logic.updateCurrentState({ selectiveSharpenAmount: v })}
                   onApplyPreset={logic.handleApplyPreset}
-                  onSavePreset={(name) => logic.handleSavePreset(name)}
+                  onSavePreset={handleSavePreset} // Pass dialog opener
                   onDeletePreset={logic.onDeletePreset}
                   onChannelChange={logic.onChannelChange}
                   onHistoryJump={logic.onHistoryJump}
@@ -366,7 +372,14 @@ const Index: React.FC = () => {
                   onBackgroundColorChange={logic.setBackgroundColor}
                   onSwapColors={logic.handleSwapColors}
                   
-                  // Ensure all required props are passed, even if redundant with spread
+                  // Missing Document/View Props
+                  dimensions={logic.dimensions}
+                  fileInfo={logic.fileInfo}
+                  exifData={logic.exifData}
+                  colorMode={logic.currentEditState.colorMode}
+                  zoom={logic.zoom} // Use 'zoom' alias
+                  onImageResult={logic.handleGenerateImage} // ADDED
+                  onMaskResult={logic.handleMaskResult} // ADDED
                 />
               </ResizablePanel>
             )}
@@ -413,7 +426,7 @@ const Index: React.FC = () => {
         <SavePresetDialog
           open={isSavePresetOpen}
           onOpenChange={setIsSavePresetOpen}
-          onSave={logic.onSavePreset}
+          onSave={logic.handleSavePresetCommit} // Use the commit function
         />
         <SaveGradientPresetDialog
           open={isSaveGradientPresetOpen}

@@ -324,6 +324,12 @@ export const useEditorLogic = (props: any) => {
     setSelectedLayerIdState(id);
   }, [setSelectedLayerIdState]);
   
+  const handleMaskResult = useCallback((maskDataUrl: string, historyName: string) => {
+    setSelectionMaskDataUrl(maskDataUrl);
+    recordHistory(historyName, currentEditState, layers);
+    clearSelectionState();
+  }, [setSelectionMaskDataUrl, recordHistory, currentEditState, layers, clearSelectionState]);
+
   // --- Return all necessary state and handlers ---
   return {
     // Core State
@@ -332,7 +338,7 @@ export const useEditorLogic = (props: any) => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
-    customHslColor, setCustomHslColor, selectionSettings, 
+    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, 
     onSelectionSettingChange: (key: keyof typeof selectionSettings, value: any) => setSelectionSettings(prev => ({ ...prev, [key]: value })),
     onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${key}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
     channels, onChannelChange: onChannelChangeHook,
@@ -383,18 +389,19 @@ export const useEditorLogic = (props: any) => {
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     }, 
-    onSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), 
+    handleSavePresetCommit: (name: string) => saveGlobalPreset(name, currentEditState, layers), 
     onDeletePreset: deleteGlobalPreset,
     gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset,
     
     // Workspace Interaction
-    workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
+    zoom: workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel,
     
     // AI/Export/Project Management
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     handleNewFromClipboard,
+    handleMaskResult,
     
     // UI/Layout
     isFullscreen, setIsFullscreen,
@@ -405,7 +412,7 @@ export const useEditorLogic = (props: any) => {
     activeBottomTab, setActiveBottomTab,
     
     // Internal State
-    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
+    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, setCloneSourcePoint,
     selectiveBlurMask, selectiveSharpenMask,
     workspaceRef, imgRef,
     currentEditState, updateCurrentState, resetAllEdits,
@@ -453,5 +460,6 @@ export const useEditorLogic = (props: any) => {
     panelLayout,
     setMarqueeStart,
     setMarqueeCurrent,
+    colorMode: currentEditState.colorMode,
   };
 };

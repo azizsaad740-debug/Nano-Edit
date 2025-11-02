@@ -123,7 +123,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             onFramePropertyCommit={props.onFramePropertyCommit} // Corrected call
             presets={props.presets}
             onApplyPreset={props.onApplyPreset}
-            onSavePreset={props.onSavePreset}
+            onSavePreset={props.onSavePreset} // Pass the dialog opener function
             onDeletePreset={props.onDeletePreset}
           />
         );
