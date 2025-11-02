@@ -53,7 +53,7 @@ export const DraggableTab: React.FC<DraggableTabProps> = ({ tab, isActive, onSel
           >
             <GripVertical className="h-3 w-3 text-muted-foreground" />
           </div>
-          <Icon className="h-4 w-4" />
+          {React.createElement(Icon, { className: "h-4 w-4" })}
           <span className="hidden sm:inline text-sm">{tab.name}</span>
         </TabsTrigger>
       </TooltipTrigger>

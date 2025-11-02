@@ -21,7 +21,7 @@ export const useFrame = ({
       frameUpdate = { 
         type: 'none', 
         color: '#000000', 
-        size: 0, 
+        width: 0, 
         opacity: 100, 
         roundness: 0, 
         vignetteAmount: 0, 
@@ -32,7 +32,7 @@ export const useFrame = ({
       frameUpdate = { 
         type: 'border', 
         color: options.color, 
-        size: options.width || 10, // Use size, provide default
+        width: options.width || 10, // Use width, provide default
         opacity: options.opacity || 100, 
         roundness: options.roundness || 0, 
         vignetteAmount: 0, 
@@ -51,7 +51,7 @@ export const useFrame = ({
   }, [currentEditState.frame, updateCurrentState]);
 
   const onFramePropertyCommit = useCallback((key: keyof FrameState, value: any) => {
-    recordHistory(`Set Frame ${key}`, { ...currentEditState, frame: { ...currentEditState.frame, [key]: value } }, layers);
+    recordHistory(`Set Frame ${String(key)}`, { ...currentEditState, frame: { ...currentEditState.frame, [key]: value } }, layers);
   }, [currentEditState, layers, recordHistory]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {

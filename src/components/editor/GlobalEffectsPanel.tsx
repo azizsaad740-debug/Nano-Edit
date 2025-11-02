@@ -61,9 +61,9 @@ interface GlobalEffectsPanelProps {
   aspect: number | undefined;
   
   frame: FrameState;
-  onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
+  onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void;
   onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
-  onFramePropertyCommit: () => void;
+  onFramePropertyCommit: (key: 'width' | 'color', value: any) => void; // FIX 26: Updated signature
   
   // Preset Props
   presets: Preset[];
@@ -168,7 +168,7 @@ const GlobalEffectsPanel = (props: GlobalEffectsPanelProps) => {
             <AccordionTrigger>Frames</AccordionTrigger>
             <AccordionContent>
               <Frames 
-                onFramePresetChange={onFramePresetChange} 
+                onFramePresetChange={(type, name, options) => onFramePresetChange(type, name, options)} 
                 onFramePropertyChange={onFramePropertyChange}
                 onFramePropertyCommit={onFramePropertyCommit}
                 currentFrame={frame} 

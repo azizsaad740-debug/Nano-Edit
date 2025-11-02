@@ -82,7 +82,7 @@ interface EditorWorkspaceProps {
   handleWorkspaceMouseMove: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWorkspaceMouseUp: (e: React.MouseEvent<HTMLDivElement>) => void;
   handleWheel: (e: React.WheelEvent<HTMLDivElement>) => void;
-  setIsMouseOverImage: (isOver: boolean) => void;
+  setIsMouseOverImage: (isOver: boolean) => void; // ADDED
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
   handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void;

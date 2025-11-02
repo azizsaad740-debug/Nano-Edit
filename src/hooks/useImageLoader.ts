@@ -5,6 +5,7 @@ import { loadProjectFromFile, ProjectFile } from '@/utils/projectUtils';
 import ExifReader from 'exifreader';
 import { initialLayerState } from '@/types/editor';
 import { v4 as uuidv4 } from 'uuid';
+import * as React from 'react'; // ADDED
 
 export const useImageLoader = (
   setImage: (image: string | null) => void,
@@ -14,14 +15,14 @@ export const useImageLoader = (
   setLayers: (layers: Layer[]) => void,
   resetAllEdits: () => void,
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
-  setCurrentEditState: (state: EditState) => void,
+  setCurrentEditState: React.Dispatch<React.SetStateAction<EditState>>, // FIX 11
   currentEditState: EditState,
   initialEditState: EditState,
   initialLayerState: Layer[],
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
-  setHistory: (history: HistoryItem[]) => void, // ADDED
-  setCurrentHistoryIndex: (index: number) => void, // ADDED
+  setHistory: React.Dispatch<React.SetStateAction<HistoryItem[]>>, // FIX 12
+  setCurrentHistoryIndex: React.Dispatch<React.SetStateAction<number>>, // FIX 12
 ) => {
   const handleImageLoad = useCallback((file: File) => {
     if (file.name.endsWith(".nanoedit")) {

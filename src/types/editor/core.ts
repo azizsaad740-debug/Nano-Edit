@@ -1,7 +1,7 @@
 // src/types/editor/core.ts
 
 import type { Icon as LucideIcon } from "lucide-react";
-import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState } from "./adjustments";
+import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState } from "./adjustments"; // <-- Import FrameState here
 
 // --- Core Types ---
 
@@ -37,6 +37,9 @@ export interface HslAdjustment {
   saturation: number;
   lightness: number; // Standardized property name
 }
+
+// Exporting the imported types to make them available via '@/types/editor'
+export type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState }; // <-- ADDED EXPORTS
 
 // --- Layer Data Interfaces ---
 

@@ -45,7 +45,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             selectedLayerId={logic.selectedLayerId}
             selectedLayer={logic.selectedLayer}
             onSelectLayer={logic.setSelectedLayerId}
-            onReorder={(activeId, overId) => logic.handleReorder(activeId, overId, 'right')}
+            onReorder={logic.handleReorder} // FIX 36: Pass the 2-argument layer reorder function
             toggleLayerVisibility={logic.toggleLayerVisibility}
             renameLayer={logic.renameLayer}
             deleteLayer={logic.deleteLayer}
@@ -64,7 +64,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             onAddLayerFromBackground={logic.onAddLayerFromBackground}
             onLayerFromSelection={logic.onLayerFromSelection}
             addShapeLayer={logic.addShapeLayer}
-            addGradientLayer={logic.addGradientLayer}
+            addGradientLayer={logic.addGradientLayerNoArgs} // FIX 37: Use the no-arg version
             onAddAdjustmentLayer={logic.onAddAdjustmentLayer}
             selectedShapeType={logic.selectedShapeType}
             groupLayers={logic.groupLayers}
@@ -157,7 +157,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
               frame={logic.frame}
               onFramePresetChange={(type, name, options) => logic.onFramePresetChange(type, options)}
               onFramePropertyChange={logic.onFramePropertyChange}
-              onFramePropertyCommit={() => logic.onFramePropertyCommit('width', logic.frame.width)} // Fixed signature
+              onFramePropertyCommit={(key, value) => logic.onFramePropertyCommit(key, value)} // Fixed signature
               presets={logic.presets}
               onApplyPreset={logic.handleApplyPreset}
               onSavePreset={onSavePreset}

@@ -49,6 +49,7 @@ export const useEditorLogic = (props: any) => {
     // History
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
+    setHistory, // ADDED
     
     // Workspace/View
     workspaceRef, imgRef, workspaceZoom, setZoom,
@@ -70,10 +71,11 @@ export const useEditorLogic = (props: any) => {
     setCurrentEditState,
     
     // Panel Management
-    panelLayout, setPanelLayout, reorderPanelTabs,
+    panelLayout, setPanelLayout, reorderPanelTabs, togglePanelVisibility, // ADDED togglePanelVisibility
     isMobile,
     initialEditState, initialLayerState,
     clearSelectionState,
+    setIsMouseOverImage, // ADDED
   } = state;
 
   // --- Derived State ---
@@ -131,7 +133,9 @@ export const useEditorLogic = (props: any) => {
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard } = useImageLoader(
     setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, 
     setCurrentEditState, 
-    currentEditState, initialEditState, initialLayerState, setSelectedLayerIdState, clearSelectionState
+    currentEditState, initialEditState, initialLayerState, setSelectedLayerIdState, clearSelectionState,
+    setHistory, // ADDED
+    setCurrentHistoryIndex // ADDED
   );
 
   const {
@@ -152,9 +156,20 @@ export const useEditorLogic = (props: any) => {
   });
   
   // Wrapper for addGradientLayer to handle tool interaction
-  const addGradientLayer = useCallback((startPoint: Point, endPoint: Point) => {
+  const addGradientLayerWithCoords = useCallback((startPoint: Point, endPoint: Point) => {
     addGradientLayerHook(startPoint, endPoint);
   }, [addGradientLayerHook]);
+  
+  const addGradientLayerNoArgs = useCallback(() => {
+    if (!dimensions) {
+      showError("Cannot add gradient layer without dimensions.");
+      return;
+    }
+    // Default gradient from center to right edge (0-100% in image pixels)
+    const start: Point = { x: dimensions.width / 2, y: dimensions.height / 2 };
+    const end: Point = { x: dimensions.width, y: dimensions.height / 2 };
+    addGradientLayerWithCoords(start, end);
+  }, [dimensions, addGradientLayerWithCoords]);
 
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
     geminiApiKey,
@@ -298,14 +313,14 @@ export const useEditorLogic = (props: any) => {
       const endPoint = getPointOnImage(gradientCurrent.x, gradientCurrent.y);
       
       if (startPoint && endPoint) {
-        addGradientLayer(startPoint, endPoint);
+        addGradientLayerWithCoords(startPoint, endPoint);
       }
       setGradientStart(null);
       setGradientCurrent(null);
       setActiveTool(null);
     }
     
-  }, [dimensions, marqueeStart, marqueeCurrent, activeTool, getPointOnImage, setSelectionMaskDataUrl, recordHistory, currentEditState, layers, setMarqueeStart, setMarqueeCurrent, gradientStart, gradientCurrent, addGradientLayer, setGradientStart, setGradientCurrent, setActiveTool]);
+  }, [dimensions, marqueeStart, marqueeCurrent, activeTool, getPointOnImage, setSelectionMaskDataUrl, recordHistory, currentEditState, layers, setMarqueeStart, setMarqueeCurrent, gradientStart, gradientCurrent, addGradientLayerWithCoords, setGradientStart, setGradientCurrent, setActiveTool]);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.ctrlKey || e.metaKey) {
@@ -347,7 +362,9 @@ export const useEditorLogic = (props: any) => {
     addTextLayer: (coords: Point, color: string) => addTextLayer(coords, color),
     addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, fillColor, strokeColor),
-    addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
+    addGradientLayer: addGradientLayerWithCoords, // Keep the full signature for tool interaction
+    addGradientLayerNoArgs, // ADDED for LayersPanel button
+    onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
@@ -384,7 +401,7 @@ export const useEditorLogic = (props: any) => {
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel,
     
     // AI/Export/Project Management
-    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard,
+    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     
     // UI/Layout
@@ -416,7 +433,9 @@ export const useEditorLogic = (props: any) => {
     handleCopy,
     setZoom,
     reorderPanelTabs,
+    togglePanelVisibility, // ADDED
     onCropChange, onCropComplete,
     isMobile,
+    setIsMouseOverImage, // ADDED
   };
 };

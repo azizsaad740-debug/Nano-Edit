@@ -37,6 +37,7 @@ export const useEditorState = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false); // ADDED
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export const useEditorState = () => {
   const [activeBottomTab, setActiveBottomTab] = useState('correction');
   
   // External Hooks
-  const { systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager } = useFontManager();
+  const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager(); // FIX 10: Removed onOpenFontManager
   const { geminiApiKey, stabilityApiKey } = useSettings();
 
   const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
@@ -188,6 +189,16 @@ export const useEditorState = () => {
     showSuccess("All edits reset.");
   }, [clearSelectionState, setBrushState]);
   
+  const togglePanelVisibility = useCallback((id: string) => {
+    setPanelLayout(prev => prev.map(tab => {
+      if (tab.id === id) {
+        const newLocation = tab.visible ? 'hidden' : (tab.location === 'hidden' ? 'right' : tab.location);
+        return { ...tab, visible: !tab.visible, location: newLocation };
+      }
+      return tab;
+    }));
+  }, [setPanelLayout]);
+
   const reorderPanelTabs = useCallback((activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
     setPanelLayout(prev => {
       const activeIndex = prev.findIndex(t => t.id === activeId);
@@ -275,13 +286,15 @@ export const useEditorState = () => {
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
-    onOpenFontManager,
+    onOpenFontManager: () => setIsFontManagerOpen(true), // Stub implementation
     geminiApiKey, stabilityApiKey,
     dismissToast,
     // Panel Management
     panelLayout, setPanelLayout,
     reorderPanelTabs,
+    togglePanelVisibility, // ADDED
     activeRightTab, setActiveRightTab,
     activeBottomTab, setActiveBottomTab,
+    setIsMouseOverImage, // ADDED
   };
 };

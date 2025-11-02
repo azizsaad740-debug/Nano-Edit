@@ -12,11 +12,13 @@ export const HslColorSelector: React.FC<HslColorSelectorProps> = ({ selectedColo
   const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
     { key: 'master', name: 'Master', color: 'hsl(var(--foreground))' },
     { key: 'red', name: 'Red', color: '#EF4444' },
+    { key: 'orange', name: 'Orange', color: '#F97316' },
     { key: 'yellow', name: 'Yellow', color: '#EAB308' },
     { key: 'green', name: 'Green', color: '#22C55E' },
-    { key: 'cyan', name: 'Cyan', color: '#06B6D4' },
+    { key: 'aqua', name: 'Cyan', color: '#06B6D4' }, // FIX 30: Changed key from 'cyan' to 'aqua'
     { key: 'blue', name: 'Blue', color: '#3B82F6' },
-    { key: 'magenta', name: 'Magenta', color: '#A855F7' },
+    { key: 'purple', name: 'Purple', color: '#A855F7' },
+    { key: 'magenta', name: 'Magenta', color: '#EC4899' },
   ];
 
   return (

@@ -44,7 +44,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           <LayersPanel
             {...props}
             onSelectLayer={(id, ctrlKey, shiftKey) => props.onSelectLayer(id, ctrlKey, shiftKey)}
-            onReorder={(activeId, overId) => props.onReorder(activeId, overId, 'right')}
+            onReorder={props.onReorder} // FIX 36: Use the 2-arg layer reorder function
             foregroundColor={props.foregroundColor}
           />
         );
@@ -120,7 +120,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             frame={props.frame}
             onFramePresetChange={(type, name, options) => props.onFramePresetChange(type, options)}
             onFramePropertyChange={props.onFramePropertyChange}
-            onFramePropertyCommit={() => props.onFramePropertyCommit('width', props.frame.width)} // Fixed signature
+            onFramePropertyCommit={(key, value) => props.onFramePropertyCommit(key, value)} // FIX 26: Pass key/value
             presets={props.presets}
             onApplyPreset={props.onApplyPreset}
             onSavePreset={props.onSavePreset}

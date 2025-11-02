@@ -210,7 +210,7 @@ const Index: React.FC = () => {
             <ResizableHandle withHandle />
 
             {/* Main Workspace */}
-            <ResizablePanel defaultSize={75} minSize={50}>
+            <ResizablePanel defaultSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 75 : 100} minSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 50 : 100}>
               <ResizablePanelGroup direction="vertical">
                 <ResizablePanel defaultSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 75 : 100} minSize={logic.panelLayout.some(t => t.location === 'bottom' && t.visible) ? 50 : 100}>
                   <EditorWorkspace

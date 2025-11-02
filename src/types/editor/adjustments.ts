@@ -54,7 +54,7 @@ export interface HslAdjustment {
 }
 
 export interface HslAdjustmentsState {
-  global: HslAdjustment;
+  master: HslAdjustment;
   red: HslAdjustment;
   orange: HslAdjustment;
   yellow: HslAdjustment;
