@@ -300,7 +300,7 @@ const Index: React.FC = () => {
             {/* Right Sidebar (Layers/Properties) */}
             {logic.panelLayout.some(t => t.location === 'right' && t.visible) && (
               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
-                <Sidebar // FIX: Pass all required props explicitly
+                <Sidebar
                   {...logic}
                   LayersPanel={LayersPanel} // Pass the actual LayersPanel component
                   onOpenFontManager={() => setIsFontManagerOpen(true)}
@@ -308,78 +308,14 @@ const Index: React.FC = () => {
                   onSaveGradientPreset={handleSaveGradientPreset}
                   onOpenSettings={() => setIsSettingsOpen(true)}
                   onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
-                  activeRightTab={logic.activeRightTab}
-                  setActiveRightTab={logic.setActiveRightTab}
-                  reorderPanelTabs={logic.reorderPanelTabs}
-                  togglePanelVisibility={logic.togglePanelVisibility}
-                  activeBottomTab={logic.activeBottomTab}
-                  setActiveBottomTab={logic.setActiveBottomTab}
                   
-                  // Explicitly pass aliases required by RightSidebarTabsProps
-                  onLayerUpdate={logic.updateLayer}
-                  onLayerCommit={logic.commitLayerChange}
-                  onLayerOpacityChange={logic.handleLayerOpacityChange}
-                  onLayerOpacityCommit={logic.onLayerOpacityCommit}
-                  onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
-                  onSelectiveBlurAmountCommit={(v) => logic.updateCurrentState({ selectiveBlurAmount: v })}
-                  onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
-                  onSelectiveSharpenAmountCommit={(v) => logic.updateCurrentState({ selectiveSharpenAmount: v })}
-                  onApplyPreset={logic.handleApplyPreset}
-                  onSavePreset={handleSavePreset} // Pass dialog opener
-                  onDeletePreset={logic.onDeletePreset}
-                  onChannelChange={logic.onChannelChange}
-                  onHistoryJump={logic.onHistoryJump}
-                  onUndo={logic.undo}
-                  onRedo={logic.redo}
-                  canUndo={logic.canUndo}
-                  canRedo={logic.canRedo}
-                  onZoomIn={logic.handleZoomIn}
-                  onZoomOut={logic.handleZoomOut}
-                  onFitScreen={logic.handleFitScreen}
+                  // Explicitly pass properties that require renaming or wrapping:
                   onLayerReorder={logic.onLayerReorder}
-                  toggleLayerVisibility={logic.toggleLayerVisibility}
-                  renameLayer={logic.renameLayer}
-                  deleteLayer={logic.deleteLayer}
-                  onDuplicateLayer={logic.onDuplicateLayer}
-                  onMergeLayerDown={logic.onMergeLayerDown}
-                  onRasterizeLayer={logic.onRasterizeLayer}
-                  onCreateSmartObject={logic.onCreateSmartObject}
-                  onOpenSmartObject={logic.onOpenSmartObject}
-                  onRasterizeSmartObject={logic.onRasterizeSmartObject}
-                  onConvertSmartObjectToLayers={logic.onConvertSmartObjectToLayers}
-                  onExportSmartObjectContents={logic.onExportSmartObjectContents}
-                  addTextLayer={logic.addTextLayer}
-                  addDrawingLayer={logic.addDrawingLayer}
-                  onAddLayerFromBackground={logic.onAddLayerFromBackground}
-                  onLayerFromSelection={logic.onLayerFromSelection}
-                  addShapeLayer={logic.addShapeLayer}
                   addGradientLayer={logic.addGradientLayerNoArgs}
-                  onAddAdjustmentLayer={logic.onAddAdjustmentLayer}
-                  groupLayers={logic.groupLayers}
-                  toggleGroupExpanded={logic.toggleGroupExpanded}
-                  onRemoveLayerMask={logic.onRemoveLayerMask}
-                  onInvertLayerMask={logic.onInvertLayerMask}
-                  onToggleClippingMask={logic.onToggleClippingMask}
-                  onToggleLayerLock={logic.onToggleLayerLock}
-                  onDeleteHiddenLayers={logic.onDeleteHiddenLayers}
-                  onArrangeLayer={logic.onArrangeLayer}
-                  hasActiveSelection={logic.hasActiveSelection}
-                  onApplySelectionAsMask={logic.onApplySelectionAsMask}
-                  handleDestructiveOperation={logic.handleDestructiveOperation}
-                  foregroundColor={logic.foregroundColor}
-                  onForegroundColorChange={logic.setForegroundColor}
-                  backgroundColor={logic.backgroundColor}
-                  onBackgroundColorChange={logic.setBackgroundColor}
-                  onSwapColors={logic.handleSwapColors}
                   
-                  // Missing Document/View Props
-                  dimensions={logic.dimensions}
-                  fileInfo={logic.fileInfo}
-                  exifData={logic.exifData}
-                  colorMode={logic.currentEditState.colorMode}
-                  zoom={logic.zoom} // Use 'zoom' alias
-                  onImageResult={logic.handleGenerateImage} // ADDED
-                  onMaskResult={logic.handleMaskResult} // ADDED
+                  // Explicitly pass AI result handlers required by RightSidebarTabsProps
+                  onImageResult={logic.handleGenerateImage}
+                  onMaskResult={logic.handleMaskResult}
                 />
               </ResizablePanel>
             )}
