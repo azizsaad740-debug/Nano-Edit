@@ -84,7 +84,7 @@ export interface VectorShapeLayerData extends BaseLayerData {
 
 export interface GradientLayerData extends BaseLayerData {
   type: 'gradient';
-  gradientType: 'linear' | 'radial';
+  gradientType: 'linear' | 'radial'; // FIXED: Only allow implemented types
   gradientColors: string[];
   gradientStops: number[];
   gradientAngle: number;

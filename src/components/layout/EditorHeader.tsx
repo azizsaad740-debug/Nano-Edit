@@ -46,21 +46,26 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
   setActiveBottomTab,
 }) => {
   const {
-    hasImage, fileInfo, dimensions,
-    resetAllEdits, undo, redo, canUndo, canRedo,
-    handleCopy, handleSwapColors, handleLayerDelete,
-    handleGenerateImage, handleGenerativeFill,
-    handleImageLoad, handleLoadProject,
-    activeTool, setActiveTool,
-    onTransformChange,
-    geminiApiKey,
-    currentEditState,
-    layers,
-    handleZoomIn, handleZoomOut, handleFitScreen,
-    clearSelectionState,
-    setIsPreviewingOriginal,
-    // ADDED: Brush commit function
-    onBrushCommit,
+    image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
+    activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
+    foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
+    selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
+    selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
+    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, cloneSourcePoint, setCloneSourcePoint,
+    history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
+    setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
+    workspaceRef, imgRef, workspaceZoom, setZoom,
+    marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
+    gradientStart, setGradientStart, gradientCurrent, setGradientCurrent,
+    setIsGenerateOpen: setIsGenerateOpenLogic, setIsGenerativeFillOpen: setIsGenerativeFillOpenLogic, isPreviewingOriginal, setIsPreviewingOriginal,
+    systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
+    geminiApiKey, stabilityApiKey, dismissToast,
+    currentEditState, updateCurrentState, resetAllEdits,
+    setImage, setDimensions, setFileInfo, setExifData, setLayers,
+    initialEditState, initialLayerState,
+    setIsFullscreen: setIsFullscreenLogic, setIsSettingsOpen: setIsSettingsOpenLogic, handleReorder, isMobile,
+    handleCopy, handleLayerDelete, onBrushCommit, handleZoomIn, handleZoomOut, handleFitScreen,
+    onCropChange: onCropChangeLogic, onCropComplete: onCropCompleteLogic, handleProjectSettingsUpdate,
   } = logic;
 
   // --- Keyboard Shortcuts ---
@@ -89,7 +94,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({
       onReset={resetAllEdits}
       onDownloadClick={() => setIsExportOpen(true)}
       onCopy={handleCopy}
-      hasImage={hasImage}
+      hasImage={!!image} // FIXED: Use !!image
       onTogglePreview={setIsPreviewingOriginal}
       onUndo={undo}
       onRedo={redo}

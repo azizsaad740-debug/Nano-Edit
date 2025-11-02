@@ -10,7 +10,7 @@ import type {
   CropState,
   FrameState,
 } from './adjustments'; // REVERT
-import type { SelectionSettings, BrushState } from './tools'; // REVERT
+import type { SelectionSettings, BrushState, GradientToolState } from './tools'; // REVERT
 import type { Layer } from './layers'; // REVERT
 
 export interface EditState {
@@ -32,10 +32,10 @@ export interface EditState {
   customHslColor: string;
   selectionSettings: SelectionSettings;
   
-  // Properties related to tool state and history tracking
-  brushState: BrushState; // ADDED
-  history: HistoryItem[]; // ADDED
-  historyBrushSourceIndex: number; // ADDED
+  // Properties added for history/tool state tracking (Errors 3-8)
+  brushState: BrushState;
+  history: HistoryItem[];
+  historyBrushSourceIndex: number;
 }
 
 export interface HistoryItem {
