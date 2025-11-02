@@ -20,12 +20,25 @@ import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav, type MobileTab } from "@/components/mobile/MobileBottomNav";
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { useNavigate } from "react-router-dom";
-import { Layers as LayersIcon } from "lucide-react";
+import { 
+  Layers as LayersIcon, 
+  Settings, 
+  SlidersHorizontal, 
+  Zap, 
+  Brush, 
+  PenTool, 
+  History, 
+  SquareStack, 
+  Palette, 
+  Info, 
+  Compass, 
+  LayoutGrid 
+} from "lucide-react";
+import LayersPanelComponent from "@/components/editor/LayersPanel";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DraggableTab } from "@/components/layout/DraggableTab";
 import type { PanelTab } from "@/types/editor/core";
-import LayersPanelComponent from "@/components/editor/LayersPanel"; // Keep this import for sidebarProps
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -36,17 +49,17 @@ export const Index = () => {
   // Panel Management State
   const initialPanelLayout: PanelTab[] = [
     { id: 'layers', name: 'Layers', icon: LayersIcon, location: 'right', visible: true, order: 1 },
-    { id: 'properties', name: 'Properties', icon: LayersIcon, location: 'right', visible: true, order: 2 },
-    { id: 'correction', name: 'Correction', icon: LayersIcon, location: 'right', visible: true, order: 3 },
-    { id: 'ai-xtra', name: 'AI Xtra', icon: LayersIcon, location: 'right', visible: true, order: 4 },
-    { id: 'brushes', name: 'Brushes', icon: LayersIcon, location: 'right', visible: false, order: 5 },
-    { id: 'paths', name: 'Paths', icon: LayersIcon, location: 'right', visible: false, order: 6 },
-    { id: 'history', name: 'History', icon: LayersIcon, location: 'bottom', visible: true, order: 7 },
-    { id: 'channels', name: 'Channels', icon: LayersIcon, location: 'bottom', visible: false, order: 8 },
-    { id: 'color', name: 'Color', icon: LayersIcon, location: 'bottom', visible: true, order: 9 },
-    { id: 'info', name: 'Info', icon: LayersIcon, location: 'bottom', visible: true, order: 10 },
-    { id: 'navigator', name: 'Navigator', icon: LayersIcon, location: 'bottom', visible: true, order: 11 },
-    { id: 'templates', name: 'Templates', icon: LayersIcon, location: 'bottom', visible: false, order: 12 },
+    { id: 'properties', name: 'Properties', icon: Settings, location: 'right', visible: true, order: 2 },
+    { id: 'correction', name: 'Correction', icon: SlidersHorizontal, location: 'right', visible: true, order: 3 },
+    { id: 'ai-xtra', name: 'AI Xtra', icon: Zap, location: 'right', visible: true, order: 4 },
+    { id: 'brushes', name: 'Brushes', icon: Brush, location: 'right', visible: false, order: 5 },
+    { id: 'paths', name: 'Paths', icon: PenTool, location: 'right', visible: false, order: 6 },
+    { id: 'history', name: 'History', icon: History, location: 'bottom', visible: true, order: 7 },
+    { id: 'channels', name: 'Channels', icon: SquareStack, location: 'bottom', visible: false, order: 8 },
+    { id: 'color', name: 'Color', icon: Palette, location: 'bottom', visible: true, order: 9 },
+    { id: 'info', name: 'Info', icon: Info, location: 'bottom', visible: true, order: 10 },
+    { id: 'navigator', name: 'Navigator', icon: Compass, location: 'bottom', visible: true, order: 11 },
+    { id: 'templates', name: 'Templates', icon: LayoutGrid, location: 'bottom', visible: false, order: 12 },
   ];
   const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout);
   const [activeRightTab, setActiveRightTab] = useState('layers');
@@ -390,7 +403,7 @@ export const Index = () => {
           activeRightTab={activeRightTab}
           setActiveRightTab={setActiveRightTab}
           activeBottomTab={activeBottomTab}
-          setActiveBottomTab={setActiveBottomTab}
+          setActiveBottomTab={activeBottomTab}
         />
         <ToolOptionsBar activeTool={activeTool} brushState={brushState} setBrushState={setBrushState} onBrushCommit={onBrushCommit} />
         
