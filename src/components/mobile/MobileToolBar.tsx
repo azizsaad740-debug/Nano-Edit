@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button"; // Import Button
+import { Button } from "@/components/ui/button"; // Added Button import
 
 interface MobileToolBarProps {
   activeTool: ActiveTool | null;
@@ -97,7 +97,7 @@ const toolGroups: {
 
 const singleTools: { name: string; icon: React.ElementType; tool: ActiveTool }[] = [
   { name: "Move", icon: Move, tool: "move" },
-  { name: "Crop", icon: Crop, tool: "crop" }, // Fixed: used Crop instead of CropIcon
+  { name: "Crop", icon: Crop, tool: "crop" }, // Corrected CropIcon to Crop
   { name: "Text", icon: Type, tool: "text" },
   { name: "Eyedropper", icon: Pipette, tool: "eyedropper" },
 ];

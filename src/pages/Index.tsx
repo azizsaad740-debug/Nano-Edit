@@ -47,8 +47,8 @@ export const Index = () => {
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
-    selectiveBlurAmount, // Read from state
-    selectiveSharpenAmount, // Read from state
+    selectiveBlurAmount, 
+    selectiveSharpenAmount, 
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
@@ -65,14 +65,14 @@ export const Index = () => {
     handleAddTextLayer, handleAddDrawingLayer, handleAddLayerFromBackground, handleLayerFromSelection, handleAddShapeLayer, handleAddGradientLayer, addAdjustmentLayer,
     groupLayers, toggleGroupExpanded, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLogic,
-    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers, // ADDED handleDeleteHiddenLayers
+    removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers, // Destructured onDeleteHiddenLayers (Fixes 21, 22)
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
     applySelectionAsMask, handleDestructiveOperation,
     onBrushCommit,
-    onSelectiveSharpenAmountChange, // Committing handler
-    onSelectiveSharpenAmountCommit, // Committing handler
-    onSelectiveBlurAmountChange, // Committing handler
-    onSelectiveBlurAmountCommit, // Committing handler
+    onSelectiveSharpenAmountChange, 
+    onSelectiveSharpenAmountCommit, 
+    onSelectiveBlurAmountChange, 
+    onSelectiveBlurAmountCommit, 
     
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
@@ -92,9 +92,9 @@ export const Index = () => {
     
     // AI
     geminiApiKey, handleGenerateImage, handleGenerativeFill,
-    handleImageResult, // NEW
-    handleMaskResult, // NEW
-    base64Image, // NEW
+    handleImageResult, 
+    handleMaskResult, 
+    base64Image, 
     
     // Workspace
     hasImage, hasActiveSelection,
@@ -108,13 +108,13 @@ export const Index = () => {
     
     // Refs/External
     workspaceRef, imgRef,
-    systemFonts, customFonts, addCustomFont, removeCustomFont, // Corrected destructuring
+    systemFonts, customFonts, addCustomFont, removeCustomFont, 
     setZoom,
     handleSwapColors,
-    handleSelectiveRetouchStrokeEnd, // ADDED
-    selectiveBlurMask, // ADDED
-    selectiveSharpenMask, // ADDED
-    setSelectionPath, // ADDED
+    handleSelectiveRetouchStrokeEnd, 
+    selectiveBlurMask, 
+    selectiveSharpenMask, 
+    setSelectionPath, // Destructured setSelectionPath (Fixes 19)
   } = logic;
 
   const isMobile = useIsMobile();
@@ -147,7 +147,7 @@ export const Index = () => {
       const toolRequiresOptions = tool && toolsThatOpenOptions.includes(tool);
       
       if (toolRequiresOptions) {
-          setActiveMobileTab('tools'); // Switch to tools tab when a tool is selected
+          setActiveMobileTab('tools' as MobileTab); // Explicit cast (Fixes 18)
           setIsMobileOptionsOpen(true);
       } else {
           // If tool is deselected, keep options open but switch to layers/properties if applicable
@@ -197,12 +197,12 @@ export const Index = () => {
   // --- Props for Sidebars and Workspace ---
   // Consolidate all props needed for MobileToolOptions (which reuses RightSidebarTabsProps structure)
   const mobileOptionsProps = {
-    hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, handleDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, selectiveSharpenAmount, onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit, customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
+    hasImage, activeTool, selectedLayerId, selectedLayer, layers, imgRef, onSelectLayer: onSelectLayerFromLogic, onReorder: reorderLayers, toggleLayerVisibility: handleToggleVisibility, renameLayer, deleteLayer, onDuplicateLayer: duplicateLayer, onMergeLayerDown: mergeLayerDown, onRasterizeLayer: rasterizeLayer, onCreateSmartObject: createSmartObject, onOpenSmartObject: openSmartObjectEditor, onLayerUpdate: updateLayer, onLayerCommit: commitLayerChange, onLayerPropertyCommit: handleLayerPropertyCommit, onLayerOpacityChange: handleLayerOpacityChange, onLayerOpacityCommit: handleLayerOpacityCommit, addTextLayer: (coords: Point, color: string) => handleAddTextLayer(coords, color), addDrawingLayer: handleAddDrawingLayer, onAddLayerFromBackground: handleAddLayerFromBackground, onLayerFromSelection: handleLayerFromSelection, addShapeLayer: (coords: Point, shapeType: any, initialWidth: any, initialHeight: any) => handleAddShapeLayer(coords, shapeType, initialWidth, initialHeight, foregroundColor, backgroundColor), addGradientLayer: handleAddGradientLayer, onAddAdjustmentLayer: addAdjustmentLayer, selectedShapeType, groupLayers, toggleGroupExpanded, onRemoveLayerMask: removeLayerMask, onInvertLayerMask: invertLayerMask, onToggleClippingMask: toggleClippingMask, onToggleLayerLock: toggleLayerLock, onDeleteHiddenLayers, onRasterizeSmartObject: handleRasterizeSmartObject, onConvertSmartObjectToLayers: handleConvertSmartObjectToLayers, onExportSmartObjectContents: handleExportSmartObjectContents, onArrangeLayer: handleArrangeLayer, hasActiveSelection, onApplySelectionAsMask: applySelectionAsMask, handleDestructiveOperation, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, onFilterChange, selectedFilter, onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, presets, onApplyPreset: handleApplyPreset, onSavePreset: handleSavePreset, onDeletePreset: deletePreset, gradientToolState, setGradientToolState, gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset, brushState, setBrushState: setBrushStatePartial, selectiveBlurAmount, onSelectiveBlurAmountChange: onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit: onSelectiveBlurAmountCommit, selectiveSharpenAmount, onSelectiveSharpenAmountChange: onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit: onSelectiveSharpenAmountCommit, customHslColor, setCustomHslColor, systemFonts, customFonts, onOpenFontManager: () => setIsFontManagerOpen(true), cloneSourcePoint, selectionSettings, onSelectionSettingChange: (key, value) => setSelectionSettings(prev => ({ ...prev, [key]: value })), onSelectionSettingCommit: (key, value) => recordHistory(`Set Selection Setting ${String(key)}`, currentEditState, layers), history, currentHistoryIndex, onHistoryJump: (index: number) => { setCurrentEditState(history[index].state); setLayers(history[index].layers); setCurrentHistoryIndex(index); }, onUndo: undo, onRedo: redo, canUndo, canRedo, historyBrushSourceIndex, setHistoryBrushSourceIndex, foregroundColor, onForegroundColorChange: setForegroundColor, backgroundColor, onBackgroundColorChange: setBackgroundColor, onSwapColors: handleSwapColors, dimensions, fileInfo, exifData, colorMode: currentEditState.colorMode, zoom: workspaceZoom, onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen, channels: currentEditState.channels, onChannelChange: onChannelChange, LayersPanel,
     activeMobileTab,
     onOpenSettings: () => setIsSettingsOpen(true),
     onOpenGenerate: () => setIsGenerateOpen(true),
     onOpenGenerativeFill: () => setIsGenerativeFillOpen(true),
-    navigate, // Pass navigate for template tab
+    navigate, // Passed navigate (Fixes 17)
     // Added missing props for LeftSidebarProps (TS2739 fix)
     setActiveTool: handleSetActiveTool,
     setSelectedShapeType,
@@ -212,9 +212,6 @@ export const Index = () => {
     base64Image: base64Image,
     onImageResult: handleImageResult,
     onMaskResult: handleMaskResult,
-    // Mapped properties for LeftSidebarProps (Error 16)
-    onSelectiveBlurStrengthChange: onSelectiveBlurAmountChange,
-    onSelectiveBlurStrengthCommit: onSelectiveBlurAmountCommit,
   };
  
   const editorWorkspaceProps = {
@@ -230,7 +227,7 @@ export const Index = () => {
  
   // Determine the bottom offset for the options panel
   // MobileBottomNav: h-16 (64px). MobileToolBar: h-16 (64px).
-  const mobileOptionsBottomOffset = activeMobileTab === 'tools' ? 'bottom-[128px]' : 'bottom-[64px]';
+  const mobileOptionsBottomOffset = activeMobileTab === 'tools' as MobileTab ? 'bottom-[128px]' : 'bottom-[64px]'; // Explicit cast (Fixes 20)
  
  
   // --- Common Elements (File Input and Dialogs) ---

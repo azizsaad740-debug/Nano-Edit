@@ -39,7 +39,7 @@ interface MobileToolOptionsProps extends RightSidebarTabsProps {
   onOpenSettings: () => void;
   onOpenGenerate: () => void;
   onOpenGenerativeFill: () => void;
-  navigate: (path: string) => void; // Added navigate prop
+  navigate: (path: string) => void; // Added navigate prop (Fixes Error 17)
 }
 
 export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
@@ -153,14 +153,15 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     onRedo,
     canUndo,
     canRedo,
-    dimensions, // ADDED
-    fileInfo, // ADDED
-    exifData, // ADDED
-    colorMode, // ADDED
-    zoom, // ADDED
-    onZoomIn, // ADDED
-    onZoomOut, // ADDED
-    onFitScreen, // ADDED
+    // Missing props from errors 9-16:
+    dimensions, 
+    fileInfo, 
+    exifData, 
+    colorMode, 
+    zoom, 
+    onZoomIn, 
+    onZoomOut, 
+    onFitScreen,
     channels,
     onChannelChange,
     navigate,
