@@ -44,7 +44,9 @@ export const useEditorLogic = () => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, 
+    setSelectiveBlurAmount, // ADDED
     selectiveSharpenAmount, 
+    setSelectiveSharpenAmount, // ADDED
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
@@ -53,6 +55,7 @@ export const useEditorLogic = () => {
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
     workspaceRef, imgRef, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
     history, currentHistoryIndex, // DESTRUCTURED HISTORY STATE
+    setSelectionPath, // ADDED
     ...rest
   } = state;
 
