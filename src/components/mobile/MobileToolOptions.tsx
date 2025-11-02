@@ -10,7 +10,7 @@ import { LayerPropertiesContent } from "../editor/LayerPropertiesContent";
 import ColorCorrectionPanel from "@/components/auxiliary/ColorCorrectionPanel";
 import ColorPanel from "@/components/auxiliary/ColorPanel";
 import GlobalEffectsPanel from "@/components/editor/GlobalEffectsPanel";
-import { ToolOptionsContent } from "../editor/ToolOptionsContent"; // NEW IMPORT
+import { ToolOptionsContent, type ToolOptionsContentProps } from "../editor/ToolOptionsContent"; // NEW IMPORT
 import HistoryPanel from "../auxiliary/HistoryPanel";
 import { ChannelsPanel } from "../editor/ChannelsPanel";
 import BrushesPanel from "../auxiliary/BrushesPanel";
@@ -140,6 +140,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     onRedo,
     canUndo,
     canRedo,
+    // Missing props from errors 9-16:
     dimensions, 
     fileInfo, 
     exifData, 
@@ -206,9 +207,9 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
               onToggleClippingMask={onToggleClippingMask}
               onToggleLayerLock={onToggleLayerLock}
               onDeleteHiddenLayers={onDeleteHiddenLayers}
-              onRasterizeSmartObject={onRasterizeSmartObject}
-              onConvertSmartObjectToLayers={onConvertSmartObjectToLayers}
-              onExportSmartObjectContents={onExportSmartObjectContents}
+              onRasterizeSmartObject={() => selectedLayerId && onRasterizeSmartObject(selectedLayerId)}
+              onConvertSmartObjectToLayers={() => selectedLayerId && onConvertSmartObjectToLayers(selectedLayerId)}
+              onExportSmartObjectContents={() => selectedLayerId && onExportSmartObjectContents(selectedLayerId)}
               onArrangeLayer={onArrangeLayer}
               handleDestructiveOperation={handleDestructiveOperation}
             />

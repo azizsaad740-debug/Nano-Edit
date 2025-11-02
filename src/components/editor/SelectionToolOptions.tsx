@@ -22,14 +22,14 @@ interface SelectionToolOptionsProps {
   activeTool: ActiveTool | null;
   settings: SelectionSettings;
   onSettingChange: (key: keyof SelectionSettings, value: any) => void;
-  onSettingCommit: (key: keyof SelectionSettings, value: any) => void;
+  onSelectionSettingCommit: (key: keyof SelectionSettings, value: any) => void;
 }
 
 const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
   activeTool,
   settings,
   onSettingChange,
-  onSettingCommit,
+  onSelectionSettingCommit,
 }) => {
   const isMarquee = activeTool?.startsWith('marquee');
   const isLasso = activeTool?.startsWith('lasso');
@@ -45,12 +45,12 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
   };
 
   const handleSliderCommit = (key: keyof SelectionSettings, value: number) => {
-    onSettingCommit(key, value);
+    onSelectionSettingCommit(key, value);
   };
 
   const handleCheckboxChange = (key: keyof SelectionSettings, checked: boolean) => {
     onSettingChange(key, checked);
-    onSettingCommit(key, checked);
+    onSelectionSettingCommit(key, checked);
   };
 
   const handleInputChange = (key: keyof SelectionSettings, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,12 +60,12 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
 
   const handleInputCommit = (key: keyof SelectionSettings, e: React.FocusEvent<HTMLInputElement>) => {
     const value = e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value;
-    onSettingCommit(key, value);
+    onSelectionSettingCommit(key, value);
   };
   
   const handleSelectionModeChange = (mode: SelectionSettings['selectionMode']) => {
     onSettingChange('selectionMode', mode);
-    onSettingCommit('selectionMode', mode);
+    onSelectionSettingCommit('selectionMode', mode);
   };
 
   const renderToolIcon = () => {
@@ -497,5 +497,3 @@ const SelectionToolOptions: React.FC<SelectionToolOptionsProps> = ({
     </div>
   );
 };
-
-export default SelectionToolOptions;

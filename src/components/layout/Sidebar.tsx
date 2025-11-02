@@ -143,6 +143,16 @@ export interface RightSidebarTabsProps {
   backgroundColor: string;
   onBackgroundColorChange: (color: string) => void;
   onSwapColors: () => void;
+  
+  // --- Missing Document/View Props (Fixes 3-10) ---
+  dimensions: { width: number; height: number } | null;
+  fileInfo: { name: string; size: number } | null;
+  exifData: any;
+  colorMode: EditState['colorMode'];
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onFitScreen: () => void;
 }
 
 const Sidebar = (props: RightSidebarTabsProps) => {

@@ -166,9 +166,9 @@ interface ToolsPanelProps {
   onSwapColors: () => void;
   brushState: BrushState;
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
-  selectiveBlurAmount: number; // Renamed to Amount
-  onSelectiveBlurAmountChange: (value: number) => void; // Renamed to Amount
-  onSelectiveBlurAmountCommit: (value: number) => void; // Renamed to Amount
+  selectiveBlurAmount: number;
+  onSelectiveBlurAmountChange: (value: number) => void;
+  onSelectiveBlurAmountCommit: (value: number) => void;
 }
 
 export const ToolsPanel = ({ 
@@ -320,7 +320,7 @@ export const ToolsPanel = ({
                   {React.createElement(currentShapeIcon, { className: "h-5 w-5" })}
                   <ChevronDown className="h-3 w-3 ml-1" />
                 </Button>
-              </DropdownMenuTrigger>
+              </TooltipTrigger>
               <TooltipContent side="right">
                 <p>Shape Tool (P)</p>
               </TooltipContent>
