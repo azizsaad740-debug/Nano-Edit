@@ -45,3 +45,15 @@ export interface NewProjectSettings {
   dpi: number;
   backgroundColor: string;
 }
+
+// --- Panel Layout Types ---
+export type PanelLocation = 'right' | 'bottom' | 'hidden';
+
+export interface PanelTab {
+  id: string;
+  name: string;
+  icon: React.ElementType;
+  location: PanelLocation;
+  visible: boolean;
+  order: number;
+}

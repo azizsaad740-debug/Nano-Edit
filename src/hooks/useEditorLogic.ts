@@ -34,9 +34,106 @@ import type { ExportOptionsType } from '@/components/editor/ExportOptions';
 import { initialEditState, initialLayerState, initialHistoryItem, initialCurvesState, Point, Layer, isImageOrDrawingLayer } from '@/types/editor';
 import { useGradientPresets } from './useGradientPresets';
 import LeftSidebar from '@/components/layout/LeftSidebar';
+import { Layers, Settings, Brush, PenTool, History, Palette, SlidersHorizontal, Zap, Info, Compass, LayoutGrid, SquareStack } from "lucide-react";
+import { PanelTab, PanelLocation } from '@/types/editor/core';
+
+// Initial Panel Layout Definition
+const initialPanelLayout: PanelTab[] = [
+  // Right Sidebar Defaults
+  { id: 'layers', name: 'Layers', icon: Layers, location: 'right', visible: true, order: 0 },
+  { id: 'properties', name: 'Properties', icon: Settings, location: 'right', visible: true, order: 1 },
+  { id: 'brushes', name: 'Brushes', icon: Brush, location: 'right', visible: true, order: 2 },
+  { id: 'paths', name: 'Paths', icon: PenTool, location: 'right', visible: true, order: 3 },
+  { id: 'history', name: 'History', icon: History, location: 'right', visible: true, order: 4 },
+  { id: 'channels', name: 'Channels', icon: SquareStack, location: 'right', visible: true, order: 5 },
+  // Bottom Panel Defaults
+  { id: 'color', name: 'Color Palette', icon: Palette, location: 'bottom', visible: true, order: 0 },
+  { id: 'correction', name: 'Color Correction', icon: SlidersHorizontal, location: 'bottom', visible: true, order: 1 },
+  { id: 'ai-xtra', name: 'Xtra AI', icon: Zap, location: 'bottom', visible: true, order: 2 },
+  { id: 'info', name: 'Info', icon: Info, location: 'bottom', visible: true, order: 3 },
+  { id: 'navigator', name: 'Navigator', icon: Compass, location: 'bottom', visible: true, order: 4 },
+  { id: 'templates', name: 'Templates', icon: LayoutGrid, location: 'bottom', visible: true, order: 5 },
+];
 
 export const useEditorLogic = () => {
   const state = useEditorState();
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout);
+
+  // Logic to update layout
+  const updatePanelLayout = useCallback((updates: Partial<PanelTab> & { id: string }) => {
+      setPanelLayout(prev => prev.map(tab => tab.id === updates.id ? { ...tab, ...updates } : tab));
+  }, []);
+
+  const togglePanelVisibility = useCallback((id: string) => {
+      setPanelLayout(prev => prev.map(tab => {
+          if (tab.id === id) {
+              const newVisible = !tab.visible;
+              let newLocation: PanelLocation = tab.location;
+              
+              if (newVisible) {
+                  // If becoming visible, restore to last known location or default
+                  if (tab.location === 'hidden') {
+                      const initial = initialPanelLayout.find(i => i.id === id);
+                      newLocation = initial?.location === 'right' ? 'right' : 'bottom';
+                  }
+              } else {
+                  // If hiding, set location to 'hidden'
+                  newLocation = 'hidden';
+              }
+              return { ...tab, visible: newVisible, location: newLocation };
+          }
+          return tab;
+      }));
+  }, []);
+
+  const reorderPanelTabs = useCallback((activeId: string, overId: string, newLocation: PanelLocation) => {
+      setPanelLayout(prev => {
+          const activeTab = prev.find(t => t.id === activeId);
+          if (!activeTab) return prev;
+
+          // 1. Move the active tab to the new location and ensure it's visible
+          const updatedActiveTab = { ...activeTab, location: newLocation, visible: true };
+
+          // 2. Filter out the active tab from its old location/order
+          const filtered = prev.filter(t => t.id !== activeId);
+
+          // 3. Find the index of the 'over' tab within the target location
+          const targetContainer = filtered.filter(t => t.location === newLocation).sort((a, b) => a.order - b.order);
+          const overIndex = targetContainer.findIndex(t => t.id === overId);
+
+          // 4. Insert the updated active tab into the target container
+          const newContainer = [...targetContainer];
+          if (overIndex === -1) {
+              newContainer.push(updatedActiveTab); // Add to end if overId not found (e.g., empty container)
+          } else {
+              // Insert before the overId index
+              newContainer.splice(overIndex, 0, updatedActiveTab);
+          }
+
+          // 5. Re-index the entire layout based on the new container order
+          const finalLayout = prev.map(t => {
+              const indexInNewContainer = newContainer.findIndex(nt => nt.id === t.id);
+              if (indexInNewContainer !== -1) {
+                  return { ...t, order: indexInNewContainer, location: newLocation, visible: true };
+              }
+              // Ensure tabs not in the new container keep their old location/order
+              return t;
+          });
+          
+          // 6. Re-sort the entire list by location and then by order
+          return finalLayout.sort((a, b) => {
+              if (a.location === b.location) return a.order - b.order;
+              // Keep location groups stable (right, bottom, hidden)
+              if (a.location === 'right' && b.location !== 'right') return -1;
+              if (b.location === 'right' && a.location !== 'right') return 1;
+              if (a.location === 'bottom' && b.location === 'hidden') return -1;
+              if (b.location === 'bottom' && a.location === 'hidden') return 1;
+              return 0;
+          });
+      });
+  }, []);
+
+
   const {
     image, dimensions, fileInfo, layers, recordHistory,
     undo, redo, canUndo, canRedo,
@@ -44,9 +141,9 @@ export const useEditorLogic = () => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, 
-    setSelectiveBlurAmount, // ADDED
+    setSelectiveBlurAmount, 
     selectiveSharpenAmount, 
-    setSelectiveSharpenAmount, // ADDED
+    setSelectiveSharpenAmount, 
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
@@ -361,5 +458,9 @@ export const useEditorLogic = () => {
     handleBrushToolChange, handleTextToolChange, handleShapeToolChange, handleGradientToolChange, handleEyedropperToolChange, handleMoveToolChange, handleLassoToolChange,
     handleSwapColors,
     ToolsPanel: LeftSidebar, // Use the imported component
+    // Panel Layout
+    panelLayout, // EXPOSED
+    togglePanelVisibility, // EXPOSED
+    reorderPanelTabs, // EXPOSED
   };
 };
