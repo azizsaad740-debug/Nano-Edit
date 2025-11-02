@@ -330,6 +330,17 @@ export const useEditorLogic = (props: any) => {
     clearSelectionState();
   }, [setSelectionMaskDataUrl, recordHistory, currentEditState, layers, clearSelectionState]);
 
+  // --- Selective Retouch Commit Wrappers (Needed by Sidebar) ---
+  const onSelectiveBlurAmountCommit = useCallback((value: number) => {
+    updateCurrentState({ selectiveBlurAmount: value });
+    recordHistory(`Set Selective Blur Amount to ${value}`, { ...currentEditState, selectiveBlurAmount: value }, layers);
+  }, [updateCurrentState, recordHistory, currentEditState, layers]);
+
+  const onSelectiveSharpenAmountCommit = useCallback((value: number) => {
+    updateCurrentState({ selectiveSharpenAmount: value });
+    recordHistory(`Set Selective Sharpen Amount to ${value}`, { ...currentEditState, selectiveSharpenAmount: value }, layers);
+  }, [updateCurrentState, recordHistory, currentEditState, layers]);
+
   // --- Return all necessary state and handlers ---
   return {
     // Core State
@@ -441,7 +452,6 @@ export const useEditorLogic = (props: any) => {
     onHistoryJump: setCurrentHistoryIndex,
     
     // Mapped properties for consuming components (Fixes Errors 4, 6, 7, 8, 9, 10, 11)
-    onLayerOpacityCommit: handleLayerOpacityCommit,
     handleApplyPreset: (preset: any) => {
         applyTransformPreset(preset.state);
         applyCropPreset(preset.state);
@@ -463,5 +473,11 @@ export const useEditorLogic = (props: any) => {
     setGradientStart,
     setGradientCurrent,
     colorMode: currentEditState.colorMode,
+    
+    // Added missing commit/history functions
+    onSelectiveBlurAmountCommit,
+    onSelectiveSharpenAmountCommit,
+    onUndo: undo,
+    onRedo: redo,
   };
 };

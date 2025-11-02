@@ -11,9 +11,44 @@ export const useTransform = (
   const transform = useMemo(() => currentEditState.transform, [currentEditState.transform]);
   const rotation = useMemo(() => currentEditState.rotation, [currentEditState.rotation]);
 
-  const onTransformChange = useCallback((updates: Partial<typeof transform>) => {
+  // Internal function to apply general transform state updates
+  const onTransformStateChange = useCallback((updates: Partial<typeof transform>) => {
     updateCurrentState({ transform: { ...currentEditState.transform, ...updates } });
   }, [currentEditState.transform, updateCurrentState]);
+
+  // Public function matching the UI signature (accepts string commands)
+  const onTransformChange = useCallback((transformType: string) => {
+    let updates: Partial<typeof transform> = {};
+    let historyName = '';
+
+    if (transformType === 'flip-horizontal') {
+      updates.scaleX = (transform.scaleX || 1) * -1;
+      historyName = 'Flip Horizontal';
+    } else if (transformType === 'flip-vertical') {
+      updates.scaleY = (transform.scaleY || 1) * -1;
+      historyName = 'Flip Vertical';
+    } else if (transformType === 'rotate-right') {
+      const newRotation = (rotation + 90) % 360;
+      updateCurrentState({ rotation: newRotation });
+      historyName = 'Rotate 90° Clockwise';
+    } else if (transformType === 'rotate-left') {
+      const newRotation = (rotation - 90 + 360) % 360;
+      updateCurrentState({ rotation: newRotation });
+      historyName = 'Rotate 90° Counter-Clockwise';
+    } else {
+      return;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      onTransformStateChange(updates);
+    }
+    
+    // Record history for discrete actions
+    if (historyName) {
+        recordHistory(historyName, currentEditState, layers);
+    }
+
+  }, [transform, rotation, updateCurrentState, recordHistory, currentEditState, layers]);
 
   const onRotationChange = useCallback((newRotation: number) => {
     updateCurrentState({ rotation: newRotation });
@@ -25,12 +60,12 @@ export const useTransform = (
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
     if (state.transform) {
-      updateCurrentState({ transform: state.transform });
+      onTransformStateChange(state.transform);
     }
     if (state.rotation !== undefined) {
       updateCurrentState({ rotation: state.rotation });
     }
-  }, [updateCurrentState]);
+  }, [updateCurrentState, onTransformStateChange]);
 
   return { transforms: transform, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset };
 };

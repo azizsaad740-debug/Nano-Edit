@@ -323,6 +323,12 @@ const Index: React.FC = () => {
                   onChannelChange={logic.onChannelChange}
                   onHistoryJump={logic.onHistoryJump}
                   onBrushCommit={logic.onBrushCommit}
+                  
+                  // ADDED MISSING PROPS (Error 2 fix)
+                  onSelectiveBlurAmountCommit={logic.onSelectiveBlurAmountCommit}
+                  onSelectiveSharpenAmountCommit={logic.onSelectiveSharpenAmountCommit}
+                  onUndo={logic.undo}
+                  onRedo={logic.redo}
                 />
               </ResizablePanel>
             )}
