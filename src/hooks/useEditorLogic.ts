@@ -36,6 +36,7 @@ import { useGradientPresets } from './useGradientPresets';
 import LeftSidebar from '@/components/layout/LeftSidebar';
 import { Layers, Settings, Brush, PenTool, History, Palette, SlidersHorizontal, Zap, Info, Compass, LayoutGrid, SquareStack } from "lucide-react";
 import { PanelTab, PanelLocation } from '@/types/editor/core';
+import { ellipseToMaskDataUrl, polygonToMaskDataUrl } from '@/utils/maskUtils';
 
 // Initial Panel Layout Definition
 const initialPanelLayout: PanelTab[] = [
@@ -411,10 +412,62 @@ export const useEditorLogic = () => {
     setForegroundColor(backgroundColor);
     setBackgroundColor(temp);
   }, [foregroundColor, backgroundColor, setForegroundColor, setBackgroundColor]);
+  
+  // --- Marquee Selection Logic Implementation ---
   const handleMarqueeSelectionComplete = useCallback(async (start: Point, end: Point) => {
-    // Placeholder logic to satisfy the interface
-    console.log("Marquee selection complete:", start, end);
-  }, []);
+    if (!dimensions || !workspaceRef.current || !imgRef.current) return;
+
+    const imageRect = imgRef.current.getBoundingClientRect();
+    
+    // Calculate coordinates relative to the image (in pixels)
+    const scaleX = dimensions.width / imageRect.width;
+    const scaleY = dimensions.height / imageRect.height;
+
+    // Convert screen coordinates (start/end) to image pixel coordinates
+    const startX_px = Math.round((start.x - imageRect.left) * scaleX);
+    const startY_px = Math.round((start.y - imageRect.top) * scaleY);
+    const endX_px = Math.round((end.x - imageRect.left) * scaleX);
+    const endY_px = Math.round((end.y - imageRect.top) * scaleY);
+
+    const minX = Math.max(0, Math.min(startX_px, endX_px));
+    const minY = Math.max(0, Math.min(startY_px, endY_px));
+    const maxX = Math.min(dimensions.width, Math.max(startX_px, endX_px));
+    const maxY = Math.min(dimensions.height, Math.max(startY_px, endY_px));
+
+    let maskUrl: string;
+    let historyName: string;
+
+    if (activeTool === 'marqueeEllipse') {
+      maskUrl = await ellipseToMaskDataUrl(
+        { x: minX, y: minY },
+        { x: maxX, y: maxY },
+        dimensions.width,
+        dimensions.height
+      );
+      historyName = "Elliptical Marquee Selection Applied";
+    } else { // Default to Rectangular Marquee
+      const rectPath: Point[] = [
+        { x: minX, y: minY },
+        { x: maxX, y: minY },
+        { x: maxX, y: maxY },
+        { x: minX, y: maxY },
+      ];
+      maskUrl = await polygonToMaskDataUrl(rectPath, dimensions.width, dimensions.height);
+      historyName = "Rectangular Marquee Selection Applied";
+    }
+
+    try {
+      setSelectionMaskDataUrl(maskUrl);
+      setSelectionPath(null); 
+      recordHistory(historyName, currentEditState, layers);
+      showSuccess("Selection created.");
+    } catch (error) {
+      showError("Failed to create selection mask.");
+      console.error(error);
+    }
+  }, [dimensions, workspaceRef, imgRef, activeTool, setSelectionMaskDataUrl, setSelectionPath, recordHistory, currentEditState, layers]);
+  // --- End Marquee Selection Logic ---
+
   const {
     zoom: workspaceZoom,
     setZoom: setWorkspaceZoom,
@@ -432,7 +485,8 @@ export const useEditorLogic = () => {
   } = useWorkspaceInteraction(
     workspaceRef, imgRef, activeTool, dimensions, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState,
     gradientToolState, setSelectedLayerId, layers, zoom, setZoom, setMarqueeStart, setMarqueeCurrent,
-    handleMarqueeSelectionComplete, currentEditState, state.setCloneSourcePoint,
+    handleMarqueeSelectionComplete,
+    currentEditState, state.setCloneSourcePoint,
     // NEW:
     handleAddTextLayer,
     foregroundColor,
@@ -472,8 +526,8 @@ export const useEditorLogic = () => {
     selectiveBlurMask: selectiveBlurMask,
     selectiveSharpenMask: selectiveSharpenMask,
     onSelectiveBlurAmountChange,
-    onSelectiveBlurAmountCommit,
     onSelectiveSharpenAmountChange,
+    onSelectiveBlurAmountCommit,
     onSelectiveSharpenAmountCommit,
     handleSelectiveRetouchStrokeEnd, // EXPOSED
     // Presets
