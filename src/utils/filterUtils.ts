@@ -54,6 +54,8 @@ export const isDefault = (value: Point[] | number): boolean => {
  * Checks if an HSL adjustment object is at its default state (0, 0, 0).
  */
 export const isDefaultHsl = (adj: HslAdjustment): boolean => {
+  // Note: Saturation default is 0 (no change), but the initial state is 100 (no change relative to 100%).
+  // Since the HSL UI uses -100 to 100, where 0 is no change, we check against 0.
   return adj.hue === 0 && adj.saturation === 0 && adj.lightness === 0;
 };
 

@@ -263,14 +263,33 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
 
   // Apply global filters via SVG filters
   const filterString = showOriginal ? 'none' : props.currentEditState.selectedFilter;
-  const filterUrl = showOriginal ? 'none' : (
-    (props.selectiveBlurMask && props.selectiveBlurAmount > 0) ? 'url(#selective-blur-filter)' :
-    (props.selectiveSharpenMask && props.selectiveSharpenAmount > 0) ? 'url(#selective-sharpen-filter)' :
-    (props.currentEditState.channels.r === false || props.currentEditState.channels.g === false || props.currentEditState.channels.b === false) ? 'url(#channel-filter)' :
-    (props.currentEditState.effects.blur > 0 || props.currentEditState.effects.hueShift !== 0 || props.currentEditState.effects.sharpen > 0 || props.currentEditState.effects.clarity > 0) ? 'url(#advanced-effects-filter)' :
-    'none'
-  );
   
+  // Build the filter URL chain
+  const filterUrls: string[] = [];
+  
+  if (props.selectiveBlurMask && props.selectiveBlurAmount > 0) {
+    filterUrls.push('url(#selective-blur-filter)');
+  }
+  if (props.selectiveSharpenMask && props.selectiveSharpenAmount > 0) {
+    filterUrls.push('url(#selective-sharpen-filter)');
+  }
+  if (props.currentEditState.channels.r === false || props.currentEditState.channels.g === false || props.currentEditState.channels.b === false) {
+    filterUrls.push('url(#channel-filter)');
+  }
+  if (props.currentEditState.effects.blur > 0 || props.currentEditState.effects.hueShift !== 0 || props.currentEditState.effects.sharpen > 0 || props.currentEditState.effects.clarity > 0) {
+    filterUrls.push('url(#advanced-effects-filter)');
+  }
+  // Add HSL filter if active
+  if (!isDefaultHsl(props.currentEditState.hslAdjustments.master)) {
+    filterUrls.push('url(#hsl-filter)');
+  }
+  // Add Curves filter if active (stub check)
+  if (!isDefault(props.currentEditState.curves.all)) {
+    filterUrls.push('url(#curves-filter)');
+  }
+
+  const filterUrl = filterUrls.length > 0 ? filterUrls.join(' ') : 'none';
+
   const imageStyle: React.CSSProperties = {
     filter: `${filterString} ${filterUrl === 'none' ? '' : filterUrl}`,
     transform: `rotate(${props.currentEditState.rotation}deg) scaleX(${props.currentEditState.transform.scaleX}) scaleY(${props.currentEditState.transform.scaleY})`,
