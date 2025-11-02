@@ -6,7 +6,7 @@ import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
-import GradientLayer from "./GradientLayer";
+import { GradientLayer } from "./GradientLayer";
 import GroupLayer from "./GroupLayer";
 
 interface SmartObjectWorkspaceProps {
