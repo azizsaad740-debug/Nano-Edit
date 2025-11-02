@@ -29,7 +29,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import type { Point, ActiveTool } from "@/types/editor";
+import type { Point, ActiveTool, PanelLocation } from "@/types/editor";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileBottomNav";
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
@@ -38,6 +38,19 @@ import { Undo2, Redo2, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
 
 export const Index = () => {
   const logic = useEditorLogic();
@@ -214,6 +227,58 @@ export const Index = () => {
       // Always open the options panel when switching tabs
       setIsMobileOptionsOpen(true);
   }, []);
+  
+  // --- DND Setup ---
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    })
+  );
+
+  const handleDragEnd = React.useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const overId = over.id as string;
+    
+    const activeTab = panelLayout.find(t => t.id === activeId);
+    if (!activeTab) return;
+
+    const activeLocation = activeTab.location;
+    let newLocation: PanelLocation | undefined;
+    let targetOverId = overId;
+
+    // 1. Determine if the drop target is a panel container itself
+    if (over.data.current?.location) {
+        newLocation = over.data.current.location as PanelLocation;
+        // When dropping onto the container, we treat the 'over' ID as the active ID for insertion logic (insert at end)
+        targetOverId = activeId; 
+    } else {
+        // 2. Determine if the drop target is another tab
+        const overTab = panelLayout.find(t => t.id === overId);
+        if (overTab) {
+            newLocation = overTab.location;
+        }
+    }
+
+    if (!newLocation) return;
+
+    // If the location changed, or if it's an internal reorder
+    if (newLocation !== activeLocation || activeId !== overId) {
+        logic.reorderPanelTabs(activeId, targetOverId, newLocation);
+        
+        // Update active tab state if the active tab was moved to a new location
+        if (newLocation === 'right') {
+            setActiveRightTab(activeId);
+        } else if (newLocation === 'bottom') {
+            setActiveBottomTab(activeId);
+        }
+    }
+  }, [panelLayout, logic, setActiveRightTab, setActiveBottomTab]);
+
 
   // --- Props for Sidebars and Workspace ---
   // Consolidate all props needed for MobileToolOptions (which reuses RightSidebarTabsProps structure)
@@ -433,7 +498,7 @@ export const Index = () => {
  
   // Desktop Layout
   return (
-    <>
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div className="flex flex-col h-screen w-screen bg-background">
         <CustomFontLoader customFonts={customFonts} />
         
@@ -539,6 +604,6 @@ export const Index = () => {
       </div>
       {fileInput}
       {dialogs}
-    </>
+    </DndContext>
   );
 };

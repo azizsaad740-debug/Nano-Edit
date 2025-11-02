@@ -19,24 +19,17 @@ import ColorPanel from "../auxiliary/ColorPanel";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { DraggableTab } from "./DraggableTab";
 import type { PanelTab } from "@/types/editor/core";
 
 export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
   const { 
     activeTool, selectedLayer, brushState, setBrushState, selectiveBlurAmount, onSelectiveBlurAmountChange, onSelectiveBlurAmountCommit, history, cloneSourcePoint, selectiveSharpenAmount, onSelectiveSharpenAmountChange, onSelectiveSharpenAmountCommit,
-    panelLayout, reorderPanelTabs, activeRightTab, setActiveRightTab,
+    panelLayout, activeRightTab, setActiveRightTab,
   } = props;
   
   const navigate = useNavigate();
@@ -49,21 +42,10 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       .sort((a, b) => a.order - b.order);
   }, [panelLayout]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    
-    // Reorder within the right panel
-    reorderPanelTabs(active.id as string, over.id as string, 'right');
-  };
+  const { setNodeRef: setDroppableNodeRef } = useDroppable({
+    id: 'right-panel',
+    data: { location: 'right' },
+  });
 
   const renderToolOptionsContent = () => {
     if (!activeTool) return null;
@@ -319,27 +301,21 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
 
   return (
     <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="w-full h-full flex flex-col">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0">
-          <SortableContext
-            items={rightTabs.map(t => t.id)}
-            strategy={horizontalListSortingStrategy}
-          >
-            {rightTabs.map((tab) => (
-              <DraggableTab
-                key={tab.id}
-                tab={tab}
-                isActive={activeRightTab === tab.id}
-                onSelect={setActiveRightTab}
-              />
-            ))}
-          </SortableContext>
-        </TabsList>
-      </DndContext>
+      <div className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
+        <SortableContext
+          items={rightTabs.map(t => t.id)}
+          strategy={horizontalListSortingStrategy}
+        >
+          {rightTabs.map((tab) => (
+            <DraggableTab
+              key={tab.id}
+              tab={tab}
+              isActive={activeRightTab === tab.id}
+              onSelect={setActiveRightTab}
+            />
+          ))}
+        </SortableContext>
+      </div>
 
       <ScrollArea className="flex-1 mt-4">
         <div className="p-2">

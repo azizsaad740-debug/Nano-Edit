@@ -16,17 +16,10 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import type { EditState, HslAdjustment, Point } from "@/types/editor";
 import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from "@dnd-kit/core";
-import {
   SortableContext,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { useDroppable } from "@dnd-kit/core";
 import { DraggableTab } from "./DraggableTab";
 import type { PanelTab } from "@/types/editor/core";
 
@@ -89,7 +82,7 @@ interface BottomPanelProps {
 const BottomPanel: React.FC<BottomPanelProps> = (props) => {
   const navigate = useNavigate();
   const {
-    panelLayout, reorderPanelTabs, activeBottomTab, setActiveBottomTab,
+    panelLayout, activeBottomTab, setActiveBottomTab,
   } = props;
 
   const bottomTabs = React.useMemo(() => {
@@ -98,21 +91,10 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
       .sort((a, b) => a.order - b.order);
   }, [panelLayout]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    
-    // Reorder within the bottom panel
-    reorderPanelTabs(active.id as string, over.id as string, 'bottom');
-  };
+  const { setNodeRef: setDroppableNodeRef } = useDroppable({
+    id: 'bottom-panel',
+    data: { location: 'bottom' },
+  });
 
   const renderTabContent = (tabId: string) => {
     switch (tabId) {
@@ -199,27 +181,21 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
     <div className="w-full h-48 border-t bg-background flex shrink-0">
       <div className="flex-1 min-w-0 h-full">
         <Tabs value={activeBottomTab} onValueChange={setActiveBottomTab} className="w-full h-full flex flex-col">
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-          >
-            <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0">
-              <SortableContext
-                items={bottomTabs.map(t => t.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                {bottomTabs.map((tab) => (
-                  <DraggableTab
-                    key={tab.id}
-                    tab={tab}
-                    isActive={activeBottomTab === tab.id}
-                    onSelect={setActiveBottomTab}
-                  />
-                ))}
-              </SortableContext>
-            </TabsList>
-          </DndContext>
+          <div className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
+            <SortableContext
+              items={bottomTabs.map(t => t.id)}
+              strategy={horizontalListSortingStrategy}
+            >
+              {bottomTabs.map((tab) => (
+                <DraggableTab
+                  key={tab.id}
+                  tab={tab}
+                  isActive={activeBottomTab === tab.id}
+                  onSelect={setActiveBottomTab}
+                />
+              ))}
+            </SortableContext>
+          </div>
 
           <ScrollArea className="flex-1">
             <div className="p-4">
