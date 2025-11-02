@@ -5,6 +5,7 @@ import {
   type HslColorKey, type AdjustmentState, type GradingState, type HslAdjustmentsState, type CurvesState,
 } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
+import LightingAdjustments from "@/components/editor/LightingAdjustments"; // Import LightingAdjustments
 
 interface AdjustmentLayerControlsProps {
   layer: Layer & AdjustmentLayerData;
@@ -68,6 +69,35 @@ export const AdjustmentLayerControls: React.FC<AdjustmentLayerControlsProps> = (
     onUpdate({ adjustmentData: { ...adjustmentData, ...updates } });
     onCommit(name);
   }, [adjustmentData, onUpdate, onCommit]);
+  
+  const handleAdjustmentChange = useCallback((key: string, value: number) => {
+    const currentAdjustments = adjustmentData.adjustments || initialAdjustmentState;
+    const newAdjustments = { ...currentAdjustments, [key]: value };
+    onUpdate({ adjustmentData: { ...adjustmentData, adjustments: newAdjustments } });
+  }, [adjustmentData, onUpdate]);
+
+  const handleAdjustmentCommit = useCallback((key: string, value: number) => {
+    const currentAdjustments = adjustmentData.adjustments || initialAdjustmentState;
+    const newAdjustments = { ...currentAdjustments, [key]: value };
+    onUpdate({ adjustmentData: { ...adjustmentData, adjustments: newAdjustments } });
+    onCommit(`Update Brightness/Contrast: ${key}`);
+  }, [adjustmentData, onUpdate, onCommit]);
+
+
+  if (adjustmentData.type === 'brightness') {
+    const adjustments = adjustmentData.adjustments || initialAdjustmentState;
+    return (
+      <LightingAdjustments
+        adjustments={{
+          brightness: adjustments.brightness,
+          contrast: adjustments.contrast,
+          saturation: adjustments.saturation,
+        }}
+        onAdjustmentChange={handleAdjustmentChange}
+        onAdjustmentCommit={handleAdjustmentCommit}
+      />
+    );
+  }
 
   // Placeholder for rendering controls based on adjustmentData.type
   return (
