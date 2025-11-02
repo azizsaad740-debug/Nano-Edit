@@ -55,9 +55,50 @@ const initialPanelLayout: PanelTab[] = [
   { id: 'templates', name: 'Templates', icon: LayoutGrid, location: 'bottom', visible: true, order: 5 },
 ];
 
+const PANEL_LAYOUT_STORAGE_KEY = 'nanoedit-panel-layout';
+
 export const useEditorLogic = () => {
   const state = useEditorState();
-  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout);
+  
+  // Initialize panelLayout from local storage or default
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(() => {
+    if (typeof window !== 'undefined') {
+      const storedLayout = localStorage.getItem(PANEL_LAYOUT_STORAGE_KEY);
+      if (storedLayout) {
+        try {
+          const parsedLayout: PanelTab[] = JSON.parse(storedLayout);
+          
+          // Merge stored settings with defaults to ensure new tabs are included
+          const layoutMap = new Map(parsedLayout.map(t => [t.id, t]));
+          
+          const mergedLayout = initialPanelLayout.map(defaultTab => {
+            const storedTab = layoutMap.get(defaultTab.id);
+            if (storedTab) {
+              // Merge stored properties, prioritizing stored location/visibility/order
+              return { ...defaultTab, ...storedTab };
+            }
+            return defaultTab;
+          });
+          
+          // Sort by order to maintain consistency after merging
+          return mergedLayout.sort((a, b) => a.order - b.order);
+        } catch (e) {
+          console.error("Failed to parse stored panel layout, using default.", e);
+        }
+      }
+    }
+    return initialPanelLayout;
+  });
+
+  // Persist panelLayout whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(PANEL_LAYOUT_STORAGE_KEY, JSON.stringify(panelLayout));
+    } catch (e) {
+      console.error("Failed to save panel layout to local storage.", e);
+    }
+  }, [panelLayout]);
+
 
   // Logic to update layout
   const updatePanelLayout = useCallback((updates: Partial<PanelTab> & { id: string }) => {
@@ -141,9 +182,7 @@ export const useEditorLogic = () => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, 
-    setSelectiveBlurAmount, 
     selectiveSharpenAmount, 
-    setSelectiveSharpenAmount, 
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
