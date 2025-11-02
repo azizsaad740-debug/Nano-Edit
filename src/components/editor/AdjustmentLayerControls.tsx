@@ -8,7 +8,7 @@ import { showSuccess, showError } from '@/utils/toast';
 
 interface AdjustmentLayerControlsProps {
   layer: Layer & AdjustmentLayerData;
-  onUpdate: (updates: Partial<AdjustmentLayerData>) => void;
+  onUpdate: (updates: Partial<Layer>) => void;
   onCommit: (name: string) => void;
   currentEditState: EditState;
   imgRef: React.RefObject<HTMLImageElement>;

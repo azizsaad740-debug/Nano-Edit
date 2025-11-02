@@ -9,6 +9,7 @@ import {
   initialLayerState,
   initialHistoryItem,
   initialSelectionSettings,
+  initialPanelLayout,
   type Layer,
   type EditState,
   type ActiveTool,
@@ -82,7 +83,7 @@ export const useEditorState = () => {
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
   // Panel Management State
-  const [panelLayout, setPanelLayout] = useState<PanelTab[]>([]); // Initialized as empty, populated by Index.tsx
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout); // Initialized with default layout
   const [activeRightTab, setActiveRightTab] = useState('layers');
   const [activeBottomTab, setActiveBottomTab] = useState('correction');
   

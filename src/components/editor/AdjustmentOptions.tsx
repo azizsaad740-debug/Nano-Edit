@@ -5,6 +5,7 @@ import type { Layer, EditState } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AdjustmentLayerControls } from "./AdjustmentLayerControls";
 import { LayerGeneralProperties } from "./LayerGeneralProperties";
+import type { AdjustmentLayerData } from "@/types/editor";
 
 interface AdjustmentOptionsProps {
   layer: Layer;
@@ -51,13 +52,13 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <AdjustmentLayerControls
-            layer={layer as any} // Cast to any temporarily until full type resolution
+            layer={layer as AdjustmentLayerData}
             onUpdate={onLayerUpdate}
             onCommit={onLayerCommit}
             imgRef={imgRef}
             customHslColor={customHslColor}
             setCustomHslColor={setCustomHslColor}
-            currentEditState={currentEditState} // PASSED
+            currentEditState={currentEditState}
           />
         </CardContent>
       </Card>
