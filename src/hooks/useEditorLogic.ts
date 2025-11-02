@@ -13,7 +13,7 @@ import { useCurves } from './useCurves';
 import { useTransform } from './useTransform';
 import { useChannels } from './useChannels';
 import { useSelection } from './useSelection';
-import { useSelectiveRetouch } from './useSelectiveRetouch'; // RENAMED IMPORT
+import { useSelectiveRetouch } from './useSelectiveRetouch';
 import { useWorkspaceInteraction } from './useWorkspaceInteraction';
 import { useImageLoader } from './useImageLoader';
 import { useProjectSettings } from './useProjectSettings';
@@ -42,9 +42,9 @@ export const useEditorLogic = () => {
     undo, redo, canUndo, canRedo,
     activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
-    selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
-    selectiveBlurAmount, setSelectiveBlurAmount, 
-    selectiveSharpenAmount, setSelectiveSharpenAmount,
+    selectedShapeType, setSelectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
+    selectiveBlurAmount, 
+    selectiveSharpenAmount, 
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings,
     currentEditState, updateCurrentState,
     cloneSourcePoint,
@@ -64,6 +64,23 @@ export const useEditorLogic = () => {
     }
     return null;
   }, [layers]);
+  
+  const historyImageSrc = useMemo(() => {
+    const isHistoryToolActive = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
+    if (!isHistoryToolActive || historyBrushSourceIndex === undefined || historyBrushSourceIndex >= history.length) {
+      return null;
+    }
+    
+    const historyItem = history[historyBrushSourceIndex];
+    const backgroundLayer = historyItem.layers.find(l => l.id === 'background');
+    
+    // STUB: Return the background layer's data URL from the selected history state.
+    if (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) {
+      return backgroundLayer.dataUrl || null;
+    }
+    return null;
+  }, [activeTool, history, historyBrushSourceIndex]);
+
 
   const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
     state.setImage, state.setDimensions, state.setFileInfo, state.setExifData, state.setLayers, state.resetAllEdits,
@@ -302,8 +319,7 @@ export const useEditorLogic = () => {
     handleLayerDelete, reorderLayers, onSelectLayer: onSelectLayerFromLayers,
     removeLayerMask, invertLayerMask, toggleClippingMask, toggleLayerLock, handleDeleteHiddenLayers,
     handleRasterizeSmartObject, handleConvertSmartObjectToLayers, handleExportSmartObjectContents, handleArrangeLayer,
-    applySelectionAsMask,
-    handleDestructiveOperation, // EXPOSED
+    applySelectionAsMask, handleDestructiveOperation, // EXPOSED
     onBrushCommit, // EXPOSED
     // Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit,
@@ -333,6 +349,7 @@ export const useEditorLogic = () => {
     handleImageResult,
     handleMaskResult,
     base64Image, // EXPOSED
+    historyImageSrc, // EXPOSED
     // Workspace
     workspaceZoom, handleWheel, handleFitScreen, handleZoomIn, handleZoomOut, isMouseOverImage, setIsMouseOverImage,
     gradientStart, gradientCurrent, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp,

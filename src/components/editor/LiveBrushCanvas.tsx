@@ -17,6 +17,7 @@ interface LiveBrushCanvasProps {
   selectedLayerId: string | null;
   zoom: number;
   baseImageSrc: string | null; // ADDED PROP
+  historyImageSrc: string | null; // NEW PROP for History Brush source
 }
 
 export const LiveBrushCanvas = ({
@@ -31,7 +32,8 @@ export const LiveBrushCanvas = ({
   cloneSourcePoint,
   selectedLayerId,
   zoom,
-  baseImageSrc, // DESTRUCTURED
+  baseImageSrc,
+  historyImageSrc, // DESTRUCTURED
 }: LiveBrushCanvasProps) => {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const tempCanvasRef = React.useRef<HTMLCanvasElement>(null); // For live preview
@@ -39,6 +41,7 @@ export const LiveBrushCanvas = ({
   const lastPointRef = React.useRef<Point | null>(null);
   const [isDrawing, setIsDrawing] = React.useState(false);
   const baseImageRef = React.useRef<HTMLImageElement | null>(null); // Ref to hold the base image element
+  const historyImageRef = React.useRef<HTMLImageElement | null>(null); // Ref to hold the history image element
 
   const isStampTool = activeTool === 'cloneStamp' || activeTool === 'patternStamp';
   const isHistoryBrush = activeTool === 'historyBrush' || activeTool === 'artHistoryBrush';
@@ -51,7 +54,7 @@ export const LiveBrushCanvas = ({
 
   const { size, hardness, opacity, flow, shape, angle, roundness, spacing } = brushState;
 
-  // Load base image when source changes
+  // Load base image when source changes (used for Clone/Pattern Stamp)
   React.useEffect(() => {
     if (baseImageSrc) {
       const img = new Image();
@@ -68,6 +71,24 @@ export const LiveBrushCanvas = ({
       baseImageRef.current = null;
     }
   }, [baseImageSrc]);
+  
+  // Load history image when source changes (used for History Brush)
+  React.useEffect(() => {
+    if (historyImageSrc) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        historyImageRef.current = img;
+      };
+      img.onerror = () => {
+        historyImageRef.current = null;
+        console.error("Failed to load history image for brush.");
+      };
+      img.src = historyImageSrc;
+    } else {
+      historyImageRef.current = null;
+    }
+  }, [historyImageSrc]);
 
   const getOperation = (): 'add' | 'subtract' => {
     // For selection/retouch tools, operation depends on foreground/background color swap
@@ -84,16 +105,12 @@ export const LiveBrushCanvas = ({
       return getOperation() === 'add' ? 'rgba(255, 255, 255, 1)' : 'rgba(0, 0, 0, 1)';
     }
     if (isHistoryBrush) {
-      return 'rgba(128, 128, 128, 1)'; 
+      // History brush draws the historical image, so the stroke mask should be white
+      return 'rgba(255, 255, 255, 1)'; 
     }
     return foregroundColor;
   };
   
-  const getHistoryStateName = () => {
-    // STUB: In a real app, this would read the selected history state from the UI options.
-    return "History State (Stub)";
-  };
-
   const drawBrushStroke = React.useCallback((ctx: CanvasRenderingContext2D, start: Point, end: Point) => {
     if (!imageNaturalDimensions) return;
 
@@ -149,15 +166,25 @@ export const LiveBrushCanvas = ({
         ctx.restore();
         ctx.save(); // Save again for the next iteration
         
-      } else if (isHistoryBrush) {
-        // --- History Brush Logic (Stub: draws solid color for now) ---
+      } else if (isHistoryBrush && historyImageRef.current) {
+        // --- History Brush Logic ---
+        
+        // 1. Clip the drawing to the brush shape
         ctx.beginPath();
         if (shape === 'circle') {
           ctx.arc(x, y, radius, 0, Math.PI * 2);
         } else {
           ctx.rect(x - radius, y - radius, size, size);
         }
-        ctx.fill();
+        ctx.clip();
+        
+        // 2. Draw the historical image (full canvas size)
+        ctx.drawImage(historyImageRef.current, 0, 0, imageNaturalDimensions.width, imageNaturalDimensions.height);
+        
+        // Restore context to remove clip path
+        ctx.restore();
+        ctx.save(); // Save again for the next iteration
+        
       } else {
         // --- Standard Brush/Eraser/Selection Brush Logic ---
         ctx.beginPath();
@@ -171,7 +198,7 @@ export const LiveBrushCanvas = ({
     }
     
     ctx.restore();
-  }, [size, opacity, flow, shape, isEraser, isSelectionBrush, isSelectiveRetouchTool, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation, isHistoryBrush]);
+  }, [size, opacity, flow, shape, isEraser, isSelectionBrush, isSelectiveRetouchTool, isPencil, foregroundColor, cloneSourcePoint, isStampTool, imageNaturalDimensions, spacing, getOperation, isHistoryBrush, historyImageRef]);
 
   const getPointOnCanvas = React.useCallback((e: MouseEvent): Point | null => {
     if (!canvasRef.current || !imageNaturalDimensions) return null;

@@ -95,6 +95,7 @@ export const Index = () => {
     handleImageResult, 
     handleMaskResult, 
     base64Image, 
+    historyImageSrc, // DESTRUCTURED
     
     // Workspace
     hasImage, hasActiveSelection,
@@ -216,6 +217,7 @@ export const Index = () => {
  
   const editorWorkspaceProps = {
     workspaceRef, imgRef, image, dimensions, currentEditState, layers, selectedLayerId, activeTool, brushState, foregroundColor, backgroundColor, gradientToolState, selectionPath, selectionMaskDataUrl, selectiveBlurMask, selectiveBlurAmount, selectiveSharpenMask, selectiveSharpenAmount, handleSelectiveRetouchStrokeEnd, marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint, onCropChange, onCropComplete, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, setIsMouseOverImage, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, handleAddDrawingLayer, setSelectionPath, setSelectionMaskDataUrl, clearSelectionState, updateCurrentState, updateLayer, commitLayerChange, workspaceZoom, handleFitScreen, handleZoomIn, handleZoomOut, isPreviewingOriginal, base64Image,
+    historyImageSrc, // ADDED
   };
   
   const toolOptionsBarProps = {

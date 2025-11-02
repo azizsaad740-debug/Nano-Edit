@@ -52,6 +52,7 @@ interface EditorWorkspaceProps {
   gradientCurrent: Point | null;
   cloneSourcePoint: Point | null;
   base64Image: string | null; // ADDED PROP
+  historyImageSrc: string | null; // NEW PROP
   
   // Handlers
   onCropChange: (crop: Crop) => void;
@@ -104,6 +105,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
   gradientCurrent,
   cloneSourcePoint,
   base64Image, // DESTRUCTURED
+  historyImageSrc, // DESTRUCTURED
   onCropChange,
   onCropComplete,
   handleWorkspaceMouseDown,
@@ -298,6 +300,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
                 selectedLayerId={selectedLayerId}
                 zoom={workspaceZoom}
                 baseImageSrc={base64Image} // PASS BASE IMAGE
+                historyImageSrc={historyImageSrc} // PASS HISTORY IMAGE SRC
               />
             </div>
           )}
@@ -324,6 +327,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = ({
                 selectedLayerId={selectedLayerId}
                 zoom={workspaceZoom}
                 baseImageSrc={base64Image} // PASS BASE IMAGE
+                historyImageSrc={historyImageSrc} // PASS HISTORY IMAGE SRC
               />
             </div>
           )}
