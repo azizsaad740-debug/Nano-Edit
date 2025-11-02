@@ -1,19 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 import { showError } from "./toast";
 
-const EDGE_FUNCTION_URL = "https://bwgdgbgwkgiwkwabynvv.supabase.co/functions/v1/ai-orchestrator";
+// Placeholder URL for the N8N Webhook endpoint
+const EDGE_FUNCTION_URL = "https://n8n.example.com/webhook/ai-orchestrator-prod";
 
 /**
  * Calls the AI Orchestrator Edge Function for image generation.
  */
 export const generateImageApi = async (prompt: string, width: number, height: number): Promise<string> => {
   try {
+    // NOTE: Authorization logic is simplified here. If your N8N webhook requires authentication, 
+    // you must include the appropriate headers (e.g., API key).
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Supabase client handles Authorization header automatically if session is active
-        'Authorization': `Bearer ${await supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
       },
       body: JSON.stringify({
         command: 'generate_image',
@@ -46,7 +47,6 @@ export const generativeFillApi = async (prompt: string): Promise<string> => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await supabase.auth.getSession().then(s => s.data.session?.access_token)}`,
       },
       body: JSON.stringify({
         command: 'generative_fill',

@@ -2,7 +2,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { showError } from "./toast";
 import type { Dimensions } from "@/types/editor";
 
-const EDGE_FUNCTION_URL = "https://bwgdgbgwkgiwkwabynvv.supabase.co/functions/v1/ai-orchestrator";
+// Placeholder URL for the N8N Webhook endpoint
+const EDGE_FUNCTION_URL = "https://n8n.example.com/webhook/ai-orchestrator-prod";
 
 interface OrchestratorPayload {
   command: string;
@@ -22,18 +23,12 @@ interface OrchestratorResponse {
  */
 export const aiOrchestratorCall = async (payload: OrchestratorPayload): Promise<OrchestratorResponse> => {
   try {
-    const session = await supabase.auth.getSession();
-    const accessToken = session.data.session?.access_token;
-
-    if (!accessToken) {
-      throw new Error("User not authenticated. Please log in or continue as guest.");
-    }
-
+    // NOTE: Authorization logic is simplified here. If your N8N webhook requires authentication, 
+    // you must include the appropriate headers (e.g., API key).
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`,
       },
       body: JSON.stringify(payload),
     });
