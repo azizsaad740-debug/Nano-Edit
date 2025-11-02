@@ -75,6 +75,8 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               history={props.history}
               historyBrushSourceIndex={props.historyBrushSourceIndex}
               setHistoryBrushSourceIndex={props.setHistoryBrushSourceIndex}
+              foregroundColor={props.foregroundColor}
+              setForegroundColor={props.setForegroundColor}
             />
             {props.selectedLayer && (
               <LayerPropertiesContent
