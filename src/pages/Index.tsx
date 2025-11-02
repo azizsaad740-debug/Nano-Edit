@@ -61,7 +61,7 @@ const Index: React.FC = () => {
     const overData = over?.data.current;
 
     if (activeData?.layerId && overData?.layerId) {
-      logic.handleReorder(activeData.layerId, overData.layerId); // Removed 'right' argument
+      logic.onLayerReorder(activeData.layerId, overData.layerId); // Corrected function name
     } else if (activeData?.tabId && overData?.tabId && activeData?.location && overData?.location) {
       logic.reorderPanelTabs(activeData.tabId, overData.tabId, overData.location);
     }
@@ -142,6 +142,8 @@ const Index: React.FC = () => {
               addGradientLayer={logic.addGradientLayer}
               addTextLayer={logic.addTextLayer}
               addShapeLayer={logic.addShapeLayer}
+              setMarqueeStart={logic.setMarqueeStart} // ADDED
+              setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
             />
           </div>
           <MobileToolOptions
@@ -233,6 +235,8 @@ const Index: React.FC = () => {
                     addGradientLayer={logic.addGradientLayer}
                     addTextLayer={logic.addTextLayer}
                     addShapeLayer={logic.addShapeLayer}
+                    setMarqueeStart={logic.setMarqueeStart} // ADDED
+                    setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
                   />
                 </ResizablePanel>
                 

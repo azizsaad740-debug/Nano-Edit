@@ -97,7 +97,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 setCustomHslColor={props.setCustomHslColor}
                 onRemoveLayerMask={props.onRemoveLayerMask}
                 onInvertLayerMask={props.onInvertLayerMask}
-                currentEditState={props.currentEditState} // ADDED
+                currentEditState={props.currentEditState}
               />
             )}
           </div>

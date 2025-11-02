@@ -98,6 +98,7 @@ export interface RightSidebarTabsProps {
   // Brush State
   brushState: BrushState;
   setBrushState: (updates: Partial<Omit<BrushState, 'color'>>) => void;
+  onBrushCommit: () => void; // ADDED
   // Selective Blur
   selectiveBlurAmount: number;
   onSelectiveBlurAmountChange: (value: number) => void;
@@ -169,6 +170,10 @@ export interface RightSidebarTabsProps {
   setActiveRightTab: (id: string) => void;
   activeBottomTab: string;
   setActiveBottomTab: (id: string) => void;
+  togglePanelVisibility: (id: string) => void; // ADDED
+  
+  // Global Edit State (for LayerPropertiesContent)
+  currentEditState: EditState; // ADDED
 }
 
 const Sidebar = (props: RightSidebarTabsProps) => {

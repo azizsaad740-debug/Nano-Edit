@@ -89,6 +89,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     initialEditState, initialLayerState,
     handleCopy,
     clearSelectionState,
+    panelLayout: logicPanelLayout, // Rename to avoid conflict with prop
+    reorderPanelTabs,
   } = logic;
 
   // Wrapper for handleLoadProject to match expected signature
@@ -162,7 +164,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
       isFullscreen={isFullscreen}
       onSyncProject={() => showError("Sync to Cloud is a stub.")}
       setOpenProjectSettings={setIsProjectSettingsOpen}
-      panelLayout={panelLayout}
+      panelLayout={logicPanelLayout}
       togglePanelVisibility={togglePanelVisibility}
       activeRightTab={activeRightTab}
       setActiveRightTab={setActiveRightTab}
@@ -180,7 +182,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
         setIsProjectSettingsOpen={setIsProjectSettingsOpen}
         isFullscreen={isFullscreen}
         onToggleFullscreen={onToggleFullscreen}
-        panelLayout={panelLayout}
+        panelLayout={logicPanelLayout}
         togglePanelVisibility={togglePanelVisibility}
         activeRightTab={activeRightTab}
         setActiveRightTab={setActiveRightTab}

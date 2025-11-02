@@ -444,5 +444,10 @@ export const useEditorLogic = (props: any) => {
     isMobile,
     setIsMouseOverImage,
     hasImage, // ADDED
+    
+    // Missing properties from useEditorState (Errors 3, 4, 7-15 source)
+    panelLayout,
+    setMarqueeStart,
+    setMarqueeCurrent,
   };
 };
