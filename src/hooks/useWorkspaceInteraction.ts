@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess } from '@/utils/toast';
 import type { Point, Dimensions, ActiveTool, GradientToolState, Layer } from '@/types/editor';
 import { useSelection } from './useSelection';
 
@@ -24,7 +24,7 @@ interface UseWorkspaceInteractionProps {
   handleMarqueeSelectionComplete: (start: Point, end: Point) => Promise<void>;
   currentEditState: any; // Simplified type
   setCloneSourcePoint: (point: Point | null) => void;
-  handleAddTextLayer: (coords: Point, color: string) => void;
+  handleAddTextLayer: (coords: Point) => void;
   foregroundColor: string;
   setForegroundColor: (color: string) => void;
   setActiveTool: (tool: ActiveTool | null) => void;
@@ -59,63 +59,183 @@ export const useWorkspaceInteraction = ({
     setWorkspaceZoom(externalZoom);
   }, [externalZoom]);
 
-  const [localZoom, setLocalZoom] = useState(externalZoom);
-  // const [debouncedZoom] = useDebounce(localZoom, 10); // Removed useDebounce
   const [isMouseOverImage, setIsMouseOverImage] = useState<boolean>(false);
   const [gradientStart, setGradientStart] = useState<Point | null>(null);
   const [gradientCurrent, setGradientCurrent] = useState<Point | null>(null);
   const [isGradientActive, setIsGradientActive] = useState(false);
   const [isPanning, setIsPanning] = useState(false);
   const [panOrigin, setPanOrigin] = useState<Point | null>(null);
-  const [workspaceOffset, setWorkspaceOffset] = useState({ x: 0, y: 0 });
-  const [marqueeStartLocal, setMarqueeStartLocal] = useState<Point | null>(null);
-  const [marqueeCurrentLocal, setMarqueeCurrentLocal] = useState<Point | null>(null);
+  
+  // Local state to track marquee start/end in screen coordinates
+  const [marqueeStartScreen, setMarqueeStartScreen] = useState<Point | null>(null);
   const [isMarqueeActive, setIsMarqueeActive] = useState(false);
-  const [isLassoActive, setIsLassoActive] = useState(false);
-  const [lassoPath, setLassoPath] = useState<Point[]>([]);
-  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  
+  // Helper to convert screen coordinates to image pixel coordinates (0 to W/H)
+  const getPointOnImage = useCallback((e: MouseEvent | React.MouseEvent): Point | null => {
+    if (!imgRef.current || !dimensions || !workspaceRef.current) return null;
+    
+    const imgRect = imgRef.current.getBoundingClientRect();
+    
+    const clientX = 'clientX' in e ? e.clientX : e.nativeEvent.clientX;
+    const clientY = 'clientY' in e ? e.clientY : e.nativeEvent.clientY;
+    
+    // Calculate coordinates relative to the image element's top-left corner on screen
+    const xScreen = clientX - imgRect.left;
+    const yScreen = clientY - imgRect.top;
+    
+    // Convert screen pixels relative to the scaled image to natural image pixels
+    const scaleFactorX = dimensions.width / imgRect.width;
+    const scaleFactorY = dimensions.height / imgRect.height;
+    
+    const x = Math.round(xScreen * scaleFactorX);
+    const y = Math.round(yScreen * scaleFactorY);
+    
+    // Check if the click is within the image bounds (in natural pixels)
+    if (x < 0 || x > dimensions.width || y < 0 || y > dimensions.height) {
+        return null;
+    }
+    
+    return { x, y };
+  }, [imgRef, dimensions, workspaceRef]);
+
 
   // --- Zoom/Fit Handlers ---
   const handleFitScreen = useCallback(() => {
-    // Stub implementation
     const newZoom = 1; 
     setWorkspaceZoom(newZoom);
     setExternalZoom(newZoom);
   }, [setExternalZoom]);
 
   const handleZoomIn = useCallback(() => {
-    // Stub implementation
     const newZoom = Math.min(5, workspaceZoom + 0.1);
     setWorkspaceZoom(newZoom);
     setExternalZoom(newZoom);
   }, [setExternalZoom, workspaceZoom]);
 
   const handleZoomOut = useCallback(() => {
-    // Stub implementation
     const newZoom = Math.max(0.1, workspaceZoom - 0.1);
     setWorkspaceZoom(newZoom);
     setExternalZoom(newZoom);
   }, [setExternalZoom, workspaceZoom]);
   
-  // --- Pan Handlers ---
+  // --- Interaction Handlers ---
   const handleWorkspaceMouseDown = useCallback((e: React.MouseEvent) => {
-    // Stub implementation
+    if (!dimensions) return;
+    
+    const point = getPointOnImage(e);
+    
+    // 1. Clone Stamp Source Selection (Alt/Option + Click)
+    if ((activeTool === 'cloneStamp' || activeTool === 'patternStamp') && (e.altKey || e.metaKey)) {
+      if (point) {
+        setCloneSourcePoint(point);
+        showSuccess("Clone source set.");
+      } else {
+        showError("Click inside the image bounds to set clone source.");
+      }
+      return;
+    }
+    
+    // 2. Text Tool Activation
+    if (activeTool === 'text' && point) {
+        // Convert natural pixel coordinates (0 to W/H) to percentage coordinates (0 to 100)
+        const xPercent = (point.x / dimensions.width) * 100;
+        const yPercent = (point.y / dimensions.height) * 100;
+        handleAddTextLayer({ x: xPercent, y: yPercent });
+        setActiveTool(null); // Deselect tool after placement
+        return;
+    }
+    
+    // 3. Eyedropper Tool
+    if (activeTool === 'eyedropper' && point && imgRef.current) {
+        // Stub: In a real app, we'd read the pixel color from the canvas composite.
+        const sampledColor = '#FF0000'; // Stubbed sampled color
+        setForegroundColor(sampledColor);
+        setActiveTool(null);
+        showSuccess(`Color sampled: ${sampledColor}`);
+        return;
+    }
+    
+    // 4. Gradient Tool Start
+    if (activeTool === 'gradient' && point) {
+        setGradientStart({ x: e.clientX, y: e.clientY });
+        setGradientCurrent({ x: e.clientX, y: e.clientY });
+        setIsGradientActive(true);
+        return;
+    }
+    
+    // 5. Marquee Start
+    if (activeTool?.startsWith('marquee')) {
+        setMarqueeStartScreen({ x: e.clientX, y: e.clientY });
+        setMarqueeStart({ x: e.clientX, y: e.clientY });
+        setMarqueeCurrent({ x: e.clientX, y: e.clientY });
+        setIsMarqueeActive(true);
+        return;
+    }
+    
+    // 6. Panning (Fallback)
     setIsPanning(true);
     setPanOrigin({ x: e.clientX, y: e.clientY });
-  }, []);
+    
+  }, [dimensions, activeTool, getPointOnImage, setCloneSourcePoint, imgRef, setForegroundColor, handleAddTextLayer, setActiveTool, setGradientStart, setGradientCurrent, setMarqueeStart, setMarqueeCurrent]);
 
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent) => {
-    // Stub implementation
-    if (!isPanning || !panOrigin) return;
-    setPanOrigin({ x: e.clientX, y: e.clientY });
-  }, [isPanning, panOrigin]);
+    // 1. Panning
+    if (isPanning && panOrigin) {
+      setPanOrigin({ x: e.clientX, y: e.clientY });
+      return;
+    }
+    
+    // 2. Gradient Drawing
+    if (isGradientActive) {
+        setGradientCurrent({ x: e.clientX, y: e.clientY });
+        return;
+    }
+    
+    // 3. Marquee Drawing
+    if (isMarqueeActive) {
+        setMarqueeCurrent({ x: e.clientX, y: e.clientY });
+        return;
+    }
+    
+  }, [isPanning, panOrigin, isGradientActive, setGradientCurrent, isMarqueeActive, setMarqueeCurrent]);
 
-  const handleWorkspaceMouseUp = useCallback(() => {
-    // Stub implementation
-    setIsPanning(false);
-    setPanOrigin(null);
-  }, []);
-  
+  const handleWorkspaceMouseUp = useCallback((e: React.MouseEvent) => {
+    // 1. Panning End
+    if (isPanning) {
+      setIsPanning(false);
+      setPanOrigin(null);
+      return;
+    }
+    
+    // 2. Gradient End
+    if (isGradientActive && gradientStart) {
+        setIsGradientActive(false);
+        setGradientStart(null);
+        setGradientCurrent(null);
+        showSuccess("Gradient defined (Layer creation stub).");
+        return;
+    }
+    
+    // 3. Marquee End
+    if (isMarqueeActive && marqueeStartScreen) {
+        setIsMarqueeActive(false);
+        setMarqueeStart(null);
+        setMarqueeCurrent(null);
+        
+        const endPoint = getPointOnImage(e);
+        if (endPoint && dimensions) {
+            const startPoint = getPointOnImage({ clientX: marqueeStartScreen.x, clientY: marqueeStartScreen.y } as MouseEvent);
+            
+            if (startPoint && endPoint) {
+                handleMarqueeSelectionComplete(startPoint, endPoint);
+            }
+        }
+        setMarqueeStartScreen(null);
+        return;
+    }
+    
+  }, [isPanning, isGradientActive, gradientStart, isMarqueeActive, marqueeStartScreen, dimensions, handleMarqueeSelectionComplete, setGradientStart, setGradientCurrent, setMarqueeStart, setMarqueeCurrent, getPointOnImage]);
+
   // --- Wheel Handler ---
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -124,7 +244,7 @@ export const useWorkspaceInteraction = ({
     const maxZoom = 5;
     const newZoom = Math.min(maxZoom, Math.max(minZoom, workspaceZoom * (1 - e.deltaY * 0.001)));
     setWorkspaceZoom(newZoom);
-    setExternalZoom(newZoom); // Propagating the change outside of this hook
+    setExternalZoom(newZoom);
   }, [workspaceRef, dimensions, setExternalZoom, workspaceZoom]);
 
 

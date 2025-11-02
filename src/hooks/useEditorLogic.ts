@@ -33,6 +33,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { rasterizeEditedImageWithMask, downloadImage, copyImageToClipboard, applyMaskDestructively } from '@/utils/imageUtils';
 import { polygonToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import type { Point, ActiveTool, Layer, Dimensions, EditState, GradientToolState, SelectionSettings } from '@/types/editor';
+import { isImageOrDrawingLayer } from '@/types/editor';
 
 export const useEditorLogic = () => {
   const state = useEditorState();
@@ -101,9 +102,6 @@ export const useEditorLogic = () => {
     gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, clearSelectionState,
     setImage, setFileInfo, setSelectedLayerId,
   });
-
-  // Sync layers back to state if they change internally (e.g., via grouping/reordering)
-  // Note: Since useLayers now manages the state via setLayers, this sync is implicit.
 
   // --- Global Adjustment Hooks ---
   const { crop, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(currentEditState, updateCurrentState, recordHistory, layers);
@@ -178,12 +176,46 @@ export const useEditorLogic = () => {
   const { handleGradientToolChange } = useGradientTool(setActiveTool, setGradientToolState, gradientToolState);
   const { handleExportClick, handleCopy } = useExport(fileInfo, dimensions, currentEditState, layers, imgRef, state.image, stabilityApiKey);
 
-  // --- Workspace Interaction ---
+  // --- Selection Handlers ---
   const handleMarqueeSelectionComplete = useCallback(async (start: Point, end: Point) => {
-    // Stub implementation
-    console.log("Marquee selection complete:", start, end);
-  }, []);
-  
+    if (!dimensions || !activeTool) return;
+
+    const { width, height } = dimensions;
+    let maskDataUrl: string | null = null;
+
+    try {
+      if (activeTool === 'marqueeRect') {
+        // Create a polygon path from the rectangle corners
+        const x = Math.min(start.x, end.x);
+        const y = Math.min(start.y, end.y);
+        const w = Math.abs(start.x - end.x);
+        const h = Math.abs(start.y - end.y);
+        
+        const path: Point[] = [
+          { x, y },
+          { x: x + w, y },
+          { x: x + w, y: y + h },
+          { x, y: y + h },
+        ];
+        maskDataUrl = await polygonToMaskDataUrl(path, width, height);
+        
+      } else if (activeTool === 'marqueeEllipse') {
+        maskDataUrl = await ellipseToMaskDataUrl(start, end, width, height);
+      }
+      
+      if (maskDataUrl) {
+        setSelectionMaskDataUrl(maskDataUrl);
+        setSelectionPath(null); // Clear path if mask is generated
+        recordHistory("Marquee Selection", currentEditState, layers);
+        showSuccess("Selection created.");
+      }
+    } catch (error) {
+      showError("Failed to create selection mask.");
+      console.error(error);
+    }
+  }, [dimensions, activeTool, setSelectionMaskDataUrl, setSelectionPath, recordHistory, currentEditState, layers]);
+
+  // --- Workspace Interaction ---
   const {
     zoom: workspaceZoom,
     setZoom: setWorkspaceZoom,
@@ -213,7 +245,7 @@ export const useEditorLogic = () => {
     setZoom, 
     setMarqueeStart, 
     setMarqueeCurrent,
-    handleMarqueeSelectionComplete, 
+    handleMarqueeSelectionComplete,
     currentEditState, 
     setCloneSourcePoint,
     handleAddTextLayer: (coords) => addTextLayer(coords, foregroundColor),
