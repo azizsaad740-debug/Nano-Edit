@@ -181,7 +181,7 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
     <div className="w-full h-48 border-t bg-background flex shrink-0">
       <div className="flex-1 min-w-0 h-full">
         <Tabs value={activeBottomTab} onValueChange={setActiveBottomTab} className="w-full h-full flex flex-col">
-          <div className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
+          <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
             <SortableContext
               items={bottomTabs.map(t => t.id)}
               strategy={horizontalListSortingStrategy}
@@ -195,7 +195,7 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
                 />
               ))}
             </SortableContext>
-          </div>
+          </TabsList>
 
           <ScrollArea className="flex-1">
             <div className="p-4">

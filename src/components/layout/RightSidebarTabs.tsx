@@ -301,7 +301,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
 
   return (
     <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="w-full h-full flex flex-col">
-      <div className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
+      <TabsList className="w-full h-10 shrink-0 rounded-none border-b justify-start p-0" ref={setDroppableNodeRef}>
         <SortableContext
           items={rightTabs.map(t => t.id)}
           strategy={horizontalListSortingStrategy}
@@ -315,7 +315,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             />
           ))}
         </SortableContext>
-      </div>
+      </TabsList>
 
       <ScrollArea className="flex-1 mt-4">
         <div className="p-2">
