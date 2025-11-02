@@ -13,7 +13,7 @@ export interface RightSidebarTabsProps {
   selectedLayer: Layer | undefined;
   layers: Layer[];
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
-  onReorder: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => void; // UPDATED SIGNATURE
+  onLayerReorder: (activeId: string, overId: string) => void; // RENAMED AND FIXED SIGNATURE
   toggleLayerVisibility: (id: string) => void; // Renamed from onToggleVisibility
   renameLayer: (id: string, newName: string) => void; // Renamed from onRename
   deleteLayer: (id: string) => void; // Renamed from onDelete
@@ -62,9 +62,9 @@ export interface RightSidebarTabsProps {
   onAspectChange: (aspect: number | undefined) => void;
   aspect: number | undefined;
   frame: EditState['frame'];
-  onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
-  onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
-  onFramePropertyCommit: () => void;
+  onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void;
+  onFramePropertyChange: (key: 'width' | 'color' | 'opacity' | 'roundness' | 'vignetteAmount' | 'vignetteRoundness', value: any) => void;
+  onFramePropertyCommit: () => void; // UPDATED SIGNATURE
   
   // --- Re-added Color Correction Props (Fixes TS2339 errors) ---
   adjustments: AdjustmentState;

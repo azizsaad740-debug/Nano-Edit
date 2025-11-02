@@ -62,8 +62,8 @@ interface GlobalEffectsPanelProps {
   
   frame: FrameState;
   onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void;
-  onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
-  onFramePropertyCommit: (key: 'width' | 'color', value: any) => void; // FIX 26: Updated signature
+  onFramePropertyChange: (key: 'width' | 'color' | 'opacity' | 'roundness' | 'vignetteAmount' | 'vignetteRoundness', value: any) => void;
+  onFramePropertyCommit: () => void; // UPDATED SIGNATURE
   
   // Preset Props
   presets: Preset[];

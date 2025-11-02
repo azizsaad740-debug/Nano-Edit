@@ -45,7 +45,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             selectedLayerId={logic.selectedLayerId}
             selectedLayer={logic.selectedLayer}
             onSelectLayer={logic.setSelectedLayerId}
-            onReorder={logic.handleReorder} // FIX 36: Pass the 2-argument layer reorder function
+            onReorder={logic.onLayerReorder} // UPDATED TO onLayerReorder
             toggleLayerVisibility={logic.toggleLayerVisibility}
             renameLayer={logic.renameLayer}
             deleteLayer={logic.deleteLayer}
@@ -155,9 +155,9 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
               onAspectChange={logic.onAspectChange}
               aspect={logic.aspect}
               frame={logic.frame}
-              onFramePresetChange={(type, name, options) => logic.onFramePresetChange(type, options)}
+              onFramePresetChange={(type, name, options) => logic.onFramePresetChange(type, name, options)}
               onFramePropertyChange={logic.onFramePropertyChange}
-              onFramePropertyCommit={(key, value) => logic.onFramePropertyCommit(key, value)} // Fixed signature
+              onFramePropertyCommit={logic.onFramePropertyCommit} // Fixed signature
               presets={logic.presets}
               onApplyPreset={logic.handleApplyPreset}
               onSavePreset={onSavePreset}

@@ -65,12 +65,6 @@ export interface HslAdjustmentsState {
   magenta: HslAdjustment;
 }
 
-export interface ChannelState {
-  r: boolean;
-  g: boolean;
-  b: boolean;
-}
-
 export interface CurvesState {
   all: Point[];
   r: Point[];

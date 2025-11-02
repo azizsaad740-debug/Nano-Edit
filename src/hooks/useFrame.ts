@@ -14,7 +14,7 @@ export const useFrame = ({
 }) => {
   const frame = useMemo(() => currentEditState.frame, [currentEditState.frame]);
 
-  const onFramePresetChange = useCallback((type: FrameState['type'], options?: any) => {
+  const onFramePresetChange = useCallback((type: FrameState['type'], name: string, options?: any) => {
     let frameUpdate: Partial<FrameState>;
     
     if (type === 'none') {
@@ -43,15 +43,15 @@ export const useFrame = ({
     }
     
     updateCurrentState({ frame: { ...currentEditState.frame, ...frameUpdate } });
-    recordHistory(`Set Frame Preset: ${type}`, currentEditState, layers);
+    recordHistory(`Set Frame Preset: ${name}`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory, updateCurrentState]);
 
   const onFramePropertyChange = useCallback((key: keyof FrameState, value: any) => {
     updateCurrentState({ frame: { ...currentEditState.frame, [key]: value } });
   }, [currentEditState.frame, updateCurrentState]);
 
-  const onFramePropertyCommit = useCallback((key: keyof FrameState, value: any) => {
-    recordHistory(`Set Frame ${String(key)}`, { ...currentEditState, frame: { ...currentEditState.frame, [key]: value } }, layers);
+  const onFramePropertyCommit = useCallback(() => {
+    recordHistory(`Update Frame`, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {

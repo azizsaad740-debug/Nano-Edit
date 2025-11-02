@@ -44,8 +44,8 @@ interface Frame {
 }
 
 interface FramesProps {
-  onFramePresetChange: (type: string, name: string, options?: { width: number; color: string }) => void;
-  onFramePropertyChange: (key: 'width' | 'color', value: any) => void;
+  onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void;
+  onFramePropertyChange: (key: 'width' | 'color' | 'opacity' | 'roundness' | 'vignetteAmount' | 'vignetteRoundness', value: any) => void;
   onFramePropertyCommit: () => void;
   currentFrame: FrameState; // Use FrameState from types/editor.ts
 }

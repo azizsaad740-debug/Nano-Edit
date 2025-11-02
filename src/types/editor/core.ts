@@ -262,13 +262,10 @@ export interface EditState {
   customHslColor: string;
   selectionSettings: SelectionSettings;
   channels: {
-    red: boolean;
-    green: boolean;
-    blue: boolean;
+    r: boolean;
+    g: boolean;
+    b: boolean;
     alpha: boolean;
-    r?: boolean;
-    g?: boolean;
-    b?: boolean;
   };
   history: HistoryItem[];
   historyBrushSourceIndex: number;

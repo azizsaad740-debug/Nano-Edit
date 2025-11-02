@@ -19,7 +19,7 @@ interface LayersPanelProps {
   selectedLayerId: string | null;
   selectedLayer: Layer | undefined;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
-  onReorder: (activeId: string, overId: string) => void; // FIX 36: Removed newLocation argument
+  onReorder: (activeId: string, overId: string) => void; // CORRECTED SIGNATURE
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   deleteLayer: (id: string) => void;
