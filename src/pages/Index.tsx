@@ -21,11 +21,11 @@ import { MobileBottomNav, type MobileTab } from "@/components/mobile/MobileBotto
 import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { useNavigate } from "react-router-dom";
 import { Layers as LayersIcon } from "lucide-react";
-import LayersPanelComponent from "@/components/editor/LayersPanel";
 import { DndContext, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { DraggableTab } from "@/components/layout/DraggableTab";
 import type { PanelTab } from "@/types/editor/core";
+import LayersPanelComponent from "@/components/editor/LayersPanel"; // Keep this import for sidebarProps
 
 export const Index = () => {
   const logic = useEditorLogic();
