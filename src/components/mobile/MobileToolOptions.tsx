@@ -32,6 +32,7 @@ import BrushesPanel from "../auxiliary/BrushesPanel"; // NEW IMPORT
 import PathsPanel from "../auxiliary/PathsPanel"; // NEW IMPORT
 import InfoPanel from "../auxiliary/InfoPanel"; // NEW IMPORT
 import NavigatorPanel from "../auxiliary/NavigatorPanel"; // NEW IMPORT
+import LayersPanel from "../editor/LayersPanel"; // NEW IMPORT
 
 // We reuse the props interface from RightSidebarTabsProps for convenience
 interface MobileToolOptionsProps extends RightSidebarTabsProps {
@@ -75,7 +76,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = (props) => {
     setCustomHslColor, 
     onRemoveLayerMask, 
     onInvertLayerMask, 
-    LayersPanel, 
+    LayersPanel: LayersPanelProp, // Renamed to avoid conflict with direct import
     layers, 
     selectedLayerId, 
     onSelectLayer, 

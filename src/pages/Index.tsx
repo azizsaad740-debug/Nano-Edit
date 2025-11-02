@@ -226,8 +226,8 @@ export const Index = () => {
   };
  
   // Determine the bottom offset for the options panel
-  // MobileBottomNav: h-16 (64px). MobileToolBar: h-16 (64px).
-  const mobileOptionsBottomOffset = activeMobileTab === 'tools' as MobileTab ? 'bottom-[128px]' : 'bottom-[64px]'; // Explicit cast (Fixes 20)
+  // MobileBottomNav: h-16 (64px). MobileToolBar: h-16 (64px). Total fixed height: 128px.
+  const mobileOptionsBottomOffset = 'bottom-[128px]';
  
  
   // --- Common Elements (File Input and Dialogs) ---
