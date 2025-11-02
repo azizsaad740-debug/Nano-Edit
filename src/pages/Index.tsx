@@ -24,7 +24,6 @@ import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
 import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 import { SmartObjectEditor } from "@/components/editor/SmartObjectEditor";
-import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { showError } from "@/utils/toast";
@@ -153,7 +152,6 @@ const Index: React.FC = () => {
             setActiveTab={setMobileActiveTab}
           />
         </div>
-        <Toaster />
       </TooltipProvider>
     );
   }
@@ -372,7 +370,6 @@ const Index: React.FC = () => {
             selectedLayerId={logic.selectedLayerId}
           />
         )}
-        <Toaster />
       </TooltipProvider>
     </DndContext>
   );
