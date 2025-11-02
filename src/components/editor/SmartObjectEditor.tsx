@@ -13,7 +13,6 @@ import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SmartObjectLayersPanel } from "./SmartObjectLayersPanel";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { WorkspaceControls } from "./WorkspaceControls";
 import type { BrushState, GradientToolState, SmartObjectLayerData } from "@/types/editor";
 import { SlidersHorizontal, Layers } from "lucide-react";
@@ -63,7 +62,6 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 }) => {
   const workspaceRef = React.useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = React.useState(false);
-  const isMobile = useIsMobile();
 
   const smartObjectData = (smartObjectLayer as SmartObjectLayerData).smartObjectData;
   const smartObjectDimensions = {
