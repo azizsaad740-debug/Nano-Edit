@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { Index } from "./pages/Index"; // FIXED: Ensure named export is used
+import { Index } from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 export const App = () => {

@@ -1,10 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
-// Removed: import { useDropzone } from 'react-dropzone';
-// Removed: import { useDebounce } from 'use-debounce';
 import { showError } from '@/utils/toast';
 import type { Point, Dimensions, ActiveTool, GradientToolState, Layer } from '@/types/editor';
-// Removed: import { getRelativePoint } from '@/utils/editorUtils';
-// Removed: import { isMarqueeTool, isLassoTool, isGradientTool, isTextTool, isShapeTool, isEyedropperTool, isMoveTool } from '@/types/editor';
 import { useSelection } from './useSelection';
 
 // Define WorkspaceRef locally as it seems missing from types/editor
@@ -79,7 +75,7 @@ export const useWorkspaceInteraction = ({
   const [lassoPath, setLassoPath] = useState<Point[]>([]);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
 
-  // --- Zoom/Fit Handlers (Defined to resolve TS18004 errors) ---
+  // --- Zoom/Fit Handlers ---
   const handleFitScreen = useCallback(() => {
     // Stub implementation
     const newZoom = 1; 
@@ -101,7 +97,7 @@ export const useWorkspaceInteraction = ({
     setExternalZoom(newZoom);
   }, [setExternalZoom, workspaceZoom]);
   
-  // --- Pan Handlers (Defined to resolve TS18004 errors) ---
+  // --- Pan Handlers ---
   const handleWorkspaceMouseDown = useCallback((e: React.MouseEvent) => {
     // Stub implementation
     setIsPanning(true);
@@ -120,7 +116,7 @@ export const useWorkspaceInteraction = ({
     setPanOrigin(null);
   }, []);
   
-  // --- Wheel Handler (Existing, but ensuring it's defined) ---
+  // --- Wheel Handler ---
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
     if (!dimensions || !workspaceRef.current) return;
