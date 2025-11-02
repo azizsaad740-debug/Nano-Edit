@@ -66,7 +66,7 @@ export const LayerPropertiesContent: React.FC<LayerPropertiesContentProps> = (pr
 
       {isTextLayer && (
         <TextOptions
-          layer={selectedLayer}
+          layer={selectedLayer as any}
           onLayerUpdate={handleLayerUpdate}
           onLayerCommit={handleLayerCommit}
           systemFonts={props.systemFonts}

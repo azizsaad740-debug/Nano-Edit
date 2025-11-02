@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { Layer } from "@/types/editor";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import AdjustmentLayerControls from "./AdjustmentLayerControls";
+import { AdjustmentLayerControls } from "./AdjustmentLayerControls";
 import { LayerGeneralProperties } from "./LayerGeneralProperties";
 
 interface AdjustmentOptionsProps {
@@ -49,9 +49,9 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <AdjustmentLayerControls
-            layer={layer}
-            onUpdate={handleUpdateById}
-            onCommit={handleCommitById}
+            layer={layer as any} // Cast to any temporarily until full type resolution
+            onUpdate={onLayerUpdate}
+            onCommit={onLayerCommit}
             imgRef={imgRef}
             customHslColor={customHslColor}
             setCustomHslColor={setCustomHslColor}

@@ -9,7 +9,7 @@ interface HslColorSelectorProps {
 }
 
 export const HslColorSelector: React.FC<HslColorSelectorProps> = ({ selectedColor, setSelectedColor }) => {
-  const colorOptions: { key: HslColorKey; name: string; color: string }[] = [ // Fix 366
+  const colorOptions: { key: HslColorKey; name: string; color: string }[] = [
     { key: 'master', name: 'Master', color: 'hsl(var(--foreground))' },
     { key: 'red', name: 'Red', color: '#EF4444' },
     { key: 'yellow', name: 'Yellow', color: '#EAB308' },
@@ -27,13 +27,13 @@ export const HslColorSelector: React.FC<HslColorSelectorProps> = ({ selectedColo
           className={cn(
             "w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all",
             selectedColor === key ? 'ring-2 ring-primary ring-offset-2' : 'hover:ring-1 hover:ring-muted-foreground',
-            key === 'master' ? 'border border-muted-foreground' : 'border-none' // Fix 367, 368
+            key === 'master' ? 'border border-muted-foreground' : 'border-none'
           )}
-          style={{ backgroundColor: key === 'master' ? 'transparent' : color }} // Fix 13, 14, 369, 370, 371
+          style={{ backgroundColor: key === 'master' ? 'transparent' : color }}
           onClick={() => setSelectedColor(key)}
         >
-          {key === 'master' && <Globe className="h-4 w-4 text-muted-foreground" />} {/* Fix 15, 16, 17, 372, 373, 374 */}
-          {key === 'magenta' && selectedColor !== 'magenta' && <Palette className="h-4 w-4 text-muted-foreground" />}
+          {key === 'master' && <Globe className="h-4 w-4 text-muted-foreground" />}
+          {/* Removed redundant Palette icon logic */}
         </div>
       ))}
     </div>

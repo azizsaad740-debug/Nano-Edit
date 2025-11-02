@@ -140,16 +140,16 @@ const Curves = ({ curves, onCurvesChange, onCurvesCommit, imgRef }: CurvesProps)
 
   const colorMap: Record<keyof CurvesState, string> = {
     all: 'hsl(var(--primary))',
-    r: 'hsl(0, 100%, 50%)',
-    g: 'hsl(120, 100%, 50%)',
-    b: 'hsl(240, 100%, 50%)',
+    red: 'hsl(0, 100%, 50%)',
+    green: 'hsl(120, 100%, 50%)',
+    blue: 'hsl(240, 100%, 50%)',
   };
   
   const channelNameMap: Record<keyof CurvesState, string> = {
     all: 'RGB',
-    r: 'Red',
-    g: 'Green',
-    b: 'Blue',
+    red: 'Red',
+    green: 'Green',
+    blue: 'Blue',
   };
 
   return (
@@ -196,7 +196,7 @@ const Curves = ({ curves, onCurvesChange, onCurvesCommit, imgRef }: CurvesProps)
                   borderRadius: 'var(--radius)',
                 }}
                 labelStyle={{ color: 'hsl(var(--foreground))' }}
-                formatter={(value, name, props) => [`Output: ${Math.round(value)}`, `Input: ${props.payload.level}`]}
+                formatter={(value: number, name, props) => [`Output: ${Math.round(value)}`, `Input: ${props.payload.level}`]}
               />
               <Line
                 type="monotone"

@@ -8,66 +8,72 @@ import { showSuccess, showError } from '@/utils/toast';
 
 interface AdjustmentLayerControlsProps {
   layer: Layer & AdjustmentLayerData;
-  handleUpdate: (updates: Partial<AdjustmentLayerData>) => void;
-  handleCommit: (name: string) => void;
+  onUpdate: (updates: Partial<AdjustmentLayerData>) => void;
+  onCommit: (name: string) => void;
   currentEditState: EditState;
+  imgRef: React.RefObject<HTMLImageElement>;
+  customHslColor: string;
+  setCustomHslColor: (color: string) => void;
 }
 
-export const AdjustmentLayerControls: React.FC<AdjustmentLayerControlsProps> = ({ layer, handleUpdate, handleCommit, currentEditState }) => {
+export const AdjustmentLayerControls: React.FC<AdjustmentLayerControlsProps> = ({ layer, onUpdate, onCommit, currentEditState }) => {
   const { adjustmentData } = layer;
 
   const handleReset = useCallback((type: AdjustmentLayerData['adjustmentData']['type']) => {
-    let updates: Partial<AdjustmentLayerData> = {};
+    let updates: Partial<AdjustmentLayerData['adjustmentData']> = {};
     let name: string = `Reset ${type}`;
 
     switch (type) {
-      case 'brightness': // Fix 1, 2
-        updates.adjustments = { // Fix 98
+      case 'brightness':
+        updates.adjustments = {
           brightness: 100, contrast: 100, saturation: 100, exposure: 0,
           gamma: 100, temperature: 0, tint: 0, highlights: 0, shadows: 0,
-          clarity: 0, vibrance: 100, grain: 0, // Fix 47
+          clarity: 0, vibrance: 100, grain: 0,
           whites: 0, blacks: 0, dehaze: 0
-        } as AdjustmentState; // Fix 99
-        name = "Reset Brightness/Contrast"; // Fix 100
+        } as AdjustmentState;
+        name = "Reset Brightness/Contrast";
         break;
 
-      case 'hsl': // Fix 3, 4
-        updates.hslAdjustments = { // Fix 101
-          master: { ...initialHslAdjustment },  // Fix 102
-          red: { ...initialHslAdjustment }, // Fix 103
-          yellow: { ...initialHslAdjustment }, // Fix 104
-          green: { ...initialHslAdjustment }, // Fix 105
-          cyan: { ...initialHslAdjustment }, // Fix 106
-          blue: { ...initialHslAdjustment }, // Fix 107
-          magenta: { ...initialHslAdjustment }, // Fix 108
+      case 'hsl':
+        updates.hslAdjustments = {
+          master: { ...initialHslAdjustment },
+          red: { ...initialHslAdjustment },
+          yellow: { ...initialHslAdjustment },
+          green: { ...initialHslAdjustment },
+          cyan: { ...initialHslAdjustment },
+          blue: { ...initialHslAdjustment },
+          magenta: { ...initialHslAdjustment },
         } as HslAdjustmentsState;
-        name = "Reset HSL"; // Fix 109
+        name = "Reset HSL";
         break;
 
-      case 'grading': // Fix 5, 6
-        updates.grading = { // Fix 110
+      case 'grading':
+        updates.grading = {
           grayscale: 0, sepia: 0, invert: 0,
           shadowsColor: '#000000', midtonesColor: '#808080', highlightsColor: '#FFFFFF',
-          shadowsLuminance: 0, highlightsLuminance: 0, blending: 50, balance: 0, // Fix 49
+          shadowsLuminance: 0, highlightsLuminance: 0, blending: 50, balance: 0,
           shadows: { hue: 0, saturation: 0, luminosity: 0 },
           midtones: { hue: 0, saturation: 0, luminosity: 0 },
           highlights: { hue: 0, saturation: 0, luminosity: 0 },
-        } as GradingState; // Fix 111
-        name = "Reset Color Grading"; // Fix 112
+        } as GradingState;
+        name = "Reset Color Grading";
         break;
 
       default:
         return;
     }
 
-    handleUpdate({ adjustmentData: { ...adjustmentData, ...updates } });
-    handleCommit(name);
-  }, [adjustmentData, handleUpdate, handleCommit]);
+    onUpdate({ adjustmentData: { ...adjustmentData, ...updates } });
+    onCommit(name);
+  }, [adjustmentData, onUpdate, onCommit]);
 
-  // ... (rest of component logic)
+  // Placeholder for rendering controls based on adjustmentData.type
   return (
     <div>
-      {/* ... */}
+      <p className="text-sm text-muted-foreground">Controls for {adjustmentData.type} adjustment layer (Stub)</p>
+      <button onClick={() => handleReset(adjustmentData.type)} className="text-primary text-xs mt-2">
+        Reset {adjustmentData.type}
+      </button>
     </div>
   );
 };
