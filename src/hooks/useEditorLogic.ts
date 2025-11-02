@@ -7,7 +7,6 @@ import { useCrop } from './useCrop';
 import { useFrame } from './useFrame';
 import { useExport } from './useExport';
 import { useEditorState } from './useEditorState';
-import { useImageLoader } from './useImageLoader';
 import { useGenerativeAi } from './useGenerativeAi';
 import { useTransform } from './useTransform';
 import { useAdjustments } from './useAdjustments';
@@ -27,11 +26,12 @@ import { useMoveTool } from './useMoveTool';
 import { useLassoTool } from './useLassoTool';
 import { useEyedropper } from './useEyedropper';
 import { useDrawingTool } from './useDrawingTool';
+import { useEffects } from './useEffects';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import { copyImageToClipboard } from '@/utils/imageUtils';
 import { showSuccess, showError } from '@/utils/toast';
 import type { Point, EditState, Layer, Dimensions, ActiveTool, ShapeType } from '@/types/editor';
-import { initialEditState, initialLayerState } from '@/types/editor';
+import { initialEditState, initialLayerState, isImageOrDrawingLayer } from '@/types/editor';
 
 
 export const useEditorLogic = (props: any) => {
@@ -49,20 +49,20 @@ export const useEditorLogic = (props: any) => {
     marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent,
     gradientStart, setGradientStart, gradientCurrent, setGradientCurrent,
     setIsGenerateOpen, setIsGenerativeFillOpen, isPreviewingOriginal, setIsPreviewingOriginal,
-    systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
+    isFullscreen, setIsFullscreen, isSettingsOpen, setIsSettingsOpen, isMobile, handleReorder,
+    systemFonts, customFonts, addCustomFont, removeCustomFont,
     geminiApiKey, stabilityApiKey, dismissToast,
     currentEditState, updateCurrentState, resetAllEdits,
     setImage, setDimensions, setFileInfo, setExifData, setLayers,
     initialEditState, initialLayerState,
-    setIsFullscreen, setIsSettingsOpen, handleReorder, isMobile,
-    handleCopy, handleLayerDelete, onBrushCommit, handleZoomIn, handleZoomOut, handleFitScreen,
-    onCropChange: onCropChangeLogic, onCropComplete: onCropCompleteLogic, handleProjectSettingsUpdate,
+    panelLayout, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
   } = state;
 
   // --- Derived State ---
   const hasImage = !!image;
   const base64Image = image; // Simplified for now, should be rasterized image
-  const historyImageSrc = (history[historyBrushSourceIndex]?.layers.find(l => l.id === 'background') as Layer | undefined)?.dataUrl || null;
+  const historyImageSrc = history[historyBrushSourceIndex]?.layers.find(l => l.id === 'background') as Layer | undefined;
+  const historyImageSrcDataUrl = (historyImageSrc && isImageOrDrawingLayer(historyImageSrc)) ? historyImageSrc.dataUrl : null;
 
   // --- Utility Functions ---
   const clearSelectionState = useCallback(() => {
@@ -99,11 +99,28 @@ export const useEditorLogic = (props: any) => {
     };
   }, [workspaceRef, dimensions]);
 
+  // --- Zoom Handlers (Fix 30, 31, 32, 33, 39, 40, 41) ---
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(5, prev + 0.1));
+  }, [setZoom]);
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(0.1, prev - 0.1));
+  }, [setZoom]);
+
+  const handleFitScreen = useCallback(() => {
+    if (!workspaceRef.current || !dimensions) return;
+    const workspaceRect = workspaceRef.current.getBoundingClientRect();
+    const padding = 40;
+    const fitX = (workspaceRect.width - padding) / dimensions.width;
+    const fitY = (workspaceRect.height - padding) / dimensions.height;
+    setZoom(Math.min(fitX, fitY, 1));
+  }, [workspaceRef, dimensions, setZoom]);
+
   // --- Sub-Hooks ---
   const { transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset: applyTransformPreset } = useTransform(currentEditState, updateCurrentState, recordHistory, layers);
   const { crop, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(currentEditState, updateCurrentState, recordHistory, layers);
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame({ currentEditState, updateCurrentState, recordHistory, layers });
-  const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
   const { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, onFilterChange, applyPreset: applyAdjustmentsPreset } = useAdjustments(currentEditState, updateCurrentState, recordHistory, layers);
   const { grading, onGradingChange, onGradingCommit, applyPreset: applyGradingPreset } = useColorGrading(currentEditState, updateCurrentState, recordHistory, layers);
   const { hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, applyPreset: applyHslPreset } = useHslAdjustments(currentEditState, updateCurrentState, recordHistory, layers);
@@ -121,6 +138,16 @@ export const useEditorLogic = (props: any) => {
   const { handleLassoToolChange } = useLassoTool(setActiveTool);
   const { handleEyedropperToolChange } = useEyedropper(setActiveTool, setForegroundColor);
   const { handleDrawingToolChange } = useDrawingTool(setActiveTool);
+  
+  // Destructure effects from useEffects hook (Fix 34, 35, 36)
+  const { effects, onEffectChange, onEffectCommit, applyPreset: applyEffectsPreset } = useEffects(currentEditState, updateCurrentState, recordHistory, layers);
+
+  // Brush Commit (Fix 51)
+  const onBrushCommit = useCallback(() => {
+    recordHistory("Brush Settings Change", currentEditState, layers);
+  }, [currentEditState, layers, recordHistory]);
+
+  const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
 
   const {
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
@@ -143,7 +170,7 @@ export const useEditorLogic = (props: any) => {
     setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, setCurrentEditState, initialEditState, initialLayerState, setSelectedLayerId, clearSelectionState
   );
 
-  const { handleGenerativeFill, handleGenerateImage } = useGenerativeAi(
+  const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
     geminiApiKey, image, dimensions, setImage, setDimensions, setFileInfo, layers, addDrawingLayer, updateLayer, commitLayerChange, clearSelectionState, setIsGenerateOpen, setIsGenerativeFillOpen
   );
 
@@ -354,8 +381,9 @@ export const useEditorLogic = (props: any) => {
     onToggleLayerLock: (id: string) => onToggleLayerLock(id),
     onDeleteHiddenLayers: () => onDeleteHiddenLayers(),
     onArrangeLayer: (direction: 'front' | 'back' | 'forward' | 'backward') => onArrangeLayer(direction),
-    hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
+    hasActiveSelection: !!selectionMaskDataUrl,
+    onApplySelectionAsMask, handleDestructiveOperation,
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
     
     // Effects/Transform
     effects, onEffectChange, onEffectCommit, onFilterChange, selectedFilter,
@@ -377,10 +405,11 @@ export const useEditorLogic = (props: any) => {
         applyChannelsPreset(preset.state);
         applyFramePreset(preset.state);
         applySelectiveRetouchPreset(preset.state);
+        applyEffectsPreset(preset.state);
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     }, handleSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
-    gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeleteGradientPreset: deleteGradientPreset,
+    gradientPresets, onSaveGradientPreset: saveGradientPreset, onDeletePreset: deleteGlobalPreset,
     
     // Workspace Interaction
     workspaceZoom, handleZoomIn, handleZoomOut, handleFitScreen,
@@ -388,22 +417,24 @@ export const useEditorLogic = (props: any) => {
     
     // AI/Export/Project Management
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
-    handleGenerativeFill, handleGenerateImage, handleSwapColors,
+    handleGenerativeFill, handleGenerateImage, handleSwapColors, handleCopy, handleLayerDelete,
     
     // Panel Management
-    panelLayout: state.panelLayout, reorderPanelTabs: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => console.log('reorder stub'), activeRightTab: state.activeRightTab, setActiveRightTab: state.setActiveRightTab, activeBottomTab: state.activeBottomTab, setActiveBottomTab: state.setActiveBottomTab,
+    panelLayout, reorderPanelTabs: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => console.log('reorder stub'), activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
     
     // Internal State
-    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
+    marqueeStart, marqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint,
     
     // Misc
     workspaceRef, imgRef,
     setIsFullscreen, setIsSettingsOpen,
     currentEditState, updateCurrentState,
-    base64Image, historyImageSrc,
+    base64Image, historyImageSrc: historyImageSrcDataUrl,
     isPreviewingOriginal, setIsPreviewingOriginal,
     clearSelectionState,
     setSelectedLayerId,
     isMobile,
+    onBrushCommit,
+    handleProjectSettingsUpdate,
   };
 };

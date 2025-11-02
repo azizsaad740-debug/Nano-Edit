@@ -18,8 +18,7 @@ import {
   type HistoryItem,
   type SelectionSettings,
   type ShapeType,
-  type Dispatch, // Import Dispatch
-  type SetStateAction, // Import SetStateAction
+  type PanelTab, // ADDED
 } from "@/types/editor";
 import { showSuccess, showError, dismissToast } from "@/utils/toast";
 import { useFontManager } from "./useFontManager";
@@ -36,7 +35,7 @@ export const useEditorState = () => {
   const [isPreviewingOriginal, setIsPreviewingOriginal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false); // ADDED
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // ADDED
-  const [isMobile, setIsMobile] = useState(false); // ADDED (Stub)
+  const [isMobile, setIsMobile] = useState(false); // ADDED (Stub for logic)
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -46,9 +45,8 @@ export const useEditorState = () => {
   const [currentEditState, setCurrentEditState] = useState<EditState>(initialEditState);
   const [layers, setLayers] = useState<Layer[]>(initialLayerState);
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
-  const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]); // ADDED
   const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
-  const [brushState, setBrushState] = useState<BrushState>({ ...initialBrushState, color: '#000000' });
+  const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
   const [foregroundColor, setForegroundColor] = useState<string>('#000000');
   const [backgroundColor, setBackgroundColor] = useState<string>('#FFFFFF');
@@ -67,21 +65,29 @@ export const useEditorState = () => {
   // Selection Drawing State
   const [marqueeStart, setMarqueeStart] = useState<Point | null>(null);
   const [marqueeCurrent, setMarqueeCurrent] = useState<Point | null>(null);
-  const [gradientStart, setGradientStart] = useState<Point | null>(null); // ADDED
-  const [gradientCurrent, setGradientCurrent] = useState<Point | null>(null); // ADDED
+  
+  // Gradient Drawing State (Fix 18, 20)
+  const [gradientStart, setGradientStart] = useState<Point | null>(null);
+  const [gradientCurrent, setGradientCurrent] = useState<Point | null>(null);
   
   // Zoom State (Managed here for global access)
   const [zoom, setZoom] = useState(1);
-  const [workspaceZoom, setWorkspaceZoom] = useState(1); // ADDED
 
   // History State
   const [history, setHistory] = useState<HistoryItem[]>([initialHistoryItem]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
+  // Panel Management State (Stubbed for logic)
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>([]); // Placeholder
+  const [activeRightTab, setActiveRightTab] = useState('layers'); // Placeholder
+  const [activeBottomTab, setActiveBottomTab] = useState('correction'); // Placeholder
+  
   // External Hooks
   const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
   const { geminiApiKey, stabilityApiKey } = useSettings();
+
+  const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
 
   const updateCurrentState = useCallback((updates: Partial<EditState>) => {
     setCurrentEditState(prev => ({ ...prev, ...updates }));
@@ -90,15 +96,15 @@ export const useEditorState = () => {
   const recordHistory = useCallback((name: string, state: EditState, currentLayers: Layer[]) => {
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     
-    // Merge current tool/history state into the EditState before saving
-    const stateToSave: EditState = {
+    // Merge brush state and history indices into the recorded EditState
+    const stateToRecord: EditState = {
         ...state,
         brushState: brushState,
-        history: newHistory, // Save the history array itself
+        history: newHistory, 
         historyBrushSourceIndex: currentHistoryIndex,
     };
     
-    const newEntry: HistoryItem = { name, state: stateToSave, layers: currentLayers };
+    const newEntry: HistoryItem = { name, state: stateToRecord, layers: currentLayers };
     
     // Prevent duplicate history entries if state hasn't changed significantly
     if (newHistory.length > 0 && newHistory[newHistory.length - 1].name === name) {
@@ -131,7 +137,7 @@ export const useEditorState = () => {
     } else {
       showError("Cannot undo further.");
     }
-  }, [history, currentHistoryIndex]);
+  }, [history, currentHistoryIndex, setSelectiveBlurAmount, setSelectiveSharpenAmount, setBrushState]);
 
   const redo = useCallback(() => {
     const newIndex = Math.min(history.length - 1, currentHistoryIndex + 1);
@@ -155,7 +161,7 @@ export const useEditorState = () => {
     } else {
       showError("Cannot redo further.");
     }
-  }, [history, currentHistoryIndex]);
+  }, [history, currentHistoryIndex, setSelectiveBlurAmount, setSelectiveSharpenAmount, setBrushState]);
 
   const canUndo = currentHistoryIndex > 0;
   const canRedo = currentHistoryIndex < history.length - 1;
@@ -171,26 +177,23 @@ export const useEditorState = () => {
     setSelectiveSharpenAmount(initialEditState.selectiveSharpenAmount);
     setBrushState(initialBrushState); // Reset brush state
     showSuccess("All edits reset.");
-  }, []);
+  }, [clearSelectionState, setBrushState]);
 
   const clearSelectionState = useCallback(() => {
     setSelectionPath(null);
     setSelectionMaskDataUrl(null);
   }, []);
   
-  // Placeholder functions for useEditorLogic destructuring
-  const handleReorder = useCallback(() => console.log('reorder stub'), []);
-  const handleCopy = useCallback(() => console.log('copy stub'), []);
-  const handleLayerDelete = useCallback(() => console.log('delete layer stub'), []);
-  const onBrushCommit = useCallback(() => recordHistory('Brush Settings Change', currentEditState, layers), [recordHistory, currentEditState, layers]);
-  const handleZoomIn = useCallback(() => setWorkspaceZoom(prev => Math.min(5, prev + 0.1)), []);
-  const handleZoomOut = useCallback(() => setWorkspaceZoom(prev => Math.max(0.1, prev - 0.1)), []);
-  const handleFitScreen = useCallback(() => setWorkspaceZoom(1), []);
-  const onOpenFontManager = useCallback(() => console.log('open font manager stub'), []);
-  const onCropChange = useCallback(() => console.log('crop change stub'), []);
-  const onCropComplete = useCallback(() => console.log('crop complete stub'), []);
-  const handleProjectSettingsUpdate = useCallback(() => console.log('project settings update stub'), []);
+  const handleReorder = useCallback((activeId: string, overId: string) => {
+    const oldIndex = layers.findIndex((l) => l.id === activeId);
+    const newIndex = layers.findIndex((l) => l.id === overId);
 
+    if (oldIndex === -1 || newIndex === -1) return;
+    
+    const updated = arrayMove(layers, oldIndex, newIndex);
+    setLayers(updated);
+    recordHistory("Reorder Layers", currentEditState, updated);
+  }, [layers, recordHistory, currentEditState]);
 
   return {
     // Refs
@@ -199,7 +202,9 @@ export const useEditorState = () => {
     isGenerateOpen, setIsGenerateOpen,
     isGenerativeFillOpen, setIsGenerativeFillOpen,
     isPreviewingOriginal, setIsPreviewingOriginal,
-    setIsFullscreen, setIsSettingsOpen, // ADDED
+    isFullscreen, setIsFullscreen,
+    isSettingsOpen, setIsSettingsOpen,
+    isMobile,
     // Core State
     image, setImage,
     dimensions, setDimensions,
@@ -216,9 +221,10 @@ export const useEditorState = () => {
     canUndo, canRedo,
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
     // Layers
-    layers, setLayers: setLayers as Dispatch<SetStateAction<Layer[]>>, // FIXED: Type for setLayers
+    layers, setLayers,
     selectedLayerId, setSelectedLayerId,
-    selectedLayer, // ADDED
+    selectedLayer,
+    handleReorder,
     // Tools
     activeTool, setActiveTool,
     brushState, setBrushState,
@@ -231,8 +237,8 @@ export const useEditorState = () => {
     selectionMaskDataUrl, setSelectionMaskDataUrl,
     marqueeStart, setMarqueeStart,
     marqueeCurrent, setMarqueeCurrent,
-    gradientStart, setGradientStart, // ADDED
-    gradientCurrent, setGradientCurrent, // ADDED
+    gradientStart, setGradientStart,
+    gradientCurrent, setGradientCurrent,
     clearSelectionState,
     selectiveBlurAmount, setSelectiveBlurAmount,
     selectiveSharpenAmount, setSelectiveSharpenAmount,
@@ -240,19 +246,17 @@ export const useEditorState = () => {
     selectionSettings, setSelectionSettings,
     cloneSourcePoint, setCloneSourcePoint,
     // Zoom
-    zoom, setZoom,
-    workspaceZoom, setWorkspaceZoom, // ADDED
+    workspaceZoom: zoom, setZoom,
     // Constants
-    initialLayerState, initialHistoryItem,
-    initialEditState, // ADDED
+    initialEditState, initialLayerState,
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
     geminiApiKey, stabilityApiKey,
     dismissToast,
-    // Placeholder functions for useEditorLogic destructuring
-    handleReorder, isMobile, handleCopy, handleLayerDelete, onBrushCommit,
-    handleZoomIn, handleZoomOut, handleFitScreen, onOpenFontManager,
-    onCropChange, onCropComplete, handleProjectSettingsUpdate,
+    // Panel Management
+    panelLayout, setPanelLayout,
+    activeRightTab, setActiveRightTab,
+    activeBottomTab, setActiveBottomTab,
   };
 };

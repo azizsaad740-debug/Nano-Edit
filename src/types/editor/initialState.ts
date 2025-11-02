@@ -33,7 +33,7 @@ export const initialCurvesState: CurvesState = {
   b: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
 };
 
-export const initialGradingState: GradingState = {
+export const initialGradingState: GradingState = { // ADDED
   grayscale: 0,
   sepia: 0,
   invert: 0,
@@ -91,7 +91,7 @@ export const initialEditState: EditState = {
     clarity: 0,
     grain: 0,
   },
-  grading: initialGradingState, // USE INITIAL GRADING STATE
+  grading: initialGradingState, // USED NEW CONSTANT
   hslAdjustments: {
     global: { ...initialHslAdjustment },
     red: { ...initialHslAdjustment },
@@ -116,9 +116,9 @@ export const initialEditState: EditState = {
   customHslColor: '#FF00FF',
   selectionSettings: initialSelectionSettings,
   colorMode: 'RGB',
-  // ADDED for history/tool state tracking
+  // These are added to EditState in state.ts, but initialized here for consistency
   brushState: initialBrushState,
-  history: [],
+  history: [], // Initialized as empty array
   historyBrushSourceIndex: 0,
 };
 

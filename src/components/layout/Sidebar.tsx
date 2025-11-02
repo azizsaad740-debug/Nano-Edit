@@ -13,7 +13,7 @@ export interface RightSidebarTabsProps {
   selectedLayer: Layer | undefined;
   layers: Layer[];
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
-  onReorder: (activeId: string, overId: string) => void;
+  onReorder: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => void; // UPDATED SIGNATURE
   toggleLayerVisibility: (id: string) => void; // Renamed from onToggleVisibility
   renameLayer: (id: string, newName: string) => void; // Renamed from onRename
   deleteLayer: (id: string) => void; // Renamed from onDelete
