@@ -127,6 +127,18 @@ export interface GroupLayerData extends BaseLayer {
 
 export type Layer = ImageLayerData | DrawingLayerData | TextLayerData | VectorShapeLayerData | GradientLayerData | AdjustmentLayerData | SmartObjectLayerData | GroupLayerData;
 
+// --- Type Guards (No changes needed here, assuming they were correct) ---
+
+export const isImageLayer = (layer: Layer): layer is ImageLayerData => layer.type === 'image';
+export const isDrawingLayer = (layer: Layer): layer is DrawingLayerData => layer.type === 'drawing';
+export const isImageOrDrawingLayer = (layer: Layer): layer is ImageLayerData | DrawingLayerData => isImageLayer(layer) || isDrawingLayer(layer);
+export const isTextLayer = (layer: Layer): layer is TextLayerData => layer.type === 'text';
+export const isVectorShapeLayer = (layer: Layer): layer is VectorShapeLayerData => layer.type === 'vector-shape';
+export const isGradientLayer = (layer: Layer): layer is GradientLayerData => layer.type === 'gradient';
+export const isAdjustmentLayer = (layer: Layer): layer is AdjustmentLayerData => layer.type === 'adjustment';
+export const isSmartObjectLayer = (layer: Layer): layer is SmartObjectLayerData => layer.type === 'smart-object';
+export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.type === 'group';
+
 // --- State Interfaces ---
 
 export interface BrushState {
@@ -187,8 +199,8 @@ export interface AdjustmentState {
   blacks: number;
   clarity: number;
   dehaze: number;
-  gamma?: number; // Fix 47 dependency
-  grain?: number; // Fix 47 dependency
+  gamma?: number;
+  grain?: number;
 }
 
 export interface GradingState {
@@ -200,18 +212,17 @@ export interface GradingState {
   grayscale: number;
   sepia: number;
   invert: number;
-  shadowsColor?: string; // Fix 49 dependency
-  midtonesColor?: string; // Fix 49 dependency
-  highlightsColor?: string; // Fix 49 dependency
-  shadowsLuminance?: number; // Fix 49 dependency
-  highlightsLuminance?: number; // Fix 49 dependency
+  shadowsColor?: string;
+  midtonesColor?: string;
+  highlightsColor?: string;
+  shadowsLuminance?: number;
+  highlightsLuminance?: number;
 }
 
 export interface HslAdjustment {
   hue: number;
   saturation: number;
-  lightness: number;
-  luminance?: number;
+  lightness: number; // Standardized property name
 }
 
 export type HslAdjustmentsState = Record<HslColorKey, HslAdjustment>;
@@ -254,7 +265,7 @@ export interface SelectionSettings {
   refineContrast?: number;
   refineShiftEdge?: number;
   decontaminateColors?: boolean;
-  autoEnhanceEdges?: boolean; // Fix 52, 54 dependency
+  autoEnhanceEdges?: boolean;
 }
 
 export interface EditState {
@@ -279,7 +290,7 @@ export interface EditState {
     unit: 'px' | '%';
     aspect: number | null;
   };
-  transform: { // Fix 15, 33: Renamed from 'transforms'
+  transform: {
     scaleX: number;
     scaleY: number;
     skewX: number;

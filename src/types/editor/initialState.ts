@@ -53,9 +53,9 @@ export const initialAdjustmentState: AdjustmentState = {
 };
 
 export const initialGradingState: GradingState = {
-    shadows: { hue: 0, saturation: 0, luminosity: 0 },
-    midtones: { hue: 0, saturation: 0, luminosity: 0 },
-    highlights: { hue: 0, saturation: 0, luminosity: 0 },
+    shadows: { hue: 0, saturation: 0, lightness: 0 },
+    midtones: { hue: 0, saturation: 0, lightness: 0 },
+    highlights: { hue: 0, saturation: 0, lightness: 0 },
     blending: 50,
     balance: 0,
     grayscale: 0,
@@ -71,8 +71,7 @@ export const initialGradingState: GradingState = {
 export const initialHslAdjustment: HslAdjustment = {
     hue: 0,
     saturation: 0,
-    lightness: 0,
-    luminance: 0, // Added
+    lightness: 0, // Standardized property name
 };
 
 export const initialHslAdjustmentsState = {
