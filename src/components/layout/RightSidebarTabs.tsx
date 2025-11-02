@@ -55,7 +55,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               activeTool={props.activeTool}
               brushState={props.brushState}
               setBrushState={props.setBrushState}
-              onBrushCommit={props.onBrushCommit}
+              onBrushCommit={props.onBrushCommit} // PASSED
               gradientToolState={props.gradientToolState}
               setGradientToolState={props.setGradientToolState}
               gradientPresets={props.gradientPresets}

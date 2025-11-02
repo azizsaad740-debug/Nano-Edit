@@ -311,10 +311,18 @@ const Index: React.FC = () => {
                   // Explicitly pass properties that require renaming or wrapping:
                   onLayerReorder={logic.onLayerReorder}
                   addGradientLayer={logic.addGradientLayerNoArgs}
-                  
-                  // Explicitly pass AI result handlers required by RightSidebarTabsProps
                   onImageResult={logic.handleGenerateImage}
                   onMaskResult={logic.handleMaskResult}
+                  
+                  // Mappings for TS2740 error:
+                  onLayerUpdate={logic.updateLayer}
+                  onLayerCommit={logic.commitLayerChange}
+                  onLayerOpacityChange={logic.handleLayerOpacityChange}
+                  onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
+                  onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
+                  onChannelChange={logic.onChannelChange}
+                  onHistoryJump={logic.onHistoryJump}
+                  onBrushCommit={logic.onBrushCommit}
                 />
               </ResizablePanel>
             )}

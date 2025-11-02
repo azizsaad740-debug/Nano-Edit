@@ -462,7 +462,6 @@ export const useEditorLogic = (props: any) => {
     setMarqueeCurrent,
     setGradientStart,
     setGradientCurrent,
-    setCloneSourcePoint,
     colorMode: currentEditState.colorMode,
   };
 };
