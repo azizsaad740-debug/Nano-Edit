@@ -380,3 +380,51 @@ export const rasterizeLayerToCanvas = async (layer: Layer, imageDimensions: { wi
 
   return canvas;
 };
+
+/**
+ * Merges a new stroke (drawing, stamp, or history brush result) onto an existing layer's data URL.
+ *
+ * @param baseDataUrl The data URL of the layer content to draw onto.
+ * @param strokeDataUrl The data URL of the new stroke (white on transparent, representing the brush path).
+ * @param dimensions The dimensions of the layer content.
+ * @param blendMode The blend mode to use for the stroke.
+ * @returns A Promise that resolves to the data URL of the merged layer content.
+ */
+export const mergeStrokeOntoLayerDataUrl = async (
+  baseDataUrl: string,
+  strokeDataUrl: string,
+  dimensions: { width: number; height: number },
+  blendMode: string
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return reject(new Error("Failed to get canvas context."));
+
+    const baseImg = new Image();
+    baseImg.crossOrigin = "anonymous";
+    baseImg.onload = () => {
+      const strokeImg = new Image();
+      strokeImg.crossOrigin = "anonymous";
+      strokeImg.onload = () => {
+        // 1. Draw the existing layer content
+        ctx.drawImage(baseImg, 0, 0);
+
+        // 2. Apply the new stroke
+        ctx.globalCompositeOperation = blendMode as GlobalCompositeOperation || 'source-over';
+        ctx.drawImage(strokeImg, 0, 0);
+
+        // Reset composite operation
+        ctx.globalCompositeOperation = 'source-over';
+
+        resolve(canvas.toDataURL());
+      };
+      strokeImg.onerror = () => reject(new Error("Failed to load stroke image."));
+      strokeImg.src = strokeDataUrl;
+    };
+    baseImg.onerror = () => reject(new Error("Failed to load base image."));
+    baseImg.src = baseDataUrl;
+  });
+};
