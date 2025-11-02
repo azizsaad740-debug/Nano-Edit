@@ -149,7 +149,7 @@ export const useEditorLogic = (props: any) => {
     addShapeLayer, addGradientLayer: addGradientLayerHook, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, // Removed handleSelectiveRetouchStrokeEnd
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleReorder, findLayer,
   } = useLayers({
     layers, setLayers, recordHistory, currentEditState, dimensions, 
@@ -433,8 +433,7 @@ export const useEditorLogic = (props: any) => {
     activeBottomTab, setActiveBottomTab,
     
     // Internal State
-    marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint,
-    setSelectionSettings,
+    marqueeStart, marqueeCurrent, gradientStart, gradientCurrent, cloneSourcePoint,
     selectiveBlurMask, selectiveSharpenMask,
     workspaceRef, imgRef,
     currentEditState, updateCurrentState, resetAllEdits,

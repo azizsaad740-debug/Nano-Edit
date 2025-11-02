@@ -294,7 +294,7 @@ const Index: React.FC = () => {
             {/* Right Sidebar (Layers/Properties) */}
             {logic.panelLayout.some(t => t.location === 'right' && t.visible) && (
               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
-                <Sidebar
+                <Sidebar // FIX: Pass all required props explicitly
                   {...logic}
                   LayersPanel={LayersPanel} // Pass the actual LayersPanel component
                   onOpenFontManager={() => setIsFontManagerOpen(true)}
@@ -308,6 +308,65 @@ const Index: React.FC = () => {
                   togglePanelVisibility={logic.togglePanelVisibility}
                   activeBottomTab={logic.activeBottomTab}
                   setActiveBottomTab={logic.setActiveBottomTab}
+                  
+                  // Explicitly pass aliases required by RightSidebarTabsProps
+                  onLayerUpdate={logic.updateLayer}
+                  onLayerCommit={logic.commitLayerChange}
+                  onLayerOpacityChange={logic.handleLayerOpacityChange}
+                  onLayerOpacityCommit={logic.onLayerOpacityCommit}
+                  onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
+                  onSelectiveBlurAmountCommit={(v) => logic.updateCurrentState({ selectiveBlurAmount: v })}
+                  onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
+                  onSelectiveSharpenAmountCommit={(v) => logic.updateCurrentState({ selectiveSharpenAmount: v })}
+                  onApplyPreset={logic.handleApplyPreset}
+                  onSavePreset={(name) => logic.handleSavePreset(name)}
+                  onDeletePreset={logic.onDeletePreset}
+                  onChannelChange={logic.onChannelChange}
+                  onHistoryJump={logic.onHistoryJump}
+                  onUndo={logic.undo}
+                  onRedo={logic.redo}
+                  canUndo={logic.canUndo}
+                  canRedo={logic.canRedo}
+                  onZoomIn={logic.handleZoomIn}
+                  onZoomOut={logic.handleZoomOut}
+                  onFitScreen={logic.handleFitScreen}
+                  onLayerReorder={logic.onLayerReorder}
+                  toggleLayerVisibility={logic.toggleLayerVisibility}
+                  renameLayer={logic.renameLayer}
+                  deleteLayer={logic.deleteLayer}
+                  onDuplicateLayer={logic.onDuplicateLayer}
+                  onMergeLayerDown={logic.onMergeLayerDown}
+                  onRasterizeLayer={logic.onRasterizeLayer}
+                  onCreateSmartObject={logic.onCreateSmartObject}
+                  onOpenSmartObject={logic.onOpenSmartObject}
+                  onRasterizeSmartObject={logic.onRasterizeSmartObject}
+                  onConvertSmartObjectToLayers={logic.onConvertSmartObjectToLayers}
+                  onExportSmartObjectContents={logic.onExportSmartObjectContents}
+                  addTextLayer={logic.addTextLayer}
+                  addDrawingLayer={logic.addDrawingLayer}
+                  onAddLayerFromBackground={logic.onAddLayerFromBackground}
+                  onLayerFromSelection={logic.onLayerFromSelection}
+                  addShapeLayer={logic.addShapeLayer}
+                  addGradientLayer={logic.addGradientLayerNoArgs}
+                  onAddAdjustmentLayer={logic.onAddAdjustmentLayer}
+                  groupLayers={logic.groupLayers}
+                  toggleGroupExpanded={logic.toggleGroupExpanded}
+                  onRemoveLayerMask={logic.onRemoveLayerMask}
+                  onInvertLayerMask={logic.onInvertLayerMask}
+                  onToggleClippingMask={logic.onToggleClippingMask}
+                  onToggleLayerLock={logic.onToggleLayerLock}
+                  onDeleteHiddenLayers={logic.onDeleteHiddenLayers}
+                  onArrangeLayer={logic.onArrangeLayer}
+                  hasActiveSelection={logic.hasActiveSelection}
+                  onApplySelectionAsMask={logic.onApplySelectionAsMask}
+                  handleDestructiveOperation={logic.handleDestructiveOperation}
+                  foregroundColor={logic.foregroundColor}
+                  onForegroundColorChange={logic.setForegroundColor}
+                  backgroundColor={logic.backgroundColor}
+                  onBackgroundColorChange={logic.setBackgroundColor}
+                  onSwapColors={logic.handleSwapColors}
+                  
+                  // Ensure all required props are passed, even if redundant with spread
                 />
               </ResizablePanel>
             )}

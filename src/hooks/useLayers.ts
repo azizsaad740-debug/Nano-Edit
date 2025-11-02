@@ -8,7 +8,7 @@ import {
   type EditState, type Point, type AdjustmentLayerData, type AdjustmentState,
 } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-// import { rasterizeLayer } from '@/utils/imageUtils'; // Removed unused import
+import { invertMaskDataUrl } from '@/utils/maskUtils'; // Import utility
 
 interface UseLayersProps {
     layers: Layer[];
@@ -243,8 +243,26 @@ export const useLayers = ({
   }, [updateLayer, recordHistory, currentEditState, layers, findLayer]);
   
   const onInvertLayerMask = useCallback(async (id: string) => {
-    showError("Invert Layer Mask is a stub.");
-  }, []);
+    const layerToUpdate = findLayer(id);
+    if (!layerToUpdate || !layerToUpdate.maskDataUrl || !dimensions) {
+      showError("Cannot invert mask: layer or mask data missing.");
+      return;
+    }
+    
+    try {
+      const invertedMaskUrl = await invertMaskDataUrl(
+        layerToUpdate.maskDataUrl,
+        dimensions.width,
+        dimensions.height
+      );
+      updateLayer(id, { maskDataUrl: invertedMaskUrl });
+      recordHistory(`Invert Mask on ${layerToUpdate.name}`, currentEditState, layers);
+      showSuccess(`Mask inverted on ${layerToUpdate.name}.`);
+    } catch (error) {
+      console.error("Failed to invert mask:", error);
+      showError("Failed to invert layer mask.");
+    }
+  }, [updateLayer, findLayer, dimensions, recordHistory, currentEditState, layers]);
   
   const onToggleClippingMask = useCallback((id: string) => {
     updateLayer(id, { isClippingMask: !findLayer(id)?.isClippingMask });
