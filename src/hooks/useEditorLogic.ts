@@ -26,7 +26,8 @@ import { useMoveTool } from './useMoveTool';
 import { useLassoTool } from './useLassoTool';
 import { useEyedropper } from './useEyedropper';
 import { useDrawingTool } from './useDrawingTool';
-import { useEffects } from './useEffects'; // ADDED IMPORT
+import { useEffects } from './useEffects';
+import { useImageLoader } from './useImageLoader';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import { copyImageToClipboard } from '@/utils/imageUtils';
 import { showSuccess, showError } from '@/utils/toast';
@@ -141,6 +142,12 @@ export const useEditorLogic = (props: any) => {
   const { handleEyedropperToolChange } = useEyedropper(setActiveTool, setForegroundColor);
   const { handleDrawingToolChange } = useDrawingTool(setActiveTool);
 
+  const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
+  
+  const { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate } = useImageLoader(
+    setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, currentEditState, initialEditState, initialLayerState, setSelectedLayerId, clearSelectionState
+  );
+
   const {
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
@@ -158,8 +165,6 @@ export const useEditorLogic = (props: any) => {
     clearSelectionState, setImage, setFileInfo, setSelectedLayerId, selectedLayerId,
   });
 
-  const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image, stabilityApiKey });
-  
   const { handleGenerateImage, handleGenerativeFill } = useGenerativeAi(
     geminiApiKey,
     image,
@@ -323,7 +328,7 @@ export const useEditorLogic = (props: any) => {
       const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90; // 0deg is top-to-bottom
       
       updateLayer(newLayerId, {
-        gradientType: gradientToolState.type as GradientLayerData['gradientType'], // FIXED TYPE ASSERTION
+        gradientType: gradientToolState.type as GradientLayerData['gradientType'],
         gradientColors: gradientToolState.colors,
         gradientStops: gradientToolState.stops,
         gradientAngle: angle,
@@ -374,7 +379,8 @@ export const useEditorLogic = (props: any) => {
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     updateLayer, commitLayerChange, onLayerPropertyCommit,
     handleLayerOpacityChange, handleLayerOpacityCommit,
-    addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
+    addTextLayer: (coords: Point, color: string) => addTextLayer(coords, color),
+    addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => addShapeLayer(coords, shapeType, initialWidth, initialHeight, fillColor, strokeColor),
     addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
@@ -402,6 +408,7 @@ export const useEditorLogic = (props: any) => {
         applyChannelsPreset(preset.state);
         applyFramePreset(preset.state);
         applySelectiveRetouchPreset(preset.state);
+        applyEffectsPreset(preset.state);
         if (preset.layers) setLayers(preset.layers);
         recordHistory(`Applied Preset: ${preset.name}`, currentEditState, layers);
     }, handleSavePreset: (name: string) => saveGlobalPreset(name, currentEditState, layers), onDeletePreset: deleteGlobalPreset,
@@ -412,7 +419,7 @@ export const useEditorLogic = (props: any) => {
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel,
     
     // AI/Export/Project Management
-    geminiApiKey, handleExportClick, handleNewProject: (settings: any) => console.log("New project stub:", settings), handleLoadProject: (file: File) => console.log("Load project stub:", file.name), handleImageLoad: (file: File) => console.log("Load image stub:", file.name),
+    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     
     // UI/Layout

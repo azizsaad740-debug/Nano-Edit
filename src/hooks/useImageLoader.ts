@@ -13,7 +13,7 @@ export const useImageLoader = (
   resetAllEdits: () => void,
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
   setCurrentEditState: (state: EditState) => void,
-  initialEditState: EditState,
+  currentEditState: EditState,
   initialLayerState: Layer[],
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
@@ -47,13 +47,13 @@ export const useImageLoader = (
         const backgroundLayer: ImageLayerData = {
           ...(initialLayerState[0] as ImageLayerData),
           dataUrl: src,
-          scaleX: 1, // ADDED
-          scaleY: 1, // ADDED
+          scaleX: 1,
+          scaleY: 1,
         };
         setLayers([backgroundLayer]);
         setSelectedLayerId('background');
         
-        recordHistory("Image Loaded", initialEditState, [backgroundLayer]);
+        recordHistory("Image Loaded", currentEditState, [backgroundLayer]);
         showSuccess(`Image "${file.name}" loaded successfully.`);
       };
       img.onerror = () => {
@@ -65,7 +65,7 @@ export const useImageLoader = (
       showError("Failed to read file.");
     };
     reader.readAsDataURL(file);
-  }, [resetAllEdits, setImage, setDimensions, setFileInfo, setExifData, setLayers, setSelectedLayerId, recordHistory, initialEditState, initialLayerState]);
+  }, [resetAllEdits, setImage, setDimensions, setFileInfo, setExifData, setLayers, setSelectedLayerId, recordHistory, currentEditState, initialLayerState]);
 
   const handleNewProject = useCallback((settings: NewProjectSettings) => {
     resetAllEdits();
@@ -95,14 +95,14 @@ export const useImageLoader = (
       dataUrl: dataUrl,
       isLocked: true,
       x: 50, y: 50, width: 100, height: 100, rotation: 0,
-      scaleX: 1, scaleY: 1, // ADDED
+      scaleX: 1, scaleY: 1,
     };
     
     setLayers([backgroundLayer]);
     setSelectedLayerId('background');
-    recordHistory("New Project Created", initialEditState, [backgroundLayer]);
+    recordHistory("New Project Created", currentEditState, [backgroundLayer]);
     showSuccess("New project created.");
-  }, [resetAllEdits, setDimensions, setFileInfo, setExifData, setImage, setLayers, setSelectedLayerId, recordHistory, initialEditState]);
+  }, [resetAllEdits, setDimensions, setFileInfo, setExifData, setImage, setLayers, setSelectedLayerId, recordHistory, currentEditState]);
 
   const handleLoadProject = useCallback(async (file: File) => {
     try {
@@ -166,7 +166,7 @@ export const useImageLoader = (
     setLayers(data.layers);
     
     // 3. Set edit state
-    setCurrentEditState({ ...initialEditState, ...data.editState });
+    setCurrentEditState({ ...currentEditState, ...data.editState });
     
     // 4. Handle background image (if template uses a placeholder image)
     const backgroundLayer = data.layers.find((l: Layer) => l.id === 'background') as ImageLayerData | DrawingLayerData | undefined;
@@ -178,9 +178,9 @@ export const useImageLoader = (
     }
     
     setSelectedLayerId(null);
-    recordHistory(`Load Template: ${template.name}`, { ...initialEditState, ...data.editState }, data.layers);
+    recordHistory(`Load Template: ${template.name}`, { ...currentEditState, ...data.editState }, data.layers);
     showSuccess(`Template "${template.name}" loaded.`);
-  }, [resetAllEdits, clearSelectionState, setDimensions, setFileInfo, setLayers, setCurrentEditState, setImage, setSelectedLayerId, recordHistory, initialEditState]);
+  }, [resetAllEdits, clearSelectionState, setDimensions, setFileInfo, setLayers, setCurrentEditState, setImage, setSelectedLayerId, recordHistory, currentEditState]);
 
   return { handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate };
 };
