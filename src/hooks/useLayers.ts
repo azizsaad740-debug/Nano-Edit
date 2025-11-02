@@ -6,9 +6,8 @@ import type { Layer, ActiveTool, BrushState, GradientToolState, ShapeType, Group
 import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isDrawingLayer } from "@/types/editor";
 import { rasterizeLayerToCanvas } from "@/utils/layerUtils";
 import { applyMaskDestructively } from "@/utils/imageUtils";
-import { polygonToMaskDataUrl, invertMaskDataUrl, objectSelectToMaskDataUrl, floodFillToMaskDataUrl } from "@/utils/maskUtils";
-import { initialCurvesState, initialHslAdjustment, initialGradingState } from "@/types/editor/initialState"; // Fix 7: Assuming initialGradingState is intended
-import { mergeMasks } from "@/utils/maskUtils";
+import { polygonToMaskDataUrl, invertMaskDataUrl, objectSelectToMaskDataUrl, floodFillToMaskDataUrl, mergeMasks } from "@/utils/maskUtils"; // IMPORT mergeMasks
+import { initialCurvesState, initialHslAdjustment, initialGradingState } from "@/types/editor/initialState"; 
 
 interface UseLayersProps {
     layers: Layer[];
@@ -108,12 +107,6 @@ export const useLayers = ({
         }
     }, [selectedLayerId, commitLayerChange, layers]);
 
-    // Fix 16: Adjustment Layer Type (around line 428)
-    const defaultAdjustmentState: AdjustmentState = {
-        brightness: 0, contrast: 0, saturation: 0,
-        exposure: 0, gamma: 0, temperature: 0, tint: 0, highlights: 0, shadows: 0, clarity: 0, vibrance: 0, grain: 0,
-    };
-
     const onApplySelectionAsMask = useCallback(async () => {
         if (!selectedLayerId || !selectionMaskDataUrl) {
             showError("A layer must be selected and an active selection must exist.");
@@ -132,6 +125,32 @@ export const useLayers = ({
         clearSelectionState();
         showSuccess("Selection applied as layer mask.");
     }, [selectedLayerId, selectionMaskDataUrl, layers, updateLayer, commitLayerChange, clearSelectionState]);
+
+    // --- Selection Brush Logic ---
+    const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+        if (!dimensions) {
+            showError("Cannot apply selection brush: dimensions unknown.");
+            return;
+        }
+        
+        try {
+            const newMaskDataUrl = await mergeMasks(
+                selectionMaskDataUrl,
+                strokeDataUrl,
+                dimensions,
+                operation
+            );
+            
+            setSelectionMaskDataUrl(newMaskDataUrl);
+            // Note: We don't record history here, as selection is transient state.
+            // History is recorded when the selection is applied (e.g., as a mask or fill).
+            showSuccess(`Selection brush stroke applied (${operation}).`);
+        } catch (error) {
+            console.error("Error merging selection mask:", error);
+            showError("Failed to update selection mask.");
+        }
+    }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl]);
+
 
     // Fix 23, 24: EditState properties access (using type assertion)
     const mergeStrokeOntoLayer = useCallback(async (layerId: string, strokeDataUrl: string, dimensions: Dimensions, blendMode: string) => {
@@ -159,4 +178,9 @@ export const useLayers = ({
     }, [layers, dimensions, (currentEditState as any).history, (currentEditState as any).historyBrushSourceIndex, updateLayer, commitLayerChange, mergeStrokeOntoLayer]); // Fix 27, 28
 
     // ... rest of hook
+    
+    return {
+        // ... existing returns
+        handleSelectionBrushStrokeEnd, // EXPORTED
+    };
 };

@@ -213,3 +213,57 @@ export const objectSelectToMaskDataUrl = async (
     resolve(canvas.toDataURL());
   });
 };
+
+/**
+ * Merges a new stroke (mask) onto an existing mask using composite operations.
+ *
+ * @param existingMaskDataUrl The data URL of the existing mask (or null/empty string).
+ * @param strokeDataUrl The data URL of the new stroke (white on transparent).
+ * @param dimensions The dimensions of the mask.
+ * @param operation 'add' (source-over) or 'subtract' (destination-out).
+ * @returns A Promise that resolves to the data URL of the merged mask.
+ */
+export const mergeMasks = async (
+  existingMaskDataUrl: string | null,
+  strokeDataUrl: string,
+  dimensions: Dimensions,
+  operation: 'add' | 'subtract'
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return reject(new Error("Failed to get canvas context."));
+
+    const strokeImg = new Image();
+    strokeImg.onload = async () => {
+      // 1. Draw existing mask if present
+      if (existingMaskDataUrl) {
+        const existingMask = new Image();
+        await new Promise<void>((res, rej) => {
+          existingMask.onload = () => res();
+          existingMask.onerror = () => rej(new Error("Failed to load existing mask image."));
+          existingMask.src = existingMaskDataUrl;
+        });
+        ctx.drawImage(existingMask, 0, 0);
+      }
+
+      // 2. Apply the new stroke using the specified operation
+      if (operation === 'add') {
+        ctx.globalCompositeOperation = 'source-over'; // Draw white stroke over existing
+      } else {
+        ctx.globalCompositeOperation = 'destination-out'; // Erase area defined by stroke
+      }
+      
+      ctx.drawImage(strokeImg, 0, 0);
+      
+      // Reset composite operation
+      ctx.globalCompositeOperation = 'source-over';
+
+      resolve(canvas.toDataURL());
+    };
+    strokeImg.onerror = reject;
+    strokeImg.src = strokeDataUrl;
+  });
+};
