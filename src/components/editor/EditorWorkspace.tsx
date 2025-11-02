@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   type Layer, type EditState, type ActiveTool, type BrushState, type Point, type GradientToolState,
-  isImageOrDrawingLayer,
+  isImageOrDrawingLayer, type GroupLayerData,
 } from '@/types/editor';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ImageLayer } from './ImageLayer';
@@ -107,6 +107,9 @@ interface EditorWorkspaceProps {
   setMarqueeCurrent: (point: Point | null) => void; // ADDED
   setForegroundColor: (color: string) => void; // ADDED
   setCloneSourcePoint: (point: Point | null) => void; // ADDED
+  addGradientLayer: (start: Point, end: Point) => void; // ADDED
+  addTextLayer: (coords: Point, color: string) => void; // ADDED
+  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // ADDED
 }
 
 // Helper component to render layers recursively
@@ -158,7 +161,7 @@ const renderLayer = (
     return <SmartObjectLayer {...layerProps} parentDimensions={props.dimensions} />;
   }
   if (layer.type === 'group') {
-    const groupLayer = layer as GroupLayer;
+    const groupLayer = layer as GroupLayerData;
     return (
       <GroupLayer
         {...layerProps}
@@ -223,7 +226,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   useLassoToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectionPath: props.selectionPath, setSelectionPath: props.setSelectionPath, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
   useEyedropperToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setForegroundColor: props.setForegroundColor });
   useTextToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addTextLayer: props.addTextLayer, foregroundColor: props.foregroundColor });
-  useShapeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addShapeLayer: props.addShapeLayer, selectedShapeType: props.currentEditState.selectedShapeType });
+  useShapeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addShapeLayer: props.addShapeLayer, selectedShapeType: props.selectedShapeType });
   useZoomToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, handleZoomIn: props.handleZoomIn, handleZoomOut: props.handleZoomOut });
   useHandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom });
   useMagicWandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
@@ -280,7 +283,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   }
   
   // Apply frame padding if active
-  const framePadding = props.currentEditState.frame.size || 0;
+  const framePadding = props.currentEditState.frame.width || 0;
   const frameColor = props.currentEditState.frame.color || '#000000';
   
   const frameStyle: React.CSSProperties = {

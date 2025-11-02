@@ -1,14 +1,19 @@
-import React from 'react';
+"use client";
+
+import * as React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { PenTool, Square, Trash2, Copy, Check, ArrowRight, Type, Palette, Group } from "lucide-react";
+import { showError } from "@/utils/toast";
+import { cn } from "@/lib/utils";
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useDndContext } from '@dnd-kit/core';
 import { LayerItem } from './LayerItem'; // Use LayerItem for consistency
-import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Group, Type, PenTool, Square, Palette } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Layer } from '@/types/editor';
 import { isGroupLayer } from '@/types/editor';
-import { showError } from '@/utils/toast';
 
 interface SmartObjectLayersPanelProps {
   layers: Layer[];

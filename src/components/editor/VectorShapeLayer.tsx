@@ -185,7 +185,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
                 key={index}
                 className={cn(
                   "absolute w-3 h-3 bg-primary border-2 border-background rounded-full -m-1.5 cursor-move",
-                  isDraggingPoint === index && "ring-2 ring-primary/50"
+                  isDraggingPoint?.index === index && "ring-2 ring-primary/50"
                 )}
                 style={{
                   left: `${point.x}%`,

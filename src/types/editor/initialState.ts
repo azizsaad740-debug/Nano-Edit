@@ -1,6 +1,6 @@
 // src/types/editor/initialState.ts
 
-import type { Layer, EditState, BrushState, GradientToolState, HistoryItem, SelectionSettings, PanelTab, HslAdjustment, CurvesState, GradingState, AdjustmentState, FrameState } from "./core";
+import type { Layer, EditState, BrushState, GradientToolState, HistoryItem, SelectionSettings, PanelTab, HslAdjustment, CurvesState, GradingState, AdjustmentState, FrameState, CropState } from "./core";
 import { Layers, SlidersHorizontal, Settings, Brush, Palette, LayoutGrid, PenTool, History, Info, Compass, SquareStack, Zap } from "lucide-react";
 
 // Define initial states and export them
@@ -75,13 +75,15 @@ export const initialHslAdjustment: HslAdjustment = {
 };
 
 export const initialHslAdjustmentsState = {
+    master: initialHslAdjustment,
     red: initialHslAdjustment,
+    orange: initialHslAdjustment,
     yellow: initialHslAdjustment,
     green: initialHslAdjustment,
-    cyan: initialHslAdjustment,
+    aqua: initialHslAdjustment,
     blue: initialHslAdjustment,
+    purple: initialHslAdjustment,
     magenta: initialHslAdjustment,
-    master: initialHslAdjustment,
 };
 
 export const initialCurvesState: CurvesState = {
@@ -94,11 +96,20 @@ export const initialCurvesState: CurvesState = {
 export const initialFrameState: FrameState = {
     type: 'none',
     color: '#000000',
-    size: 0,
+    width: 0,
     opacity: 100,
     roundness: 0,
     vignetteAmount: 0,
     vignetteRoundness: 0,
+};
+
+export const initialCropState: CropState = {
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+    unit: '%',
+    aspect: null,
 };
 
 export const initialSelectionSettings: SelectionSettings = {
@@ -137,14 +148,7 @@ export const initialEditState: EditState = {
     hslAdjustments: initialHslAdjustmentsState,
     curves: initialCurvesState,
     frame: initialFrameState,
-    crop: {
-        x: 0,
-        y: 0,
-        width: 100,
-        height: 100,
-        unit: '%',
-        aspect: null,
-    },
+    crop: initialCropState,
     transform: {
         scaleX: 1,
         scaleY: 1,

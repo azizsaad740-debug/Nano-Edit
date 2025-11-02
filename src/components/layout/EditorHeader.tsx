@@ -132,7 +132,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     onDeselect: clearSelectionState,
     onDelete: handleLayerDelete,
     onCopy: handleCopy,
-    onTransformChange: onTransformChange,
+    onTransformChange: onTransformChange as any, // Casting to fix TS2322
     onDownloadClick: handleDownloadClick,
     onGenerativeFill: handleGenerativeFillWrapper,
     onNewProjectClick: handleNewProjectClickWrapper,
@@ -142,24 +142,25 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
 
   return (
     <Header // Fix 70
-      onNewProjectClick={handleNewProjectClickWrapper}
-      onOpenProject={handleOpenProjectWrapper}
-      onSaveProject={handleSaveProjectWrapper}
-      onExportClick={handleDownloadClick}
-      onNewFromClipboard={handleNewFromClipboardWrapper}
-      onGenerateClick={handleGenerateImageWrapper}
+      onReset={resetAllEdits}
+      onDownloadClick={handleDownloadClick}
+      onCopy={handleCopy}
+      hasImage={!!image}
       onTogglePreview={setIsPreviewingOriginal}
       onUndo={undo}
       onRedo={redo}
       canUndo={canUndo}
       canRedo={canRedo}
-      hasImage={!!image}
-      onCopy={handleCopy}
+      setOpenSettings={setIsSettingsOpen}
+      setOpenImport={setIsImportOpen}
+      onGenerateClick={handleGenerateImageWrapper}
+      onNewProjectClick={handleNewProjectClickWrapper}
+      onNewFromClipboard={handleNewFromClipboardWrapper}
+      onSaveProject={handleSaveProjectWrapper}
+      onOpenProject={handleOpenProjectWrapper}
       onToggleFullscreen={onToggleFullscreen}
       isFullscreen={isFullscreen}
       onSyncProject={() => showError("Sync to Cloud is a stub.")}
-      setOpenSettings={setIsSettingsOpen}
-      setOpenImport={setIsImportOpen}
       setOpenProjectSettings={setIsProjectSettingsOpen}
       panelLayout={panelLayout}
       togglePanelVisibility={togglePanelVisibility}

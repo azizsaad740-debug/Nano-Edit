@@ -14,7 +14,7 @@ import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";
 import { EditorHeader } from "@/components/layout/EditorHeader";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
-import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
+import { NewProjectDialog, NewProjectSettings } from "@/components/editor/NewProjectDialog";
 import { ExportOptions } from "@/components/editor/ExportOptions";
 import { ImportPresetsDialog } from "@/components/editor/ImportPresetsDialog";
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
@@ -61,7 +61,7 @@ const Index: React.FC = () => {
     const overData = over?.data.current;
 
     if (activeData?.layerId && overData?.layerId) {
-      logic.handleReorder(activeData.layerId, overData.layerId, 'right'); // Assuming default location
+      logic.handleReorder(activeData.layerId, overData.layerId); // Removed 'right' argument
     } else if (activeData?.tabId && overData?.tabId && activeData?.location && overData?.location) {
       logic.reorderPanelTabs(activeData.tabId, overData.tabId, overData.location);
     }
@@ -98,13 +98,16 @@ const Index: React.FC = () => {
   const handleSavePreset = React.useCallback(() => setIsSavePresetOpen(true), []);
   const handleSaveGradientPreset = React.useCallback(() => setIsSaveGradientPresetOpen(true), []);
 
+  // Type cast logic.handleNewProject to match NewProjectDialog's expected signature
+  const handleNewProjectWrapper = logic.handleNewProject as (settings: NewProjectSettings) => void;
+
   // Render logic based on mobile/desktop
   if (isMobile) {
     return (
       <TooltipProvider>
         <div className="flex flex-col h-screen overflow-hidden">
           <MobileHeader
-            hasImage={logic.hasImage}
+            hasImage={!!logic.image}
             onNewProjectClick={handleNewProjectClick}
             onOpenProject={handleOpenProject}
             onSaveProject={() => showError("Project saving is a stub.")}
@@ -131,11 +134,14 @@ const Index: React.FC = () => {
               setIsMouseOverImage={logic.setIsMouseOverImage}
               handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
               handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
-              handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd}
+              handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
               handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
               handleAddDrawingLayer={logic.addDrawingLayer}
               onCropChange={logic.onCropChange}
               onCropComplete={logic.onCropComplete}
+              addGradientLayer={logic.addGradientLayer}
+              addTextLayer={logic.addTextLayer}
+              addShapeLayer={logic.addShapeLayer}
             />
           </div>
           <MobileToolOptions
@@ -219,11 +225,14 @@ const Index: React.FC = () => {
                     setIsMouseOverImage={logic.setIsMouseOverImage}
                     handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
                     handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
-                    handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd}
+                    handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
                     handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
                     handleAddDrawingLayer={logic.addDrawingLayer}
                     onCropChange={logic.onCropChange}
                     onCropComplete={logic.onCropComplete}
+                    addGradientLayer={logic.addGradientLayer}
+                    addTextLayer={logic.addTextLayer}
+                    addShapeLayer={logic.addShapeLayer}
                   />
                 </ResizablePanel>
                 
@@ -246,7 +255,7 @@ const Index: React.FC = () => {
                         onZoomIn={logic.handleZoomIn}
                         onZoomOut={logic.handleZoomOut}
                         onFitScreen={logic.handleFitScreen}
-                        hasImage={logic.hasImage}
+                        hasImage={!!logic.image}
                         adjustments={logic.adjustments}
                         onAdjustmentChange={logic.onAdjustmentChange}
                         onAdjustmentCommit={logic.onAdjustmentCommit}
@@ -303,7 +312,7 @@ const Index: React.FC = () => {
         
         {/* Dialogs */}
         <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-        <NewProjectDialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen} onNewProject={logic.handleNewProject} />
+        <NewProjectDialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen} onNewProject={handleNewProjectWrapper} />
         <ExportOptions open={isExportOpen} onOpenChange={setIsExportOpen} onExport={logic.handleExportClick} dimensions={logic.dimensions} />
         <ImportPresetsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
         <GenerateImageDialog 

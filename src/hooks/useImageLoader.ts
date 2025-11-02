@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import type { Layer, EditState, HistoryItem, NewProjectSettings, ImageLayerData, DrawingLayerData, Dimensions } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-import { loadProjectFromFile } from '@/utils/projectUtils';
+import { loadProjectFromFile, ProjectFile } from '@/utils/projectUtils';
 import ExifReader from 'exifreader';
 import { initialLayerState } from '@/types/editor';
 import { v4 as uuidv4 } from 'uuid';
@@ -20,6 +20,8 @@ export const useImageLoader = (
   initialLayerState: Layer[],
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
+  setHistory: (history: HistoryItem[]) => void, // ADDED
+  setCurrentHistoryIndex: (index: number) => void, // ADDED
 ) => {
   const handleImageLoad = useCallback((file: File) => {
     if (file.name.endsWith(".nanoedit")) {
@@ -29,11 +31,11 @@ export const useImageLoader = (
           resetAllEdits();
           setImage(projectData.sourceImage);
           setFileInfo(projectData.fileInfo);
-          setLayers(projectData.layers);
+          setLayers(projectData.history[projectData.currentHistoryIndex].layers); // Use layers from history entry
           setHistory(projectData.history);
           setCurrentHistoryIndex(projectData.currentHistoryIndex);
           setCurrentEditState(projectData.history[projectData.currentHistoryIndex].state);
-          setSelectedLayerId(projectData.layers[0]?.id || null);
+          setSelectedLayerId(projectData.history[projectData.currentHistoryIndex].layers[0]?.id || null); // Use layers from history entry
           showSuccess(`Project "${file.name}" loaded successfully.`);
         })
         .catch(error => {
@@ -90,7 +92,7 @@ export const useImageLoader = (
       img.onerror = () => {
         showError("Failed to load image.");
       };
-      img.src = dataUrl;
+      reader.readAsDataURL(file);
     };
     reader.onerror = () => {
       showError("Failed to read file.");
@@ -98,7 +100,8 @@ export const useImageLoader = (
     reader.readAsDataURL(file);
   }, [
     resetAllEdits, setImage, setDimensions, setFileInfo, setExifData, setLayers,
-    recordHistory, currentEditState, setCurrentEditState, setSelectedLayerId, clearSelectionState
+    recordHistory, currentEditState, setCurrentEditState, setSelectedLayerId, clearSelectionState,
+    setHistory, setCurrentHistoryIndex
   ]);
 
   const handleNewProject = useCallback((settings: NewProjectSettings) => {

@@ -85,7 +85,7 @@ export const useEditorState = () => {
   const [activeBottomTab, setActiveBottomTab] = useState('correction');
   
   // External Hooks
-  const { systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager } = useFontManager(); // Fix 32
+  const { systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager } = useFontManager();
   const { geminiApiKey, stabilityApiKey } = useSettings();
 
   const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
@@ -275,7 +275,7 @@ export const useEditorState = () => {
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
-    onOpenFontManager, // Fix 32
+    onOpenFontManager,
     geminiApiKey, stabilityApiKey,
     dismissToast,
     // Panel Management

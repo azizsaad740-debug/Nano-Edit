@@ -1,6 +1,7 @@
 // src/types/editor/core.ts
 
 import type { Icon as LucideIcon } from "lucide-react";
+import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState } from "./adjustments";
 
 // --- Core Types ---
 
@@ -8,7 +9,7 @@ export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' 
 // Expanded ActiveTool and ShapeType
 export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic'; // Added lassoMagnetic
 export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'circle' | 'arrow' | 'custom';
-export type HslColorKey = 'red' | 'yellow' | 'green' | 'cyan' | 'blue' | 'magenta' | 'master'; // Standard HSL keys
+export type HslColorKey = 'master' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta'; // Standard HSL keys
 
 export interface Point {
   x: number;
@@ -18,6 +19,23 @@ export interface Point {
 export interface Dimensions {
   width: number;
   height: number;
+}
+
+// --- Adjustment/State Interfaces (Re-exported from adjustments.ts for convenience) ---
+
+export interface CropState {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  unit: 'px' | '%';
+  aspect: number | null;
+}
+
+export interface HslAdjustment {
+  hue: number;
+  saturation: number;
+  lightness: number; // Standardized property name
 }
 
 // --- Layer Data Interfaces ---
@@ -187,67 +205,6 @@ export interface GradientToolState {
   transparency?: boolean;
 }
 
-export interface AdjustmentState {
-  brightness: number;
-  contrast: number;
-  exposure: number;
-  saturation: number;
-  vibrance: number;
-  temperature: number;
-  tint: number;
-  highlights: number;
-  shadows: number;
-  whites: number;
-  blacks: number;
-  clarity: number;
-  dehaze: number;
-  gamma?: number;
-  grain?: number;
-}
-
-export interface GradingState {
-  shadows: { hue: number; saturation: number; luminosity: number };
-  midtones: { hue: number; saturation: number; luminosity: number };
-  highlights: { hue: number; saturation: number; luminosity: number };
-  blending: number;
-  balance: number;
-  grayscale: number;
-  sepia: number;
-  invert: number;
-  shadowsColor?: string;
-  midtonesColor?: string;
-  highlightsColor?: string;
-  shadowsLuminance?: number;
-  highlightsLuminance?: number;
-}
-
-export interface HslAdjustment {
-  hue: number;
-  saturation: number;
-  lightness: number; // Standardized property name
-}
-
-export type HslAdjustmentsState = Record<HslColorKey, HslAdjustment>;
-
-export interface CurvesState {
-  all: Point[];
-  red: Point[];
-  green: Point[];
-  blue: Point[];
-}
-
-export interface FrameState {
-  type: 'none' | 'border' | 'vignette' | 'solid';
-  color: string;
-  size: number;
-  opacity: number;
-  roundness: number;
-  vignetteAmount: number;
-  vignetteRoundness: number;
-  width?: number;
-  options?: any;
-}
-
 export interface SelectionSettings {
   selectionMode: 'new' | 'add' | 'subtract' | 'intersect';
   tolerance: number;
@@ -284,14 +241,7 @@ export interface EditState {
   hslAdjustments: HslAdjustmentsState;
   curves: CurvesState;
   frame: FrameState;
-  crop: {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    unit: 'px' | '%';
-    aspect: number | null;
-  };
+  crop: CropState;
   transform: {
     scaleX: number;
     scaleY: number;
@@ -335,6 +285,7 @@ export interface NewProjectSettings {
   height: number;
   backgroundColor: string;
   colorMode: 'rgb' | 'cmyk' | 'grayscale';
+  dpi: number; // Added missing DPI property
 }
 
 export interface PanelTab {

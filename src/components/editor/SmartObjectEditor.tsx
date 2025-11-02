@@ -9,6 +9,7 @@ import SmartObjectLayersPanel from "./SmartObjectLayersPanel";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showError, showSuccess } from "@/utils/toast";
+import { SmartObjectWorkspace } from "./SmartObjectWorkspace"; // ADDED IMPORT
 
 interface SmartObjectEditorProps {
   layerId: string;
@@ -104,7 +105,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   };
 
   const handleUpdateInternalLayer = (id: string, updates: Partial<Layer>) => {
-    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } : l));
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } as Layer : l)); // Fixed type casting issue
   };
   
   const handleCommitInternalLayer = (id: string) => {

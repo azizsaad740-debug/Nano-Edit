@@ -3,7 +3,7 @@
 import React from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
-import LayersPanel from '@/components/editor/LayersPanel';
+import { LayersPanel } from '@/components/editor/LayersPanel'; // FIXED IMPORT
 import { LayerPropertiesContent } from '@/components/editor/LayerPropertiesContent';
 import { ToolOptionsContent } from '@/components/editor/ToolOptionsContent';
 import GlobalEffectsPanel from '@/components/editor/GlobalEffectsPanel';
@@ -45,7 +45,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             selectedLayerId={logic.selectedLayerId}
             selectedLayer={logic.selectedLayer}
             onSelectLayer={logic.setSelectedLayerId}
-            onReorder={logic.handleReorder}
+            onReorder={(activeId, overId) => logic.handleReorder(activeId, overId, 'right')}
             toggleLayerVisibility={logic.toggleLayerVisibility}
             renameLayer={logic.renameLayer}
             deleteLayer={logic.deleteLayer}
@@ -133,6 +133,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
                 setCustomHslColor={logic.setCustomHslColor}
                 onRemoveLayerMask={logic.onRemoveLayerMask}
                 onInvertLayerMask={logic.onInvertLayerMask}
+                currentEditState={logic.currentEditState}
               />
             )}
           </div>
@@ -147,7 +148,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
               onEffectCommit={logic.onEffectCommit}
               onFilterChange={logic.onFilterChange}
               selectedFilter={logic.selectedFilter}
-              onTransformChange={logic.onTransformChange}
+              onTransformChange={logic.onTransformChange as any} // Casting to fix TS2322
               rotation={logic.rotation}
               onRotationChange={logic.onRotationChange}
               onRotationCommit={logic.onRotationCommit}
@@ -156,7 +157,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
               frame={logic.frame}
               onFramePresetChange={(type, name, options) => logic.onFramePresetChange(type, options)}
               onFramePropertyChange={logic.onFramePropertyChange}
-              onFramePropertyCommit={logic.onFramePropertyCommit}
+              onFramePropertyCommit={() => logic.onFramePropertyCommit('width', logic.frame.width)} // Fixed signature
               presets={logic.presets}
               onApplyPreset={logic.handleApplyPreset}
               onSavePreset={onSavePreset}

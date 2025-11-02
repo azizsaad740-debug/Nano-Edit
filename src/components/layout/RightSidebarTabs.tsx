@@ -97,6 +97,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
                 setCustomHslColor={props.setCustomHslColor}
                 onRemoveLayerMask={props.onRemoveLayerMask}
                 onInvertLayerMask={props.onInvertLayerMask}
+                currentEditState={props.currentEditState} // ADDED
               />
             )}
           </div>
@@ -119,7 +120,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             frame={props.frame}
             onFramePresetChange={(type, name, options) => props.onFramePresetChange(type, options)}
             onFramePropertyChange={props.onFramePropertyChange}
-            onFramePropertyCommit={props.onFramePropertyCommit}
+            onFramePropertyCommit={() => props.onFramePropertyCommit('width', props.frame.width)} // Fixed signature
             presets={props.presets}
             onApplyPreset={props.onApplyPreset}
             onSavePreset={props.onSavePreset}

@@ -4,15 +4,18 @@ import type { Point } from './core'; // REVERT
 export interface AdjustmentState {
   brightness: number;
   contrast: number;
-  saturation: number;
   exposure: number;
-  gamma: number;
+  saturation: number;
+  vibrance: number;
   temperature: number;
   tint: number;
   highlights: number;
   shadows: number;
+  whites: number;
+  blacks: number;
   clarity: number;
-  vibrance: number;
+  dehaze: number;
+  gamma: number;
   grain: number;
 }
 
@@ -27,6 +30,11 @@ export interface EffectState {
 }
 
 export interface GradingState {
+  shadows: { hue: number; saturation: number; luminosity: number };
+  midtones: { hue: number; saturation: number; luminosity: number };
+  highlights: { hue: number; saturation: number; luminosity: number };
+  blending: number;
+  balance: number;
   grayscale: number;
   sepia: number;
   invert: number;
@@ -35,7 +43,6 @@ export interface GradingState {
   highlightsColor: string;
   shadowsLuminance: number;
   highlightsLuminance: number;
-  blending: number;
 }
 
 export type HslColorKey = 'global' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
@@ -89,10 +96,13 @@ export interface CropState {
 }
 
 export interface FrameState {
-  type: 'none' | 'border' | 'polaroid' | 'film' | 'solid';
-  width: number;
+  type: 'none' | 'border' | 'polaroid' | 'film' | 'solid' | 'vignette'; // Added 'vignette' and 'solid'
+  width: number; // Used as size/padding
   color: string;
   padding?: number;
   radius?: number;
-  opacity?: number;
+  opacity: number; // Added
+  roundness: number; // Added
+  vignetteAmount: number; // Added
+  vignetteRoundness: number; // Added
 }
