@@ -302,7 +302,6 @@ const Index: React.FC = () => {
               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
                 <Sidebar
                   {...logic}
-                  LayersPanel={LayersPanel} // Pass the actual LayersPanel component
                   onOpenFontManager={() => setIsFontManagerOpen(true)}
                   onSavePreset={handleSavePreset} // Pass dialog opener
                   onSaveGradientPreset={handleSaveGradientPreset}

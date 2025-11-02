@@ -460,6 +460,9 @@ export const useEditorLogic = (props: any) => {
     panelLayout,
     setMarqueeStart,
     setMarqueeCurrent,
+    setGradientStart,
+    setGradientCurrent,
+    setCloneSourcePoint,
     colorMode: currentEditState.colorMode,
   };
 };

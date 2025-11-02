@@ -49,6 +49,7 @@ import { useSelectionBrushToolInteraction } from '@/hooks/useSelectionBrushToolI
 import { useQuickSelectToolInteraction } from '@/hooks/useQuickSelectToolInteraction';
 import { usePaintBucketToolInteraction } from '@/hooks/usePaintBucketToolInteraction';
 import { LiveBrushCanvas } from './LiveBrushCanvas';
+import { isDefaultHsl, isDefault } from '@/utils/filterUtils'; // FIX 2, 3
 
 interface EditorWorkspaceProps {
   workspaceRef: React.RefObject<HTMLDivElement>;
