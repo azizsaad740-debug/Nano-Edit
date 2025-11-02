@@ -38,6 +38,7 @@ export const useEditorState = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isMouseOverImage, setIsMouseOverImage] = useState(false); // ADDED
+  const [isFontManagerOpen, setIsFontManagerOpen] = useState(false); // ADDED
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -240,6 +241,7 @@ export const useEditorState = () => {
     isFullscreen, setIsFullscreen,
     isSettingsOpen, setIsSettingsOpen,
     isMobile,
+    isFontManagerOpen, setIsFontManagerOpen,
     // Core State
     image, setImage,
     dimensions, setDimensions,
@@ -286,7 +288,7 @@ export const useEditorState = () => {
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
-    onOpenFontManager: () => setIsFontManagerOpen(true), // Stub implementation
+    onOpenFontManager: () => setIsFontManagerOpen(true), // Corrected usage
     geminiApiKey, stabilityApiKey,
     dismissToast,
     // Panel Management

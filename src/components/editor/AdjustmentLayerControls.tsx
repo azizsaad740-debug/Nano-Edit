@@ -38,10 +38,12 @@ export const AdjustmentLayerControls: React.FC<AdjustmentLayerControlsProps> = (
         updates.hslAdjustments = {
           master: { ...initialHslAdjustment },
           red: { ...initialHslAdjustment },
+          orange: { ...initialHslAdjustment },
           yellow: { ...initialHslAdjustment },
           green: { ...initialHslAdjustment },
-          cyan: { ...initialHslAdjustment },
+          aqua: { ...initialHslAdjustment },
           blue: { ...initialHslAdjustment },
+          purple: { ...initialHslAdjustment },
           magenta: { ...initialHslAdjustment },
         } as HslAdjustmentsState;
         name = "Reset HSL";

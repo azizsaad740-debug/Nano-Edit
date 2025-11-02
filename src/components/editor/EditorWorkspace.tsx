@@ -2,7 +2,7 @@ import React, { useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   type Layer, type EditState, type ActiveTool, type BrushState, type Point, type GradientToolState,
-  isImageOrDrawingLayer, type GroupLayerData,
+  isImageOrDrawingLayer, type GroupLayerData, type ShapeType,
 } from '@/types/editor';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ImageLayer } from './ImageLayer';
@@ -109,7 +109,8 @@ interface EditorWorkspaceProps {
   setCloneSourcePoint: (point: Point | null) => void; // ADDED
   addGradientLayer: (start: Point, end: Point) => void; // ADDED
   addTextLayer: (coords: Point, color: string) => void; // ADDED
-  addShapeLayer: (coords: Point, shapeType?: any, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // ADDED
+  addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // ADDED
+  selectedShapeType: ShapeType | null; // ADDED
 }
 
 // Helper component to render layers recursively

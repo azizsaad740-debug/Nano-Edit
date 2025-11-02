@@ -31,7 +31,7 @@ import { useImageLoader } from './useImageLoader';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import { copyImageToClipboard } from '@/utils/imageUtils';
 import { showSuccess, showError } from '@/utils/toast';
-import type { Point, EditState, Layer, Dimensions, ActiveTool, ShapeType, GradientLayerData } from '@/types/editor';
+import type { Point, EditState, Layer, Dimensions, ActiveTool, ShapeType, GradientLayerData, BrushState } from '@/types/editor';
 import { initialEditState, initialLayerState, isImageOrDrawingLayer } from '@/types/editor';
 
 
@@ -49,7 +49,7 @@ export const useEditorLogic = (props: any) => {
     // History
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
-    setHistory, // ADDED
+    setHistory,
     
     // Workspace/View
     workspaceRef, imgRef, workspaceZoom, setZoom,
@@ -71,11 +71,11 @@ export const useEditorLogic = (props: any) => {
     setCurrentEditState,
     
     // Panel Management
-    panelLayout, setPanelLayout, reorderPanelTabs, togglePanelVisibility, // ADDED togglePanelVisibility
+    panelLayout, setPanelLayout, reorderPanelTabs, togglePanelVisibility,
     isMobile,
     initialEditState, initialLayerState,
     clearSelectionState,
-    setIsMouseOverImage, // ADDED
+    setIsMouseOverImage,
   } = state;
 
   // --- Derived State ---
@@ -134,8 +134,8 @@ export const useEditorLogic = (props: any) => {
     setImage, setDimensions, setFileInfo, setExifData, setLayers, resetAllEdits, recordHistory, 
     setCurrentEditState, 
     currentEditState, initialEditState, initialLayerState, setSelectedLayerIdState, clearSelectionState,
-    setHistory, // ADDED
-    setCurrentHistoryIndex // ADDED
+    setHistory,
+    setCurrentHistoryIndex
   );
 
   const {
@@ -219,6 +219,11 @@ export const useEditorLogic = (props: any) => {
       showError("Nothing selected to delete.");
     }
   }, [selectedLayerId, deleteLayer, selectionMaskDataUrl, handleDestructiveOperation]);
+
+  // Wrapper for setBrushState to handle partial updates (Fixes Error 19, 30)
+  const setBrushStateWrapper = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
+    setBrushState(prev => ({ ...prev, ...updates }));
+  }, [setBrushState]);
 
   const onBrushCommit = useCallback(() => {
     // This function is called when brush settings change permanently (e.g., slider release)
@@ -342,7 +347,7 @@ export const useEditorLogic = (props: any) => {
   return {
     // Core State
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
-    activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState,
+    activeTool, setActiveTool, brushState, setBrushState: setBrushStateWrapper, gradientToolState, setGradientToolState,
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
@@ -368,12 +373,12 @@ export const useEditorLogic = (props: any) => {
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
-    handleReorder,
+    onLayerReorder: handleReorder, // RENAMED
     
     // Effects/Transform
     effects, onEffectChange, onEffectCommit, onFilterChange, selectedFilter,
     onTransformChange, rotation, onRotationChange, onRotationCommit, onAspectChange, aspect,
-    frame, onFramePresetChange: (type, options) => onFramePresetChange(type, options), onFramePropertyChange, onFramePropertyCommit,
+    frame, onFramePresetChange: (type, name, options) => onFramePresetChange(type, name, options), onFramePropertyChange, onFramePropertyCommit,
     
     // Color Correction
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
@@ -403,6 +408,7 @@ export const useEditorLogic = (props: any) => {
     // AI/Export/Project Management
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
+    handleNewFromClipboard, // ADDED
     
     // UI/Layout
     isFullscreen, setIsFullscreen,
@@ -433,9 +439,10 @@ export const useEditorLogic = (props: any) => {
     handleCopy,
     setZoom,
     reorderPanelTabs,
-    togglePanelVisibility, // ADDED
+    togglePanelVisibility,
     onCropChange, onCropComplete,
     isMobile,
-    setIsMouseOverImage, // ADDED
+    setIsMouseOverImage,
+    hasImage, // ADDED
   };
 };

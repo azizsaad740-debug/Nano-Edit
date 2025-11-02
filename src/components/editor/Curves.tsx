@@ -140,16 +140,16 @@ const Curves = ({ curves, onCurvesChange, onCurvesCommit, imgRef }: CurvesProps)
 
   const colorMap: Record<keyof CurvesState, string> = {
     all: 'hsl(var(--primary))',
-    red: 'hsl(0, 100%, 50%)',
-    green: 'hsl(120, 100%, 50%)',
-    blue: 'hsl(240, 100%, 50%)',
+    r: 'hsl(0, 100%, 50%)',
+    g: 'hsl(120, 100%, 50%)',
+    b: 'hsl(240, 100%, 50%)',
   };
   
   const channelNameMap: Record<keyof CurvesState, string> = {
     all: 'RGB',
-    red: 'Red',
-    green: 'Green',
-    blue: 'Blue',
+    r: 'Red',
+    g: 'Green',
+    b: 'Blue',
   };
 
   return (

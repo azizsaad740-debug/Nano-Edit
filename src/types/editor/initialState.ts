@@ -88,9 +88,9 @@ export const initialHslAdjustmentsState = {
 
 export const initialCurvesState: CurvesState = {
     all: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
-    red: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
-    green: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
-    blue: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
+    r: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
+    g: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
+    b: [{ x: 0, y: 0 }, { x: 255, y: 255 }],
 };
 
 export const initialFrameState: FrameState = {
@@ -166,9 +166,9 @@ export const initialEditState: EditState = {
     customHslColor: 'red',
     selectionSettings: initialSelectionSettings,
     channels: {
-        red: true,
-        green: true,
-        blue: true,
+        r: true,
+        g: true,
+        b: true,
         alpha: true,
     },
     history: [],

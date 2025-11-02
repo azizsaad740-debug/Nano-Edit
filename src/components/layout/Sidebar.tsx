@@ -1,6 +1,6 @@
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point, HslAdjustment, HslColorKey, AdjustmentState, GradingState, CurvesState } from "@/types/editor";
+import type { EditState, BrushState, ActiveTool, SelectionSettings, Layer, Point, HslAdjustment, HslColorKey, AdjustmentState, GradingState, CurvesState, FrameState } from "@/types/editor";
 import type { Preset } from "@/hooks/usePresets";
 import type { PanelTab } from "@/types/editor/core";
 
