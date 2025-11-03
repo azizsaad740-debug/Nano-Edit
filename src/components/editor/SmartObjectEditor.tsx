@@ -1,15 +1,15 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Save } from 'lucide-react';
-import type { Layer, ActiveTool, ShapeType, Dimensions, GradientToolState, Point } from "@/types/editor";
-import { useSmartObjectLayers } from "@/hooks/useSmartObjectLayers"; // Fix 168
+import type { Layer, ActiveTool, ShapeType, Dimensions, GradientToolState, Point, TextLayerData, DrawingLayerData, VectorShapeLayerData, GradientLayerData } from "@/types/editor";
 import { ToolsPanel } from "@/components/layout/ToolsPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import SmartObjectLayersPanel from "./SmartObjectLayersPanel";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { showError, showSuccess } from "@/utils/toast";
-import { SmartObjectWorkspace } from "./SmartObjectWorkspace"; // ADDED IMPORT
+import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
+import { v4 as uuidv4 } from 'uuid';
 
 interface SmartObjectEditorProps {
   layerId: string;
@@ -57,7 +57,6 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   const smartObjectLayer = globalLayers.find(l => l.id === layerId);
   const [internalLayers, setInternalLayers] = React.useState<Layer[]>(smartObjectLayer?.type === 'smart-object' ? smartObjectLayer.smartObjectData.layers : []);
   const [internalSelectedLayerId, setInternalSelectedLayerId] = React.useState<string | null>(null);
-  const { createTextLayerStub, createDrawingLayerStub, createVectorShapeLayerStub, createGradientLayerStub } = useSmartObjectLayers();
 
   React.useEffect(() => {
     if (smartObjectLayer?.type === 'smart-object') {
@@ -78,19 +77,96 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     onClose();
   };
 
-  const handleAddLayer = (type: 'text' | 'drawing' | 'vector-shape' | 'gradient') => {
-    let newLayer: Layer | null = null;
-    if (type === 'text') newLayer = createTextLayerStub();
-    if (type === 'drawing') newLayer = createDrawingLayerStub();
-    if (type === 'vector-shape') newLayer = createVectorShapeLayerStub();
-    if (type === 'gradient') newLayer = createGradientLayerStub();
+  // --- Internal Layer Creation Logic ---
+  
+  const createBaseLayer = (type: Layer['type'], name: string): Omit<Layer, 'type'> => ({
+    id: uuidv4(),
+    name,
+    visible: true,
+    opacity: 100,
+    blendMode: 'normal',
+    isLocked: false,
+    maskDataUrl: null,
+    isClippingMask: false,
+    x: 50, y: 50, width: 50, height: 10, rotation: 0, scaleX: 1, scaleY: 1,
+  });
 
-    if (newLayer) {
-      setInternalLayers(prev => [newLayer, ...prev]);
-      setInternalSelectedLayerId(newLayer.id);
-      showSuccess(`Added ${newLayer.name} to Smart Object.`);
-    }
+  const addTextLayer = () => {
+    const newLayer: TextLayerData = {
+      ...createBaseLayer('text', 'Text Layer'),
+      type: 'text',
+      content: 'New Text',
+      fontSize: 48,
+      color: foregroundColor,
+      fontFamily: 'Roboto',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'center',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      padding: 0,
+      width: 50, height: 10,
+    };
+    setInternalLayers(prev => [newLayer, ...prev]);
+    setInternalSelectedLayerId(newLayer.id);
+    showSuccess(`Added Text Layer.`);
   };
+
+  const addDrawingLayer = () => {
+    const newLayer: DrawingLayerData = {
+      ...createBaseLayer('drawing', 'Drawing Layer'),
+      type: 'drawing',
+      dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // 1x1 transparent pixel
+      width: 100, height: 100,
+    };
+    setInternalLayers(prev => [newLayer, ...prev]);
+    setInternalSelectedLayerId(newLayer.id);
+    showSuccess(`Added Drawing Layer.`);
+  };
+
+  const addShapeLayer = () => {
+    const newLayer: VectorShapeLayerData = {
+      ...createBaseLayer('vector-shape', 'Shape Layer'),
+      type: 'vector-shape',
+      shapeType: selectedShapeType || 'rect',
+      fillColor: foregroundColor,
+      strokeColor: backgroundColor,
+      strokeWidth: 0,
+      borderRadius: 0,
+      width: 10, height: 10,
+    };
+    setInternalLayers(prev => [newLayer, ...prev]);
+    setInternalSelectedLayerId(newLayer.id);
+    showSuccess(`Added Shape Layer.`);
+  };
+
+  const addGradientLayer = () => {
+    const newLayer: GradientLayerData = {
+      ...createBaseLayer('gradient', 'Gradient Layer'),
+      type: 'gradient',
+      gradientType: gradientToolState.type,
+      gradientColors: gradientToolState.colors,
+      stops: gradientToolState.stops,
+      gradientAngle: gradientToolState.angle,
+      gradientFeather: gradientToolState.feather,
+      gradientInverted: gradientToolState.inverted,
+      gradientCenterX: gradientToolState.centerX,
+      gradientCenterY: gradientToolState.centerY,
+      gradientRadius: gradientToolState.radius,
+      width: 100, height: 100,
+    };
+    setInternalLayers(prev => [newLayer, ...prev]);
+    setInternalSelectedLayerId(newLayer.id);
+    showSuccess(`Added Gradient Layer.`);
+  };
+  
+  const handleAddLayer = (type: 'text' | 'drawing' | 'vector-shape' | 'gradient') => {
+    if (type === 'text') addTextLayer();
+    if (type === 'drawing') addDrawingLayer();
+    if (type === 'vector-shape') addShapeLayer();
+    if (type === 'gradient') addGradientLayer();
+  };
+  // --- End Internal Layer Creation Logic ---
 
   const handleDeleteLayer = (id: string) => {
     setInternalLayers(prev => prev.filter(l => l.id !== id));
