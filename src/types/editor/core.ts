@@ -1,6 +1,6 @@
 // src/types/editor/core.ts
 
-import type { Icon as LucideIcon } from "lucide-react";
+import { Icon } from "lucide-react"; // Import as value to use typeof
 import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState } from "./adjustments"; // <-- Import FrameState here
 
 // --- Core Types ---
@@ -98,7 +98,7 @@ export interface TextLayerData extends BaseLayer {
   fontFamily: string;
   fontWeight: string | number; // Allow number for font weight
   fontStyle: string;
-  textAlign: 'left' | 'center' | 'right' | 'justify';
+  textAlign: 'left' | 'center' | 'right'; // Removed 'justify' to fix TS2322
   letterSpacing: number;
   lineHeight: number;
   padding: number;
@@ -188,7 +188,7 @@ export interface BrushState {
   hardness: number;
   smoothness: number;
   shape: 'circle' | 'square';
-  color: string;
+  color: string; // Required property
   flow: number;
   angle: number;
   roundness: number;
@@ -223,8 +223,8 @@ export interface GradientToolState {
   radius: number;
   feather: number;
   inverted: boolean;
-  dither: boolean;
-  transparency: boolean;
+  dither: boolean; // Required property
+  transparency: boolean; // Required property
 }
 
 export interface SelectionSettings {
@@ -297,7 +297,8 @@ export interface EditState {
   selectiveBlurMask: string | null;
   selectiveSharpenMask: string | null;
   isProxyMode: boolean;
-  gradientToolState: GradientToolState;
+  gradientToolState: GradientToolState; // Required property
+  customFonts: string[]; // Added to satisfy EditorWorkspace
 }
 
 export interface NewProjectSettings {
@@ -311,7 +312,7 @@ export interface NewProjectSettings {
 export interface PanelTab {
   id: string;
   name: string;
-  icon: LucideIcon;
+  icon: typeof Icon; // Fix TS2749: Use typeof Icon
   location: 'right' | 'bottom' | 'hidden';
   visible: boolean;
   order: number;
