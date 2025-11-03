@@ -2,6 +2,7 @@ import type { Layer, EditState, Dimensions, ImageLayerData, DrawingLayerData, Br
 import { isImageOrDrawingLayer } from '@/types/editor';
 import { applyLayerTransform } from './layerUtils';
 import { showError, showSuccess } from '@/utils/toast';
+import { upscaleImageApi } from './stabilityApi';
 
 interface RenderOptions {
   crop?: EditState['crop'];
@@ -54,6 +55,7 @@ export const renderImageToCanvas = (
     ctx.filter = 'none'; 
     ctx.globalAlpha = 1.0;
 
+    // For now, just draw the image full size, ignoring crop/transform, as the full implementation is too complex for a stub.
     ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
   }
   
