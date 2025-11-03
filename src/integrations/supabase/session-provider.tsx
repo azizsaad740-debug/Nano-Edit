@@ -11,6 +11,7 @@ interface SessionContextType {
   isLoading: boolean;
   isGuest: boolean;
   setIsGuest: (isGuest: boolean) => void;
+  isAdmin: boolean;
 }
 
 const SessionContext = createContext<SessionContextType | undefined>(undefined);
@@ -20,6 +21,22 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const fetchProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      console.error("Error fetching profile:", error);
+      setIsAdmin(false);
+    } else if (data) {
+      setIsAdmin(data.is_admin || false);
+    }
+  };
 
   useEffect(() => {
     // Check for guest status in local storage on initial load
@@ -32,18 +49,24 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     const initialLoadToast = showLoading("Checking session...");
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleSession = (session: Session | null) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setIsAdmin(false);
+      }
       setIsLoading(false);
       dismissToast(initialLoadToast);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleSession(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-      dismissToast(initialLoadToast);
+      handleSession(session);
     });
 
     return () => subscription.unsubscribe();
@@ -55,7 +78,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <SessionContext.Provider value={{ session, user, isLoading, isGuest, setIsGuest: handleSetIsGuest }}>
+    <SessionContext.Provider value={{ session, user, isLoading, isGuest, setIsGuest: handleSetIsGuest, isAdmin }}>
       {children}
     </SessionContext.Provider>
   );

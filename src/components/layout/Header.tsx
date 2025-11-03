@@ -107,7 +107,7 @@ const Header = ({
 }: HeaderProps) => {
   const [isHoveringPreview, setIsHoveringPreview] = React.useState(false);
   const navigate = useNavigate();
-  const { user, isGuest, setIsGuest } = useSession();
+  const { user, isGuest, setIsGuest, isAdmin } = useSession();
 
   React.useEffect(() => {
     onTogglePreview(isHoveringPreview);
@@ -288,6 +288,12 @@ const Header = ({
                 <LayoutGrid className="h-4 w-4 mr-2" />
                 Community Templates
               </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => navigate('/admin')}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Admin Dashboard
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
