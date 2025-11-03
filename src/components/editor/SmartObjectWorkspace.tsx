@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import type { Layer, ActiveTool, SmartObjectLayerData, GroupLayerData } from "@/types/editor";
+import type { Layer, ActiveTool, SmartObjectLayerData, GroupLayerData, Dimensions } from "@/types/editor";
 import { TextLayer } from "./TextLayer";
 import { DrawingLayer } from "./DrawingLayer";
 import { SmartObjectLayer } from "./SmartObjectLayer";
 import VectorShapeLayer from "./VectorShapeLayer";
 import { GradientLayer } from "./GradientLayer";
 import GroupLayer from "./GroupLayer";
-import { ImageLayer } from "./ImageLayer"; // ADDED
+import { ImageLayer } from "./ImageLayer";
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
@@ -39,48 +39,66 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
 
   if (!parentDimensions) return null;
 
+  // --- Recursive Layer Renderer ---
+  const renderLayer = (
+    layer: Layer,
+    currentContainerRef: React.RefObject<HTMLDivElement>,
+    currentParentDimensions: Dimensions,
+  ): JSX.Element | null => {
+    if (!layer.visible) return null;
+
+    const isSelected = selectedLayerId === layer.id;
+    const layerProps = {
+      key: layer.id,
+      layer,
+      containerRef: currentContainerRef,
+      onUpdate: onUpdate, // Use internal update handler
+      onCommit: (id: string) => onCommit(id), // Use internal commit handler
+      isSelected,
+      activeTool,
+      zoom,
+      setSelectedLayerId,
+    };
+
+    if (layer.type === 'text') {
+      return <TextLayer {...layerProps} />;
+    }
+    if (layer.type === 'drawing') {
+      return <DrawingLayer {...layerProps} />;
+    }
+    if (layer.type === 'image' && layer.id !== 'background') {
+      return <ImageLayer {...layerProps} />;
+    }
+    if (layer.type === 'smart-object') {
+      return <SmartObjectLayer {...layerProps} parentDimensions={currentParentDimensions} />;
+    }
+    if (layer.type === 'vector-shape') {
+      return <VectorShapeLayer {...layerProps} />;
+    }
+    if (layer.type === 'gradient') {
+      return <GradientLayer {...layerProps} imageNaturalDimensions={currentParentDimensions} />;
+    }
+    if (layer.type === 'group') {
+      const groupLayer = layer as GroupLayerData;
+      return (
+        <GroupLayer
+          {...layerProps}
+          parentDimensions={currentParentDimensions}
+          globalSelectedLayerId={globalSelectedLayerId}
+          renderChildren={(child) => renderLayer(child, layerProps.containerRef, currentParentDimensions)}
+        />
+      );
+    }
+    return null;
+  };
+  // --- End Recursive Layer Renderer ---
+
   // Render layers in reverse order (bottom layer in array is rendered first/last in list)
   return (
     <div className="relative w-full h-full">
-      {layers.slice().reverse().map((layer) => {
-        const isSelected = selectedLayerId === layer.id;
-        const layerProps = {
-          key: layer.id,
-          layer,
-          containerRef,
-          onUpdate,
-          onCommit: (id: string) => onCommit(id), // Fixed onCommit signature
-          isSelected,
-          activeTool,
-          zoom,
-          setSelectedLayerId,
-        };
-
-        if (!layer.visible) return null;
-
-        if (layer.type === 'text') {
-          return <TextLayer {...layerProps} />;
-        }
-        if (layer.type === 'drawing') {
-          return <DrawingLayer {...layerProps} />;
-        }
-        if (layer.type === 'image' && layer.id !== 'background') {
-          return <ImageLayer {...layerProps} />;
-        }
-        if (layer.type === 'smart-object') {
-          return <SmartObjectLayer {...layerProps} parentDimensions={parentDimensions} />;
-        }
-        if (layer.type === 'vector-shape') {
-          return <VectorShapeLayer {...layerProps} />;
-        }
-        if (layer.type === 'gradient') {
-          return <GradientLayer {...layerProps} imageNaturalDimensions={parentDimensions} />;
-        }
-        if (layer.type === 'group') {
-          return <GroupLayer {...layerProps} parentDimensions={parentDimensions} renderChildren={() => null} globalSelectedLayerId={globalSelectedLayerId} />;
-        }
-        return null;
-      })}
+      {layers.slice().reverse().map((layer) => 
+        renderLayer(layer, containerRef, parentDimensions)
+      )}
     </div>
   );
 };
