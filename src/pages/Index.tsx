@@ -371,6 +371,10 @@ const Index: React.FC = () => {
                   onUndo={logic.undo}
                   onRedo={logic.redo}
                   isGuest={isGuest} // ADDED
+                  
+                  // NEW: Layer Selection
+                  selectedLayerIds={logic.selectedLayerIds} // Pass multi-selection state
+                  onSelectLayer={logic.onSelectLayer} // Pass new selection handler
                 />
               </ResizablePanel>
             )}

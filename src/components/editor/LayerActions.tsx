@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine, ArrowDownUp } from "lucide-react";
 import type { Layer, SmartObjectLayerData, ShapeType } from "@/types/editor";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -62,22 +62,28 @@ export const LayerActions = ({
   const hasMultipleSelection = selectedLayerIds.length > 1;
   const isAnyLayerSelected = selectedLayerIds.length > 0;
 
+  // Merge Down is only possible with a single selected layer
   const isMergeable = React.useMemo(() => {
-    if (!selectedLayer) return false;
+    if (!selectedLayer || hasMultipleSelection) return false;
     const layerIndex = layers.findIndex(l => l.id === selectedLayer.id);
     if (layerIndex < 1 || layers[layerIndex - 1].type === 'image') {
       return false;
     }
     return true;
-  }, [layers, selectedLayer]);
+  }, [layers, selectedLayer, hasMultipleSelection]);
 
-  const isRasterizable = selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient';
-  const isSmartObject = selectedLayer?.type === 'smart-object';
-  const isMaskable = selectedLayer && selectedLayer.type !== 'image';
-  const hasMask = selectedLayer?.maskDataUrl;
+  // Rasterize is only possible with a single selected layer
+  const isRasterizable = !hasMultipleSelection && (selectedLayer?.type === 'text' || selectedLayer?.type === 'vector-shape' || selectedLayer?.type === 'gradient');
+  
+  // Smart Object actions are only available for a single selected layer
+  const isSmartObject = !hasMultipleSelection && selectedLayer?.type === 'smart-object';
+  
+  // Mask actions are only available for a single selected layer
+  const isMaskable = !hasMultipleSelection && selectedLayer && selectedLayer.type !== 'image';
+  const hasMask = !hasMultipleSelection && selectedLayer?.maskDataUrl;
   
   const selectedLayerIndex = layers.findIndex(l => l.id === selectedLayer?.id);
-  const isClippingMaskable = selectedLayer && selectedLayer.type !== 'image' && selectedLayerIndex > 0;
+  const isClippingMaskable = !hasMultipleSelection && selectedLayer && selectedLayer.type !== 'image' && selectedLayerIndex > 0;
   const isClipped = selectedLayer?.isClippingMask;
 
   const iconSize = "h-3.5 w-3.5";
@@ -131,7 +137,7 @@ export const LayerActions = ({
                 className={buttonSize}
                 variant="outline"
                 onClick={onDuplicateLayer}
-                disabled={!selectedLayer || selectedLayer.type === 'image'}
+                disabled={!isAnyLayerSelected || selectedLayerIds.some(id => layers.find(l => l.id === id)?.type === 'image')}
               >
                 <Copy className={iconSize} />
               </Button>
@@ -181,7 +187,7 @@ export const LayerActions = ({
                 <Trash2 className={iconSize} />
               </Button>
             </TooltipTrigger>
-            <TooltipContent><p>Delete Selected Layer</p></TooltipContent>
+            <TooltipContent><p>Delete Selected Layer(s)</p></TooltipContent>
           </Tooltip>
           
           <Tooltip>
@@ -239,7 +245,7 @@ export const LayerActions = ({
                     size="icon"
                     className={buttonSize}
                     variant="outline"
-                    onClick={() => selectedLayer.id && onOpenSmartObject(selectedLayer.id)}
+                    onClick={() => selectedLayer?.id && onOpenSmartObject(selectedLayer.id)}
                   >
                     <FileArchive className={iconSize} />
                   </Button>

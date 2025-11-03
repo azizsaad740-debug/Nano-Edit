@@ -26,12 +26,12 @@ interface UseLayersProps {
     clearSelectionState: () => void;
     setImage: (image: string | null) => void;
     setFileInfo: (info: { name: string; size: number } | null) => void;
-    setSelectedLayerId: (id: string | null) => void;
-    selectedLayerId: string | null;
+    selectedLayerIds: string[]; // NEW
+    setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>; // NEW
 }
 
 export const useLayers = ({
-  layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, setSelectedLayerId, selectedLayerId
+  layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds
 }: UseLayersProps) => {
   
   // --- Layer Utility Functions ---
@@ -104,10 +104,10 @@ export const useLayers = ({
       width: 50, height: 10, // Text layers usually have small default size
     };
     setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerId(newLayer.id);
+    setSelectedLayerIds([newLayer.id]); // NEW
     recordHistory(`Add Text Layer`, currentEditState, [newLayer, ...layers]);
     showSuccess(`Added Text Layer.`);
-  }, [createBaseLayer, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
+  }, [createBaseLayer, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
 
   const addShapeLayer = useCallback((coords: Point, shapeType: ShapeType = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string = foregroundColor, strokeColor: string = backgroundColor) => {
     const newLayer: VectorShapeLayerData = {
@@ -134,10 +134,10 @@ export const useLayers = ({
     }
 
     setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerId(newLayer.id);
+    setSelectedLayerIds([newLayer.id]); // NEW
     recordHistory(`Add ${shapeType} Layer`, currentEditState, [newLayer, ...layers]);
     showSuccess(`Added ${shapeType} Layer.`);
-  }, [createBaseLayer, foregroundColor, backgroundColor, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
+  }, [createBaseLayer, foregroundColor, backgroundColor, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
 
   const addGradientLayer = useCallback((startPoint: Point, endPoint: Point) => {
     if (!dimensions) {
@@ -170,10 +170,10 @@ export const useLayers = ({
     };
     
     setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerId(newLayer.id);
+    setSelectedLayerIds([newLayer.id]); // NEW
     recordHistory(`Add Gradient Layer`, currentEditState, [newLayer, ...layers]);
     showSuccess(`Added Gradient Layer.`);
-  }, [dimensions, gradientToolState, createBaseLayer, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
+  }, [dimensions, gradientToolState, createBaseLayer, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
 
   // --- Layer Actions (Simplified Stubs) ---
   
@@ -183,14 +183,14 @@ export const useLayers = ({
       return;
     }
     setLayers(prev => prev.filter(l => l.id !== id));
-    setSelectedLayerId(null);
+    setSelectedLayerIds(prev => prev.filter(lid => lid !== id)); // NEW
     recordHistory(`Delete Layer: ${findLayer(id)?.name || 'Unknown'}`, currentEditState, layers.filter(l => l.id !== id));
-  }, [layers, recordHistory, currentEditState, setSelectedLayerId, findLayer]);
+  }, [layers, recordHistory, currentEditState, setSelectedLayerIds, findLayer]);
   
   const handleDestructiveOperation = useCallback((operation: 'delete' | 'fill') => {
     if (!selectionMaskDataUrl) return;
     
-    const targetLayer = selectedLayerId ? findLayer(selectedLayerId) : layers.find(l => l.id === 'background');
+    const targetLayer = selectedLayerIds.length > 0 ? findLayer(selectedLayerIds[0]) : layers.find(l => l.id === 'background');
     if (!targetLayer || targetLayer.isLocked) {
       showError("Cannot perform destructive operation on a locked or non-existent layer.");
       return;
@@ -204,8 +204,52 @@ export const useLayers = ({
     showSuccess(`${operation === 'delete' ? 'Deleted' : 'Filled'} selected area on ${targetLayer.name} (Stub).`);
     clearSelectionState();
     recordHistory(`${operation === 'delete' ? 'Delete' : 'Fill'} Selection`, currentEditState, layers);
-  }, [selectionMaskDataUrl, selectedLayerId, layers, currentEditState, recordHistory, clearSelectionState, findLayer]);
+  }, [selectionMaskDataUrl, selectedLayerIds, layers, currentEditState, recordHistory, clearSelectionState, findLayer]);
 
+  // --- New Layer Selection Logic ---
+  const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    if (ctrlKey) {
+      // Ctrl/Cmd + Click: Toggle selection
+      setSelectedLayerIds(prev => {
+        if (prev.includes(id)) {
+          return prev.filter(lid => lid !== id);
+        } else {
+          // Add to selection, making it the primary selected layer (first in array)
+          return [id, ...prev.filter(lid => lid !== id)];
+        }
+      });
+    } else if (shiftKey) {
+      // Shift + Click: Range selection
+      if (selectedLayerIds.length === 0) {
+        setSelectedLayerIds([id]);
+        return;
+      }
+      
+      const layersInOrder = layers.map(l => l.id);
+      const lastSelectedId = selectedLayerIds[0];
+      
+      const startIndex = layersInOrder.indexOf(lastSelectedId);
+      const endIndex = layersInOrder.indexOf(id);
+      
+      if (startIndex === -1 || endIndex === -1) {
+        setSelectedLayerIds([id]);
+        return;
+      }
+      
+      const start = Math.min(startIndex, endIndex);
+      const end = Math.max(startIndex, endIndex);
+      
+      const newSelection = layersInOrder.slice(start, end + 1);
+      
+      // Ensure the clicked layer is the primary selection
+      setSelectedLayerIds([id, ...newSelection.filter(lid => lid !== id)]);
+      
+    } else {
+      // Single click: Set selection
+      setSelectedLayerIds([id]);
+    }
+  }, [layers, selectedLayerIds, setSelectedLayerIds]);
+  
   // --- Other Layer Management Stubs ---
   
   const toggleLayerVisibility = useCallback((id: string) => {
@@ -256,16 +300,16 @@ export const useLayers = ({
   }, [updateLayer, recordHistory, currentEditState, layers]);
   
   const handleLayerOpacityChange = useCallback((opacity: number) => {
-    if (selectedLayerId) {
-      updateLayer(selectedLayerId, { opacity });
+    if (selectedLayerIds.length > 0) {
+      selectedLayerIds.forEach(id => updateLayer(id, { opacity }));
     }
-  }, [selectedLayerId, updateLayer]);
+  }, [selectedLayerIds, updateLayer]);
   
   const handleLayerOpacityCommit = useCallback(() => {
-    if (selectedLayerId) {
-      recordHistory(`Change Opacity of ${findLayer(selectedLayerId)?.name}`, currentEditState, layers);
+    if (selectedLayerIds.length > 0) {
+      recordHistory(`Change Opacity of ${selectedLayerIds.length} layers`, currentEditState, layers);
     }
-  }, [selectedLayerId, recordHistory, currentEditState, layers, findLayer]);
+  }, [selectedLayerIds, recordHistory, currentEditState, layers]);
   
   const addDrawingLayer = useCallback((coords: Point, dataUrl: string) => {
     showError("Add Drawing Layer is a stub.");
@@ -338,14 +382,16 @@ export const useLayers = ({
   }, []);
   
   const onApplySelectionAsMask = useCallback(() => {
-    if (!selectedLayerId || !selectionMaskDataUrl) {
+    if (selectedLayerIds.length === 0 || !selectionMaskDataUrl) {
       showError("Select a layer and make a selection first.");
       return;
     }
-    updateLayer(selectedLayerId, { maskDataUrl: selectionMaskDataUrl });
+    // Apply mask to the primary selected layer
+    const targetId = selectedLayerIds[0];
+    updateLayer(targetId, { maskDataUrl: selectionMaskDataUrl });
     clearSelectionState();
-    recordHistory(`Apply Selection as Mask to ${findLayer(selectedLayerId)?.name}`, currentEditState, layers);
-  }, [selectedLayerId, selectionMaskDataUrl, updateLayer, clearSelectionState, recordHistory, currentEditState, layers, findLayer]);
+    recordHistory(`Apply Selection as Mask to ${findLayer(targetId)?.name}`, currentEditState, layers);
+  }, [selectedLayerIds, selectionMaskDataUrl, updateLayer, clearSelectionState, recordHistory, currentEditState, layers, findLayer]);
   
   const handleDrawingStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
     showError("Drawing stroke end is a stub.");
@@ -381,5 +427,6 @@ export const useLayers = ({
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleReorder,
     findLayer,
+    onSelectLayer, // NEW
   };
 };

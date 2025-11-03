@@ -42,9 +42,47 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
       case 'layers':
         return (
           <LayersPanel
-            {...props}
-            onSelectLayer={(id, ctrlKey, shiftKey) => props.onSelectLayer(id, ctrlKey, shiftKey)}
+            layers={props.layers}
+            selectedLayerId={props.selectedLayerId}
+            selectedLayer={props.selectedLayer}
+            selectedLayerIds={props.selectedLayerIds} // PASSED
+            onSelectLayer={props.onSelectLayer} // PASSED
             onReorder={props.onLayerReorder}
+            toggleLayerVisibility={props.toggleLayerVisibility}
+            renameLayer={props.renameLayer}
+            deleteLayer={props.deleteLayer}
+            onDuplicateLayer={props.onDuplicateLayer}
+            onMergeLayerDown={props.onMergeLayerDown}
+            onRasterizeLayer={props.onRasterizeLayer}
+            onCreateSmartObject={props.onCreateSmartObject}
+            onOpenSmartObject={props.onOpenSmartObject}
+            onLayerUpdate={props.onLayerUpdate}
+            onLayerCommit={props.onLayerCommit}
+            onLayerPropertyCommit={props.onLayerPropertyCommit}
+            onLayerOpacityChange={props.onLayerOpacityChange}
+            onLayerOpacityCommit={props.onLayerOpacityCommit}
+            addTextLayer={props.addTextLayer}
+            addDrawingLayer={props.addDrawingLayer}
+            onAddLayerFromBackground={props.onAddLayerFromBackground}
+            onLayerFromSelection={props.onLayerFromSelection}
+            addShapeLayer={props.addShapeLayer}
+            addGradientLayer={props.addGradientLayer}
+            onAddAdjustmentLayer={props.onAddAdjustmentLayer}
+            selectedShapeType={props.selectedShapeType}
+            groupLayers={props.groupLayers}
+            toggleGroupExpanded={props.toggleGroupExpanded}
+            onRemoveLayerMask={props.onRemoveLayerMask}
+            onInvertLayerMask={props.onInvertLayerMask}
+            onToggleClippingMask={props.onToggleClippingMask}
+            onToggleLayerLock={props.onToggleLayerLock}
+            onDeleteHiddenLayers={props.onDeleteHiddenLayers}
+            onRasterizeSmartObject={props.onRasterizeSmartObject}
+            onConvertSmartObjectToLayers={props.onConvertSmartObjectToLayers}
+            onExportSmartObjectContents={props.onExportSmartObjectContents}
+            onArrangeLayer={props.onArrangeLayer}
+            hasActiveSelection={props.hasActiveSelection}
+            onApplySelectionAsMask={props.onApplySelectionAsMask}
+            handleDestructiveOperation={props.handleDestructiveOperation}
             foregroundColor={props.foregroundColor}
           />
         );

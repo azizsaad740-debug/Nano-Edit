@@ -55,7 +55,11 @@ export const useEditorCore = () => {
   const [exifData, setExifData] = useState<any>(null);
   const [currentEditState, setCurrentEditState] = useState<EditState>(initialEditState);
   const [layers, setLayers] = useState<Layer[]>(initialLayerState);
-  const [selectedLayerId, setSelectedLayerId] = useState<string | null>(null);
+  const [selectedLayerIds, setSelectedLayerIds] = useState<string[]>([]); // NEW
+  const selectedLayerId = selectedLayerIds.length > 0 ? selectedLayerIds[0] : null; // Derived primary ID
+  const setSelectedLayerId = useCallback((id: string | null) => {
+    setSelectedLayerIds(id ? [id] : []);
+  }, []);
   const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
   const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState);
@@ -236,7 +240,7 @@ export const useEditorCore = () => {
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
       setCurrentHistoryIndex(newIndex);
-      setSelectedLayerId(null);
+      setSelectedLayerIds([]); // NEW
       
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
@@ -260,7 +264,7 @@ export const useEditorCore = () => {
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
       setCurrentHistoryIndex(newIndex);
-      setSelectedLayerId(null);
+      setSelectedLayerIds([]); // NEW
       
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
@@ -281,7 +285,7 @@ export const useEditorCore = () => {
     setLayers(initialLayerState);
     setHistory([initialHistoryItem]);
     setCurrentHistoryIndex(0);
-    setSelectedLayerId(null);
+    setSelectedLayerIds([]); // NEW
     clearSelectionState();
     setSelectiveBlurAmount(initialEditState.selectiveBlurAmount);
     setSelectiveSharpenAmount(initialEditState.selectiveSharpenAmount);
@@ -361,7 +365,10 @@ export const useEditorCore = () => {
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
     // Layers
     layers, setLayers,
-    selectedLayerId, setSelectedLayerId,
+    selectedLayerId, // Keep derived ID for compatibility
+    setSelectedLayerId, // Keep setter for single selection
+    selectedLayerIds, // NEW
+    setSelectedLayerIds, // NEW
     selectedLayer,
     // Tools
     activeTool, setActiveTool,

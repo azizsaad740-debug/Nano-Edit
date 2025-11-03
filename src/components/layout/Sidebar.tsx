@@ -13,7 +13,8 @@ export interface RightSidebarTabsProps {
   selectedLayerId: string | null;
   selectedLayer: Layer | undefined;
   layers: Layer[];
-  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
+  selectedLayerIds: string[]; // NEW
+  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void; // NEW
   onLayerReorder: (activeId: string, overId: string) => void;
   toggleLayerVisibility: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
@@ -50,22 +51,6 @@ export interface RightSidebarTabsProps {
   hasActiveSelection: boolean;
   onApplySelectionAsMask: () => void;
   handleDestructiveOperation: (operation: 'delete' | 'fill') => void;
-  // Global Effects Props (Reduced set)
-  effects: EditState['effects'];
-  onEffectChange: (effect: string, value: number) => void;
-  onEffectCommit: (effect: string, value: number) => void;
-  onFilterChange: (filterValue: string, filterName: string) => void;
-  selectedFilter: string;
-  onTransformChange: (transformType: string) => void;
-  rotation: number;
-  onRotationChange: (value: number) => void;
-  onRotationCommit: (value: number) => void;
-  onAspectChange: (aspect: number | undefined) => void;
-  aspect: number | undefined;
-  frame: EditState['frame'];
-  onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void;
-  onFramePropertyChange: (key: 'width' | 'color' | 'opacity' | 'roundness' | 'vignetteAmount' | 'vignetteRoundness', value: any) => void;
-  onFramePropertyCommit: () => void;
   
   // --- Re-added Color Correction Props (Fixes TS2339 errors) ---
   adjustments: AdjustmentState;

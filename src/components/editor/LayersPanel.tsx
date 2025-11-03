@@ -18,6 +18,7 @@ interface LayersPanelProps {
   layers: Layer[];
   selectedLayerId: string | null;
   selectedLayer: Layer | undefined;
+  selectedLayerIds: string[]; // NEW
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   onReorder: (activeId: string, overId: string) => void; // CORRECTED SIGNATURE
   toggleLayerVisibility: (id: string) => void;
@@ -62,12 +63,13 @@ interface LayersPanelProps {
 const RecursiveLayerList: React.FC<{
   layers: Layer[];
   selectedLayerId: string | null;
+  selectedLayerIds: string[]; // NEW
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   toggleLayerVisibility: (id: string) => void;
   toggleGroupExpanded: (id: string) => void;
   onToggleLayerLock: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
-}> = ({ layers, selectedLayerId, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
+}> = ({ layers, selectedLayerId, selectedLayerIds, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
   const { active } = useDndContext();
   const activeId = active?.id;
 
@@ -78,7 +80,7 @@ const RecursiveLayerList: React.FC<{
           <React.Fragment key={layer.id}>
             <LayerItem
               layer={layer}
-              isSelected={selectedLayerId === layer.id}
+              isSelected={selectedLayerIds.includes(layer.id)} // Use selectedLayerIds for highlighting
               onSelect={onSelectLayer}
               toggleVisibility={toggleLayerVisibility}
               toggleGroupExpanded={toggleGroupExpanded}
@@ -91,6 +93,7 @@ const RecursiveLayerList: React.FC<{
                 <RecursiveLayerList
                   layers={layer.children}
                   selectedLayerId={selectedLayerId}
+                  selectedLayerIds={selectedLayerIds} // Pass down
                   onSelectLayer={onSelectLayer}
                   toggleLayerVisibility={toggleLayerVisibility}
                   toggleGroupExpanded={toggleGroupExpanded}
@@ -109,7 +112,7 @@ const RecursiveLayerList: React.FC<{
 
 export const LayersPanel: React.FC<LayersPanelProps> = (props) => {
   const {
-    layers, selectedLayerId, selectedLayer, onSelectLayer,
+    layers, selectedLayerId, selectedLayer, onSelectLayer, selectedLayerIds,
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
@@ -153,6 +156,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = (props) => {
           <RecursiveLayerList
             layers={layers}
             selectedLayerId={selectedLayerId}
+            selectedLayerIds={selectedLayerIds} // PASSED
             onSelectLayer={onSelectLayer}
             toggleLayerVisibility={toggleLayerVisibility}
             toggleGroupExpanded={toggleGroupExpanded}
@@ -214,7 +218,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = (props) => {
         <LayerActions
           layers={layers}
           selectedLayer={selectedLayer}
-          selectedLayerIds={selectedLayerId ? [selectedLayerId] : []} // Simplified for single selection
+          selectedLayerIds={selectedLayerIds} // PASSED
           onAddTextLayer={() => handleAddLayer('text')}
           onAddDrawingLayer={() => handleAddLayer('drawing')}
           onAddShapeLayer={(coords, shapeType) => addShapeLayer(coords, shapeType)}
