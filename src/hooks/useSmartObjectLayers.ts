@@ -63,6 +63,9 @@ export const useSmartObjectLayers = () => {
       strokeColor: '#FFFFFF',
       strokeWidth: 0,
       borderRadius: 0,
+      strokeDasharray: undefined,
+      strokeLinecap: 'butt',
+      strokeLinejoin: 'miter',
     };
     return newLayer;
   };
@@ -80,7 +83,7 @@ export const useSmartObjectLayers = () => {
       x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
       gradientType: 'linear',
       gradientColors: ['#000000', '#FFFFFF'],
-      stops: [0, 1],
+      stops: [0, 1], // FIXED: Using 'stops'
       gradientAngle: 90,
       gradientFeather: 0,
       gradientInverted: false,

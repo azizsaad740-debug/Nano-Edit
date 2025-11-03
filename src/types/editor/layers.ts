@@ -86,7 +86,7 @@ export interface GradientLayerData extends BaseLayerData {
   type: 'gradient';
   gradientType: 'linear' | 'radial'; // FIXED: Removed 'angle' | 'reflected' | 'diamond'
   gradientColors: string[];
-  gradientStops: number[];
+  stops: number[]; // FIXED: Renamed from gradientStops to stops
   gradientAngle: number;
   gradientFeather: number;
   gradientInverted: boolean;
