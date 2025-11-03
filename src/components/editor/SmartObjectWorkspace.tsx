@@ -9,14 +9,13 @@ import VectorShapeLayer from "./VectorShapeLayer";
 import { GradientLayer } from "./GradientLayer";
 import GroupLayer from "./GroupLayer";
 import { ImageLayer } from "./ImageLayer";
-import { isTextLayer, isDrawingLayer, isImageLayer, isSmartObjectLayer, isVectorShapeLayer, isGradientLayer, isGroupLayer } from "@/types/editor"; // Added imports
 
 interface SmartObjectWorkspaceProps {
   layers: Layer[];
   parentDimensions: { width: number; height: number } | null;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string, historyName: string) => void;
+  onCommit: (id: string) => void;
   selectedLayerId: string | null;
   activeTool: ActiveTool | null;
   globalSelectedLayerId: string | null;
@@ -53,33 +52,33 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
       key: layer.id,
       layer,
       containerRef: currentContainerRef,
-      onUpdate: onUpdate, // (id, updates) => void
-      onCommit: onCommit, // (id, historyName) => void
+      onUpdate: onUpdate, // Use internal update handler
+      onCommit: (id: string) => onCommit(id), // Use internal commit handler
       isSelected,
       activeTool,
       zoom,
       setSelectedLayerId,
     };
 
-    if (isTextLayer(layer)) {
+    if (layer.type === 'text') {
       return <TextLayer {...layerProps} />;
     }
-    if (isDrawingLayer(layer)) {
+    if (layer.type === 'drawing') {
       return <DrawingLayer {...layerProps} />;
     }
-    if (isImageLayer(layer) && layer.id !== 'background') {
+    if (layer.type === 'image' && layer.id !== 'background') {
       return <ImageLayer {...layerProps} />;
     }
-    if (isSmartObjectLayer(layer)) {
+    if (layer.type === 'smart-object') {
       return <SmartObjectLayer {...layerProps} parentDimensions={currentParentDimensions} />;
     }
-    if (isVectorShapeLayer(layer)) {
+    if (layer.type === 'vector-shape') {
       return <VectorShapeLayer {...layerProps} />;
     }
-    if (isGradientLayer(layer)) {
+    if (layer.type === 'gradient') {
       return <GradientLayer {...layerProps} imageNaturalDimensions={currentParentDimensions} />;
     }
-    if (isGroupLayer(layer)) {
+    if (layer.type === 'group') {
       const groupLayer = layer as GroupLayerData;
       return (
         <GroupLayer
@@ -93,17 +92,10 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
     return null;
   };
   // --- End Recursive Layer Renderer ---
-  
-  const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Deselect if the click target is the workspace background itself
-    if (e.target === e.currentTarget) {
-      setSelectedLayerId(null);
-    }
-  };
 
   // Render layers in reverse order (bottom layer in array is rendered first/last in list)
   return (
-    <div className="relative w-full h-full" onMouseDown={handleBackgroundClick}>
+    <div className="relative w-full h-full">
       {layers.slice().reverse().map((layer) => 
         renderLayer(layer, containerRef, parentDimensions)
       )}

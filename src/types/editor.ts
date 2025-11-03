@@ -1,42 +1,21 @@
 // src/types/editor.ts
 
-export * from "./editor/core";
-export * from "./editor/adjustments";
-export * from "./editor/template"; // Fix TS2307
+// --- Core Types and Type Guards ---
+export * from './editor/core';
 
-import {
-    initialEditState,
-    initialBrushState,
-    initialGradientToolState,
-    initialLayerState,
-    initialHistoryItem,
-    initialSelectionSettings,
-    initialPanelLayout,
-} from "./editor/initialState";
-
-import {
-    initialAdjustmentState, 
-    initialGradingState, 
-    initialHslAdjustment, 
-    initialHslAdjustmentsState, 
-    initialCurvesState, 
-    initialFrameState, 
-} from "./editor/adjustments";
-
+// --- Initial State Constants ---
 export {
-    initialEditState,
     initialBrushState,
-    initialGradientToolState,
-    initialLayerState,
-    initialHistoryItem,
-    initialSelectionSettings,
-    initialPanelLayout,
-    
-    // Exporting initial adjustment states
     initialAdjustmentState,
     initialGradingState,
     initialHslAdjustment,
     initialHslAdjustmentsState,
     initialCurvesState,
     initialFrameState,
-};
+    initialSelectionSettings,
+    initialEditState,
+    initialGradientToolState,
+    initialLayerState,
+    initialHistoryItem,
+    initialPanelLayout,
+} from './editor/initialState';

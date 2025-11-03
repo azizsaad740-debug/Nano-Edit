@@ -1,152 +1,155 @@
+"use client";
+
 import * as React from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEditorLogic } from "@/hooks/useEditorLogic";
-import type { NewProjectSettings } from "@/types/editor";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { showSuccess, showError } from "@/utils/toast";
+import type { EditState } from "@/types/editor";
 
 interface ProjectSettingsDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  currentDimensions: { width: number; height: number } | null;
+  currentColorMode: EditState['colorMode'];
+  onUpdateSettings: (updates: {
+    width?: number;
+    height?: number;
+    colorMode?: EditState['colorMode'];
+  }) => void;
 }
 
-export const ProjectSettingsDialog = ({ isOpen, onClose }: ProjectSettingsDialogProps) => {
-  const { dimensions, currentEditState, handleProjectSettingsUpdate } = useEditorLogic({});
-  
-  const [width, setWidth] = React.useState(dimensions?.width || 1920);
-  const [height, setHeight] = React.useState(dimensions?.height || 1080);
-  const [colorMode, setColorMode] = React.useState(currentEditState.colorMode || 'rgb');
-  const [backgroundColor, setBackgroundColor] = React.useState('#FFFFFF');
-  const [dpi, setDpi] = React.useState(72);
+export const ProjectSettingsDialog = ({
+  open,
+  onOpenChange,
+  currentDimensions,
+  currentColorMode,
+  onUpdateSettings,
+}: ProjectSettingsDialogProps) => {
+  const [width, setWidth] = React.useState(currentDimensions?.width || 0);
+  const [height, setHeight] = React.useState(currentDimensions?.height || 0);
+  const [colorMode, setColorMode] = React.useState<EditState['colorMode']>(currentColorMode);
+  const [keepAspectRatio, setKeepAspectRatio] = React.useState(true);
 
   React.useEffect(() => {
-    if (dimensions) {
-      setWidth(dimensions.width);
-      setHeight(dimensions.height);
+    if (open && currentDimensions) {
+      setWidth(currentDimensions.width);
+      setHeight(currentDimensions.height);
+      setColorMode(currentColorMode);
     }
-    if (currentEditState.colorMode) {
-      setColorMode(currentEditState.colorMode);
+  }, [open, currentDimensions, currentColorMode]);
+
+  const handleWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newWidth = parseInt(e.target.value, 10) || 0;
+    setWidth(newWidth);
+    if (keepAspectRatio && currentDimensions && currentDimensions.width > 0) {
+      const aspect = currentDimensions.width / currentDimensions.height;
+      setHeight(Math.round(newWidth / aspect));
     }
-  }, [dimensions, currentEditState.colorMode]);
+  };
+
+  const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newHeight = parseInt(e.target.value, 10) || 0;
+    setHeight(newHeight);
+    if (keepAspectRatio && currentDimensions && currentDimensions.height > 0) {
+      const aspect = currentDimensions.width / currentDimensions.height;
+      setWidth(Math.round(newHeight * aspect));
+    }
+  };
 
   const handleSave = () => {
-    handleProjectSettingsUpdate({
-      width,
-      height,
-      colorMode,
-      dpi,
-      backgroundColor,
-    });
-    onClose();
-  };
-  
-  const handleNewProject = () => {
-    // Stub for creating a new project with current settings
-    const newSettings: NewProjectSettings = {
-      width,
-      height,
-      dpi,
-      backgroundColor,
-      colorMode: colorMode as NewProjectSettings['colorMode'],
-    };
-    // Assuming a function like handleNewProject exists in useEditorLogic
-    // handleNewProject(newSettings);
-    onClose();
+    if (width <= 0 || height <= 0) {
+      showError("Dimensions must be greater than zero.");
+      return;
+    }
+
+    const updates: { width?: number; height?: number; colorMode?: EditState['colorMode'] } = {};
+
+    if (width !== currentDimensions?.width || height !== currentDimensions?.height) {
+      updates.width = width;
+      updates.height = height;
+    }
+    if (colorMode !== currentColorMode) {
+      updates.colorMode = colorMode;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      onUpdateSettings(updates);
+      showSuccess("Project settings updated.");
+    }
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Project Settings</DialogTitle>
+          <DialogDescription>
+            Adjust canvas size and color mode for the current project.
+          </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="width" className="text-right">
-              Width (px)
-            </Label>
-            <Input
-              id="width"
-              type="number"
-              value={width}
-              onChange={(e) => setWidth(Number(e.target.value))}
-              className="col-span-3"
-            />
+        <div className="grid gap-6 py-4">
+          {/* Dimensions */}
+          <div className="grid gap-2">
+            <Label>Canvas Dimensions (Pixels)</Label>
+            <div className="grid grid-cols-3 items-center gap-2">
+              <Input type="number" value={width} onChange={handleWidthChange} />
+              <span className="text-muted-foreground">×</span>
+              <Input type="number" value={height} onChange={handleHeightChange} />
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <input
+                type="checkbox"
+                id="keep-aspect-ratio"
+                checked={keepAspectRatio}
+                onChange={(e) => setKeepAspectRatio(e.target.checked)}
+                className="h-4 w-4"
+              />
+              <Label htmlFor="keep-aspect-ratio">Keep Aspect Ratio</Label>
+            </div>
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="height" className="text-right">
-              Height (px)
-            </Label>
-            <Input
-              id="height"
-              type="number"
-              value={height}
-              onChange={(e) => setHeight(Number(e.target.value))}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="dpi" className="text-right">
-              DPI
-            </Label>
-            <Input
-              id="dpi"
-              type="number"
-              value={dpi}
-              onChange={(e) => setDpi(Number(e.target.value))}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="colorMode" className="text-right">
-              Color Mode
-            </Label>
-            <Select value={colorMode} onValueChange={(value) => setColorMode(value as 'rgb' | 'grayscale' | 'cmyk')}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Select Color Mode" />
+
+          {/* Color Mode */}
+          <div className="grid gap-2">
+            <Label htmlFor="color-mode">Color Mode</Label>
+            <Select
+              value={colorMode}
+              onValueChange={(v) => setColorMode(v as EditState['colorMode'])}
+            >
+              <SelectTrigger id="color-mode">
+                <SelectValue placeholder="Select color mode" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rgb">RGB Color</SelectItem>
-                <SelectItem value="grayscale">Grayscale</SelectItem>
-                <SelectItem value="cmyk">CMYK Color</SelectItem>
+                <SelectItem value="RGB">RGB (Standard)</SelectItem>
+                <SelectItem value="Grayscale">Grayscale</SelectItem>
+                <SelectItem value="CMYK">CMYK (Print Simulation - Stub)</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="backgroundColor" className="text-right">
-              Background
-            </Label>
-            <Input
-              id="backgroundColor"
-              type="color"
-              value={backgroundColor}
-              onChange={(e) => setBackgroundColor(e.target.value)}
-              className="col-span-3 h-10"
-            />
+            {colorMode === 'CMYK' && (
+              <p className="text-xs text-orange-500 mt-1">
+                CMYK mode is a visual simulation using CSS filters and may not accurately represent final print output.
+              </p>
+            )}
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          {/* Only show Save button if project is already loaded */}
-          {dimensions && (
-            <Button onClick={handleSave}>
-              Save Settings
-            </Button>
-          )}
-          {/* Show New Project button if no project is loaded or if user wants to create a new one */}
-          {!dimensions && (
-            <Button onClick={handleNewProject}>
-              Create New Project
-            </Button>
-          )}
-          {/* Example of conditional rendering based on color mode */}
-          {colorMode === 'cmyk' && ( // Fix TS2367: Changed 'CMYK' to 'cmyk'
-            <p className="text-sm text-yellow-500">CMYK mode selected. Colors may appear different on screen.</p>
-          )}
+          <Button onClick={handleSave} disabled={!currentDimensions}>Save Settings</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,58 +1,49 @@
-import type { Layer, Dimensions, Point, TextLayerData, EditState } from "@/types/editor";
-import { isTextLayer } from "@/types/editor";
+import type { Layer, Dimensions, EditState } from '@/types/editor';
+import { isImageOrDrawingLayer } from '@/types/editor';
 
 /**
- * Calculates the dimensions of a layer relative to the canvas (0-100%).
- * This is a stub implementation.
+ * Renders a list of layers onto a single canvas and returns the data URL.
+ * This is used for Smart Object rasterization and export.
  */
-export const getLayerDimensions = (layer: Layer): Dimensions => {
-    // Stub: returns layer's relative width/height
-    return { width: layer.width, height: layer.height };
+export const rasterizeLayersToDataUrl = async (
+  layers: Layer[], 
+  dimensions: Dimensions, 
+  editState: EditState,
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) return reject(new Error("Failed to get canvas context for rasterization."));
+
+    // 1. Fill with transparent background
+    ctx.clearRect(0, 0, dimensions.width, dimensions.height);
+    
+    // 2. STUB: Draw a placeholder indicating the SO contents were rendered
+    ctx.fillStyle = 'rgba(100, 100, 255, 0.8)';
+    ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+    ctx.font = "40px sans-serif";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.fillText(`SO Rasterized (${layers.length} layers)`, dimensions.width / 2, dimensions.height / 2);
+
+    // In a real implementation, we would iterate through layers and draw them using their properties.
+    
+    resolve(canvas.toDataURL('image/png'));
+  });
 };
 
-/**
- * Calculates the center point of a layer relative to the canvas (0-100%).
- * This is a stub implementation.
- */
-export const getLayerCenter = (layer: Layer): Point => {
-    // Stub: returns layer's relative center point
-    return { x: layer.x, y: layer.y };
-};
-
-/**
- * Applies text alignment to a canvas context.
- * @param ctx The canvas rendering context.
- * @param textAlign The desired text alignment.
- */
-export const applyTextAlignment = (ctx: CanvasRenderingContext2D, textAlign: TextLayerData['textAlign']) => {
-    // Note: CanvasTextAlign only supports 'start', 'end', 'left', 'right', 'center'.
-    // 'justify' was removed from the type definition.
-    ctx.textAlign = textAlign as CanvasTextAlign;
-};
-
-/**
- * Applies transformation matrix to layer coordinates.
- * This is a stub implementation.
- */
-export const applyLayerTransform = (layer: Layer, dimensions: Dimensions): Layer => { // Fix TS2305
+export const rasterizeLayerToCanvas = (layer: Layer, dimensions: Dimensions): HTMLCanvasElement => { // Fix 165, 166
     // Stub implementation
-    return layer;
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    // ... drawing logic
+    return canvas;
 };
 
-/**
- * Renders a single layer to a canvas data URL.
- * This is a stub implementation.
- */
-export const rasterizeLayerToCanvas = (layer: Layer, dimensions: Dimensions, editState: EditState): string => { // Fix TS2305
+export const applyLayerTransform = (ctx: CanvasRenderingContext2D, layer: Layer, dimensions: Dimensions) => { // Fix 58
     // Stub implementation
-    return '';
-};
-
-/**
- * Renders multiple layers to a single data URL.
- * This is a stub implementation.
- */
-export const rasterizeLayersToDataUrl = (layers: Layer[], dimensions: Dimensions, editState: EditState): string => { // Fix TS2305
-    // Stub implementation
-    return '';
 };

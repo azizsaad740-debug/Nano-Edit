@@ -17,7 +17,6 @@ interface LayerItemProps {
   onToggleLayerLock: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
   isDragging: boolean;
-  onOpenSmartObjectEditor: (id: string) => void; // ADDED
 }
 
 const LayerIcon: React.FC<{ layer: Layer }> = ({ layer }) => {
@@ -43,7 +42,6 @@ export const LayerItem: React.FC<LayerItemProps> = ({
   onToggleLayerLock,
   renameLayer,
   isDragging,
-  onOpenSmartObjectEditor, // DESTRUCTURED
 }) => {
   const {
     attributes,
@@ -69,10 +67,6 @@ export const LayerItem: React.FC<LayerItemProps> = ({
   };
 
   const handleDoubleClick = () => {
-    if (isSmartObjectLayer(layer)) {
-      onOpenSmartObjectEditor(layer.id);
-      return;
-    }
     if (layer.id !== 'background' && !layer.isLocked) {
       setIsRenaming(true);
     }

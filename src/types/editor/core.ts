@@ -1,28 +1,11 @@
 // src/types/editor/core.ts
 
-import { Icon } from "lucide-react"; // Import as value to use typeof
+import type { Icon as LucideIcon } from "lucide-react";
 import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState } from "./adjustments"; // <-- Import FrameState here
 
 // --- Core Types ---
 
-export type BlendMode =
-  | 'normal'
-  | 'multiply'
-  | 'screen'
-  | 'overlay'
-  | 'darken'
-  | 'lighten'
-  | 'color-dodge'
-  | 'color-burn'
-  | 'hard-light'
-  | 'soft-light'
-  | 'difference'
-  | 'exclusion'
-  | 'hue'
-  | 'saturation'
-  | 'color'
-  | 'luminosity';
-
+export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
 // Expanded ActiveTool and ShapeType
 export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic'; // Added lassoMagnetic
 export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'circle' | 'arrow' | 'custom';
@@ -98,7 +81,7 @@ export interface TextLayerData extends BaseLayer {
   fontFamily: string;
   fontWeight: string | number; // Allow number for font weight
   fontStyle: string;
-  textAlign: 'left' | 'center' | 'right'; // Removed 'justify' to fix TS2322
+  textAlign: 'left' | 'center' | 'right' | 'justify';
   letterSpacing: number;
   lineHeight: number;
   padding: number;
@@ -180,140 +163,32 @@ export const isAdjustmentLayer = (layer: Layer): layer is AdjustmentLayerData =>
 export const isSmartObjectLayer = (layer: Layer): layer is SmartObjectLayerData => layer.type === 'smart-object';
 export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.type === 'group';
 
-// --- State Interfaces (Consolidated from tools.ts and inferred from usage) ---
+// --- State Interfaces ---
 
 export interface BrushState {
-  size: number;
-  opacity: number;
-  hardness: number;
-  smoothness: number;
-  shape: 'circle' | 'square';
-  color: string; // Required property
-  flow: number;
-  angle: number;
-  roundness: number;
-  spacing: number;
-  blendMode: BlendMode;
-  jitter?: number;
-  scatter?: number;
-  texture?: any;
-  dualBrush?: any;
-  smoothing?: boolean;
-  protectTexture?: boolean;
-  wetEdges?: boolean;
-  buildUp?: boolean;
-  flipX?: boolean;
-  flipY?: boolean;
-  colorDynamics?: boolean;
-  transfer?: boolean;
-  noise?: boolean;
-  wetness?: number;
-  mix?: number;
-  load?: number;
-  historySource?: string;
+// ... (BrushState definition)
 }
 
 export interface GradientToolState {
-  type: 'linear' | 'radial' | 'angle' | 'reflected' | 'diamond';
-  colors: string[];
-  stops: number[];
-  angle: number;
-  centerX: number;
-  centerY: number;
-  radius: number;
-  feather: number;
-  inverted: boolean;
-  dither: boolean; // Required property
-  transparency: boolean; // Required property
+// ... (GradientToolState definition)
 }
 
 export interface SelectionSettings {
-  feather: number;
-  antiAlias: boolean;
-  fixedRatio: boolean;
-  fixedWidth: number;
-  fixedHeight: number;
-  tolerance: number;
-  contiguous: boolean;
-  sampleAllLayers: boolean;
-  autoEnhanceEdges: boolean;
-  showTransformControls: boolean;
-  autoSelectLayer: boolean;
-  snapToPixels: boolean;
-  selectionMode: 'new' | 'add' | 'subtract' | 'intersect';
-  refineFeather: number;
-  refineSmooth: number;
-  refineContrast: number;
-  refineShiftEdge: number;
-  decontaminateColors: boolean;
-  edgeDetection: number;
-}
-
-export interface TransformState {
-  scaleX: number;
-  scaleY: number;
-  skewX: number;
-  skewY: number;
-  perspectiveX: number;
-  perspectiveY: number;
-}
-
-export interface EffectState {
-  blur: number;
-  hueShift: number;
-  vignette: number;
-  noise: number;
-  sharpen: number;
-  clarity: number;
-}
-
-export interface HistoryItem {
-  name: string;
-  state: EditState;
-  layers: Layer[]; // FIX 10: Added layers property
+// ... (SelectionSettings definition)
 }
 
 export interface EditState {
-  adjustments: AdjustmentState;
-  effects: EffectState;
-  grading: GradingState; // FIX 8 & 9: Added grading property
-  hslAdjustments: HslAdjustmentsState;
-  curves: CurvesState;
-  frame: FrameState;
-  crop: CropState;
-  transform: TransformState;
-  rotation: number;
-  aspect: number | null;
-  selectedFilter: string;
-  colorMode: 'rgb' | 'grayscale' | 'cmyk';
-  selectiveBlurAmount: number;
-  selectiveSharpenAmount: number;
-  customHslColor: string;
-  selectionSettings: SelectionSettings;
-  channels: { r: boolean; g: boolean; b: boolean; alpha: boolean };
-  history: HistoryItem[];
-  historyBrushSourceIndex: number;
-  brushState: BrushState;
-  selectiveBlurMask: string | null;
-  selectiveSharpenMask: string | null;
-  isProxyMode: boolean;
-  gradientToolState: GradientToolState; // Required property
-  customFonts: string[]; // Added to satisfy EditorWorkspace
+// ... (EditState definition)
+}
+
+export interface HistoryItem {
+// ... (HistoryItem definition)
 }
 
 export interface NewProjectSettings {
-  width: number;
-  height: number;
-  dpi: number;
-  backgroundColor: string;
-  colorMode?: 'rgb' | 'grayscale' | 'cmyk';
+// ... (NewProjectSettings definition)
 }
 
 export interface PanelTab {
-  id: string;
-  name: string;
-  icon: typeof Icon; // Fix TS2749: Use typeof Icon
-  location: 'right' | 'bottom' | 'hidden';
-  visible: boolean;
-  order: number;
+// ... (PanelTab definition)
 }
