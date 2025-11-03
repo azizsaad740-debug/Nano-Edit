@@ -1,11 +1,12 @@
 import { useCallback } from 'react';
 import type { Layer, EditState, HistoryItem, NewProjectSettings, ImageLayerData, DrawingLayerData, Dimensions } from '@/types/editor';
+import { isImageOrDrawingLayer } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
 import { loadProjectFromFile, ProjectFile } from '@/utils/projectUtils';
 import ExifReader from 'exifreader';
 import { initialLayerState } from '@/types/editor';
 import { v4 as uuidv4 } from 'uuid';
-import * as React from 'react'; // ADDED
+import * as React from 'react';
 
 export const useImageLoader = (
   setImage: (image: string | null) => void,
@@ -15,14 +16,14 @@ export const useImageLoader = (
   setLayers: (layers: Layer[]) => void,
   resetAllEdits: () => void,
   recordHistory: (name: string, state: EditState, layers: Layer[]) => void,
-  setCurrentEditState: React.Dispatch<React.SetStateAction<EditState>>, // FIX 11
+  setCurrentEditState: React.Dispatch<React.SetStateAction<EditState>>,
   currentEditState: EditState,
   initialEditState: EditState,
   initialLayerState: Layer[],
   setSelectedLayerId: (id: string | null) => void,
   clearSelectionState: () => void,
-  setHistory: React.Dispatch<React.SetStateAction<HistoryItem[]>>, // FIX 12
-  setCurrentHistoryIndex: React.Dispatch<React.SetStateAction<number>>, // FIX 12
+  setHistory: React.Dispatch<React.SetStateAction<HistoryItem[]>>,
+  setCurrentHistoryIndex: React.Dispatch<React.SetStateAction<number>>,
 ) => {
   const handleImageLoad = useCallback((file: File) => {
     if (file.name.endsWith(".nanoedit")) {
@@ -30,13 +31,35 @@ export const useImageLoader = (
       loadProjectFromFile(file)
         .then(projectData => {
           resetAllEdits();
+          
+          // 1. Restore core state from the current history entry
+          const currentEntry = projectData.history[projectData.currentHistoryIndex];
+          if (!currentEntry) throw new Error("Corrupted project history.");
+
+          // 2. Determine dimensions from the background layer in the restored state
+          const backgroundLayer = currentEntry.layers.find(l => l.id === 'background');
+          let restoredDimensions: Dimensions | null = null;
+          if (backgroundLayer) {
+            // Assuming background layer width/height are 100% relative to canvas dimensions
+            // We need to infer the original canvas dimensions if they were saved, but since they aren't, 
+            // we rely on the image data if available.
+            if (isImageOrDrawingLayer(backgroundLayer) && backgroundLayer.dataUrl) {
+              const img = new Image();
+              img.onload = () => {
+                setDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+              };
+              img.src = backgroundLayer.dataUrl;
+            }
+          }
+
           setImage(projectData.sourceImage);
           setFileInfo(projectData.fileInfo);
-          setLayers(projectData.history[projectData.currentHistoryIndex].layers); // Use layers from history entry
+          setLayers(currentEntry.layers);
           setHistory(projectData.history);
           setCurrentHistoryIndex(projectData.currentHistoryIndex);
-          setCurrentEditState(projectData.history[projectData.currentHistoryIndex].state);
-          setSelectedLayerId(projectData.history[projectData.currentHistoryIndex].layers[0]?.id || null); // Use layers from history entry
+          setCurrentEditState(currentEntry.state);
+          setSelectedLayerId(currentEntry.layers[0]?.id || null);
+          
           showSuccess(`Project "${file.name}" loaded successfully.`);
         })
         .catch(error => {
@@ -83,11 +106,12 @@ export const useImageLoader = (
           x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
         } as ImageLayerData;
 
-        setLayers([newBackgroundLayer]);
+        const newLayers = [newBackgroundLayer];
+        setLayers(newLayers);
         setSelectedLayerId('background');
 
         // 4. Record initial history state
-        recordHistory('Image Loaded', currentEditState, [newBackgroundLayer]);
+        recordHistory('Image Loaded', currentEditState, newLayers);
         showSuccess(`Image "${file.name}" loaded.`);
       };
       img.onerror = () => {
@@ -141,11 +165,12 @@ export const useImageLoader = (
       x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
     } as DrawingLayerData;
 
-    setLayers([newBackgroundLayer]);
+    const newLayers = [newBackgroundLayer];
+    setLayers(newLayers);
     setSelectedLayerId('background');
 
     // 4. Record initial history state
-    recordHistory('New Project Created', { ...currentEditState, colorMode: colorMode as EditState['colorMode'] }, [newBackgroundLayer]);
+    recordHistory('New Project Created', { ...currentEditState, colorMode: colorMode as EditState['colorMode'] }, newLayers);
     showSuccess(`New project created: ${width}x${height}.`);
   }, [resetAllEdits, setImage, setDimensions, setFileInfo, setExifData, setLayers, recordHistory, currentEditState, setCurrentEditState, setSelectedLayerId]);
 
