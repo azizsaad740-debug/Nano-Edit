@@ -1,5 +1,5 @@
 import React from 'react';
-import { isDefault, calculateLookupTable } from '@/utils/filterUtils'; // Import missing utilities
+import { isDefault, calculateLookupTable } from '@/utils/filterUtils';
 import type { CurvesState } from '@/types/editor';
 
 interface CurvesFilterProps {
@@ -7,19 +7,41 @@ interface CurvesFilterProps {
 }
 
 export const CurvesFilter: React.FC<CurvesFilterProps> = ({ curves }) => {
-  // Logic moved inside the component function
-  if (isDefault(curves.all) && isDefault(curves.r) && isDefault(curves.g) && isDefault(curves.b)) { // Fix 349-356
-    return null; // Fix 357
+  const isCurvesActive = !(isDefault(curves.all) && isDefault(curves.r) && isDefault(curves.g) && isDefault(curves.b));
+
+  if (!isCurvesActive) {
+    return null;
   }
 
-  const lutAll = calculateLookupTable(curves.all); // Fix 358, 359
-  const lutR = calculateLookupTable(curves.r); // Fix 360, 361
-  const lutG = calculateLookupTable(curves.g); // Fix 362, 363
-  const lutB = calculateLookupTable(curves.b); // Fix 364, 365
+  // Calculate LUTs (normalized 0-1 arrays)
+  const lutAll = calculateLookupTable(curves.all).join(' ');
+  const lutR = calculateLookupTable(curves.r).join(' ');
+  const lutG = calculateLookupTable(curves.g).join(' ');
+  const lutB = calculateLookupTable(curves.b).join(' ');
+
+  // Determine which LUT to use for each channel: channel-specific overrides 'all'
+  // If the channel-specific curve is default, use the 'all' curve.
+  const finalLutR = isDefault(curves.r) ? lutAll : lutR;
+  const finalLutG = isDefault(curves.g) ? lutAll : lutG;
+  const finalLutB = isDefault(curves.b) ? lutAll : lutB;
 
   return (
-    <filter id="curves-filter">
-      {/* ... filter implementation */}
-    </filter>
+    <svg width="0" height="0" style={{ position: 'absolute' }}>
+      <filter id="curves-filter">
+        <feComponentTransfer>
+          {/* Red Channel: Apply R curve, or All curve if R is default */}
+          <feFuncR type="table" tableValues={finalLutR} />
+          
+          {/* Green Channel: Apply G curve, or All curve if G is default */}
+          <feFuncG type="table" tableValues={finalLutG} />
+          
+          {/* Blue Channel: Apply B curve, or All curve if B is default */}
+          <feFuncB type="table" tableValues={finalLutB} />
+          
+          {/* Alpha Channel (unchanged) */}
+          <feFuncA type="identity" />
+        </feComponentTransfer>
+      </filter>
+    </svg>
   );
 };

@@ -44,7 +44,7 @@ export const getFilterString = (state: FilterState): string => {
  */
 export const isDefault = (value: Point[] | number): boolean => {
   if (Array.isArray(value)) {
-    // Stub check for curves: check if it's the default straight line
+    // Check for curves: check if it's the default straight line
     return value.length === 2 && value[0].x === 0 && value[0].y === 0 && value[1].x === 255 && value[1].y === 255;
   }
   return value === 0;
@@ -61,14 +61,42 @@ export const isDefaultHsl = (adj: HslAdjustment): boolean => {
 
 /**
  * Calculates a 256-entry lookup table (LUT) from a set of curve points.
- * (Stub implementation)
+ * The output values are normalized to the range [0, 1] for SVG feComponentTransfer.
  */
 export const calculateLookupTable = (points: Point[]): number[] => {
-  // In a real implementation, this would interpolate the curve points.
-  // For the stub, we return a straight line LUT if default, or a simple curve if not.
-  if (isDefault(points)) {
-    return Array.from({ length: 256 }, (_, i) => i);
+  const lut: number[] = [];
+  
+  // Sort points by X coordinate
+  const sortedPoints = points.slice().sort((a, b) => a.x - b.x);
+
+  for (let i = 0; i < 256; i++) {
+    let outputY = 0;
+    
+    // Find the segment (p1, p2) that contains the current input value i
+    for (let j = 0; j < sortedPoints.length - 1; j++) {
+      const p1 = sortedPoints[j];
+      const p2 = sortedPoints[j + 1];
+      
+      if (i >= p1.x && i <= p2.x) {
+        // Linear interpolation: y = y1 + (x - x1) * (y2 - y1) / (x2 - x1)
+        const x1 = p1.x;
+        const y1 = p1.y;
+        const x2 = p2.x;
+        const y2 = p2.y;
+        
+        if (x2 === x1) {
+          outputY = y1; 
+        } else {
+          outputY = y1 + (i - x1) * (y2 - y1) / (x2 - x1);
+        }
+        break;
+      }
+    }
+    
+    // Clamp output Y to [0, 255] and normalize to [0, 1]
+    const normalizedY = Math.min(255, Math.max(0, outputY)) / 255;
+    lut.push(normalizedY);
   }
-  // Simple stub: invert the curve if points are defined
-  return Array.from({ length: 256 }, (_, i) => Math.min(255, Math.max(0, 255 - i)));
+  
+  return lut;
 };
