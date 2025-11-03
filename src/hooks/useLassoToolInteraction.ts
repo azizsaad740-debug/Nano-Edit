@@ -34,7 +34,7 @@ export const useLassoToolInteraction = (props: UseLassoToolInteractionProps) => 
     try {
       const maskDataUrl = await polygonToMaskDataUrl(path, dimensions.width, dimensions.height);
       setSelectionMaskDataUrl(maskDataUrl);
-      setSelectionPath(path); // Keep path for visual feedback
+      setSelectionPath(null); // Clear path drawing once mask is set
       recordHistory(`Lasso Selection (${activeTool})`, currentEditState, layers);
       showSuccess("Selection created.");
     } catch (error) {
@@ -49,10 +49,11 @@ export const useLassoToolInteraction = (props: UseLassoToolInteractionProps) => 
   const handleDoubleClick = React.useCallback(async (e: MouseEvent) => {
     if (activeTool === 'lassoPoly' && selectionPath && selectionPath.length >= 3) {
       e.preventDefault();
+      // Use the current selectionPath to finalize the mask
       await handleSelectionComplete(selectionPath);
-      setSelectionPath(selectionPath); // Keep path visible
+      // handleSelectionComplete clears the path and sets the mask
     }
-  }, [activeTool, selectionPath, handleSelectionComplete, setSelectionPath]);
+  }, [activeTool, selectionPath, handleSelectionComplete]);
 
   React.useEffect(() => {
     document.addEventListener('dblclick', handleDoubleClick);

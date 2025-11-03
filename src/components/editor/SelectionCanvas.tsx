@@ -32,9 +32,16 @@ export const SelectionCanvas = ({
     const rect = imageRef.current.getBoundingClientRect();
     const scaleX = imageRef.current.naturalWidth / rect.width;
     const scaleY = imageRef.current.naturalHeight / rect.height;
+    
+    // Calculate coordinates relative to the image (in image pixels)
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
+
+    // Clamp to image boundaries
+    const dimensions = { width: imageRef.current.naturalWidth, height: imageRef.current.naturalHeight };
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: Math.max(0, Math.min(dimensions.width, x)),
+      y: Math.max(0, Math.min(dimensions.height, y)),
     };
   }, [imageRef]);
 
@@ -58,9 +65,6 @@ export const SelectionCanvas = ({
     // If polygonal lasso is active and not finalized, draw the live segment
     if (activeTool === 'lassoPoly' && livePoint) {
       ctx.lineTo(livePoint.x, livePoint.y);
-    } else if (activeTool === 'lassoPoly' && path.length >= 3) {
-      // If finalized (mask is set), close the loop visually
-      ctx.lineTo(path[0].x, path[0].y);
     } else if (activeTool === 'lasso') {
       // Freehand lasso closes the loop
       ctx.closePath();
@@ -90,7 +94,7 @@ export const SelectionCanvas = ({
     }
 
     ctx.restore();
-  }, [selectionPath, livePoint, activeTool]);
+  }, [livePoint, activeTool]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -120,8 +124,9 @@ export const SelectionCanvas = ({
     if (!coords) return;
     isDrawingRef.current = true;
     pathRef.current = [coords];
-    onSelectionComplete([]); // Clear existing selection visually
-  }, [getCoords, onSelectionComplete, activeTool]);
+    // We don't clear selectionPath here, as it might hold a previous selection mask.
+    // The parent component handles clearing the mask if a new selection starts.
+  }, [getCoords, activeTool]);
 
   const draw = React.useCallback((e: MouseEvent) => {
     if (activeTool === 'lasso' && isDrawingRef.current) {
@@ -152,6 +157,7 @@ export const SelectionCanvas = ({
       ctx.strokeStyle = "rgba(255, 255, 255, 1)";
       ctx.lineWidth = 1;
       ctx.stroke();
+      
     } else if (activeTool === 'lassoPoly' && selectionPath && selectionPath.length > 0) {
       // Polygonal lasso live segment tracking
       const coords = getCoords(e);
@@ -173,6 +179,7 @@ export const SelectionCanvas = ({
     const canvas = canvasRef.current;
     if (!canvas || !imageRef.current) return;
 
+    // Set canvas dimensions to the natural size of the image
     canvas.width = imageRef.current.naturalWidth;
     canvas.height = imageRef.current.naturalHeight;
 
