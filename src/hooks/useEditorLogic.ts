@@ -183,7 +183,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
             return { ...layer, ...updates } as Layer;
           }
           if (layer.type === 'group' && layer.children) {
-            return { ...layer, children: updateRecursive(layer.children) } as Layer;
+            return { ...layer, children: updateRecursive(layer.children, id, updates) } as Layer;
           }
           return layer;
         });
@@ -387,7 +387,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleReorder: onLayerReorder, findLayer, onSelectLayer, // NEW
   } = useLayers({
-    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool // PASSED activeTool
+    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool
   });
   
   const handleLayerDelete = useCallback(() => {
@@ -419,6 +419,11 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame({ currentEditState, updateCurrentState, recordHistory: recordHistoryApi, layers });
   const { presets, savePreset, deletePreset } = usePresets(); // FIX 6: Use deletePreset
   const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // FIX 7: Use deleteGradientPreset
+  
+  // NEW: Channels and Selective Retouching
+  const { channels, onChannelChange: onChannelChangeLogic, applyPreset: applyChannelsPreset } = useChannels({ currentEditState, updateCurrentState, recordHistory: recordHistoryApi, layers });
+  const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset: applySelectiveRetouchPreset, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit } = useSelectiveRetouch(currentEditState, updateCurrentState, recordHistoryApi, layers, dimensions);
+
 
   const handleSavePresetCommit = useCallback((name: string) => {
     savePreset(name, currentEditState, layers);

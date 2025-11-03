@@ -9,16 +9,16 @@ interface UseChannelsProps {
 }
 
 export const useChannels = ({ currentEditState, updateCurrentState, recordHistory, layers }: UseChannelsProps) => {
-  const channels = currentEditState.channels; // FIX 1
+  const channels = currentEditState.channels;
 
   const onChannelChange = useCallback((channel: 'r' | 'g' | 'b', value: boolean) => {
-    updateCurrentState({ channels: { ...channels, [channel]: value } }); // FIX 2
+    updateCurrentState({ channels: { ...channels, [channel]: value } });
     recordHistory(`Toggle Channel ${channel.toUpperCase()}`, currentEditState, layers);
   }, [channels, updateCurrentState, recordHistory, currentEditState, layers]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
-    if (state.channels) { // FIX 3
-      updateCurrentState({ channels: state.channels }); // FIX 4, 5
+    if (state.channels) {
+      updateCurrentState({ channels: state.channels });
     }
     recordHistory("Applied Channel Preset", currentEditState, layers);
   }, [currentEditState, layers, recordHistory, updateCurrentState]);
