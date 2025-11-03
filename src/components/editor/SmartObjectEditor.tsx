@@ -10,6 +10,9 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { showError, showSuccess } from "@/utils/toast";
 import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { v4 as uuidv4 } from 'uuid';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { SmartObjectPropertiesPanel } from "./SmartObjectPropertiesPanel";
+import type { GradientPreset } from "@/hooks/useGradientPresets";
 
 interface SmartObjectEditorProps {
   layerId: string;
@@ -31,6 +34,13 @@ interface SmartObjectEditorProps {
   setFileInfo: (info: { name: string; size: number } | null) => void;
   setSelectedLayerId: (id: string | null) => void;
   selectedLayerId: string | null;
+  // ADDED PROPS:
+  systemFonts: string[];
+  customFonts: string[];
+  onOpenFontManager: () => void;
+  gradientPresets: GradientPreset[];
+  onSaveGradientPreset: (name: string, state: GradientToolState) => void;
+  onDeleteGradientPreset: (name: string) => void;
 }
 
 export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
@@ -53,6 +63,13 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   setFileInfo,
   setSelectedLayerId,
   selectedLayerId: globalSelectedLayerId,
+  // ADDED DESTRUCTURED PROPS:
+  systemFonts,
+  customFonts,
+  onOpenFontManager,
+  gradientPresets,
+  onSaveGradientPreset,
+  onDeleteGradientPreset,
 }) => {
   const smartObjectLayer = globalLayers.find(l => l.id === layerId);
   const [internalLayers, setInternalLayers] = React.useState<Layer[]>(smartObjectLayer?.type === 'smart-object' ? smartObjectLayer.smartObjectData.layers : []);
@@ -182,7 +199,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   };
 
   const handleUpdateInternalLayer = (id: string, updates: Partial<Layer>) => {
-    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } as Layer : l)); // Fixed type casting issue
+    setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } as Layer : l));
   };
   
   const handleCommitInternalLayer = (id: string) => {
@@ -209,6 +226,11 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  
+  const internalSelectedLayer = React.useMemo(() => 
+    internalLayers.find(l => l.id === internalSelectedLayerId), 
+    [internalLayers, internalSelectedLayerId]
   );
 
   if (smartObjectLayer?.type !== 'smart-object') {
@@ -237,27 +259,57 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
             {/* Placeholder for tools panel */}
           </div>
 
-          {/* Center Panel: Workspace */}
-          <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-muted/50">
-            <div
-              ref={smartObjectWorkspaceRef}
-              className="relative shadow-xl bg-background border border-border"
-              style={{ width: '80%', height: '80%', maxWidth: '1000px', maxHeight: '800px' }}
-            >
-              <SmartObjectWorkspace
-                layers={internalLayers}
-                parentDimensions={dimensions}
-                containerRef={smartObjectWorkspaceRef}
-                onUpdate={handleUpdateInternalLayer}
-                onCommit={handleCommitInternalLayer}
-                selectedLayerId={internalSelectedLayerId}
-                activeTool={null} // Tools disabled in SO editor stub
-                globalSelectedLayerId={globalSelectedLayerId}
-                zoom={1}
-                setSelectedLayerId={setInternalSelectedLayerId}
-              />
-            </div>
-          </div>
+          {/* Main Content Area (Workspace + Properties) */}
+          <ResizablePanelGroup direction="horizontal" className="flex-1">
+            {/* Workspace */}
+            <ResizablePanel defaultSize={internalSelectedLayer ? 70 : 100} minSize={50}>
+              <div className="w-full h-full relative overflow-hidden flex items-center justify-center bg-muted/50">
+                <div
+                  ref={smartObjectWorkspaceRef}
+                  className="relative shadow-xl bg-background border border-border"
+                  style={{ width: '80%', height: '80%', maxWidth: '1000px', maxHeight: '800px' }}
+                >
+                  <SmartObjectWorkspace
+                    layers={internalLayers}
+                    parentDimensions={dimensions}
+                    containerRef={smartObjectWorkspaceRef}
+                    onUpdate={handleUpdateInternalLayer}
+                    onCommit={handleCommitInternalLayer}
+                    selectedLayerId={internalSelectedLayerId}
+                    activeTool={null} // Tools disabled in SO editor stub
+                    globalSelectedLayerId={globalSelectedLayerId}
+                    zoom={1}
+                    setSelectedLayerId={setInternalSelectedLayerId}
+                  />
+                </div>
+              </div>
+            </ResizablePanel>
+
+            {/* Properties Panel (Conditional) */}
+            {internalSelectedLayer && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={30} minSize={20} maxSize={50} className="min-w-[250px]">
+                  <ScrollArea className="h-full">
+                    <div className="p-4">
+                      <SmartObjectPropertiesPanel
+                        selectedLayer={internalSelectedLayer}
+                        onLayerUpdate={handleUpdateInternalLayer}
+                        onLayerCommit={handleCommitInternalLayer}
+                        systemFonts={systemFonts}
+                        customFonts={customFonts}
+                        onOpenFontManager={onOpenFontManager}
+                        gradientToolState={gradientToolState}
+                        gradientPresets={gradientPresets}
+                        onSaveGradientPreset={onSaveGradientPreset}
+                        onDeleteGradientPreset={onDeleteGradientPreset}
+                      />
+                    </div>
+                  </ScrollArea>
+                </ResizablePanel>
+              </>
+            )}
+          </ResizablePanelGroup>
 
           {/* Right Panel: Layers */}
           <div className="w-64 border-l flex flex-col">

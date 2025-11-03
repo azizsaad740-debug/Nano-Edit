@@ -425,6 +425,13 @@ const Index: React.FC = () => {
             setFileInfo={logic.setFileInfo}
             setSelectedLayerId={logic.setSelectedLayerId}
             selectedLayerId={logic.selectedLayerId}
+            // ADDED PROPS:
+            systemFonts={logic.systemFonts}
+            customFonts={logic.customFonts}
+            onOpenFontManager={logic.onOpenFontManager}
+            gradientPresets={logic.gradientPresets}
+            onSaveGradientPreset={logic.onSaveGradientPreset}
+            onDeleteGradientPreset={logic.onDeleteGradientPreset}
           />
         )}
         {/* Hidden File Input for Desktop */}
