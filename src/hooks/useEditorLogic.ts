@@ -55,6 +55,7 @@ import { copyImageToClipboard } from '@/utils/imageUtils';
 import { isImageOrDrawingLayer } from '@/types/editor';
 import { useEditorCore } from "./useEditorCore";
 import { extensionManager } from "@/core/ExtensionManager";
+import { useLassoToolInteraction } from './useLassoToolInteraction';
 
 export const useEditorLogic = (props: any) => {
   const core = useEditorCore();
@@ -214,6 +215,13 @@ export const useEditorLogic = (props: any) => {
     setIsGenerateOpen,
     setIsGenerativeFillOpen,
   );
+  
+  // Lasso Tool Interaction (for handling selection completion)
+  const { handleSelectionComplete } = useLassoToolInteraction({
+    activeTool, workspaceRef, imageContainerRef: imgRef, zoom: workspaceZoom, dimensions, 
+    selectionPath, setSelectionPath, setSelectionMaskDataUrl, 
+    recordHistory, currentEditState, layers, imgRef
+  });
 
   // --- Xtra AI Result Handlers ---
   
@@ -514,5 +522,8 @@ export const useEditorLogic = (props: any) => {
     
     // Extension Manager (for Admin Panel)
     extensionManager,
+    
+    // Lasso handler
+    handleSelectionComplete,
   };
 };

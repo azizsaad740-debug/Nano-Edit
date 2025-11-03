@@ -49,7 +49,7 @@ import { useSelectionBrushToolInteraction } from '@/hooks/useSelectionBrushToolI
 import { useQuickSelectToolInteraction } from '@/hooks/useQuickSelectToolInteraction';
 import { usePaintBucketToolInteraction } from '@/hooks/usePaintBucketToolInteraction';
 import { LiveBrushCanvas } from './LiveBrushCanvas';
-import { isDefaultHsl, isDefault } from '@/utils/filterUtils'; // FIX 2, 3
+import { isDefaultHsl, isDefault } from '@/utils/filterUtils';
 
 interface EditorWorkspaceProps {
   workspaceRef: React.RefObject<HTMLDivElement>;
@@ -112,6 +112,7 @@ interface EditorWorkspaceProps {
   addTextLayer: (coords: Point, color: string) => void; // ADDED
   addShapeLayer: (coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => void; // ADDED
   selectedShapeType: ShapeType | null; // ADDED
+  handleSelectionComplete: (path: Point[]) => void; // <-- ADDED
 }
 
 // Helper component to render layers recursively
@@ -225,14 +226,14 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
   useMoveToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectedLayerId: props.selectedLayerId, updateLayer: props.updateLayer, commitLayerChange: props.commitLayerChange, layers: props.layers });
   useGradientToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, gradientStart: props.gradientStart, gradientCurrent: props.gradientCurrent, setGradientStart: props.setGradientStart, setGradientCurrent: props.setGradientCurrent, addGradientLayer: props.addGradientLayer });
   useMarqueeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, marqueeStart: props.marqueeStart, marqueeCurrent: props.marqueeCurrent, setMarqueeStart: props.setMarqueeStart, setMarqueeCurrent: props.setMarqueeCurrent, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers, imgRef: props.imgRef }); // ADDED imgRef
-  useLassoToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectionPath: props.selectionPath, setSelectionPath: props.setSelectionPath, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
+  useLassoToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, selectionPath: props.selectionPath, setSelectionPath: props.setSelectionPath, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers, imgRef: props.imgRef }); // ADDED imgRef
   useEyedropperToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setForegroundColor: props.setForegroundColor });
   useTextToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addTextLayer: props.addTextLayer, foregroundColor: props.foregroundColor });
   useShapeToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, addShapeLayer: props.addShapeLayer, selectedShapeType: props.selectedShapeType });
   useZoomToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, handleZoomIn: props.handleZoomIn, handleZoomOut: props.handleZoomOut });
   useHandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom });
-  useMagicWandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
-  useObjectSelectToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers });
+  useMagicWandToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers, imgRef: props.imgRef }); // ADDED imgRef
+  useObjectSelectToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setSelectionMaskDataUrl: props.setSelectionMaskDataUrl, recordHistory: props.recordHistory, currentEditState: props.currentEditState, layers: props.layers, imgRef: props.imgRef }); // ADDED imgRef
   useCloneStampToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions, setCloneSourcePoint: props.setCloneSourcePoint, cloneSourcePoint: props.cloneSourcePoint });
   usePatternStampToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions });
   useArtHistoryBrushToolInteraction({ activeTool: props.activeTool, workspaceRef: props.workspaceRef, imageContainerRef, zoom: props.workspaceZoom, dimensions: props.dimensions });
@@ -389,9 +390,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
         {isLassoActive && props.dimensions && (
           <SelectionCanvas
             imageRef={props.imgRef}
-            onSelectionComplete={(path) => {
-              // This is handled by the LassoToolInteraction hook, but we keep the component here
-            }}
+            onSelectionComplete={props.handleSelectionComplete}
             selectionPath={props.selectionPath}
             activeTool={props.activeTool as 'lasso' | 'lassoPoly'}
           />
@@ -429,7 +428,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
         <WorkspaceControls
           zoom={props.workspaceZoom}
           onZoomIn={props.handleZoomIn}
-          onZoomOut={props.handleZoomOut}
+          onZoomOut={props.onZoomOut}
           onFitScreen={props.handleFitScreen}
         />
       </div>
