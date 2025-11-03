@@ -1,4 +1,4 @@
-import type { Layer, EditState, Dimensions, ImageLayerData, DrawingLayerData } from '@/types/editor';
+import type { Layer, EditState, Dimensions, ImageLayerData, DrawingLayerData, BrushState } from '@/types/editor';
 import { isImageOrDrawingLayer } from '@/types/editor';
 import { applyLayerTransform } from './layerUtils';
 import { showError, showSuccess } from '@/utils/toast';
@@ -104,4 +104,64 @@ export const copyImageToClipboard = async (base64Image: string): Promise<void> =
         throw new Error("Failed to copy image data.");
     }
   }
+};
+
+/**
+ * Merges a stroke (drawing/stamp/history) onto a target layer's data URL.
+ *
+ * @param baseDataUrl The existing content of the layer.
+ * @param strokeDataUrl The stroke data (white/color on transparent background).
+ * @param dimensions The dimensions of the canvas.
+ * @param brushState The current brush state (for blend mode, opacity).
+ * @param isEraser If true, uses 'destination-out' composite operation.
+ * @returns A Promise resolving to the new merged data URL.
+ */
+export const mergeStrokeOntoLayer = async (
+  baseDataUrl: string,
+  strokeDataUrl: string,
+  dimensions: Dimensions,
+  brushState: BrushState,
+  isEraser: boolean
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = dimensions.width;
+    canvas.height = dimensions.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return reject(new Error("Failed to get canvas context."));
+
+    const baseImg = new Image();
+    baseImg.crossOrigin = "anonymous";
+    baseImg.onload = () => {
+      // 1. Draw the existing layer content
+      ctx.drawImage(baseImg, 0, 0, dimensions.width, dimensions.height);
+
+      const strokeImg = new Image();
+      strokeImg.crossOrigin = "anonymous";
+      strokeImg.onload = () => {
+        ctx.save();
+        
+        // 2. Set global properties based on brush state
+        ctx.globalAlpha = (brushState.opacity / 100) * (brushState.flow / 100);
+        
+        if (isEraser) {
+          ctx.globalCompositeOperation = 'destination-out';
+        } else {
+          // Use the brush blend mode for drawing/stamping/history
+          ctx.globalCompositeOperation = brushState.blendMode as GlobalCompositeOperation || 'source-over';
+        }
+        
+        // 3. Draw the stroke (which contains the content/mask)
+        ctx.drawImage(strokeImg, 0, 0, dimensions.width, dimensions.height);
+        
+        ctx.restore();
+        
+        resolve(canvas.toDataURL());
+      };
+      strokeImg.onerror = () => reject(new Error("Failed to load stroke image."));
+      strokeImg.src = strokeDataUrl;
+    };
+    baseImg.onerror = () => reject(new Error("Failed to load base image."));
+    baseImg.src = baseDataUrl;
+  });
 };

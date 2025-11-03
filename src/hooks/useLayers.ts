@@ -8,7 +8,8 @@ import {
   type EditState, type Point, type AdjustmentLayerData, type AdjustmentState,
 } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
-import { invertMaskDataUrl } from '@/utils/maskUtils'; // Import utility
+import { invertMaskDataUrl, mergeMasks } from '@/utils/maskUtils'; // Import utility
+import { mergeStrokeOntoLayer } from '@/utils/imageUtils'; // NEW IMPORT
 
 interface UseLayersProps {
     layers: Layer[];
@@ -311,11 +312,6 @@ export const useLayers = ({
     }
   }, [selectedLayerIds, recordHistory, currentEditState, layers]);
   
-  const addDrawingLayer = useCallback((coords: Point, dataUrl: string) => {
-    showError("Add Drawing Layer is a stub.");
-    return uuidv4(); // Return a dummy ID
-  }, []);
-  
   const onAddLayerFromBackground = useCallback(() => {
     showError("Add Layer From Background is a stub.");
   }, []);
@@ -393,17 +389,81 @@ export const useLayers = ({
     recordHistory(`Apply Selection as Mask to ${findLayer(targetId)?.name}`, currentEditState, layers);
   }, [selectedLayerIds, selectionMaskDataUrl, updateLayer, clearSelectionState, recordHistory, currentEditState, layers, findLayer]);
   
-  const handleDrawingStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
-    showError("Drawing stroke end is a stub.");
-  }, []);
-  
-  const handleSelectionBrushStrokeEnd = useCallback((strokeDataUrl: string, operation: 'add' | 'subtract') => {
-    showError("Selection brush stroke end is a stub.");
-  }, []);
-  
-  const handleHistoryBrushStrokeEnd = useCallback((strokeDataUrl: string, layerId: string) => {
-    showError("History brush stroke end is a stub.");
-  }, []);
+  const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    if (!dimensions) return;
+    const targetLayer = findLayer(layerId);
+    if (!targetLayer || !isDrawingLayer(targetLayer)) {
+      showError("Cannot draw: target layer is not a drawing layer.");
+      return;
+    }
+    
+    const isEraser = currentEditState.activeTool === 'eraser';
+    
+    try {
+      const newLayerDataUrl = await mergeStrokeOntoLayer(
+        targetLayer.dataUrl,
+        strokeDataUrl,
+        dimensions,
+        currentEditState.brushState,
+        isEraser
+      );
+      
+      updateLayer(layerId, { dataUrl: newLayerDataUrl });
+      recordHistory(`${isEraser ? 'Erase' : 'Draw'} on ${targetLayer.name}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge drawing stroke:", error);
+      showError("Failed to apply drawing stroke.");
+    }
+  }, [dimensions, findLayer, currentEditState.activeTool, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
+
+  const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+    if (!dimensions) return;
+    
+    try {
+      const existingMask = selectionMaskDataUrl || '';
+      const newMaskDataUrl = await mergeMasks(
+        existingMask,
+        strokeDataUrl,
+        dimensions,
+        operation
+      );
+      
+      setSelectionMaskDataUrl(newMaskDataUrl);
+      recordHistory(`Selection Brush: ${operation}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge selection brush stroke:", error);
+      showError("Failed to update selection mask.");
+    }
+  }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
+
+  const handleHistoryBrushStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    if (!dimensions) return;
+    const targetLayer = findLayer(layerId);
+    if (!targetLayer || !isDrawingLayer(targetLayer)) {
+      showError("Cannot use History Brush: target layer is not a drawing layer.");
+      return;
+    }
+    
+    // History brush uses the strokeDataUrl as a mask to reveal the historical image.
+    // The LiveBrushCanvas already handles drawing the historical image content onto the strokeDataUrl.
+    // We need to merge this stroke (which contains the historical content) onto the current layer.
+    
+    try {
+      const newLayerDataUrl = await mergeStrokeOntoLayer(
+        targetLayer.dataUrl,
+        strokeDataUrl,
+        dimensions,
+        currentEditState.brushState,
+        false // Not an eraser operation
+      );
+      
+      updateLayer(layerId, { dataUrl: newLayerDataUrl });
+      recordHistory(`History Brush applied to ${targetLayer.name}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge history brush stroke:", error);
+      showError("Failed to apply history brush stroke.");
+    }
+  }, [dimensions, findLayer, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
   
   const handleReorder = useCallback((activeId: string, overId: string) => {
     const oldIndex = layers.findIndex(l => l.id === activeId);
