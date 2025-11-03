@@ -77,6 +77,7 @@ interface BottomPanelProps {
   reorderPanelTabs: (activeId: string, overId: string, newLocation: 'right' | 'bottom') => void;
   activeBottomTab: string;
   setActiveBottomTab: (id: string) => void;
+  isGuest: boolean; // NEW
 }
 
 const BottomPanel: React.FC<BottomPanelProps> = (props) => {
@@ -138,6 +139,7 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
             onImageResult={props.onImageResult}
             onMaskResult={props.onMaskResult}
             onOpenSettings={props.onOpenSettings}
+            isGuest={props.isGuest} // PASSED
           />
         );
       case 'info':

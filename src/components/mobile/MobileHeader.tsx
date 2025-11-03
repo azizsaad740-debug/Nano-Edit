@@ -90,7 +90,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
               New from Clipboard (Stub)
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onSaveProject} disabled={!hasImage}>
+            <DropdownMenuItem onClick={onSaveProject} disabled={!hasImage || isGuest}>
               <Save className="h-4 w-4 mr-2" />
               Save Project (.nanoedit) (Stub)
             </DropdownMenuItem>

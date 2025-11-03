@@ -31,9 +31,10 @@ interface MobileToolOptionsProps {
   onSaveGradientPreset: () => void;
   onOpenSettings: () => void;
   onOpenSmartObject: (id: string) => void;
+  isGuest: boolean; // NEW
 }
 
-const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic, onOpenFontManager, onSavePreset, onSaveGradientPreset, onOpenSettings, onOpenSmartObject }) => {
+const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic, onOpenFontManager, onSavePreset, onSaveGradientPreset, onOpenSettings, onOpenSmartObject, isGuest }) => {
   const navigate = useNavigate();
   
   const renderContent = () => {
@@ -202,6 +203,7 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
             onImageResult={logic.handleGenerateImage}
             onMaskResult={logic.handleMaskResult} // Pass the actual handler
             onOpenSettings={onOpenSettings}
+            isGuest={isGuest} // PASSED
           />
         );
       case 'history':
@@ -286,5 +288,3 @@ const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic,
     </ScrollArea>
   );
 };
-
-export default MobileToolOptions;

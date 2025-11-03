@@ -20,6 +20,7 @@ interface GenerateImageDialogProps {
   onGenerate: (resultUrl: string) => void;
   apiKey: string;
   imageNaturalDimensions: { width: number; height: number } | null; // Added imageNaturalDimensions prop
+  isGuest: boolean; // NEW
 }
 
 export const GenerateImageDialog = ({
@@ -28,10 +29,15 @@ export const GenerateImageDialog = ({
   onGenerate,
   apiKey,
   imageNaturalDimensions, // Destructure imageNaturalDimensions
+  isGuest, // DESTRUCTURED
 }: GenerateImageDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
 
   const handleGenerate = async () => {
+    if (isGuest) {
+      showError("Please sign in to use generative AI.");
+      return;
+    }
     if (!apiKey) {
       showError("Please set your API key in Settings first.");
       return;
@@ -94,7 +100,7 @@ export const GenerateImageDialog = ({
           />
         </div>
         <DialogFooter>
-          <Button onClick={handleGenerate}>Generate</Button>
+          <Button onClick={handleGenerate} disabled={isGuest}>Generate</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

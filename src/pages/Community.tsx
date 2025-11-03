@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { fetchCommunityTemplates } from "@/utils/templateApi";
 import type { CommunityTemplate } from "../types/template";
+import { TemplateCard } from "@/components/community/TemplateCard";
+import { showError, showSuccess } from "@/utils/toast";
 
 export const Community: React.FC = () => {
   const [templates, setTemplates] = useState<CommunityTemplate[]>([]);
@@ -20,27 +22,31 @@ export const Community: React.FC = () => {
     };
     loadTemplates();
   }, []);
+  
+  const handleSelectTemplate = (template: CommunityTemplate) => {
+    // Stub: In a real app, this would trigger the WASM/Worker pipeline
+    showSuccess(`Template "${template.name}" selected. Loading pipeline... (Stub)`);
+    // Redirect back to editor or trigger loading process
+  };
 
   if (loading) {
     return <div className="p-8">Loading templates...</div>;
   }
 
   return (
-    <div className="p-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {templates.map(template => (
-        <Card key={template.id}>
-          <CardHeader>
-            <CardTitle>{template.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{template.description}</p>
-            {/* Placeholder for template preview */}
-            <div className="mt-4 h-40 bg-muted flex items-center justify-center">
-              Template Preview
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="min-h-screen bg-background p-8">
+      <div className="max-w-6xl mx-auto">
+        <h1 className="text-4xl font-bold mb-8">Community Templates (Freepik Integration Stub)</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {templates.map(template => (
+            <TemplateCard 
+              key={template.id} 
+              template={template} 
+              onSelect={handleSelectTemplate} 
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 };

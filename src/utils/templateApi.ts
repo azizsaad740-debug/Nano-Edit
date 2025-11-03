@@ -29,7 +29,9 @@ const template2: TemplateProjectData = {
 export const fetchCommunityTemplates = async (): Promise<CommunityTemplate[]> => {
     // Stub implementation
     return [
-        { id: 't1', name: 'Template 1', description: 'A high contrast template.', previewUrl: '', data: template1 },
-        { id: 't2', name: 'Template 2', description: 'A grayscale template.', previewUrl: '', data: template2 },
+        { id: 't1', name: 'Social Media Post', description: 'A high contrast template for Instagram.', previewUrl: 'https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=800&q=80', data: template1 },
+        { id: 't2', name: 'Print Flyer', description: 'A grayscale template for print media.', previewUrl: 'https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?w=800&q=80', data: template2 },
+        { id: 't3', name: 'Web Banner Ad', description: 'Modern design for web advertising.', previewUrl: 'https://images.unsplash.com/photo-1542228263-4d5345cf082f?w=800&q=80', data: template1 },
+        { id: 't4', name: 'E-commerce Product Shot', description: 'Clean layout for product display.', previewUrl: 'https://images.unsplash.com/photo-1472491235688-bdc81a63246e?w=800&q=80', data: template2 },
     ];
 };

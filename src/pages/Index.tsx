@@ -28,12 +28,15 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { showError } from "@/utils/toast";
 import { LayersPanel } from "@/components/editor/LayersPanel"; // Import the actual LayersPanel
+import { useSession } from "../integrations/supabase/session-provider"; // ADDED
 
 const Index: React.FC = () => {
   const logic = useEditorLogic({});
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  const { isGuest } = useSession(); // ADDED
 
   // State for dialogs
   const [isNewProjectOpen, setIsNewProjectOpen] = React.useState(false);
@@ -158,6 +161,7 @@ const Index: React.FC = () => {
             onSaveGradientPreset={handleSaveGradientPreset}
             onOpenSettings={() => setIsSettingsOpen(true)}
             onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
+            isGuest={isGuest} // ADDED
           />
           <MobileBottomNav
             activeTab={mobileActiveTab}
@@ -303,6 +307,7 @@ const Index: React.FC = () => {
                         reorderPanelTabs={logic.reorderPanelTabs}
                         activeBottomTab={logic.activeBottomTab}
                         setActiveBottomTab={logic.setActiveBottomTab}
+                        isGuest={isGuest} // ADDED
                       />
                     </ResizablePanel>
                   </>
@@ -343,6 +348,7 @@ const Index: React.FC = () => {
                   onSelectiveSharpenAmountCommit={logic.onSelectiveSharpenAmountCommit}
                   onUndo={logic.undo}
                   onRedo={logic.redo}
+                  isGuest={isGuest} // ADDED
                 />
               </ResizablePanel>
             )}
@@ -360,6 +366,7 @@ const Index: React.FC = () => {
           onGenerate={logic.handleGenerateImage} 
           apiKey={logic.geminiApiKey} 
           imageNaturalDimensions={logic.dimensions}
+          isGuest={isGuest} // ADDED
         />
         <GenerativeDialog
           open={isGenerativeFillOpen}
@@ -370,6 +377,7 @@ const Index: React.FC = () => {
           selectionPath={logic.selectionPath}
           selectionMaskDataUrl={logic.selectionMaskDataUrl}
           imageNaturalDimensions={logic.dimensions}
+          isGuest={isGuest} // ADDED
         />
         <ProjectSettingsDialog
           open={isProjectSettingsOpen}

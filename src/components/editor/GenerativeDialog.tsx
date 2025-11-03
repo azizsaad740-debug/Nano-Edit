@@ -24,6 +24,7 @@ interface GenerativeDialogProps {
   selectionPath: Point[] | null;
   selectionMaskDataUrl: string | null; // New prop
   imageNaturalDimensions: { width: number; height: number } | null; // New prop
+  isGuest: boolean; // NEW
 }
 
 export const GenerativeDialog = ({
@@ -35,11 +36,16 @@ export const GenerativeDialog = ({
   selectionPath,
   selectionMaskDataUrl, // Destructure new prop
   imageNaturalDimensions, // Destructure new prop
+  isGuest, // DESTRUCTURED
 }: GenerativeDialogProps) => {
   const [prompt, setPrompt] = React.useState("");
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
 
   const handleGenerate = async () => {
+    if (isGuest) {
+      showError("Please sign in to use generative AI.");
+      return;
+    }
     if (!apiKey) {
       showError("Please set your API key in Settings first.");
       return;
@@ -134,7 +140,7 @@ export const GenerativeDialog = ({
           )}
         </div>
         <DialogFooter>
-          <Button onClick={handleGenerate}>Generate</Button>
+          <Button onClick={handleGenerate} disabled={isGuest}>Generate</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

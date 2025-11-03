@@ -13,6 +13,7 @@ interface XtraAiPanelProps {
   onImageResult: (resultUrl: string, historyName: string) => void;
   onMaskResult: (maskDataUrl: string, historyName: string) => void;
   onOpenSettings: () => void;
+  isGuest: boolean; // NEW
 }
 
 interface AiFeature {
@@ -38,10 +39,15 @@ const XtraAiPanel: React.FC<XtraAiPanelProps> = ({
   onImageResult,
   onMaskResult,
   onOpenSettings,
+  isGuest, // DESTRUCTURED
 }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleAiFeatureCall = async (feature: AiFeature) => {
+    if (isGuest) {
+      showError("Please sign in to use AI tools.");
+      return;
+    }
     if (!hasImage || !base64Image || !dimensions) {
       showError("Please load an image first.");
       return;
@@ -103,6 +109,12 @@ const XtraAiPanel: React.FC<XtraAiPanelProps> = ({
         <Zap className="h-4 w-4" /> Xtra AI Features
       </h3>
       
+      {isGuest && (
+        <div className="p-3 bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md text-sm dark:bg-yellow-900/30 dark:text-yellow-300">
+          Please sign in to use advanced AI features.
+        </div>
+      )}
+      
       <div className="grid grid-cols-2 gap-3">
         {aiFeatures.map((feature) => (
           <Button
@@ -111,7 +123,7 @@ const XtraAiPanel: React.FC<XtraAiPanelProps> = ({
             size="sm"
             className="h-16 flex flex-col items-start justify-center text-left p-2"
             onClick={() => handleAiFeatureCall(feature)}
-            disabled={isLoading || !hasImage}
+            disabled={isLoading || !hasImage || isGuest}
           >
             <feature.icon className="h-4 w-4 mb-1 text-primary" />
             <span className="text-sm font-medium leading-tight">{feature.name}</span>

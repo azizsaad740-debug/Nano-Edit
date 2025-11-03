@@ -149,6 +149,8 @@ export interface RightSidebarTabsProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  
+  isGuest: boolean; // NEW
 }
 
 const Sidebar: React.FC<RightSidebarTabsProps> = (props) => {
