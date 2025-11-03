@@ -57,6 +57,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   const smartObjectLayer = globalLayers.find(l => l.id === layerId);
   const [internalLayers, setInternalLayers] = React.useState<Layer[]>(smartObjectLayer?.type === 'smart-object' ? smartObjectLayer.smartObjectData.layers : []);
   const [internalSelectedLayerId, setInternalSelectedLayerId] = React.useState<string | null>(null);
+  const smartObjectWorkspaceRef = React.useRef<HTMLDivElement>(null); // Persistent ref for the workspace container
 
   React.useEffect(() => {
     if (smartObjectLayer?.type === 'smart-object') {
@@ -239,13 +240,14 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
           {/* Center Panel: Workspace */}
           <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-muted/50">
             <div
+              ref={smartObjectWorkspaceRef}
               className="relative shadow-xl bg-background border border-border"
               style={{ width: '80%', height: '80%', maxWidth: '1000px', maxHeight: '800px' }}
             >
               <SmartObjectWorkspace
                 layers={internalLayers}
                 parentDimensions={dimensions}
-                containerRef={React.useRef(null)} // Stub container ref
+                containerRef={smartObjectWorkspaceRef}
                 onUpdate={handleUpdateInternalLayer}
                 onCommit={handleCommitInternalLayer}
                 selectedLayerId={internalSelectedLayerId}

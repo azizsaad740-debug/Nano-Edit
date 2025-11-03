@@ -79,8 +79,8 @@ const RecursiveLayerList: React.FC<{
 
 
 const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onReorder, onAddLayer, onDeleteLayer, onGroupLayers, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
-  const { active } = useDndContext();
-  const activeId = active?.id;
+  // Removed: const { active } = useDndContext();
+  // Removed: const activeId = active?.id;
 
   return (
     <div className="flex flex-col h-full">
