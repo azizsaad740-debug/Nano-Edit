@@ -5,7 +5,24 @@ import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, F
 
 // --- Core Types ---
 
-export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
+export type BlendMode =
+  | 'normal'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
+
 // Expanded ActiveTool and ShapeType
 export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic'; // Added lassoMagnetic
 export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'circle' | 'arrow' | 'custom';
@@ -163,32 +180,139 @@ export const isAdjustmentLayer = (layer: Layer): layer is AdjustmentLayerData =>
 export const isSmartObjectLayer = (layer: Layer): layer is SmartObjectLayerData => layer.type === 'smart-object';
 export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.type === 'group';
 
-// --- State Interfaces ---
+// --- State Interfaces (Consolidated from tools.ts and inferred from usage) ---
 
 export interface BrushState {
-// ... (BrushState definition)
+  size: number;
+  opacity: number;
+  hardness: number;
+  smoothness: number;
+  shape: 'circle' | 'square';
+  color: string;
+  flow: number;
+  angle: number;
+  roundness: number;
+  spacing: number;
+  blendMode: BlendMode;
+  jitter?: number;
+  scatter?: number;
+  texture?: any;
+  dualBrush?: any;
+  smoothing?: boolean;
+  protectTexture?: boolean;
+  wetEdges?: boolean;
+  buildUp?: boolean;
+  flipX?: boolean;
+  flipY?: boolean;
+  colorDynamics?: boolean;
+  transfer?: boolean;
+  noise?: boolean;
+  wetness?: number;
+  mix?: number;
+  load?: number;
+  historySource?: string;
 }
 
 export interface GradientToolState {
-// ... (GradientToolState definition)
+  type: 'linear' | 'radial' | 'angle' | 'reflected' | 'diamond';
+  colors: string[];
+  stops: number[];
+  angle: number;
+  centerX: number;
+  centerY: number;
+  radius: number;
+  feather: number;
+  inverted: boolean;
+  dither: boolean;
+  transparency: boolean;
 }
 
 export interface SelectionSettings {
-// ... (SelectionSettings definition)
+  feather: number;
+  antiAlias: boolean;
+  fixedRatio: boolean;
+  fixedWidth: number;
+  fixedHeight: number;
+  tolerance: number;
+  contiguous: boolean;
+  sampleAllLayers: boolean;
+  autoEnhanceEdges: boolean;
+  showTransformControls: boolean;
+  autoSelectLayer: boolean;
+  snapToPixels: boolean;
+  selectionMode: 'new' | 'add' | 'subtract' | 'intersect';
+  refineFeather: number;
+  refineSmooth: number;
+  refineContrast: number;
+  refineShiftEdge: number;
+  decontaminateColors: boolean;
+  edgeDetection: number;
 }
 
-export interface EditState {
-// ... (EditState definition)
+export interface TransformState {
+  scaleX: number;
+  scaleY: number;
+  skewX: number;
+  skewY: number;
+  perspectiveX: number;
+  perspectiveY: number;
+}
+
+export interface EffectState {
+  blur: number;
+  hueShift: number;
+  vignette: number;
+  noise: number;
+  sharpen: number;
+  clarity: number;
 }
 
 export interface HistoryItem {
-// ... (HistoryItem definition)
+  name: string;
+  state: EditState;
+  layers: Layer[]; // FIX 10: Added layers property
+}
+
+export interface EditState {
+  adjustments: AdjustmentState;
+  effects: EffectState;
+  grading: GradingState; // FIX 8 & 9: Added grading property
+  hslAdjustments: HslAdjustmentsState;
+  curves: CurvesState;
+  frame: FrameState;
+  crop: CropState;
+  transform: TransformState;
+  rotation: number;
+  aspect: number | null;
+  selectedFilter: string;
+  colorMode: 'rgb' | 'grayscale' | 'cmyk';
+  selectiveBlurAmount: number;
+  selectiveSharpenAmount: number;
+  customHslColor: string;
+  selectionSettings: SelectionSettings;
+  channels: { r: boolean; g: boolean; b: boolean; alpha: boolean };
+  history: HistoryItem[];
+  historyBrushSourceIndex: number;
+  brushState: BrushState;
+  selectiveBlurMask: string | null;
+  selectiveSharpenMask: string | null;
+  isProxyMode: boolean;
+  gradientToolState: GradientToolState;
 }
 
 export interface NewProjectSettings {
-// ... (NewProjectSettings definition)
+  width: number;
+  height: number;
+  dpi: number;
+  backgroundColor: string;
+  colorMode?: 'rgb' | 'grayscale' | 'cmyk';
 }
 
 export interface PanelTab {
-// ... (PanelTab definition)
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  location: 'right' | 'bottom' | 'hidden';
+  visible: boolean;
+  order: number;
 }
