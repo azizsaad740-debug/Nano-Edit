@@ -8,7 +8,7 @@ import LeftSidebar from "@/components/layout/LeftSidebar";
 import Sidebar from "@/components/layout/Sidebar";
 import BottomPanel from "@/components/layout/BottomPanel";
 import { MobileToolBar } from "@/components/mobile/MobileToolBar";
-import MobileToolOptions from "@/components/mobile/MobileToolOptions";
+import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { MobileHeader } from "@/components/mobile/MobileHeader";
 import { MobileBottomNav } from "@/components/mobile/MobileBottomNav";

@@ -34,7 +34,7 @@ interface MobileToolOptionsProps {
   isGuest: boolean; // NEW
 }
 
-const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic, onOpenFontManager, onSavePreset, onSaveGradientPreset, onOpenSettings, onOpenSmartObject, isGuest }) => {
+export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab, logic, onOpenFontManager, onSavePreset, onSaveGradientPreset, onOpenSettings, onOpenSmartObject, isGuest }) => {
   const navigate = useNavigate();
   
   const renderContent = () => {
