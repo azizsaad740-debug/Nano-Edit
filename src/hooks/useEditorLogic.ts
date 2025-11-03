@@ -1,3 +1,4 @@
+b.order) and cleaning up brushState initialization.">
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { toast } from 'sonner';
 import { v4 as uuidv4 } from "uuid";
@@ -89,8 +90,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     setSelectedLayerIds(id ? [id] : []);
   }, []);
   const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
-  // FIX 4: Use initialGradientToolState directly
-  const [brushState, setBrushState] = useState<BrushState>(initialEditState.brushState);
+  // FIX 4: Use initialBrushState directly
+  const [brushState, setBrushState] = useState<BrushState>(initialBrushState);
   const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState); 
   const [foregroundColor, setForegroundColor] = useState<string>('#000000');
   const [backgroundColor, setBackgroundColor] = useState<string>('#FFFFFF');
@@ -342,7 +343,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
         // 1. Prepare the list of tabs in the target panel (excluding the active tab if it was already there)
         let targetTabs = prev
             .filter(t => t.location === newLocation && t.id !== activeId)
-            .sort((a, b) => a.order - b.order);
+            .sort((a, b) => a.order - b.order); // FIX: Corrected b.b.order to b.order
 
         // 2. Find the index where the active tab should be inserted
         const overIndex = targetTabs.findIndex(t => t.id === overId);
