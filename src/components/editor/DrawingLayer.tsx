@@ -11,7 +11,7 @@ interface DrawingLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
   zoom: number;
@@ -33,7 +33,7 @@ export const DrawingLayer = ({ layer, containerRef, onUpdate, onCommit, isSelect
     layer,
     containerRef,
     onUpdate,
-    onCommit,
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`),
     type: "drawing", // Use 'drawing' type
     activeTool,
     isSelected,

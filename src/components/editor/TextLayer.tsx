@@ -11,7 +11,7 @@ export interface TextLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
   zoom: number;
@@ -33,7 +33,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     layer,
     containerRef,
     onUpdate,
-    onCommit,
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`),
     type: "text",
     activeTool,
     isSelected,
@@ -53,7 +53,7 @@ export const TextLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
       onUpdate(layer.id, { content: newContent });
     }
     setIsEditing(false);
-    onCommit(layer.id);
+    onCommit(layer.id, `Edit Text Content`);
   };
 
   React.useEffect(() => {

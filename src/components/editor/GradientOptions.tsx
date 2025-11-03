@@ -15,7 +15,7 @@ interface GradientOptionsProps {
   setGradientToolState: React.Dispatch<React.SetStateAction<GradientToolState>>;
   gradientPresets: { id: string; name: string; state: GradientToolState }[];
   onSaveGradientPreset: (name: string, state: GradientToolState) => void;
-  onDeleteGradientPreset: (id: string) => void;
+  onDeleteGradientPreset: (name: string) => void;
 }
 
 export const GradientOptions: React.FC<GradientOptionsProps> = ({
@@ -42,7 +42,7 @@ export const GradientOptions: React.FC<GradientOptionsProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <GradientLayerProperties
-            layer={layer}
+            layer={layer as GradientLayerData}
             onUpdate={onLayerUpdate}
             onCommit={onLayerCommit}
           />

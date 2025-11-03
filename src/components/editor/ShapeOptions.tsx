@@ -316,7 +316,7 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                     <Button variant="outline" onClick={addPoint}>
                       <Plus className="h-4 w-4 mr-2" /> Add Point
                     </Button>
-                    <Button variant="outline" onClick={removeLastPoint} disabled={(shapeLayer.points?.length || 0) <= 3}>
+                    <Button variant="outline" onClick={removeLastPoint} disabled={(layer.points?.length || 0) <= 3}>
                       <Trash2 className="h-4 w-4 mr-2" /> Remove Last Point
                     </Button>
                   </div>
@@ -335,14 +335,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="width">Width</Label>
-                    <span className="text-sm text-muted-foreground">{shapeLayer.width?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{layer.width?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="width"
                     min={1}
                     max={100}
                     step={0.1}
-                    value={[shapeLayer.width || 10]}
+                    value={[layer.width || 10]}
                     onValueChange={([v]) => handleUpdate({ width: v })}
                     onValueCommit={() => handleCommit("Change Width")}
                   />
@@ -350,14 +350,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="height">Height</Label>
-                    <span className="text-sm text-muted-foreground">{shapeLayer.height?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{layer.height?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="height"
                     min={1}
                     max={100}
                     step={0.1}
-                    value={[shapeLayer.height || 10]}
+                    value={[layer.height || 10]}
                     onValueChange={([v]) => handleUpdate({ height: v })}
                     onValueCommit={() => handleCommit("Change Height")}
                   />
@@ -367,14 +367,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="x-pos">X Position</Label>
-                    <span className="text-sm text-muted-foreground">{shapeLayer.x?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{layer.x?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="x-pos"
                     min={0}
                     max={100}
                     step={0.1}
-                    value={[shapeLayer.x || 50]}
+                    value={[layer.x || 50]}
                     onValueChange={([v]) => handleUpdate({ x: v })}
                     onValueCommit={() => handleCommit("Change X Position")}
                   />
@@ -382,14 +382,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="y-pos">Y Position</Label>
-                    <span className="text-sm text-muted-foreground">{shapeLayer.y?.toFixed(1)}%</span>
+                    <span className="text-sm text-muted-foreground">{layer.y?.toFixed(1)}%</span>
                   </div>
                   <Slider
                     id="y-pos"
                     min={0}
                     max={100}
                     step={0.1}
-                    value={[shapeLayer.y || 50]}
+                    value={[layer.y || 50]}
                     onValueChange={([v]) => handleUpdate({ y: v })}
                     onValueCommit={() => handleCommit("Change Y Position")}
                   />
@@ -398,14 +398,14 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="rotation">Rotation</Label>
-                  <span className="text-sm text-muted-foreground">{shapeLayer.rotation}°</span>
+                  <span className="text-sm text-muted-foreground">{layer.rotation}°</span>
                 </div>
                 <Slider
                   id="rotation"
                   min={-180}
                   max={180}
                   step={1}
-                  value={[shapeLayer.rotation || 0]}
+                  value={[layer.rotation || 0]}
                   onValueChange={([v]) => handleUpdate({ rotation: v })}
                   onValueCommit={() => handleCommit("Change Rotation")}
                 />
@@ -418,4 +418,4 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
   );
 };
 
-export default ShapeOptions;
+export default ShapeProperties;

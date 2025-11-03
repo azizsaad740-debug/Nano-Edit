@@ -10,7 +10,7 @@ interface GradientLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
   imageNaturalDimensions: { width: number; height: number } | null;
@@ -30,8 +30,8 @@ export const GradientLayer = ({ layer, containerRef, onUpdate, onCommit, isSelec
   } = useLayerTransform({
     layer,
     containerRef,
-    onUpdate,
-    onCommit,
+    onUpdate: (id, updates) => onUpdate(id, updates),
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`),
     type: "gradient",
     activeTool,
     isSelected,
@@ -69,9 +69,10 @@ export const GradientLayer = ({ layer, containerRef, onUpdate, onCommit, isSelec
       y: (p.y / 100) * imageNaturalDimensions.height,
     });
 
-    if (gradientType === "linear" && startPoint && endPoint) {
-      const startPx = toPx(startPoint);
-      const endPx = toPx(endPoint);
+    if (gradientType === "linear") {
+      // Use startPoint/endPoint if available, otherwise fall back to angle/center (stub)
+      const startPx = startPoint ? toPx(startPoint) : { x: 0, y: imageNaturalDimensions.height * (gradientAngle / 360) };
+      const endPx = endPoint ? toPx(endPoint) : { x: imageNaturalDimensions.width, y: imageNaturalDimensions.height * (1 - (gradientAngle / 360)) };
       
       const gradient = ctx.createLinearGradient(startPx.x, startPx.y, endPx.x, endPx.y);
       colors.forEach((color, i) => {

@@ -43,7 +43,7 @@ const Index: React.FC = () => {
   React.useEffect(() => {
     if (location.state?.templateData) {
       const templateData = location.state.templateData as TemplateProjectData;
-      logic.handleLoadTemplate(templateData);
+      logic.handleLoadTemplate(templateData, location.state.templateName); // Pass templateName
       
       // Clear state after loading to prevent re-triggering
       navigate(location.pathname, { replace: true, state: {} });
@@ -152,17 +152,21 @@ const Index: React.FC = () => {
               handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
               handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
               handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
-              handleAddDrawingLayer={logic.addDrawingLayer}
-              onCropChange={logic.onCropChange}
-              onCropComplete={logic.onCropComplete}
               addGradientLayer={logic.addGradientLayer}
               addTextLayer={logic.addTextLayer}
               addShapeLayer={logic.addShapeLayer}
+              onCropChange={logic.onCropChange}
+              onCropComplete={logic.onCropComplete}
+              updateLayer={logic.updateLayer}
+              commitLayerChange={logic.commitLayerChange}
+              setSelectedLayerId={logic.setSelectedLayerId}
               setMarqueeStart={logic.setMarqueeStart} // ADDED
               setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
               setGradientStart={logic.setGradientStart} // ADDED
               setGradientCurrent={logic.setGradientCurrent} // ADDED
               setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
+              base64Image={logic.base64Image}
+              historyImageSrc={logic.historyImageSrc}
             />
           </div>
           <MobileToolOptions
@@ -264,17 +268,21 @@ const Index: React.FC = () => {
                     handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
                     handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
                     handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
-                    handleAddDrawingLayer={logic.addDrawingLayer}
-                    onCropChange={logic.onCropChange}
-                    onCropComplete={logic.onCropComplete}
                     addGradientLayer={logic.addGradientLayer}
                     addTextLayer={logic.addTextLayer}
                     addShapeLayer={logic.addShapeLayer}
+                    onCropChange={logic.onCropChange}
+                    onCropComplete={logic.onCropComplete}
+                    updateLayer={logic.updateLayer}
+                    commitLayerChange={logic.commitLayerChange}
+                    setSelectedLayerId={logic.setSelectedLayerId}
                     setMarqueeStart={logic.setMarqueeStart} // ADDED
                     setMarqueeCurrent={logic.setMarqueeCurrent} // ADDED
                     setGradientStart={logic.setGradientStart} // ADDED
                     setGradientCurrent={logic.setGradientCurrent} // ADDED
                     setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
+                    base64Image={logic.base64Image}
+                    historyImageSrc={logic.historyImageSrc}
                   />
                 </ResizablePanel>
                 

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, ArrowDownUp, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
+import { Trash2, Type, Layers, Copy, Merge, FileArchive, Square, Plus, Group, Palette, SquareStack, CornerUpLeft, RotateCcw, Download, Minus, ArrowUp, ArrowDown, ArrowUpToLine, ArrowDownToLine } from "lucide-react";
 import type { Layer, SmartObjectLayerData, ShapeType } from "@/types/editor";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 

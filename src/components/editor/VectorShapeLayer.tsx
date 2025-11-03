@@ -11,7 +11,7 @@ interface VectorShapeLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
   isSelected: boolean;
   activeTool: ActiveTool | null;
   zoom: number;
@@ -31,7 +31,7 @@ const VectorShapeLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected,
     layer,
     containerRef,
     onUpdate,
-    onCommit,
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`),
     type: "vector-shape",
     activeTool,
     isSelected,

@@ -38,9 +38,9 @@ export const AdjustmentOptions: React.FC<AdjustmentOptionsProps> = ({
   };
 
   // Helper to commit the layer via ID, required by AdjustmentLayerControls
-  const handleCommitById = (id: string) => {
+  const handleCommitById = (id: string, historyName: string) => {
     if (id === layer.id) {
-      onLayerCommit(`Edit Adjustment Layer: ${layer.name}`);
+      onLayerCommit(historyName);
     }
   };
 

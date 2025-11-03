@@ -44,7 +44,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
           <LayersPanel
             {...props}
             onSelectLayer={(id, ctrlKey, shiftKey) => props.onSelectLayer(id, ctrlKey, shiftKey)}
-            onReorder={props.onLayerReorder} // UPDATED PROP NAME
+            onReorder={props.onLayerReorder}
             foregroundColor={props.foregroundColor}
           />
         );
@@ -55,7 +55,7 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
               activeTool={props.activeTool}
               brushState={props.brushState}
               setBrushState={props.setBrushState}
-              onBrushCommit={props.onBrushCommit} // PASSED
+              onBrushCommit={props.onBrushCommit}
               gradientToolState={props.gradientToolState}
               setGradientToolState={props.setGradientToolState}
               gradientPresets={props.gradientPresets}
@@ -120,10 +120,10 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
             frame={props.frame}
             onFramePresetChange={(type, name, options) => props.onFramePresetChange(type, name, options)}
             onFramePropertyChange={props.onFramePropertyChange}
-            onFramePropertyCommit={props.onFramePropertyCommit} // Corrected call
+            onFramePropertyCommit={props.onFramePropertyCommit}
             presets={props.presets}
             onApplyPreset={props.onApplyPreset}
-            onSavePreset={props.onSavePreset} // Pass the dialog opener function
+            onSavePreset={props.onSavePreset}
             onDeletePreset={props.onDeletePreset}
           />
         );

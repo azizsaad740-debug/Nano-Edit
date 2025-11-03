@@ -54,15 +54,15 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
     customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
-    channels, onChannelChange,
+    channels, onChannelChange: onChannelChangeLogic,
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
-    setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
+    setCurrentHistoryIndex: handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex,
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     updateLayer, commitLayerChange, onLayerPropertyCommit,
-    handleLayerOpacityChange, onLayerOpacityCommit, // Fixed Error 6
+    handleLayerOpacityChange, handleLayerOpacityCommit, // Fixed Error 6
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
-    addShapeLayer, addGradientLayer, onAddAdjustmentLayer,
+    addShapeLayer, addGradientLayer: addGradientLayerLogic, onAddAdjustmentLayer,
     groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
@@ -71,7 +71,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
-    presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset, // Fixed Errors 7, 8
+    presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset: deletePreset, // Fixed Errors 7, 8
     gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
     zoom, handleZoomIn, handleZoomOut, handleFitScreen,
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,

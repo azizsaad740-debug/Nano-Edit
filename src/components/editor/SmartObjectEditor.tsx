@@ -168,7 +168,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
       gradientAngle: gradientToolState.angle,
       gradientFeather: gradientToolState.feather,
       gradientInverted: gradientToolState.inverted,
-      gradientCenterX: gradientToolState.centerX,
+      gradientCenterX: gradientToolToolState.centerX,
       gradientCenterY: gradientToolState.centerY,
       gradientRadius: gradientToolState.radius,
       width: 100, height: 100,
@@ -202,7 +202,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } as Layer : l));
   };
   
-  const handleCommitInternalLayer = (id: string) => {
+  const handleCommitInternalLayer = (id: string, historyName: string) => {
     // No history recording inside SO editor, commit happens on save
   };
   

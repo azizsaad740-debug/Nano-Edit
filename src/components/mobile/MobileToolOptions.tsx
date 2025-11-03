@@ -59,7 +59,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
             onLayerCommit={logic.commitLayerChange}
             onLayerPropertyCommit={logic.onLayerPropertyCommit}
             onLayerOpacityChange={logic.handleLayerOpacityChange}
-            onLayerOpacityCommit={logic.onLayerOpacityCommit} // FIX: Use exposed name
+            onLayerOpacityCommit={logic.handleLayerOpacityCommit} // FIX: Use exposed name
             addTextLayer={logic.addTextLayer}
             addDrawingLayer={logic.addDrawingLayer}
             onAddLayerFromBackground={logic.onAddLayerFromBackground}
@@ -101,10 +101,10 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
               onDeleteGradientPreset={logic.onDeleteGradientPreset}
               selectiveBlurAmount={logic.selectiveBlurAmount}
               onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
-              onSelectiveBlurAmountCommit={(v) => logic.updateCurrentState({ selectiveBlurAmount: v })}
+              onSelectiveBlurAmountCommit={logic.onSelectiveBlurAmountCommit}
               selectiveSharpenAmount={logic.selectiveSharpenAmount}
               onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
-              onSelectiveSharpenAmountCommit={(v) => logic.updateCurrentState({ selectiveSharpenAmount: v })}
+              onSelectiveSharpenAmountCommit={logic.onSelectiveSharpenAmountCommit}
               cloneSourcePoint={logic.cloneSourcePoint}
               selectionSettings={logic.selectionSettings}
               handleCheckboxChange={logic.onSelectionSettingChange}
@@ -211,7 +211,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
           <HistoryPanel
             history={logic.history}
             currentIndex={logic.currentHistoryIndex}
-            onJump={(index) => logic.setCurrentHistoryIndex(index)}
+            onJump={logic.handleHistoryJump}
             onUndo={logic.undo}
             onRedo={logic.redo}
             canUndo={logic.canUndo}

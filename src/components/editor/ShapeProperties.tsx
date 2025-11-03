@@ -20,7 +20,7 @@ import { showError } from "@/utils/toast";
 interface ShapePropertiesProps {
   layer: Layer;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
 }
 
 const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) => {
@@ -32,8 +32,8 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
     onUpdate(layer.id, updates);
   };
 
-  const handleCommit = () => {
-    onCommit(layer.id);
+  const handleCommit = (historyName: string) => {
+    onCommit(layer.id, historyName);
   };
 
   const handleShapeTypeChange = (newShapeType: ShapeType) => {
@@ -51,7 +51,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
       updates.borderRadius = 0;
     }
     handleUpdate(updates);
-    handleCommit();
+    handleCommit(`Change Shape Type to ${newShapeType}`);
   };
 
   const convertToPolygon = () => {
@@ -66,7 +66,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
         ],
         borderRadius: 0,
       });
-      handleCommit();
+      handleCommit("Convert Rectangle to Polygon");
     } else if (layer.shapeType === 'circle') {
       showError("Converting a circle to a polygon requires many points. Please use a rectangle as a starting point.");
     }
@@ -84,7 +84,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
     
     const newPoints = [...points, newPoint];
     handleUpdate({ points: newPoints, shapeType: 'polygon' });
-    handleCommit();
+    handleCommit("Add Polygon Point");
   };
 
   const removeLastPoint = () => {
@@ -96,7 +96,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
     }
     const newPoints = points.slice(0, -1);
     handleUpdate({ points: newPoints });
-    handleCommit();
+    handleCommit("Remove Polygon Point");
   };
 
   const isPolygon = layer.shapeType === 'polygon' || layer.shapeType === 'triangle';
@@ -130,7 +130,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
             className="p-1 h-10 w-12"
             value={layer.fillColor || "#000000"}
             onChange={(e) => handleUpdate({ fillColor: e.target.value })}
-            onBlur={handleCommit}
+            onBlur={() => handleCommit("Change Fill Color")}
           />
         </div>
         <div className="grid gap-2">
@@ -141,7 +141,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
             className="p-1 h-10 w-12"
             value={layer.strokeColor || "#FFFFFF"}
             onChange={(e) => handleUpdate({ strokeColor: e.target.value })}
-            onBlur={handleCommit}
+            onBlur={() => handleCommit("Change Stroke Color")}
           />
         </div>
       </div>
@@ -158,7 +158,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
           step={0.5}
           value={[layer.strokeWidth || 0]}
           onValueChange={([v]) => handleUpdate({ strokeWidth: v })}
-          onValueCommit={handleCommit}
+          onValueCommit={() => handleCommit("Change Stroke Width")}
         />
       </div>
 
@@ -175,7 +175,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
             step={1}
             value={[layer.borderRadius || 0]}
             onValueChange={([v]) => handleUpdate({ borderRadius: v })}
-            onValueCommit={handleCommit}
+            onValueCommit={() => handleCommit("Change Corner Radius")}
           />
         </div>
       )}
@@ -220,7 +220,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
                   step={0.1}
                   value={[layer.width || 10]}
                   onValueChange={([v]) => handleUpdate({ width: v })}
-                  onValueCommit={handleCommit}
+                  onValueCommit={() => handleCommit("Change Width")}
                 />
               </div>
               <div className="grid gap-2">
@@ -235,7 +235,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
                   step={0.1}
                   value={[layer.height || 10]}
                   onValueChange={([v]) => handleUpdate({ height: v })}
-                  onValueCommit={handleCommit}
+                  onValueCommit={() => handleCommit("Change Height")}
                 />
               </div>
             </div>
@@ -252,7 +252,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
                   step={0.1}
                   value={[layer.x || 50]}
                   onValueChange={([v]) => handleUpdate({ x: v })}
-                  onValueCommit={handleCommit}
+                  onValueCommit={() => handleCommit("Change X Position")}
                 />
               </div>
               <div className="grid gap-2">
@@ -267,7 +267,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
                   step={0.1}
                   value={[layer.y || 50]}
                   onValueChange={([v]) => handleUpdate({ y: v })}
-                  onValueCommit={handleCommit}
+                  onValueCommit={() => handleCommit("Change Y Position")}
                 />
               </div>
             </div>
@@ -283,7 +283,7 @@ const ShapeProperties = ({ layer, onUpdate, onCommit }: ShapePropertiesProps) =>
                 step={1}
                 value={[layer.rotation || 0]}
                 onValueChange={([v]) => handleUpdate({ rotation: v })}
-                onValueCommit={handleCommit}
+                onValueCommit={() => handleCommit("Change Rotation")}
               />
             </div>
           </AccordionContent>

@@ -12,7 +12,7 @@ import { showError } from "@/utils/toast";
 interface SmartObjectPropertiesPanelProps {
   selectedLayer: Layer;
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
-  onLayerCommit: (id: string) => void;
+  onLayerCommit: (id: string, historyName: string) => void; // Added historyName
   systemFonts: string[];
   customFonts: string[];
   onOpenFontManager: () => void;
@@ -33,7 +33,7 @@ export const SmartObjectPropertiesPanel: React.FC<SmartObjectPropertiesPanelProp
   const handleLayerCommit = (historyName: string) => {
     // Note: History is only recorded when saving the Smart Object, 
     // but we call onLayerCommit to trigger internal state updates if needed.
-    onLayerCommit(selectedLayer.id);
+    onLayerCommit(selectedLayer.id, historyName);
   };
 
   const renderSpecificOptions = () => {

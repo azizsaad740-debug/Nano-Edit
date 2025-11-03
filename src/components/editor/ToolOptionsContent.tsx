@@ -102,7 +102,7 @@ export const ToolOptionsContent: React.FC<ToolOptionsContentProps> = (props) => 
           gradientToolState={props.gradientToolState}
           setGradientToolState={props.setGradientToolState}
           gradientPresets={props.gradientPresets}
-          onApplyGradientPreset={props.onApplyGradientPreset}
+          onApplyGradientPreset={(preset) => props.setGradientToolState(preset.state)}
           onSaveGradientPreset={props.onSaveGradientPreset}
           onDeleteGradientPreset={props.onDeleteGradientPreset}
         />
