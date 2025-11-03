@@ -17,7 +17,7 @@ interface GroupLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void; // FIX 13: Added historyName
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
@@ -52,7 +52,7 @@ const GroupLayer = ({
     layer,
     containerRef,
     onUpdate: (id, updates) => onUpdate(id, updates), // Pass through onUpdate
-    onCommit: (id) => onCommit(id), // Pass through onCommit
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`), // FIX 13: Wrapped commit
     type: "group", // Specify type as 'group'
     parentDimensions,
     activeTool,
@@ -116,8 +116,8 @@ const GroupLayer = ({
             };
             
             // Helper function to commit the group layer when a child is committed
-            const commitChildLayer = (id: string) => {
-              onCommit(groupLayer.id);
+            const commitChildLayer = (id: string, historyName: string) => { // FIX 13: Added historyName
+              onCommit(groupLayer.id, historyName);
             };
 
             const childProps = {
@@ -144,7 +144,7 @@ const GroupLayer = ({
               return <ImageLayer {...childProps} />;
             }
             if (child.type === 'smart-object') {
-              return <SmartObjectLayer {...childProps} parentDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} />;
+              return <SmartObjectLayer {...childProps} onCommit={commitChildLayer} parentDimensions={{ width: groupLayer.width ?? 100, height: groupLayer.height ?? 100 }} />;
             }
             if (child.type === 'vector-shape') {
               return <VectorShapeLayer {...childProps} />;

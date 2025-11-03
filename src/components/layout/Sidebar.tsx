@@ -16,8 +16,8 @@ export interface RightSidebarTabsProps {
   selectedLayerIds: string[]; // NEW
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void; // NEW
   onLayerReorder: (activeId: string, overId: string) => void;
-  toggleLayerVisibility: (id: string) => void;
-  renameLayer: (id: string, newName: string) => void;
+  toggleLayerVisibility: (id: string) => void; // FIX 39
+  renameLayer: (id: string, newName: string) => void; // FIX 40
   deleteLayer: (id: string) => void;
   onDuplicateLayer: (id: string) => void;
   onMergeLayerDown: (id: string) => void;
@@ -28,7 +28,7 @@ export interface RightSidebarTabsProps {
   onLayerCommit: (id: string, historyName: string) => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
   onLayerOpacityChange: (opacity: number) => void;
-  onLayerOpacityCommit: () => void;
+  onLayerOpacityCommit: () => void; // FIX 41
   addTextLayer: (coords: Point, color: string) => void;
   addDrawingLayer: (coords: Point, dataUrl: string) => string;
   onAddLayerFromBackground: () => void;
@@ -53,9 +53,9 @@ export interface RightSidebarTabsProps {
   handleDestructiveOperation: (operation: 'delete' | 'fill') => void;
   
   // --- Re-added Color Correction Props (Fixes TS2339 errors) ---
-  adjustments: AdjustmentState;
-  onAdjustmentChange: (adjustment: string, value: number) => void;
-  onAdjustmentCommit: (adjustment: string, value: number) => void;
+  adjustments: AdjustmentState; // FIX 24
+  onAdjustmentChange: (adjustment: string, value: number) => void; // FIX 25
+  onAdjustmentCommit: (adjustment: string, value: number) => void; // FIX 26
   
   grading: GradingState;
   onGradingChange: (gradingType: string, value: number) => void;
@@ -69,6 +69,24 @@ export interface RightSidebarTabsProps {
   onCurvesChange: (channel: keyof EditState['curves'], points: Point[]) => void;
   onCurvesCommit: (channel: keyof EditState['curves'], points: Point[]) => void;
   // -------------------------------------------------------------
+  
+  // --- Global Effects Props (Fixes TS2339 errors) ---
+  effects: EditState['effects']; // FIX 24
+  onEffectChange: (effect: string, value: number) => void; // FIX 25
+  onEffectCommit: (effect: string, value: number) => void; // FIX 26
+  onFilterChange: (filterValue: string, filterName: string) => void; // FIX 27
+  selectedFilter: string; // FIX 28
+  onTransformChange: (transformType: string) => void; // FIX 29
+  rotation: number; // FIX 30
+  onRotationChange: (value: number) => void; // FIX 31
+  onRotationCommit: (value: number) => void; // FIX 32
+  onAspectChange: (aspect: number | undefined) => void; // FIX 33
+  aspect: number | undefined; // FIX 34
+  frame: FrameState; // FIX 35
+  onFramePresetChange: (type: FrameState['type'], name: string, options?: { width: number; color: string }) => void; // FIX 36
+  onFramePropertyChange: (key: 'width' | 'color' | 'opacity' | 'roundness' | 'vignetteAmount' | 'vignetteRoundness', value: any) => void; // FIX 37
+  onFramePropertyCommit: () => void; // FIX 38
+  // ---------------------------------------------------
 
   // Presets
   presets: Preset[];

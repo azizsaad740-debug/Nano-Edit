@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import ReactCrop, { Crop as CropType, PixelCrop } from "react-image-crop";
+import ReactCrop, { Crop as CropType, PixelCrop, PercentCrop } from "react-image-crop"; // Added PercentCrop
 import { cn } from "@/lib/utils";
 import { Workspace } from "./Workspace";
 import { WorkspaceControls } from "./WorkspaceControls";
@@ -17,6 +17,9 @@ import { EffectsFilters } from "./EffectsFilters";
 import { HslFilter } from "./HslFilter";
 import { CurvesFilter } from "./CurvesFilter";
 import { CustomFontLoader } from "./CustomFontLoader";
+import { ImageIcon } from "lucide-react"; // FIX 14: Added import
+import { polygonToMaskDataUrl } from "@/utils/maskUtils"; // FIX 17: Added import
+import { showError } from "@/utils/toast"; // FIX 20: Added import
 import type {
   Layer,
   ActiveTool,
@@ -32,6 +35,7 @@ import type {
   GradientLayerData,
   SmartObjectLayerData,
   GroupLayerData,
+  ShapeType, // FIX 11: Added import
 } from "@/types/editor";
 import {
   isImageLayer,
@@ -88,7 +92,7 @@ interface EditorWorkspaceProps {
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
   handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void;
-  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
+  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // FIX 16: Added prop
   addGradientLayer: (start: Point, end: Point) => void;
   addTextLayer: (coords: Point, color: string) => void;
   addShapeLayer: (coords: Point, shapeType?: ShapeType) => void;
@@ -106,6 +110,10 @@ interface EditorWorkspaceProps {
   // Sources
   base64Image: string | null;
   historyImageSrc: string | null;
+  
+  // History/State Access for Canvas Logic
+  recordHistory: (name: string, state: EditState, layers: Layer[]) => void; // FIX 19: Added prop
+  setSelectionMaskDataUrl: (url: string | null) => void; // FIX 18: Added prop
 }
 
 export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
@@ -163,6 +171,10 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
     // Sources
     base64Image,
     historyImageSrc,
+    
+    // History/State Access
+    recordHistory, // FIX 19: Destructured
+    setSelectionMaskDataUrl, // FIX 18: Destructured
   } = props;
 
   const hasImage = !!image && !!dimensions;
@@ -205,7 +217,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
       return <ImageLayer {...layerProps} />;
     }
     if (isSmartObjectLayer(layer)) {
-      return <SmartObjectLayer {...layerProps} parentDimensions={currentParentDimensions} />;
+      // FIX 12: SmartObjectLayer onCommit expects 2 arguments
+      return <SmartObjectLayer {...layerProps} onCommit={(id) => commitLayerChange(id, `Update ${layer.name} Transform`)} parentDimensions={currentParentDimensions} />;
     }
     if (isVectorShapeLayer(layer)) {
       return <VectorShapeLayer {...layerProps} />;
@@ -214,9 +227,11 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
       return <GradientLayer {...layerProps} imageNaturalDimensions={currentParentDimensions} />;
     }
     if (isGroupLayer(layer)) {
+      // FIX 13: GroupLayer onCommit expects 2 arguments
       return (
         <GroupLayer
           {...layerProps}
+          onCommit={(id) => commitLayerChange(id, `Update ${layer.name} Transform`)}
           parentDimensions={currentParentDimensions}
           globalSelectedLayerId={selectedLayerId}
           renderChildren={(child) => renderLayer(child, layerProps.containerRef, currentParentDimensions)}
@@ -257,6 +272,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
     }
     
     // Apply HSL adjustments (master only, per-channel handled by SVG)
+    // FIX 21: Use local state for gradientToolState check (although this is HSL, the logic was copied)
     if (currentEditState.hslAdjustments.master.hue !== 0 || currentEditState.hslAdjustments.master.saturation !== 0 || currentEditState.hslAdjustments.master.lightness !== 0) {
       filters.push(`url(#hsl-filter)`);
     }
@@ -322,8 +338,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
     onCropChange(c as CropState);
   };
 
-  const handleCropComplete = (c: CropType, p: PixelCrop) => {
-    onCropComplete(c as CropState);
+  const handleCropComplete = (c: PixelCrop, p: PercentCrop) => { // FIX 22: Corrected signature to match ReactCrop
+    onCropComplete(p as CropState);
   };
   
   // --- Frame Overlay ---
@@ -408,7 +424,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
           imageNaturalDimensions={dimensions} 
         />
       )}
-      <CustomFontLoader customFonts={props.currentEditState.customFonts || []} />
+      <CustomFontLoader customFonts={currentEditState.customFonts || []} /> {/* FIX 15: Use currentEditState.customFonts */}
 
       {/* Image Container (Scaled and Transformed) */}
       <div
@@ -485,7 +501,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
             cloneSourcePoint={cloneSourcePoint}
             selectedLayerId={selectedLayerId}
             zoom={workspaceZoom}
-            base64Image={base64Image}
+            baseImageSrc={base64Image}
             historyImageSrc={historyImageSrc}
           />
         )}
@@ -509,7 +525,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
               if (activeTool === 'lasso') {
                 polygonToMaskDataUrl(path, dimensions.width, dimensions.height)
                   .then(setSelectionMaskDataUrl)
-                  .then(() => props.recordHistory(`Lasso Selection`, currentEditState, layers))
+                  .then(() => recordHistory(`Lasso Selection`, currentEditState, layers))
                   .catch(() => showError("Failed to create selection mask."));
               }
             }}

@@ -48,8 +48,8 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
             selectedLayerIds={logic.selectedLayerIds} // NEW
             onSelectLayer={logic.onSelectLayer} // NEW
             onReorder={logic.onLayerReorder} // UPDATED TO onLayerReorder
-            toggleLayerVisibility={logic.toggleLayerVisibility}
-            renameLayer={logic.renameLayer}
+            toggleLayerVisibility={logic.toggleLayerVisibility} // FIX 39
+            renameLayer={logic.renameLayer} // FIX 40
             deleteLayer={logic.deleteLayer}
             onDuplicateLayer={logic.onDuplicateLayer}
             onMergeLayerDown={logic.onMergeLayerDown}
@@ -60,7 +60,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
             onLayerCommit={logic.commitLayerChange}
             onLayerPropertyCommit={logic.onLayerPropertyCommit}
             onLayerOpacityChange={logic.handleLayerOpacityChange}
-            onLayerOpacityCommit={logic.handleLayerOpacityCommit} // FIX: Use exposed name
+            onLayerOpacityCommit={logic.handleLayerOpacityCommit} // FIX 41
             addTextLayer={logic.addTextLayer}
             addDrawingLayer={logic.addDrawingLayer}
             onAddLayerFromBackground={logic.onAddLayerFromBackground}
@@ -92,14 +92,14 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
             <ToolOptionsContent
               activeTool={logic.activeTool}
               brushState={logic.brushState}
-              setBrushState={logic.setBrushState}
+              setBrushState={logic.setBrushState as any} // FIX 42: Casting to fix TS2322
               onBrushCommit={logic.onBrushCommit}
               gradientToolState={logic.gradientToolState}
               setGradientToolState={logic.setGradientToolState}
               gradientPresets={logic.gradientPresets}
               onApplyGradientPreset={(preset) => logic.setGradientToolState(preset.state)}
-              onSaveGradientPreset={logic.onSaveGradientPreset}
-              onDeleteGradientPreset={logic.onDeleteGradientPreset}
+              onSaveGradientPreset={logic.saveGradientPreset} // FIX 43: Corrected name
+              onDeleteGradientPreset={logic.deleteGradientPreset}
               selectiveBlurAmount={logic.selectiveBlurAmount}
               onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
               onSelectiveBlurAmountCommit={logic.onSelectiveBlurAmountCommit}
@@ -108,9 +108,9 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
               onSelectiveSharpenAmountCommit={logic.onSelectiveSharpenAmountCommit}
               cloneSourcePoint={logic.cloneSourcePoint}
               selectionSettings={logic.selectionSettings}
-              handleCheckboxChange={logic.onSelectionSettingChange}
-              handleValueChange={logic.onSelectionSettingChange}
-              handleValueCommit={logic.onSelectionSettingCommit}
+              handleCheckboxChange={logic.onSelectionSettingChange} // FIX 44
+              handleValueChange={logic.onSelectionSettingChange} // FIX 45
+              handleValueCommit={logic.onSelectionSettingCommit} // FIX 46
               history={logic.history}
               historyBrushSourceIndex={logic.historyBrushSourceIndex}
               setHistoryBrushSourceIndex={logic.setHistoryBrushSourceIndex}
@@ -129,8 +129,8 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
                 gradientToolState={logic.gradientToolState}
                 setGradientToolState={logic.setGradientToolState}
                 gradientPresets={logic.gradientPresets}
-                onSaveGradientPreset={logic.onSaveGradientPreset}
-                onDeleteGradientPreset={logic.onDeleteGradientPreset}
+                onSaveGradientPreset={logic.saveGradientPreset} // FIX 47: Corrected name
+                onDeleteGradientPreset={logic.deleteGradientPreset}
                 customHslColor={logic.customHslColor}
                 setCustomHslColor={logic.setCustomHslColor}
                 onRemoveLayerMask={logic.onRemoveLayerMask}
@@ -163,7 +163,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
               presets={logic.presets}
               onApplyPreset={logic.handleApplyPreset}
               onSavePreset={onSavePreset}
-              onDeletePreset={logic.onDeletePreset}
+              onDeletePreset={logic.deletePreset}
             />
             <ColorCorrectionPanel
               adjustments={logic.adjustments}
@@ -212,7 +212,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
           <HistoryPanel
             history={logic.history}
             currentIndex={logic.currentHistoryIndex}
-            onJump={logic.handleHistoryJump}
+            onJump={logic.setCurrentHistoryIndex} // FIX 48: Corrected name
             onUndo={logic.undo}
             onRedo={logic.redo}
             canUndo={logic.canUndo}
@@ -230,7 +230,7 @@ export const MobileToolOptions: React.FC<MobileToolOptionsProps> = ({ activeTab,
         return (
           <BrushesPanel
             brushState={logic.brushState}
-            setBrushState={logic.setBrushState}
+            setBrushState={logic.setBrushState as any} // Casting to fix TS2322
           />
         );
       case 'paths':

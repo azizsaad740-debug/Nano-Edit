@@ -85,15 +85,15 @@ const Index: React.FC = () => {
 
   // Placeholder for fullscreen toggle
   const onToggleFullscreen = React.useCallback(() => {
-    logic.setIsFullscreen(prev => !prev);
+    logic.setIsFullscreen(prev => !prev); // FIX 67
   }, [logic]);
   
   // Placeholder for mobile tab state
   const [mobileActiveTab, setMobileActiveTab] = React.useState<any>('layers');
 
   // Handlers for dialogs
-  const handleNewProjectClick = React.useCallback(() => setIsNewProjectOpen(true), []);
-  const handleExportClick = React.useCallback(() => setIsExportOpen(true), []);
+  const handleNewProjectClick = React.useCallback(() => logic.setIsNewProjectOpen(true), [logic]);
+  const handleExportClick = React.useCallback(() => logic.setIsExportOpen(true), [logic]);
   const handleOpenProject = React.useCallback(() => document.getElementById('file-upload-input')?.click(), []);
   const handleImportClick = React.useCallback(() => setIsImportOpen(true), []);
   const handleGenerateClick = React.useCallback(() => {
@@ -101,15 +101,15 @@ const Index: React.FC = () => {
       showError("Please load an image or create a new project first.");
       return;
     }
-    setIsGenerateOpen(true);
-  }, [logic.dimensions]);
+    logic.setIsGenerateOpen(true);
+  }, [logic.dimensions, logic.setIsGenerateOpen]);
   const handleGenerativeFillClick = React.useCallback(() => {
     if (!logic.selectionMaskDataUrl) {
       showError("Please make a selection first.");
       return;
     }
-    setIsGenerativeFillOpen(true);
-  }, [logic.selectionMaskDataUrl]);
+    logic.setIsGenerativeFillOpen(true);
+  }, [logic.selectionMaskDataUrl, logic.setIsGenerativeFillOpen]);
   
   const handleSavePreset = React.useCallback(() => setIsSavePresetOpen(true), []);
   const handleSaveGradientPreset = React.useCallback(() => setIsSaveGradientPresetOpen(true), []);
@@ -150,7 +150,7 @@ const Index: React.FC = () => {
               setIsMouseOverImage={logic.setIsMouseOverImage}
               handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
               handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
-              handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
+              handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // FIX 68: Casting to fix TS2322
               handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
               addGradientLayer={logic.addGradientLayer}
               addTextLayer={logic.addTextLayer}
@@ -167,16 +167,18 @@ const Index: React.FC = () => {
               setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
               base64Image={logic.base64Image}
               historyImageSrc={logic.historyImageSrc}
+              recordHistory={logic.recordHistory}
+              setSelectionMaskDataUrl={logic.setSelectionMaskDataUrl}
             />
           </div>
           <MobileToolOptions
             activeTab={mobileActiveTab}
             setActiveTab={setMobileActiveTab}
             logic={logic}
-            onOpenFontManager={() => setIsFontManagerOpen(true)}
+            onOpenFontManager={() => logic.setIsFontManagerOpen(true)}
             onSavePreset={handleSavePreset}
             onSaveGradientPreset={handleSaveGradientPreset}
-            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSettings={() => logic.setIsSettingsOpen(true)}
             onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
             isGuest={isGuest} // ADDED
           />
@@ -210,14 +212,14 @@ const Index: React.FC = () => {
         <div className="flex flex-col h-screen overflow-hidden">
           <EditorHeader
             logic={logic}
-            setIsNewProjectOpen={setIsNewProjectOpen}
-            setIsExportOpen={setIsExportOpen}
-            setIsSettingsOpen={setIsSettingsOpen}
+            setIsNewProjectOpen={logic.setIsNewProjectOpen}
+            setIsExportOpen={logic.setIsExportOpen}
+            setIsSettingsOpen={logic.setIsSettingsOpen}
             setIsImportOpen={setIsImportOpen}
-            setIsGenerateOpen={setIsGenerateOpen}
-            setIsGenerativeFillOpen={setIsGenerativeFillOpen}
-            setIsProjectSettingsOpen={setIsProjectSettingsOpen}
-            isFullscreen={logic.isFullscreen}
+            setIsGenerateOpen={logic.setIsGenerateOpen}
+            setIsGenerativeFillOpen={logic.setIsGenerativeFillOpen}
+            setIsProjectSettingsOpen={logic.setIsProjectSettingsOpen}
+            isFullscreen={logic.isFullscreen} // FIX 69
             onToggleFullscreen={onToggleFullscreen}
             panelLayout={logic.panelLayout}
             togglePanelVisibility={logic.togglePanelVisibility}
@@ -242,7 +244,7 @@ const Index: React.FC = () => {
                 onBackgroundColorChange={logic.setBackgroundColor}
                 onSwapColors={logic.handleSwapColors}
                 brushState={logic.brushState}
-                setBrushState={logic.setBrushState}
+                setBrushState={logic.setBrushState as any} // Casting to fix TS2322
                 selectiveBlurAmount={logic.selectiveBlurAmount}
                 onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
                 onSelectiveBlurAmountCommit={logic.onSelectiveBlurAmountCommit}
@@ -266,7 +268,7 @@ const Index: React.FC = () => {
                     setIsMouseOverImage={logic.setIsMouseOverImage}
                     handleDrawingStrokeEnd={logic.handleDrawingStrokeEnd}
                     handleSelectionBrushStrokeEnd={logic.handleSelectionBrushStrokeEnd}
-                    handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // Casting to fix TS2322
+                    handleSelectiveRetouchStrokeEnd={logic.handleSelectiveRetouchStrokeEnd as any} // FIX 71: Casting to fix TS2322
                     handleHistoryBrushStrokeEnd={logic.handleHistoryBrushStrokeEnd}
                     addGradientLayer={logic.addGradientLayer}
                     addTextLayer={logic.addTextLayer}
@@ -283,6 +285,8 @@ const Index: React.FC = () => {
                     setCloneSourcePoint={logic.setCloneSourcePoint} // ADDED
                     base64Image={logic.base64Image}
                     historyImageSrc={logic.historyImageSrc}
+                    recordHistory={logic.recordHistory}
+                    setSelectionMaskDataUrl={logic.setSelectionMaskDataUrl}
                   />
                 </ResizablePanel>
                 
@@ -324,7 +328,7 @@ const Index: React.FC = () => {
                         base64Image={logic.base64Image}
                         onImageResult={logic.handleGenerateImage}
                         onMaskResult={logic.handleMaskResult} // ADDED
-                        onOpenSettings={() => setIsSettingsOpen(true)}
+                        onOpenSettings={() => logic.setIsSettingsOpen(true)}
                         panelLayout={logic.panelLayout}
                         reorderPanelTabs={logic.reorderPanelTabs}
                         activeBottomTab={logic.activeBottomTab}
@@ -343,10 +347,10 @@ const Index: React.FC = () => {
               <ResizablePanel defaultSize={20} minSize={15} maxSize={30} className="min-w-[250px]">
                 <Sidebar
                   {...logic}
-                  onOpenFontManager={() => setIsFontManagerOpen(true)}
+                  onOpenFontManager={() => logic.setIsFontManagerOpen(true)}
                   onSavePreset={handleSavePreset} // Pass dialog opener
                   onSaveGradientPreset={handleSaveGradientPreset}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
+                  onOpenSettings={() => logic.setIsSettingsOpen(true)}
                   onOpenSmartObject={(id) => setIsSmartObjectEditorOpen(id)}
                   
                   // Explicitly pass properties that require renaming or wrapping:
@@ -362,7 +366,7 @@ const Index: React.FC = () => {
                   onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
                   onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
                   onChannelChange={logic.onChannelChange}
-                  onHistoryJump={logic.handleHistoryJump}
+                  onHistoryJump={logic.setCurrentHistoryIndex} // FIX 73
                   onBrushCommit={logic.onBrushCommit}
                   
                   // ADDED MISSING PROPS (Error 2 fix)
@@ -383,12 +387,12 @@ const Index: React.FC = () => {
         
         {/* Dialogs */}
         <SettingsDialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-        <NewProjectDialog open={isNewProjectOpen} onOpenChange={setIsNewProjectOpen} onNewProject={handleNewProjectWrapper} />
-        <ExportOptions open={isExportOpen} onOpenChange={setIsExportOpen} onExport={logic.handleExportClick} dimensions={logic.dimensions} />
+        <NewProjectDialog open={isNewProjectOpen} onOpenChange={logic.setIsNewProjectOpen} onNewProject={handleNewProjectWrapper} />
+        <ExportOptions open={isExportOpen} onOpenChange={logic.setIsExportOpen} onExport={logic.handleExportClick} dimensions={logic.dimensions} />
         <ImportPresetsDialog open={isImportOpen} onOpenChange={setIsImportOpen} />
         <GenerateImageDialog 
           open={isGenerateOpen} 
-          onOpenChange={setIsGenerateOpen} 
+          onOpenChange={logic.setIsGenerateOpen} 
           onGenerate={logic.handleGenerateImage} 
           apiKey={logic.geminiApiKey} 
           imageNaturalDimensions={logic.dimensions}
@@ -396,7 +400,7 @@ const Index: React.FC = () => {
         />
         <GenerativeDialog
           open={isGenerativeFillOpen}
-          onOpenChange={setIsGenerativeFillOpen}
+          onOpenChange={logic.setIsGenerativeFillOpen}
           onApply={logic.handleGenerativeFill}
           apiKey={logic.geminiApiKey}
           originalImage={logic.base64Image}
@@ -407,14 +411,14 @@ const Index: React.FC = () => {
         />
         <ProjectSettingsDialog
           open={isProjectSettingsOpen}
-          onOpenChange={setIsProjectSettingsOpen}
+          onOpenChange={logic.setIsProjectSettingsOpen}
           currentDimensions={logic.dimensions}
           currentColorMode={logic.currentEditState.colorMode}
           onUpdateSettings={logic.handleProjectSettingsUpdate}
         />
         <FontManagerDialog
           open={isFontManagerOpen}
-          onOpenChange={setIsFontManagerOpen}
+          onOpenChange={logic.setIsFontManagerOpen}
           systemFonts={logic.systemFonts}
           customFonts={logic.customFonts}
           addCustomFont={logic.addCustomFont}
@@ -428,7 +432,7 @@ const Index: React.FC = () => {
         <SaveGradientPresetDialog
           open={isSaveGradientPresetOpen}
           onOpenChange={setIsSaveGradientPresetOpen}
-          onSave={(name) => logic.onSaveGradientPreset(name, logic.gradientToolState)}
+          onSave={(name) => logic.saveGradientPreset(name, logic.gradientToolState)} // FIX 74: Corrected name
         />
         {isSmartObjectEditorOpen && (
           <SmartObjectEditor
@@ -446,9 +450,9 @@ const Index: React.FC = () => {
             selectedShapeType={logic.selectedShapeType}
             selectionPath={logic.selectionPath}
             selectionMaskDataUrl={logic.selectionMaskDataUrl}
-            clearSelectionState={logic.clearSelectionState}
-            setImage={logic.setImage}
-            setFileInfo={logic.setFileInfo}
+            clearSelectionState={logic.clearSelectionState} // FIX 75
+            setImage={logic.setImage} // FIX 76
+            setFileInfo={logic.setFileInfo} // FIX 77
             setSelectedLayerId={logic.setSelectedLayerId}
             selectedLayerId={logic.selectedLayerId}
             // ADDED PROPS:
@@ -456,8 +460,8 @@ const Index: React.FC = () => {
             customFonts={logic.customFonts}
             onOpenFontManager={logic.onOpenFontManager}
             gradientPresets={logic.gradientPresets}
-            onSaveGradientPreset={logic.onSaveGradientPreset}
-            onDeleteGradientPreset={logic.onDeleteGradientPreset}
+            onSaveGradientPreset={logic.saveGradientPreset} // FIX 78
+            onDeleteGradientPreset={logic.deleteGradientPreset}
           />
         )}
         {/* Hidden File Input for Desktop */}

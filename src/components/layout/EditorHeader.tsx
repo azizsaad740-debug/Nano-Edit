@@ -53,14 +53,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
-    customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit,
+    customHslColor, setCustomHslColor, selectionSettings, onSelectionSettingChange, onSelectionSettingCommit, // FIX 50, 51
     channels, onChannelChange: onChannelChangeLogic,
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex: handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex,
-    toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
+    toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, // FIX 52, 53
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     updateLayer, commitLayerChange, onLayerPropertyCommit,
-    handleLayerOpacityChange, handleLayerOpacityCommit, // Fixed Error 6
+    handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 54
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer: addGradientLayerLogic, onAddAdjustmentLayer,
     groupLayers, toggleGroupExpanded,
@@ -71,8 +71,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit,
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
-    presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset: deletePreset, // Fixed Errors 7, 8
-    gradientPresets, onSaveGradientPreset, onDeleteGradientPreset,
+    presets, handleApplyPreset, handleSavePresetCommit, deletePreset, // FIX 55: Corrected name
+    gradientPresets, saveGradientPreset, deleteGradientPreset, // FIX 55: Corrected name
     zoom, handleZoomIn, handleZoomOut, handleFitScreen,
     geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
@@ -84,14 +84,14 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
     onBrushCommit,
     
     // Missing properties added here:
-    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent, // Fixed Errors 9, 10
+    setSelectionSettings, setCloneSourcePoint, setZoom, setMarqueeStart, setMarqueeCurrent, 
     onOpenFontManager,
-    stabilityApiKey, dismissToast,
-    setImage, setDimensions, setFileInfo, setExifData, setLayers,
-    initialEditState, initialLayerState,
+    stabilityApiKey, dismissToast, // FIX 56
+    setImage, setDimensions, setFileInfo, setExifData, setLayers, // FIX 57, 58, 59, 60, 61
+    initialEditState, initialLayerState, // FIX 62, 63
     handleCopy,
-    clearSelectionState,
-    panelLayout: logicPanelLayout, // Rename to avoid conflict with prop // Fixed Error 11
+    clearSelectionState, // FIX 64
+    panelLayout: logicPanelLayout, // Rename to avoid conflict with prop
     reorderPanelTabs,
   } = logic;
 
@@ -101,20 +101,20 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
   }, []);
   
   const handleDownloadClick = useCallback(() => {
-    setIsExportOpen(true);
-  }, [setIsExportOpen]);
+    logic.setIsExportOpen(true);
+  }, [logic.setIsExportOpen]);
   
   const handleGenerativeFillWrapper = useCallback(() => {
-    setIsGenerativeFillOpen(true);
-  }, [setIsGenerativeFillOpen]);
+    logic.setIsGenerativeFillOpen(true);
+  }, [logic.setIsGenerativeFillOpen]);
   
   const handleGenerateImageWrapper = useCallback(() => {
-    setIsGenerateOpen(true);
-  }, [setIsGenerateOpen]);
+    logic.setIsGenerateOpen(true);
+  }, [logic.setIsGenerateOpen]);
   
   const handleNewProjectClickWrapper = useCallback(() => {
-    setIsNewProjectOpen(true);
-  }, [setIsNewProjectOpen]);
+    logic.setIsNewProjectOpen(true);
+  }, [logic.setIsNewProjectOpen]);
   
   const handleSaveProjectWrapper = useCallback(() => {
     showError("Project saving is a stub.");

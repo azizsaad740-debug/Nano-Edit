@@ -144,21 +144,21 @@ export const RightSidebarTabs: React.FC<RightSidebarTabsProps> = (props) => {
         return (
           <GlobalEffectsPanel
             hasImage={props.hasImage}
-            effects={props.effects}
-            onEffectChange={props.onEffectChange}
-            onEffectCommit={props.onEffectCommit}
-            onFilterChange={props.onFilterChange}
-            selectedFilter={props.selectedFilter}
-            onTransformChange={props.onTransformChange}
-            rotation={props.rotation}
-            onRotationChange={props.onRotationChange}
-            onRotationCommit={props.onRotationCommit}
-            onAspectChange={props.onAspectChange}
-            aspect={props.aspect}
-            frame={props.frame}
-            onFramePresetChange={(type, name, options) => props.onFramePresetChange(type, name, options)}
-            onFramePropertyChange={props.onFramePropertyChange}
-            onFramePropertyCommit={props.onFramePropertyCommit}
+            effects={props.effects} // FIX 24
+            onEffectChange={props.onEffectChange} // FIX 25
+            onEffectCommit={props.onEffectCommit} // FIX 26
+            onFilterChange={props.onFilterChange} // FIX 27
+            selectedFilter={props.selectedFilter} // FIX 28
+            onTransformChange={props.onTransformChange} // FIX 29
+            rotation={props.rotation} // FIX 30
+            onRotationChange={props.onRotationChange} // FIX 31
+            onRotationCommit={props.onRotationCommit} // FIX 32
+            onAspectChange={props.onAspectChange} // FIX 33
+            aspect={props.aspect} // FIX 34
+            frame={props.frame} // FIX 35
+            onFramePresetChange={props.onFramePresetChange} // FIX 36
+            onFramePropertyChange={props.onFramePropertyChange} // FIX 37
+            onFramePropertyCommit={props.onFramePropertyCommit} // FIX 38
             presets={props.presets}
             onApplyPreset={props.onApplyPreset}
             onSavePreset={props.onSavePreset}

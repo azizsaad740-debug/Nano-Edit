@@ -111,7 +111,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addTextLayer = () => {
     const newLayer: TextLayerData = {
-      ...createBaseLayer('text', 'Text Layer'),
+      ...createBaseLayer('text', 'Text Layer', { x: 50, y: 50 }),
       type: 'text',
       content: 'New Text',
       fontSize: 48,
@@ -132,7 +132,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addDrawingLayer = () => {
     const newLayer: DrawingLayerData = {
-      ...createBaseLayer('drawing', 'Drawing Layer'),
+      ...createBaseLayer('drawing', 'Drawing Layer', { x: 50, y: 50 }),
       type: 'drawing',
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // 1x1 transparent pixel
       width: 100, height: 100,
@@ -144,7 +144,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addShapeLayer = () => {
     const newLayer: VectorShapeLayerData = {
-      ...createBaseLayer('vector-shape', 'Shape Layer'),
+      ...createBaseLayer('vector-shape', 'Shape Layer', { x: 50, y: 50 }),
       type: 'vector-shape',
       shapeType: selectedShapeType || 'rect',
       fillColor: foregroundColor,
@@ -160,15 +160,15 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addGradientLayer = () => {
     const newLayer: GradientLayerData = {
-      ...createBaseLayer('gradient', 'Gradient Layer'),
+      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }),
       type: 'gradient',
-      gradientType: gradientToolState.type,
+      gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
       gradientColors: gradientToolState.colors,
       stops: gradientToolState.stops,
       gradientAngle: gradientToolState.angle,
       gradientFeather: gradientToolState.feather,
       gradientInverted: gradientToolState.inverted,
-      gradientCenterX: gradientToolToolState.centerX,
+      gradientCenterX: gradientToolState.centerX, // FIX 65: Corrected name
       gradientCenterY: gradientToolState.centerY,
       gradientRadius: gradientToolState.radius,
       width: 100, height: 100,
@@ -202,7 +202,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     setInternalLayers(prev => prev.map(l => l.id === id ? { ...l, ...updates } as Layer : l));
   };
   
-  const handleCommitInternalLayer = (id: string, historyName: string) => {
+  const handleCommitInternalLayer = (id: string, historyName: string) => { // FIX 66: Added historyName argument
     // No history recording inside SO editor, commit happens on save
   };
   
@@ -282,7 +282,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
                     setSelectedLayerId={setInternalSelectedLayerId}
                   />
                 </div>
-              </div>
+              </div >
             </ResizablePanel>
 
             {/* Properties Panel (Conditional) */}

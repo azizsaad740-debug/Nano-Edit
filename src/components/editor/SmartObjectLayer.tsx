@@ -12,7 +12,7 @@ interface SmartObjectLayerProps {
   layer: Layer;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void; // FIX 12: Added historyName
   isSelected: boolean;
   parentDimensions: { width: number; height: number } | null;
   activeTool: ActiveTool | null;
@@ -33,7 +33,7 @@ export const SmartObjectLayer = ({ layer, containerRef, onUpdate, onCommit, isSe
     layer,
     containerRef,
     onUpdate,
-    onCommit,
+    onCommit: (id) => onCommit(id, `Update ${layer.name} Transform`), // FIX 12: Wrapped commit
     type: "smart-object",
     parentDimensions,
     activeTool,

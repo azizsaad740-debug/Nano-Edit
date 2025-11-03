@@ -418,4 +418,4 @@ const ShapeOptions: React.FC<ShapeOptionsProps> = ({ layer, onLayerUpdate, onLay
   );
 };
 
-export default ShapeProperties;
+export default ShapeOptions;

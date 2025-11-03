@@ -89,8 +89,9 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     setSelectedLayerIds(id ? [id] : []);
   }, []);
   const [activeTool, setActiveTool] = useState<ActiveTool | null>(null);
+  // FIX 4: Use initialGradientToolState directly
   const [brushState, setBrushState] = useState<BrushState>(initialEditState.brushState);
-  const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialEditState.gradientToolState);
+  const [gradientToolState, setGradientToolState] = useState<GradientToolState>(initialGradientToolState); 
   const [foregroundColor, setForegroundColor] = useState<string>('#000000');
   const [backgroundColor, setBackgroundColor] = useState<string>('#FFFFFF');
   const [selectedShapeType, setSelectedShapeType] = useState<ShapeType | null>('rect');
@@ -335,34 +336,39 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
 
   const reorderPanelTabs = useCallback((activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
     setPanelLayout(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId);
-      const overIndex = prev.findIndex(t => t.id === overId);
-      
-      if (activeIndex === -1 || overIndex === -1) return prev;
+        const activeTab = prev.find(t => t.id === activeId);
+        if (!activeTab) return prev;
 
-      const activeTab = prev[activeIndex];
-      
-      // 1. Change location if dropped onto a different panel
-      if (activeTab.location !== newLocation) {
-        const updated = prev.map(t => t.id === activeId ? { ...t, location: newLocation, visible: true } : t);
-        return updated;
-      }
-      
-      // 2. Reorder within the same panel
-      const itemsInPanel = prev.filter(t => t.location === newLocation).sort((a, b) => a.order - b.order);
-      const oldIndex = itemsInPanel.findIndex(t => t.id === activeId);
-      const newIndex = itemsInPanel.findIndex(t => t.id === overId);
-      
-      const reorderedItems = arrayMove(itemsInPanel, oldIndex, newIndex);
-      
-      // Re-apply order numbers
-      const updatedPanel = reorderedItems.map((t, index) => ({ ...t, order: index + 1 }));
-      
-      // Merge back into the full layout
-      const otherTabs = prev.filter(t => t.location !== newLocation);
-      return [...otherTabs, ...updatedPanel].sort((a, b) => a.order - b.order);
+        // 1. Prepare the list of tabs in the target panel (excluding the active tab if it was already there)
+        let targetTabs = prev
+            .filter(t => t.location === newLocation && t.id !== activeId)
+            .sort((a, b) => a.order - b.order);
+
+        // 2. Find the index where the active tab should be inserted
+        const overIndex = targetTabs.findIndex(t => t.id === overId);
+        const insertIndex = overIndex === -1 ? targetTabs.length : overIndex;
+
+        // 3. Insert the active tab into the target list
+        const updatedActiveTab = { ...activeTab, location: newLocation, visible: true };
+        targetTabs.splice(insertIndex, 0, updatedActiveTab);
+
+        // 4. Re-assign order numbers for the target panel
+        const updatedTargetTabs = targetTabs.map((t, index) => ({ ...t, order: index + 1 }));
+
+        // 5. Filter out the active tab from its old location/state
+        const remainingTabs = prev.filter(t => t.location !== newLocation && t.id !== activeId);
+
+        // 6. Combine and return the new layout
+        return [...remainingTabs, ...updatedTargetTabs].sort((a, b) => a.order - b.order);
     });
-  }, [setPanelLayout]);
+    
+    // Ensure the newly moved tab becomes active in its new panel
+    if (newLocation === 'right') {
+        setActiveRightTab(activeId);
+    } else {
+        setActiveBottomTab(activeId);
+    }
+  }, [setPanelLayout, setActiveRightTab, setActiveBottomTab]);
 
   // --- Hook Integrations ---
   
@@ -373,7 +379,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   const { 
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
-    updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+    updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 5, 54: Corrected name
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer: addGradientLayerLogic, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
@@ -381,7 +387,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     handleReorder: onLayerReorder, findLayer, onSelectLayer, // NEW
   } = useLayers({
-    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds
+    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool // PASSED activeTool
   });
   
   const handleLayerDelete = useCallback(() => {
@@ -411,10 +417,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   const { transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset: applyTransformPreset } = useTransform(currentEditState, updateCurrentState, recordHistoryApi, layers);
   const { crop, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(currentEditState, updateCurrentState, recordHistoryApi, layers);
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame({ currentEditState, updateCurrentState, recordHistory: recordHistoryApi, layers });
-  const { presets, savePreset, deletePreset } = usePresets();
-  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets();
-  const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd: handleSelectiveRetouchStrokeEndLogic, applyPreset: applySelectiveRetouchPreset, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit } = useSelectiveRetouch(currentEditState, updateCurrentState, recordHistoryApi, layers, dimensions);
-  const { channels, onChannelChange: onChannelChangeLogic, applyPreset: applyChannelsPreset } = useChannels({ currentEditState, updateCurrentState, recordHistory: recordHistoryApi, layers });
+  const { presets, savePreset, deletePreset } = usePresets(); // FIX 6: Use deletePreset
+  const { gradientPresets, saveGradientPreset, deleteGradientPreset } = useGradientPresets(); // FIX 7: Use deleteGradientPreset
 
   const handleSavePresetCommit = useCallback((name: string) => {
     savePreset(name, currentEditState, layers);
@@ -668,7 +672,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     
     // Layer Actions
     updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit,
-    handleLayerOpacityChange, onLayerOpacityCommit,
+    handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 5, 54: Corrected name
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer: addGradientLayerLogic, addGradientLayerNoArgs, onAddAdjustmentLayer,
     deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
@@ -692,8 +696,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     channels, onChannelChange: onChannelChangeLogic,
     
     // Presets
-    presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset,
-    gradientPresets, saveGradientPreset: saveGradientPreset, onDeleteGradientPreset,
+    presets, handleApplyPreset, handleSavePresetCommit, deletePreset, // FIX 6, 9: Corrected name
+    gradientPresets, saveGradientPreset, deleteGradientPreset, // FIX 7, 10: Corrected name
     
     // Settings/External
     geminiApiKey, stabilityApiKey,
@@ -711,7 +715,23 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     onSelectiveBlurAmountCommit,
     onSelectiveSharpenAmountCommit,
     
+    // Dialog Setters (Exposed for Header/Index)
+    setIsFullscreen, // FIX 67: Expose setter
+    setIsSettingsOpen,
+    setIsImportOpen,
+    setIsGenerateOpen,
+    setIsGenerativeFillOpen,
+    setIsNewProjectOpen,
+    setIsExportOpen,
+    setIsProjectSettingsOpen,
+    setIsFontManagerOpen,
+    
+    // Image/File Setters (Exposed for Smart Object Editor)
+    setImage, setDimensions, setFileInfo, setExifData, setLayers, // FIX 57, 58, 59, 60, 61
+    initialEditState, initialLayerState, // FIX 62, 63
+    dismissToast, // FIX 56
+    clearSelectionState, // FIX 64
   }), [
-    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, setSelectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, onLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerLogic, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, onDeletePreset, gradientPresets, saveGradientPreset, onDeleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit
+    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, setSelectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerLogic, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState
   ]);
 };

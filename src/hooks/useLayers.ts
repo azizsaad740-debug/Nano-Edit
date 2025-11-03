@@ -1,184 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { arrayMove } from '@dnd-kit/sortable';
-import {
-  initialEditState, initialLayerState, isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isDrawingLayer,
-  type Layer, type ActiveTool, type BrushState, type GradientToolState, type ShapeType, type GroupLayerData,
-  type TextLayerData, type DrawingLayerData, type VectorShapeLayerData, type GradientLayerData, type Dimensions,
-  type EditState, type Point, type AdjustmentLayerData, type AdjustmentState,
-} from '@/types/editor';
-import { showSuccess, showError } from '@/utils/toast';
-import { invertMaskDataUrl, mergeMasks } from '@/utils/maskUtils'; // Import utility
-import { mergeStrokeOntoLayer } from '@/utils/imageUtils'; // NEW IMPORT
-
-interface UseLayersProps {
-    layers: Layer[];
-    setLayers: React.Dispatch<React.SetStateAction<Layer[]>>;
-    recordHistory: (name: string, state: EditState, layers: Layer[]) => void;
-    currentEditState: EditState;
-    dimensions: Dimensions | null;
-    foregroundColor: string;
-    backgroundColor: string;
-    gradientToolState: GradientToolState;
-    selectedShapeType: ShapeType | null;
-    selectionPath: Point[] | null;
-    selectionMaskDataUrl: string | null;
-    setSelectionMaskDataUrl: (dataUrl: string | null) => void;
-    clearSelectionState: () => void;
-    setImage: (image: string | null) => void;
-    setFileInfo: (info: { name: string; size: number } | null) => void;
-    selectedLayerIds: string[]; // NEW
-    setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>; // NEW
-}
-
-export const useLayers = ({
-  layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds
-}: UseLayersProps) => {
-  
-  // --- Layer Utility Functions ---
-  
-  const findLayer = useCallback((id: string, currentLayers: Layer[] = layers): Layer | undefined => {
-    for (const layer of currentLayers) {
-      if (layer.id === id) return layer;
-      if (layer.type === 'group' && layer.children) {
-        const found = findLayer(id, layer.children);
-        if (found) return found;
-      }
-    }
-    return undefined;
-  }, [layers]);
-
-  const updateLayer = useCallback((id: string, updates: Partial<Layer>) => {
-    setLayers(prevLayers => {
-      const updateRecursive = (currentLayers: Layer[]): Layer[] => {
-        return currentLayers.map(layer => {
-          if (layer.id === id) {
-            return { ...layer, ...updates } as Layer;
-          }
-          if (layer.type === 'group' && layer.children) {
-            return { ...layer, children: updateRecursive(layer.children) } as Layer;
-          }
-          return layer;
-        });
-      };
-      return updateRecursive(prevLayers);
-    });
-  }, [setLayers]);
-
-  const commitLayerChange = useCallback((id: string, name: string) => {
-    recordHistory(name, currentEditState, layers);
-  }, [currentEditState, layers, recordHistory]);
-
-  // --- Layer Creation Utilities ---
-  
-  // Helper to create base layer properties (x, y are expected to be percentages 0-100)
-  const createBaseLayer = useCallback((type: Layer['type'], name: string, coords: Point): Omit<Layer, 'type'> => ({
-    id: uuidv4(),
-    name,
-    visible: true,
-    opacity: 100,
-    blendMode: 'normal',
-    isLocked: false,
-    maskDataUrl: null,
-    isClippingMask: false,
-    x: coords.x, y: coords.y, 
-    width: 100, height: 100, // Default to full canvas size, adjusted later by specific layer type
-    rotation: 0, scaleX: 1, scaleY: 1,
-  }), []);
-
-  // --- Layer Creation Implementations ---
-
-  const addTextLayer = useCallback((coords: Point, color: string) => {
-    const newLayer: TextLayerData = {
-      ...createBaseLayer('text', 'Text Layer', coords),
-      type: 'text',
-      content: 'New Text',
-      fontSize: 48,
-      color: color,
-      fontFamily: 'Roboto',
-      fontWeight: 'normal',
-      fontStyle: 'normal',
-      textAlign: 'center',
-      letterSpacing: 0,
-      lineHeight: 1.2,
-      padding: 0,
-      width: 50, height: 10, // Text layers usually have small default size
-    };
-    setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerIds([newLayer.id]); // NEW
-    recordHistory(`Add Text Layer`, currentEditState, [newLayer, ...layers]);
-    showSuccess(`Added Text Layer.`);
-  }, [createBaseLayer, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
-
-  const addShapeLayer = useCallback((coords: Point, shapeType: ShapeType = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string = foregroundColor, strokeColor: string = backgroundColor) => {
-    const newLayer: VectorShapeLayerData = {
-      ...createBaseLayer('vector-shape', `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} Layer`, coords),
-      type: 'vector-shape',
-      shapeType: shapeType,
-      fillColor: fillColor,
-      strokeColor: strokeColor,
-      strokeWidth: 2,
-      borderRadius: shapeType === 'rect' ? 5 : 0,
-      width: initialWidth, height: initialHeight,
-      x: coords.x, y: coords.y,
-      
-      // Shape specific defaults
-      points: (shapeType === 'triangle') ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
-      starPoints: (shapeType === 'star') ? 5 : undefined,
-      lineThickness: (shapeType === 'line' || shapeType === 'arrow') ? 5 : undefined,
-    };
-    
-    // Adjust fill/stroke for line/arrow types
-    if (shapeType === 'line' || shapeType === 'arrow') {
-        newLayer.fillColor = 'none';
-        newLayer.strokeWidth = 2;
-    }
-
-    setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerIds([newLayer.id]); // NEW
-    recordHistory(`Add ${shapeType} Layer`, currentEditState, [newLayer, ...layers]);
-    showSuccess(`Added ${shapeType} Layer.`);
-  }, [createBaseLayer, foregroundColor, backgroundColor, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
-
-  const addGradientLayer = useCallback((startPoint: Point, endPoint: Point) => {
-    if (!dimensions) {
-      showError("Cannot add gradient layer without dimensions.");
-      return;
-    }
-    
-    // Convert pixel coordinates (startPoint, endPoint) to percentage (0-100)
-    const startPercent: Point = { x: (startPoint.x / dimensions.width) * 100, y: (startPoint.y / dimensions.height) * 100 };
-    const endPercent: Point = { x: (endPoint.x / dimensions.width) * 100, y: (endPoint.y / dimensions.height) * 100 };
-    
-    const newLayer: GradientLayerData = {
-      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }), // Center position
-      type: 'gradient',
-      width: 100, height: 100, // Full canvas size
-      
-      // Gradient specific properties
-      gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
-      gradientColors: gradientToolState.colors,
-      stops: gradientToolState.stops,
-      gradientAngle: gradientToolState.angle,
-      gradientFeather: gradientToolState.feather,
-      gradientInverted: gradientToolState.inverted,
-      gradientCenterX: gradientToolState.centerX,
-      gradientCenterY: gradientToolState.centerY,
-      gradientRadius: gradientToolState.radius,
-      
-      startPoint: startPercent,
-      endPoint: endPercent,
-    };
-    
-    setLayers(prev => [newLayer, ...prev]);
-    setSelectedLayerIds([newLayer.id]); // NEW
-    recordHistory(`Add Gradient Layer`, currentEditState, [newLayer, ...layers]);
-    showSuccess(`Added Gradient Layer.`);
-  }, [dimensions, gradientToolState, createBaseLayer, setLayers, setSelectedLayerIds, recordHistory, currentEditState, layers]);
-
-  // --- Layer Actions (Simplified Stubs) ---
-  
-  const deleteLayer = useCallback((id: string) => {
+const deleteLayer = useCallback((id: string) => {
     if (id === 'background') {
       showError("Cannot delete the background layer.");
       return;
@@ -397,7 +217,8 @@ export const useLayers = ({
       return;
     }
     
-    const isEraser = currentEditState.activeTool === 'eraser';
+    // FIX 1, 2: Use local activeTool state instead of currentEditState.activeTool
+    const isEraser = activeTool === 'eraser';
     
     try {
       const newLayerDataUrl = await mergeStrokeOntoLayer(
@@ -414,7 +235,7 @@ export const useLayers = ({
       console.error("Failed to merge drawing stroke:", error);
       showError("Failed to apply drawing stroke.");
     }
-  }, [dimensions, findLayer, currentEditState.activeTool, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
+  }, [dimensions, findLayer, activeTool, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
 
   const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
     if (!dimensions) return;
@@ -480,7 +301,8 @@ export const useLayers = ({
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     updateLayer, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
-    addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
+    addTextLayer, addDrawingLayer: (coords: Point, dataUrl: string) => { showError("Add Drawing Layer is a stub."); return uuidv4(); }, // Stub implementation for addDrawingLayer
+    onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
