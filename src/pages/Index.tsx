@@ -164,6 +164,20 @@ const Index: React.FC = () => {
             setActiveTab={setMobileActiveTab}
           />
         </div>
+        {/* Hidden File Input for Mobile/Desktop */}
+        <input
+          type="file"
+          id="file-upload-input"
+          accept="image/*,.nanoedit"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              logic.handleImageLoad(file);
+            }
+            e.target.value = '';
+          }}
+        />
       </TooltipProvider>
     );
   }
@@ -405,6 +419,20 @@ const Index: React.FC = () => {
             selectedLayerId={logic.selectedLayerId}
           />
         )}
+        {/* Hidden File Input for Desktop */}
+        <input
+          type="file"
+          id="file-upload-input"
+          accept="image/*,.nanoedit"
+          className="hidden"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              logic.handleImageLoad(file);
+            }
+            e.target.value = '';
+          }}
+        />
       </TooltipProvider>
     </DndContext>
   );
