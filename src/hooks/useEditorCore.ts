@@ -305,34 +305,39 @@ export const useEditorCore = () => {
 
   const reorderPanelTabs = useCallback((activeId: string, overId: string, newLocation: 'right' | 'bottom') => {
     setPanelLayout(prev => {
-      const activeIndex = prev.findIndex(t => t.id === activeId);
-      const overIndex = prev.findIndex(t => t.id === overId);
-      
-      if (activeIndex === -1 || overIndex === -1) return prev;
+        const activeTab = prev.find(t => t.id === activeId);
+        if (!activeTab) return prev;
 
-      const activeTab = prev[activeIndex];
-      
-      // 1. Change location if dropped onto a different panel
-      if (activeTab.location !== newLocation) {
-        const updated = prev.map(t => t.id === activeId ? { ...t, location: newLocation, visible: true } : t);
-        return updated;
-      }
-      
-      // 2. Reorder within the same panel
-      const itemsInPanel = prev.filter(t => t.location === newLocation).sort((a, b) => a.order - b.order);
-      const oldIndex = itemsInPanel.findIndex(t => t.id === activeId);
-      const newIndex = itemsInPanel.findIndex(t => t.id === overId);
-      
-      const reorderedItems = arrayMove(itemsInPanel, oldIndex, newIndex);
-      
-      // Re-apply order numbers
-      const updatedPanel = reorderedItems.map((t, index) => ({ ...t, order: index + 1 }));
-      
-      // Merge back into the full layout
-      const otherTabs = prev.filter(t => t.location !== newLocation);
-      return [...otherTabs, ...updatedPanel].sort((a, b) => a.order - b.order);
+        // 1. Prepare the list of tabs in the target panel (excluding the active tab if it was already there)
+        let targetTabs = prev
+            .filter(t => t.location === newLocation && t.id !== activeId)
+            .sort((a, b) => a.order - b.order);
+
+        // 2. Find the index where the active tab should be inserted
+        const overIndex = targetTabs.findIndex(t => t.id === overId);
+        const insertIndex = overIndex === -1 ? targetTabs.length : overIndex;
+
+        // 3. Insert the active tab into the target list
+        const updatedActiveTab = { ...activeTab, location: newLocation, visible: true };
+        targetTabs.splice(insertIndex, 0, updatedActiveTab);
+
+        // 4. Re-assign order numbers for the target panel
+        const updatedTargetTabs = targetTabs.map((t, index) => ({ ...t, order: index + 1 }));
+
+        // 5. Filter out the active tab from its old location/state
+        const remainingTabs = prev.filter(t => t.location !== newLocation && t.id !== activeId);
+
+        // 6. Combine and return the new layout
+        return [...remainingTabs, ...updatedTargetTabs].sort((a, b) => a.order - b.order);
     });
-  }, [setPanelLayout]);
+    
+    // Ensure the newly moved tab becomes active in its new panel
+    if (newLocation === 'right') {
+        setActiveRightTab(activeId);
+    } else {
+        setActiveBottomTab(activeId);
+    }
+  }, [setPanelLayout, setActiveRightTab, setActiveBottomTab]);
 
   return {
     // Core API methods (exposed for useEditorLogic)
