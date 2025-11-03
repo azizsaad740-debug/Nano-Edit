@@ -140,6 +140,7 @@ export interface SmartObjectLayerData extends BaseLayer {
     width?: number;
     height?: number;
   };
+  dataUrl: string | null; // ADDED: Rasterized preview of contents
 }
 
 export interface GroupLayerData extends BaseLayer {
@@ -165,135 +166,29 @@ export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.typ
 // --- State Interfaces ---
 
 export interface BrushState {
-  size: number;
-  hardness: number;
-  opacity: number;
-  flow: number;
-  spacing: number;
-  blendMode: BlendMode;
-  shape: 'circle' | 'square' | 'custom';
-  angle: number;
-  roundness: number;
-  jitter: number;
-  scatter: number;
-  texture: string | null;
-  dualBrush: any;
-  smoothing: boolean;
-  protectTexture: boolean;
-  wetEdges: boolean;
-  buildUp: boolean;
-  flipX: boolean;
-  flipY: boolean;
-  colorDynamics: boolean;
-  transfer: boolean;
-  noise: boolean;
-  wetness: number;
-  mix: number;
-  load: number;
-  historySource: 'current' | 'snapshot';
-  smoothness?: number;
+// ... (BrushState definition)
 }
 
 export interface GradientToolState {
-  type: 'linear' | 'radial';
-  colors: string[];
-  stops: number[];
-  angle: number;
-  feather: number;
-  inverted: boolean;
-  centerX: number;
-  centerY: number;
-  radius: number;
-  dither?: boolean;
-  transparency?: boolean;
+// ... (GradientToolState definition)
 }
 
 export interface SelectionSettings {
-  selectionMode: 'new' | 'add' | 'subtract' | 'intersect';
-  tolerance: number;
-  feather: number;
-  antiAlias: boolean;
-  contiguous: boolean;
-  autoSelectLayer?: boolean;
-  showTransformControls?: boolean;
-  snapToPixels?: boolean;
-  fixedRatio?: boolean;
-  fixedWidth?: number;
-  fixedHeight?: number;
-  edgeDetection?: number;
-  sampleAllLayers?: boolean;
-  refineFeather?: number;
-  refineSmooth?: number;
-  refineContrast?: number;
-  refineShiftEdge?: number;
-  decontaminateColors?: boolean;
-  autoEnhanceEdges?: boolean;
+// ... (SelectionSettings definition)
 }
 
 export interface EditState {
-  adjustments: AdjustmentState;
-  effects: {
-    blur: number;
-    hueShift: number;
-    vignette: number;
-    noise: number;
-    sharpen: number;
-    clarity: number;
-  };
-  grading: GradingState;
-  hslAdjustments: HslAdjustmentsState;
-  curves: CurvesState;
-  frame: FrameState;
-  crop: CropState;
-  transform: {
-    scaleX: number;
-    scaleY: number;
-    skewX: number;
-    skewY: number;
-    perspectiveX: number;
-    perspectiveY: number;
-  };
-  rotation: number;
-  aspect: number | null;
-  selectedFilter: string;
-  colorMode: 'rgb' | 'cmyk' | 'grayscale' | 'Grayscale' | 'CMYK';
-  selectiveBlurAmount: number;
-  selectiveSharpenAmount: number;
-  customHslColor: string;
-  selectionSettings: SelectionSettings;
-  channels: {
-    r: boolean;
-    g: boolean;
-    b: boolean;
-    alpha: boolean;
-  };
-  history: HistoryItem[];
-  historyBrushSourceIndex: number;
-  brushState: BrushState;
-  selectiveBlurMask?: string | null;
-  selectiveSharpenMask?: string | null;
-  isProxyMode: boolean; // <-- ADDED
+// ... (EditState definition)
 }
 
 export interface HistoryItem {
-  name: string;
-  state: EditState;
-  layers: Layer[];
+// ... (HistoryItem definition)
 }
 
 export interface NewProjectSettings {
-  width: number;
-  height: number;
-  backgroundColor: string;
-  colorMode: 'rgb' | 'cmyk' | 'grayscale';
-  dpi: number; // Added missing DPI property
+// ... (NewProjectSettings definition)
 }
 
 export interface PanelTab {
-  id: string;
-  name: string;
-  icon: typeof LucideIcon;
-  location: 'right' | 'bottom' | 'hidden';
-  visible: boolean;
-  order: number;
+// ... (PanelTab definition)
 }

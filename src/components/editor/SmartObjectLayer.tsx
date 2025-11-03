@@ -21,8 +21,8 @@ interface SmartObjectLayerProps {
 }
 
 export const SmartObjectLayer = ({ layer, containerRef, onUpdate, onCommit, isSelected, parentDimensions, activeTool, zoom, setSelectedLayerId }: SmartObjectLayerProps) => {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const smartObjectLayer = layer as SmartObjectLayerData;
+  const imgRef = React.useRef<HTMLImageElement>(null);
 
   const {
     layerRef,
@@ -41,30 +41,6 @@ export const SmartObjectLayer = ({ layer, containerRef, onUpdate, onCommit, isSe
     zoom,
     setSelectedLayerId,
   });
-
-  // --- Canvas Rendering Logic (Stub) ---
-  React.useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!ctx || !parentDimensions) return;
-
-    // Set canvas dimensions to the smart object's internal dimensions
-    const internalWidth = smartObjectLayer.smartObjectData.width || parentDimensions.width;
-    const internalHeight = smartObjectLayer.smartObjectData.height || parentDimensions.height;
-    
-    canvas.width = internalWidth;
-    canvas.height = internalHeight;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // STUB: Simulate rendering the smart object contents
-    ctx.fillStyle = 'rgba(100, 100, 255, 0.5)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.font = "30px Arial";
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.fillText("Smart Object", canvas.width / 2, canvas.height / 2);
-
-  }, [smartObjectLayer, parentDimensions]);
 
   if (!layer.visible || layer.type !== "smart-object" || !parentDimensions) return null;
 
@@ -97,14 +73,20 @@ export const SmartObjectLayer = ({ layer, containerRef, onUpdate, onCommit, isSe
           isSelected && "outline outline-2 outline-primary outline-dashed"
         )}
       >
-        <canvas
-          ref={canvasRef}
-          className="absolute top-0 left-0 w-full h-full pointer-events-none"
-          style={{
-            width: '100%',
-            height: '100%',
-          }}
-        />
+        {/* Use img tag to display the rasterized dataUrl */}
+        {smartObjectLayer.dataUrl ? (
+          <img
+            ref={imgRef}
+            src={smartObjectLayer.dataUrl}
+            alt={smartObjectLayer.name}
+            className="w-full h-full object-contain pointer-events-none"
+            crossOrigin="anonymous"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted/50 text-muted-foreground text-sm">
+            Empty Smart Object
+          </div>
+        )}
 
         {isSelected && (
           <>

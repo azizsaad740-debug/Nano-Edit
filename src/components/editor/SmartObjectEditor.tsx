@@ -7,12 +7,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import SmartObjectLayersPanel from "./SmartObjectLayersPanel";
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { showError, showSuccess } from "@/utils/toast";
+import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { SmartObjectWorkspace } from "./SmartObjectWorkspace";
 import { v4 as uuidv4 } from 'uuid';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { SmartObjectPropertiesPanel } from "./SmartObjectPropertiesPanel";
 import type { GradientPreset } from "@/hooks/useGradientPresets";
+import { rasterizeLayersToDataUrl } from "@/utils/layerUtils";
 
 interface SmartObjectEditorProps {
   layerId: string;
@@ -82,22 +83,53 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     }
   }, [smartObjectLayer]);
 
-  const handleSave = () => {
-    if (smartObjectLayer?.type === 'smart-object') {
+  const handleSave = async () => {
+    if (smartObjectLayer?.type !== 'smart-object' || !dimensions) {
+      showError("Cannot save: Smart Object layer or canvas dimensions missing.");
+      return;
+    }
+    
+    const toastId = showLoading(`Rasterizing and saving ${smartObjectLayer.name}...`);
+
+    try {
+      // 1. Determine internal dimensions (use parent dimensions as fallback)
+      const internalDimensions: Dimensions = {
+        width: smartObjectLayer.smartObjectData.width || dimensions.width,
+        height: smartObjectLayer.smartObjectData.height || dimensions.height,
+      };
+      
+      // 2. Rasterize internal layers to a single data URL
+      const rasterizedDataUrl = await rasterizeLayersToDataUrl(
+        internalLayers,
+        internalDimensions,
+        currentEditState // Pass currentEditState
+      );
+
+      // 3. Update the global layer with new layers and the rasterized data URL
       updateGlobalLayer(layerId, {
         smartObjectData: {
           ...smartObjectLayer.smartObjectData,
           layers: internalLayers,
-        }
+          width: internalDimensions.width,
+          height: internalDimensions.height,
+        },
+        dataUrl: rasterizedDataUrl, // Update the rasterized preview
       });
+      
+      dismissToast(toastId);
+      showSuccess(`Smart Object "${smartObjectLayer.name}" saved.`);
       onSave(layerId, `Edit Smart Object: ${smartObjectLayer.name}`);
+      onClose();
+    } catch (error) {
+      dismissToast(toastId);
+      console.error("Smart Object Save Error:", error);
+      showError("Failed to save Smart Object contents.");
     }
-    onClose();
   };
 
   // --- Internal Layer Creation Logic ---
   
-  const createBaseLayer = (type: Layer['type'], name: string): Omit<Layer, 'type'> => ({
+  const createBaseLayer = (type: Layer['type'], name: string, position: { x: number; y: number } = { x: 50, y: 50 }): Omit<Layer, 'type'> => ({
     id: uuidv4(),
     name,
     visible: true,
@@ -106,12 +138,12 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     isLocked: false,
     maskDataUrl: null,
     isClippingMask: false,
-    x: 50, y: 50, width: 50, height: 10, rotation: 0, scaleX: 1, scaleY: 1,
+    x: position.x, y: position.y, width: 50, height: 10, rotation: 0, scaleX: 1, scaleY: 1,
   });
 
   const addTextLayer = () => {
     const newLayer: TextLayerData = {
-      ...createBaseLayer('text', 'Text Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('text', 'Text Layer'),
       type: 'text',
       content: 'New Text',
       fontSize: 48,
@@ -132,7 +164,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addDrawingLayer = () => {
     const newLayer: DrawingLayerData = {
-      ...createBaseLayer('drawing', 'Drawing Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('drawing', 'Drawing Layer'),
       type: 'drawing',
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // 1x1 transparent pixel
       width: 100, height: 100,
@@ -144,7 +176,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addShapeLayer = () => {
     const newLayer: VectorShapeLayerData = {
-      ...createBaseLayer('vector-shape', 'Shape Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('vector-shape', 'Shape Layer'),
       type: 'vector-shape',
       shapeType: selectedShapeType || 'rect',
       fillColor: foregroundColor,
@@ -160,7 +192,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addGradientLayer = () => {
     const newLayer: GradientLayerData = {
-      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('gradient', 'Gradient Layer'),
       type: 'gradient',
       gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
       gradientColors: gradientToolState.colors,

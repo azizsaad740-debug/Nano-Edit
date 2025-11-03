@@ -115,6 +115,7 @@ export interface SmartObjectData {
 export interface SmartObjectLayerData extends BaseLayerData {
   type: 'smart-object';
   smartObjectData: SmartObjectData;
+  dataUrl: string | null; // ADDED: Rasterized preview of contents
 }
 
 export interface GroupLayerData extends BaseLayerData {
