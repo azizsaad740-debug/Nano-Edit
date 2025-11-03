@@ -28,7 +28,7 @@ interface LayersPanelProps {
   onMergeLayerDown: (id: string) => void;
   onRasterizeLayer: (id: string) => void;
   onCreateSmartObject: (layerIds: string[]) => void;
-  onOpenSmartObject: (id: string) => void;
+  onOpenSmartObject: (id: string) => void; // ADDED
   onLayerUpdate: (id: string, updates: Partial<Layer>) => void;
   onLayerCommit: (id: string, historyName: string) => void;
   onLayerPropertyCommit: (id: string, updates: Partial<Layer>, historyName: string) => void;
@@ -69,7 +69,8 @@ const RecursiveLayerList: React.FC<{
   toggleGroupExpanded: (id: string) => void;
   onToggleLayerLock: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
-}> = ({ layers, selectedLayerId, selectedLayerIds, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
+  onOpenSmartObject: (id: string) => void; // ADDED
+}> = ({ layers, selectedLayerId, selectedLayerIds, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer, onOpenSmartObject }) => {
   const { active } = useDndContext();
   const activeId = active?.id;
 
@@ -87,6 +88,7 @@ const RecursiveLayerList: React.FC<{
               onToggleLayerLock={onToggleLayerLock}
               renameLayer={renameLayer}
               isDragging={activeId === layer.id}
+              onOpenSmartObjectEditor={onOpenSmartObject} // PASSED
             />
             {isGroupLayer(layer) && layer.isExpanded && layer.children && (
               <div className="ml-4 border-l border-muted">
@@ -99,6 +101,7 @@ const RecursiveLayerList: React.FC<{
                   toggleGroupExpanded={toggleGroupExpanded}
                   onToggleLayerLock={onToggleLayerLock}
                   renameLayer={renameLayer}
+                  onOpenSmartObject={onOpenSmartObject} // PASSED
                 />
               </div>
             )}
@@ -162,6 +165,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = (props) => {
             toggleGroupExpanded={toggleGroupExpanded}
             onToggleLayerLock={onToggleLayerLock}
             renameLayer={renameLayer}
+            onOpenSmartObject={onOpenSmartObject} // PASSED
           />
         </div>
       </ScrollArea>
