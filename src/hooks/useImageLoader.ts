@@ -180,7 +180,7 @@ export const useImageLoader = (
     document.getElementById('file-upload-input')?.click();
   }, []);
   
-  const handleLoadTemplate = useCallback((templateData: TemplateProjectData) => {
+  const handleLoadTemplate = useCallback((templateData: TemplateProjectData, templateName: string) => {
     const { editState: partialEditState, layers: templateLayers, dimensions: templateDimensions } = templateData;
     
     resetAllEdits();
@@ -206,7 +206,7 @@ export const useImageLoader = (
     const backgroundLayer = templateLayers.find(l => l.id === 'background');
     if (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) {
       setImage(backgroundLayer.dataUrl);
-      setFileInfo({ name: `Template: ${templateData.name}`, size: 0 });
+      setFileInfo({ name: `Template: ${templateName}`, size: 0 });
     } else {
       setImage(null);
       setFileInfo(null);
@@ -214,10 +214,10 @@ export const useImageLoader = (
 
     // 5. Record initial history state
     const newLayers = templateLayers;
-    recordHistory(`Template Loaded: ${templateData.name}`, currentEditState, newLayers);
+    recordHistory(`Template Loaded: ${templateName}`, currentEditState, newLayers);
     setSelectedLayerId('background');
     
-    showSuccess(`Template "${templateData.name}" loaded successfully.`);
+    showSuccess(`Template "${templateName}" loaded successfully.`);
   }, [resetAllEdits, setDimensions, setLayers, setCurrentEditState, recordHistory, currentEditState, setImage, setFileInfo, setSelectedLayerId]);
 
   const handleNewFromClipboard = useCallback((importInSameProject: boolean) => {

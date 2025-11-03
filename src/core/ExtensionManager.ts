@@ -28,7 +28,7 @@ export class ExtensionManager {
     if (!extension) {
       throw new Error(`Extension ${extensionId} not found.`);
     }
-    const func = extension[method];
+    const func = (extension as any)[method];
     if (typeof func !== 'function') {
       throw new Error(`Method ${method} not found on extension ${extensionId}.`);
     }
