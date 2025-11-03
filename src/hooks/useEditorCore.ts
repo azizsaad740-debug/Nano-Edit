@@ -22,11 +22,18 @@ import {
   type ShapeType,
   type PanelTab,
 } from "@/types/editor";
-import { showSuccess, showError, dismissToast } from "@/utils/toast";
+import { showSuccess, showError, dismissToast, showLoading } from "@/utils/toast";
 import { useFontManager } from "./useFontManager";
 import { useSettings } from "./useSettings";
+import { useSession } from "@/integrations/supabase/session-provider";
+import type { EditorAPI } from "@/core/EditorAPI";
+import { extensionManager } from "@/core/ExtensionManager";
+import { InvertToolExtension } from "@/extensions/ExampleExtension";
 
-export const useEditorState = () => {
+// Register extensions immediately (stub for Admin Panel management)
+extensionManager.register(new InvertToolExtension());
+
+export const useEditorCore = () => {
   // Refs for DOM elements
   const workspaceRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -38,8 +45,8 @@ export const useEditorState = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isMouseOverImage, setIsMouseOverImage] = useState(false); // ADDED
-  const [isFontManagerOpen, setIsFontManagerOpen] = useState(false); // ADDED
+  const [isMouseOverImage, setIsMouseOverImage] = useState(false);
+  const [isFontManagerOpen, setIsFontManagerOpen] = useState(false);
 
   // Core Project State
   const [image, setImage] = useState<string | null>(null);
@@ -83,13 +90,14 @@ export const useEditorState = () => {
   const [historyBrushSourceIndex, setHistoryBrushSourceIndex] = useState(0);
 
   // Panel Management State
-  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout); // Initialized with default layout
+  const [panelLayout, setPanelLayout] = useState<PanelTab[]>(initialPanelLayout);
   const [activeRightTab, setActiveRightTab] = useState('layers');
   const [activeBottomTab, setActiveBottomTab] = useState('correction');
   
   // External Hooks
-  const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager(); // FIX 10: Removed onOpenFontManager
+  const { systemFonts, customFonts, addCustomFont, removeCustomFont } = useFontManager();
   const { geminiApiKey, stabilityApiKey } = useSettings();
+  const { user, isGuest, isAdmin } = useSession();
 
   const selectedLayer = useMemo(() => layers.find(l => l.id === selectedLayerId), [layers, selectedLayerId]);
 
@@ -97,7 +105,6 @@ export const useEditorState = () => {
     setCurrentEditState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Define clearSelectionState before resetAllEdits
   const clearSelectionState = useCallback(() => {
     setSelectionPath(null);
     setSelectionMaskDataUrl(null);
@@ -105,18 +112,40 @@ export const useEditorState = () => {
     setMarqueeCurrent(null);
   }, [setSelectionPath, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent]);
 
-  const recordHistory = useCallback((name: string, state: EditState, currentLayers: Layer[]) => {
+  // --- Core API Implementation ---
+  
+  const updateLayerApi = useCallback((id: string, updates: Partial<Layer>) => {
+    setLayers(prevLayers => {
+      const updateRecursive = (currentLayers: Layer[]): Layer[] => {
+        return currentLayers.map(layer => {
+          if (layer.id === id) {
+            return { ...layer, ...updates } as Layer;
+          }
+          if (layer.type === 'group' && layer.children) {
+            return { ...layer, children: updateRecursive(layer.children) } as Layer;
+          }
+          return layer;
+        });
+      };
+      return updateRecursive(prevLayers);
+    });
+  }, [setLayers]);
+  
+  const recordHistoryApi = useCallback((name: string, stateUpdates?: Partial<EditState>, currentLayers?: Layer[]) => {
+    const stateToRecord = stateUpdates ? { ...currentEditState, ...stateUpdates } : currentEditState;
+    const layersToRecord = currentLayers || layers;
+    
     const newHistory = history.slice(0, currentHistoryIndex + 1);
     
     // Merge brush state and history indices into the recorded EditState
-    const stateToRecord: EditState = {
-        ...state,
+    const finalState: EditState = {
+        ...stateToRecord,
         brushState: brushState,
         history: newHistory, 
         historyBrushSourceIndex: currentHistoryIndex,
     };
     
-    const newEntry: HistoryItem = { name, state: stateToRecord, layers: currentLayers };
+    const newEntry: HistoryItem = { name, state: finalState, layers: layersToRecord };
     
     // Prevent duplicate history entries if state hasn't changed significantly
     if (newHistory.length > 0 && newHistory[newHistory.length - 1].name === name) {
@@ -125,13 +154,54 @@ export const useEditorState = () => {
 
     setHistory([...newHistory, newEntry]);
     setCurrentHistoryIndex(newHistory.length);
-  }, [history, currentHistoryIndex, brushState]);
+  }, [history, currentHistoryIndex, currentEditState, layers, brushState]);
+  
+  const getRole = useCallback((): 'guest' | 'registered' | 'admin' => {
+    if (isGuest) return 'guest';
+    if (isAdmin) return 'admin';
+    if (user) return 'registered';
+    return 'guest';
+  }, [isGuest, isAdmin, user]);
 
+  const editorApi: EditorAPI = useMemo(() => ({
+    getLayers: () => layers,
+    getEditState: () => currentEditState,
+    getDimensions: () => dimensions,
+    getSelectedLayerId: () => selectedLayerId,
+    getBrushState: () => brushState,
+    getSelectionMaskDataUrl: () => selectionMaskDataUrl,
+    
+    updateLayer: updateLayerApi,
+    setLayers: setLayers,
+    
+    recordHistory: recordHistoryApi,
+    
+    showToast: (type, message) => {
+      if (type === 'success') return showSuccess(message);
+      if (type === 'error') return showError(message);
+      if (type === 'loading') return showLoading(message);
+      return '';
+    },
+    dismissToast: dismissToast,
+    
+    getUserRole: getRole,
+    getApiKey: (service) => service === 'gemini' ? geminiApiKey : stabilityApiKey,
+    
+    invokeExtension: (id, method, args) => extensionManager.invokeExtension(id, method, args),
+  }), [layers, currentEditState, dimensions, selectedLayerId, brushState, selectionMaskDataUrl, updateLayerApi, setLayers, recordHistoryApi, getRole, geminiApiKey, stabilityApiKey]);
+
+  // Initialize Extension Manager once the API is stable
+  useEffect(() => {
+    extensionManager.initialize(editorApi);
+  }, [editorApi]);
+  
+  // --- History Handlers (using API) ---
+  
   const undo = useCallback((steps: number = 1) => {
     const newIndex = Math.max(0, currentHistoryIndex - steps);
     if (newIndex !== currentHistoryIndex) {
       const entry = history[newIndex];
-      if (!entry) { // Safety check
+      if (!entry) {
         showError("History state not found.");
         return;
       }
@@ -143,7 +213,7 @@ export const useEditorState = () => {
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
       setSelectiveSharpenAmount(entry.state.selectiveSharpenAmount);
-      setBrushState(entry.state.brushState); // Restore brush state
+      setBrushState(entry.state.brushState);
       
       showSuccess(`Undo: ${entry.name}`);
     } else {
@@ -155,7 +225,7 @@ export const useEditorState = () => {
     const newIndex = Math.min(history.length - 1, currentHistoryIndex + 1);
     if (newIndex !== currentHistoryIndex) {
       const entry = history[newIndex];
-      if (!entry) { // Safety check
+      if (!entry) {
         showError("History state not found.");
         return;
       }
@@ -167,7 +237,7 @@ export const useEditorState = () => {
       // Restore local state amounts from history entry
       setSelectiveBlurAmount(entry.state.selectiveBlurAmount);
       setSelectiveSharpenAmount(entry.state.selectiveSharpenAmount);
-      setBrushState(entry.state.brushState); // Restore brush state
+      setBrushState(entry.state.brushState);
       
       showSuccess(`Redo: ${entry.name}`);
     } else {
@@ -187,7 +257,7 @@ export const useEditorState = () => {
     clearSelectionState();
     setSelectiveBlurAmount(initialEditState.selectiveBlurAmount);
     setSelectiveSharpenAmount(initialEditState.selectiveSharpenAmount);
-    setBrushState(initialBrushState); // Reset brush state
+    setBrushState(initialBrushState);
     showSuccess("All edits reset.");
   }, [clearSelectionState, setBrushState]);
   
@@ -233,6 +303,9 @@ export const useEditorState = () => {
   }, [setPanelLayout]);
 
   return {
+    // Core API methods (exposed for useEditorLogic)
+    editorApi,
+    
     // Refs
     workspaceRef, imgRef,
     // Dialogs
@@ -254,7 +327,7 @@ export const useEditorState = () => {
     // History
     history, setHistory,
     currentHistoryIndex, setCurrentHistoryIndex,
-    recordHistory,
+    recordHistory: recordHistoryApi, // Use API version
     undo, redo,
     canUndo, canRedo,
     historyBrushSourceIndex, setHistoryBrushSourceIndex,
@@ -289,15 +362,17 @@ export const useEditorState = () => {
     // External
     systemFonts,
     customFonts, addCustomFont, removeCustomFont,
-    onOpenFontManager: () => setIsFontManagerOpen(true), // Corrected usage
+    onOpenFontManager: () => setIsFontManagerOpen(true),
     geminiApiKey, stabilityApiKey,
     dismissToast,
     // Panel Management
     panelLayout, setPanelLayout,
     reorderPanelTabs,
-    togglePanelVisibility, // ADDED
+    togglePanelVisibility,
     activeRightTab, setActiveRightTab,
     activeBottomTab, setActiveBottomTab,
-    setIsMouseOverImage, // ADDED
+    setIsMouseOverImage,
+    // Auth
+    user, isGuest, isAdmin,
   };
 };

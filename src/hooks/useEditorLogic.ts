@@ -24,8 +24,6 @@ import {
   type ImageLayerData,
 } from "@/types/editor";
 import { showSuccess, showError, dismissToast } from "@/utils/toast";
-import { useFontManager } from "./useFontManager";
-import { useSettings } from "./useSettings";
 import { useHistory } from './useHistory';
 import { useLayers } from './useLayers';
 import { useCrop } from './useCrop';
@@ -55,11 +53,11 @@ import { useImageLoader } from './useImageLoader';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import { copyImageToClipboard } from '@/utils/imageUtils';
 import { isImageOrDrawingLayer } from '@/types/editor';
-import { useEditorState } from "./useEditorState";
-
+import { useEditorCore } from "./useEditorCore";
+import { extensionManager } from "@/core/ExtensionManager";
 
 export const useEditorLogic = (props: any) => {
-  const state = useEditorState();
+  const core = useEditorCore();
   const {
     // Core State
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
@@ -99,7 +97,11 @@ export const useEditorLogic = (props: any) => {
     initialEditState, initialLayerState,
     clearSelectionState,
     setIsMouseOverImage,
-  } = state;
+    
+    // Auth
+    user, isGuest, isAdmin,
+    editorApi, // Core API
+  } = core;
 
   // --- Derived State ---
   const hasImage = useMemo(() => Boolean(image), [image]);
@@ -128,7 +130,7 @@ export const useEditorLogic = (props: any) => {
   const handleZoomOut = useCallback(() => setZoom(prev => Math.max(0.1, prev - 0.1)), [setZoom]);
   const handleFitScreen = useCallback(() => setZoom(1), [setZoom]);
 
-  // --- Sub-Hooks (Destructuring all required properties) ---
+  // --- Sub-Hooks (Delegated Logic) ---
   const { transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, applyPreset: applyTransformPreset } = useTransform(currentEditState, updateCurrentState, recordHistory, layers);
   const { crop, onCropChange, onCropComplete, onAspectChange, aspect, applyPreset: applyCropPreset } = useCrop(currentEditState, updateCurrentState, recordHistory, layers);
   const { frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, applyPreset: applyFramePreset } = useFrame({ currentEditState, updateCurrentState, recordHistory, layers });
@@ -139,7 +141,6 @@ export const useEditorLogic = (props: any) => {
   const { curves, onCurvesChange, onCurvesCommit, applyPreset: applyCurvesPreset } = useCurves({ currentEditState, updateCurrentState, recordHistory, layers });
   const { channels, onChannelChange: onChannelChangeHook, applyPreset: applyChannelsPreset } = useChannels({ currentEditState, updateCurrentState, recordHistory, layers });
   
-  // Renamed to avoid redeclaration conflict with useLayers destructuring (Fixes Error 1, 2, 3)
   const { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset: applySelectiveRetouchPreset } = useSelectiveRetouch(currentEditState, updateCurrentState, recordHistory, layers, dimensions);
   
   const { presets: globalPresets, savePreset: saveGlobalPreset, deletePreset: deleteGlobalPreset } = usePresets();
@@ -181,7 +182,6 @@ export const useEditorLogic = (props: any) => {
     clearSelectionState, setImage, setFileInfo, setSelectedLayerId: setSelectedLayerIdState, selectedLayerId,
   });
   
-  // Wrapper for addGradientLayer to handle tool interaction
   const addGradientLayerWithCoords = useCallback((startPoint: Point, endPoint: Point) => {
     addGradientLayerHook(startPoint, endPoint);
   }, [addGradientLayerHook]);
@@ -191,7 +191,6 @@ export const useEditorLogic = (props: any) => {
       showError("Cannot add gradient layer without dimensions.");
       return;
     }
-    // Default gradient from center to right edge (0-100% in image pixels)
     const start: Point = { x: dimensions.width / 2, y: dimensions.height / 2 };
     const end: Point = { x: dimensions.width, y: dimensions.height / 2 };
     addGradientLayerWithCoords(start, end);
@@ -218,7 +217,6 @@ export const useEditorLogic = (props: any) => {
   const handleXtraImageResult = useCallback((resultUrl: string, historyName: string) => {
     if (!dimensions) return;
     
-    // Create a new image layer from the result URL
     const newLayer: Layer = {
       id: uuidv4(),
       name: historyName,
@@ -254,7 +252,6 @@ export const useEditorLogic = (props: any) => {
       return;
     }
     try {
-      // In a real app, this would render the full canvas with all layers/effects first
       await copyImageToClipboard(base64Image);
       showSuccess("Image copied to clipboard.");
     } catch (error) {
@@ -272,21 +269,17 @@ export const useEditorLogic = (props: any) => {
     if (selectedLayerId) {
       deleteLayer(selectedLayerId);
     } else if (selectionMaskDataUrl) {
-      // If no layer is selected but there is an active selection, delete the selected area on the active layer (if not background)
       handleDestructiveOperation('delete');
     } else {
       showError("Nothing selected to delete.");
     }
   }, [selectedLayerId, deleteLayer, selectionMaskDataUrl, handleDestructiveOperation]);
 
-  // Wrapper for setBrushState to handle partial updates (Fixes Error 19, 30)
   const setBrushStateWrapper = useCallback((updates: Partial<Omit<BrushState, 'color'>>) => {
     setBrushState(prev => ({ ...prev, ...updates }));
   }, [setBrushState]);
 
   const onBrushCommit = useCallback(() => {
-    // This function is called when brush settings change permanently (e.g., slider release)
-    // We record the current brushState into history.
     recordHistory(`Update Brush Settings`, { ...currentEditState, brushState }, layers);
   }, [currentEditState, brushState, layers, recordHistory]);
   
@@ -297,32 +290,24 @@ export const useEditorLogic = (props: any) => {
     const point = getPointOnImage(e.clientX, e.clientY);
     if (!point) return;
 
-    // Example: Start Gradient drawing
     if (activeTool === 'gradient') {
       setGradientStart({ x: e.clientX, y: e.clientY });
       setGradientCurrent({ x: e.clientX, y: e.clientY });
     }
     
-    // Example: Eyedropper tool
     if (activeTool === 'eyedropper') {
-        // Logic to sample color (stub)
-        setForegroundColor('#FF00FF'); // Sampled color stub
+        setForegroundColor('#FF00FF');
         setActiveTool(null);
     }
     
-    // Example: Polygonal Lasso (start new path)
     if (activeTool === 'lassoPoly') {
         if (selectionPath && selectionPath.length > 0) {
-            // Continue path
             setSelectionPath(prev => [...(prev || []), point]);
         } else {
-            // Start new path
             setSelectionPath([point]);
         }
     }
     
-    // Prevent default behavior for drag/selection
-    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
     if (activeTool === 'gradient' || activeTool === 'eyedropper' || activeTool === 'lassoPoly') {
         e.preventDefault();
     }
@@ -331,18 +316,14 @@ export const useEditorLogic = (props: any) => {
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
     
-    // Live Gradient update
     if (gradientStart && activeTool === 'gradient') {
       setGradientCurrent({ x: e.clientX, y: e.clientY });
     }
-    
-    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
   }, [dimensions, activeTool, gradientStart, setGradientCurrent]);
 
   const handleWorkspaceMouseUp = useCallback(async (e: React.MouseEvent<HTMLDivElement>) => {
     if (!dimensions) return;
     
-    // End Gradient drawing
     if (gradientStart && gradientCurrent && activeTool === 'gradient') {
       const startPoint = getPointOnImage(gradientStart.x, gradientStart.y);
       const endPoint = getPointOnImage(gradientCurrent.x, gradientCurrent.y);
@@ -354,13 +335,10 @@ export const useEditorLogic = (props: any) => {
       setGradientCurrent(null);
       setActiveTool(null);
     }
-    
-    // NOTE: Marquee tool interaction is now handled entirely within useMarqueeToolInteraction.ts
   }, [dimensions, gradientStart, gradientCurrent, activeTool, getPointOnImage, addGradientLayerWithCoords, setGradientStart, setGradientCurrent, setActiveTool]);
 
   const handleWheel = useCallback((e: React.WheelEvent<HTMLDivElement>) => {
     if (e.ctrlKey || e.metaKey) {
-      // Zoom control
       e.preventDefault();
       if (e.deltaY < 0) {
         handleZoomIn();
@@ -368,15 +346,12 @@ export const useEditorLogic = (props: any) => {
         handleZoomOut();
       }
     } else if (e.shiftKey) {
-      // Horizontal scroll (stub)
       e.preventDefault();
       console.log("Horizontal scroll stub");
     }
   }, [handleZoomIn, handleZoomOut]);
   
-  // Wrapper for layer selection to match LayersPanel signature
   const handleSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
-    // Simplified selection logic: just set the ID
     setSelectedLayerIdState(id);
   }, [setSelectedLayerIdState]);
   
@@ -386,7 +361,6 @@ export const useEditorLogic = (props: any) => {
     clearSelectionState();
   }, [setSelectionMaskDataUrl, recordHistory, currentEditState, layers, clearSelectionState]);
 
-  // --- Selective Retouch Commit Wrappers (Needed by Sidebar) ---
   const onSelectiveBlurAmountCommit = useCallback((value: number) => {
     updateCurrentState({ selectiveBlurAmount: value });
     recordHistory(`Set Selective Blur Amount to ${value}`, { ...currentEditState, selectiveBlurAmount: value }, layers);
@@ -397,7 +371,6 @@ export const useEditorLogic = (props: any) => {
     recordHistory(`Set Selective Sharpen Amount to ${value}`, { ...currentEditState, selectiveSharpenAmount: value }, layers);
   }, [updateCurrentState, recordHistory, currentEditState, layers]);
 
-  // --- Return all necessary state and handlers ---
   return {
     // Core State
     image, dimensions, fileInfo, exifData, layers, selectedLayerId, selectedLayer,
@@ -405,17 +378,14 @@ export const useEditorLogic = (props: any) => {
     foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor,
     selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl,
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
-    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, 
-    onSelectionSettingChange: (key: keyof typeof selectionSettings, value: any) => setSelectionSettings(prev => ({ ...prev, [key]: value })),
-    onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${String(key)}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
-    channels, onChannelChange: onChannelChangeHook,
+    customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, cloneSourcePoint, setCloneSourcePoint,
     
     // History
     history, currentHistoryIndex, recordHistory, undo, redo, canUndo, canRedo,
     setCurrentHistoryIndex, historyBrushSourceIndex, setHistoryBrushSourceIndex,
     
-    // Layer Management (Mapped to RightSidebarTabsProps names)
-    onSelectLayer: handleSelectLayer, // Mapped
+    // Layer Management
+    onSelectLayer: handleSelectLayer,
     toggleLayerVisibility, renameLayer, deleteLayer, 
     onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
@@ -428,7 +398,7 @@ export const useEditorLogic = (props: any) => {
     onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
-    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleSelectiveRetouchStrokeEnd, handleHistoryBrushStrokeEnd,
+    handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
     onLayerReorder: handleReorder,
     
     // Effects/Transform
@@ -440,7 +410,7 @@ export const useEditorLogic = (props: any) => {
     adjustments, onAdjustmentChange, onAdjustmentCommit, grading, onGradingChange, onGradingCommit,
     hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit,
     
-    // Presets (Mapped to RightSidebarTabsProps names)
+    // Presets
     presets: globalPresets, 
     onApplyPreset: (preset: any) => {
         applyTransformPreset(preset.state);
@@ -476,9 +446,6 @@ export const useEditorLogic = (props: any) => {
     
     // UI/Layout
     isFullscreen, setIsFullscreen,
-    isSettingsOpen, setIsSettingsOpen,
-    isGenerateOpen, setIsGenerateOpen,
-    isGenerativeFillOpen, setIsGenerativeFillOpen,
     activeRightTab, setActiveRightTab,
     activeBottomTab, setActiveBottomTab,
     
@@ -490,7 +457,6 @@ export const useEditorLogic = (props: any) => {
     base64Image, historyImageSrc,
     isPreviewingOriginal, setIsPreviewingOriginal,
     clearSelectionState,
-    setSelectedLayerId: setSelectedLayerIdState,
     
     // External Hooks/Functions
     systemFonts, customFonts, addCustomFont, removeCustomFont, onOpenFontManager,
@@ -511,7 +477,7 @@ export const useEditorLogic = (props: any) => {
     // History Panel Mappings
     onHistoryJump: setCurrentHistoryIndex,
     
-    // Mapped properties for consuming components (Fixes Errors 4, 6, 7, 8, 9, 10, 11)
+    // Mapped properties for consuming components
     handleApplyPreset: (preset: any) => {
         applyTransformPreset(preset.state);
         applyCropPreset(preset.state);
@@ -534,10 +500,16 @@ export const useEditorLogic = (props: any) => {
     setGradientCurrent,
     colorMode: currentEditState.colorMode,
     
-    // Added missing commit/history functions
     onSelectiveBlurAmountCommit,
     onSelectiveSharpenAmountCommit,
     onUndo: undo,
     onRedo: redo,
+    
+    // Auth status
+    isGuest,
+    isAdmin,
+    
+    // Extension Manager (for Admin Panel)
+    extensionManager,
   };
 };
