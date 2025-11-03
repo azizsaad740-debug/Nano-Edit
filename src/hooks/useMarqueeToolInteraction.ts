@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { ActiveTool, Dimensions, Point, EditState, Layer } from '@/types/editor';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl } from '@/utils/maskUtils';
+import { showSuccess, showError } from '@/utils/toast';
 
 interface UseMarqueeToolInteractionProps {
   activeTool: ActiveTool | null;
@@ -36,9 +37,14 @@ export const useMarqueeToolInteraction = (props: UseMarqueeToolInteractionProps)
     const scaleX = dimensions.width / rect.width;
     const scaleY = dimensions.height / rect.height;
     
+    // Ensure coordinates are relative to the image element's top-left corner
+    const x = (clientX - rect.left) * scaleX;
+    const y = (clientY - rect.top) * scaleY;
+
+    // Clamp to image boundaries
     return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY,
+      x: Math.max(0, Math.min(dimensions.width, x)),
+      y: Math.max(0, Math.min(dimensions.height, y)),
     };
   }, [imgRef, dimensions]);
 
@@ -64,15 +70,32 @@ export const useMarqueeToolInteraction = (props: UseMarqueeToolInteractionProps)
       
       if (startPoint && endPoint) {
         let maskDataUrl: string | null = null;
-        if (activeTool === 'marqueeRect') {
-          maskDataUrl = await rectToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
-        } else if (activeTool === 'marqueeEllipse') {
-          maskDataUrl = await ellipseToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
-        }
         
-        if (maskDataUrl) {
-          setSelectionMaskDataUrl(maskDataUrl);
-          recordHistory(`Marquee Selection (${activeTool})`, currentEditState, layers);
+        // Check if the selection area is large enough
+        const width = Math.abs(startPoint.x - endPoint.x);
+        const height = Math.abs(startPoint.y - endPoint.y);
+        
+        if (width < 5 || height < 5) {
+            showError(" Selection area is too small.");
+            setSelectionMaskDataUrl(null);
+        } else {
+            try {
+                if (activeTool === 'marqueeRect') {
+                    maskDataUrl = await rectToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
+                } else if (activeTool === 'marqueeEllipse') {
+                    maskDataUrl = await ellipseToMaskDataUrl(startPoint, endPoint, dimensions.width, dimensions.height);
+                }
+                
+                if (maskDataUrl) {
+                    setSelectionMaskDataUrl(maskDataUrl);
+                    recordHistory(`Marquee Selection (${activeTool})`, currentEditState, layers);
+                    showSuccess("Selection created.");
+                }
+            } catch (error) {
+                console.error("Failed to create marquee mask:", error);
+                showError("Failed to create selection mask.");
+                setSelectionMaskDataUrl(null);
+            }
         }
       }
       setMarqueeStart(null);
