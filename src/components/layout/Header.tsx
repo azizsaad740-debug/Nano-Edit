@@ -179,7 +179,7 @@ const Header = ({
           <div className="flex items-center gap-1">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onUndo} disabled={!canUndo}>
+                <Button variant="ghost" size="icon" onClick={() => onUndo()} disabled={!canUndo}>
                   <Undo2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -189,7 +189,7 @@ const Header = ({
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onRedo} disabled={!canRedo}>
+                <Button variant="ghost" size="icon" onClick={() => onRedo()} disabled={!canRedo}>
                   <Redo2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
