@@ -139,7 +139,7 @@ const BottomPanel: React.FC<BottomPanelProps> = (props) => {
             onImageResult={props.onImageResult}
             onMaskResult={props.onMaskResult}
             onOpenSettings={props.onOpenSettings}
-            isGuest={props.isGuest} // PASSED
+            isGuest={props.isGuest}
           />
         );
       case 'info':

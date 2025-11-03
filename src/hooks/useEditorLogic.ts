@@ -1,12 +1,36 @@
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { toast } from 'sonner';
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
+import { arrayMove } from "@dnd-kit/sortable";
+import {
+  initialEditState,
+  initialBrushState,
+  initialGradientToolState,
+  initialLayerState,
+  initialHistoryItem,
+  initialSelectionSettings,
+  initialPanelLayout,
+  type Layer,
+  type EditState,
+  type ActiveTool,
+  type Point,
+  type BrushState,
+  type GradientToolState,
+  type Dimensions,
+  type HistoryItem,
+  type SelectionSettings,
+  type ShapeType,
+  type PanelTab,
+  type ImageLayerData,
+} from "@/types/editor";
+import { showSuccess, showError, dismissToast } from "@/utils/toast";
+import { useFontManager } from "./useFontManager";
+import { useSettings } from "./useSettings";
 import { useHistory } from './useHistory';
 import { useLayers } from './useLayers';
 import { useCrop } from './useCrop';
 import { useFrame } from './useFrame';
 import { useExport } from './useExport';
-import { useEditorState } from './useEditorState';
 import { useGenerativeAi } from './useGenerativeAi';
 import { useTransform } from './useTransform';
 import { useAdjustments } from './useAdjustments';
@@ -30,9 +54,8 @@ import { useEffects } from './useEffects';
 import { useImageLoader } from './useImageLoader';
 import { rectToMaskDataUrl, ellipseToMaskDataUrl, floodFillToMaskDataUrl, objectSelectToMaskDataUrl } from '@/utils/maskUtils';
 import { copyImageToClipboard } from '@/utils/imageUtils';
-import { showSuccess, showError } from '@/utils/toast';
-import type { Point, EditState, Layer, Dimensions, ActiveTool, ShapeType, GradientLayerData, BrushState } from '@/types/editor';
-import { initialEditState, initialLayerState, isImageOrDrawingLayer } from '@/types/editor';
+import { isImageOrDrawingLayer } from '@/types/editor';
+import { useEditorState } from "./useEditorState";
 
 
 export const useEditorLogic = (props: any) => {
@@ -189,6 +212,39 @@ export const useEditorLogic = (props: any) => {
     setIsGenerateOpen,
     setIsGenerativeFillOpen,
   );
+
+  // --- Xtra AI Result Handlers ---
+  
+  const handleXtraImageResult = useCallback((resultUrl: string, historyName: string) => {
+    if (!dimensions) return;
+    
+    // Create a new image layer from the result URL
+    const newLayer: Layer = {
+      id: uuidv4(),
+      name: historyName,
+      type: 'image',
+      visible: true,
+      opacity: 100,
+      blendMode: 'normal',
+      isLocked: false,
+      maskDataUrl: null,
+      dataUrl: resultUrl,
+      exifData: null,
+      x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
+    } as ImageLayerData;
+
+    setLayers(prev => [newLayer, ...prev]);
+    setSelectedLayerIdState(newLayer.id);
+    recordHistory(historyName, currentEditState, [newLayer, ...layers]);
+    showSuccess(`${historyName} applied as new layer.`);
+  }, [dimensions, recordHistory, currentEditState, layers, setLayers, setSelectedLayerIdState]);
+
+  const handleXtraMaskResult = useCallback((maskDataUrl: string, historyName: string) => {
+    setSelectionMaskDataUrl(maskDataUrl);
+    recordHistory(historyName, currentEditState, layers);
+    clearSelectionState();
+    showSuccess(`${historyName} selection created.`);
+  }, [setSelectionMaskDataUrl, recordHistory, currentEditState, layers, clearSelectionState]);
 
   // --- Utility Action Handlers ---
   
@@ -351,7 +407,7 @@ export const useEditorLogic = (props: any) => {
     selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount,
     customHslColor, setCustomHslColor, selectionSettings, setSelectionSettings, 
     onSelectionSettingChange: (key: keyof typeof selectionSettings, value: any) => setSelectionSettings(prev => ({ ...prev, [key]: value })),
-    onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${key}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
+    onSelectionSettingCommit: (key: keyof typeof selectionSettings, value: any) => recordHistory(`Set Selection Setting ${String(key)}`, { ...currentEditState, selectionSettings: { ...currentEditState.selectionSettings, [key]: value } }, layers),
     channels, onChannelChange: onChannelChangeHook,
     
     // History
@@ -413,6 +469,10 @@ export const useEditorLogic = (props: any) => {
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     handleNewFromClipboard,
     handleMaskResult,
+    
+    // AI Results (NEW)
+    onImageResult: handleXtraImageResult,
+    onMaskResult: handleXtraMaskResult,
     
     // UI/Layout
     isFullscreen, setIsFullscreen,
