@@ -7,7 +7,7 @@ import { Workspace } from "./Workspace";
 import { WorkspaceControls } from "./WorkspaceControls";
 import { SelectionMaskOverlay } from "./SelectionMaskOverlay";
 import { LiveBrushCanvas } from "./LiveBrushCanvas";
-import { MarqueeCanvas } from "./MarqueeCanvas";
+import MarqueeCanvas from "./MarqueeCanvas";
 import { GradientPreviewCanvas } from "./GradientPreviewCanvas";
 import { SelectionCanvas } from "./SelectionCanvas";
 import { SelectiveBlurFilter } from "./SelectiveBlurFilter";
