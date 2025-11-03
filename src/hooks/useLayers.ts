@@ -34,7 +34,7 @@ export const useLayers = ({
   layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, setSelectedLayerId, selectedLayerId
 }: UseLayersProps) => {
   
-  // --- Layer Utility Functions (Stubs for now) ---
+  // --- Layer Utility Functions ---
   
   const findLayer = useCallback((id: string, currentLayers: Layer[] = layers): Layer | undefined => {
     for (const layer of currentLayers) {
@@ -68,7 +68,76 @@ export const useLayers = ({
     recordHistory(name, currentEditState, layers);
   }, [currentEditState, layers, recordHistory]);
 
-  // --- Layer Creation ---
+  // --- Layer Creation Utilities ---
+  
+  // Helper to create base layer properties (x, y are expected to be percentages 0-100)
+  const createBaseLayer = useCallback((type: Layer['type'], name: string, coords: Point): Omit<Layer, 'type'> => ({
+    id: uuidv4(),
+    name,
+    visible: true,
+    opacity: 100,
+    blendMode: 'normal',
+    isLocked: false,
+    maskDataUrl: null,
+    isClippingMask: false,
+    x: coords.x, y: coords.y, 
+    width: 100, height: 100, // Default to full canvas size, adjusted later by specific layer type
+    rotation: 0, scaleX: 1, scaleY: 1,
+  }), []);
+
+  // --- Layer Creation Implementations ---
+
+  const addTextLayer = useCallback((coords: Point, color: string) => {
+    const newLayer: TextLayerData = {
+      ...createBaseLayer('text', 'Text Layer', coords),
+      type: 'text',
+      content: 'New Text',
+      fontSize: 48,
+      color: color,
+      fontFamily: 'Roboto',
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'center',
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      padding: 0,
+      width: 50, height: 10, // Text layers usually have small default size
+    };
+    setLayers(prev => [newLayer, ...prev]);
+    setSelectedLayerId(newLayer.id);
+    recordHistory(`Add Text Layer`, currentEditState, [newLayer, ...layers]);
+    showSuccess(`Added Text Layer.`);
+  }, [createBaseLayer, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
+
+  const addShapeLayer = useCallback((coords: Point, shapeType: ShapeType = 'rect', initialWidth: number = 10, initialHeight: number = 10, fillColor: string = foregroundColor, strokeColor: string = backgroundColor) => {
+    const newLayer: VectorShapeLayerData = {
+      ...createBaseLayer('vector-shape', `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} Layer`, coords),
+      type: 'vector-shape',
+      shapeType: shapeType,
+      fillColor: fillColor,
+      strokeColor: strokeColor,
+      strokeWidth: 2,
+      borderRadius: shapeType === 'rect' ? 5 : 0,
+      width: initialWidth, height: initialHeight,
+      x: coords.x, y: coords.y,
+      
+      // Shape specific defaults
+      points: (shapeType === 'triangle') ? [{x: 0, y: 100}, {x: 50, y: 0}, {x: 100, y: 100}] : undefined,
+      starPoints: (shapeType === 'star') ? 5 : undefined,
+      lineThickness: (shapeType === 'line' || shapeType === 'arrow') ? 5 : undefined,
+    };
+    
+    // Adjust fill/stroke for line/arrow types
+    if (shapeType === 'line' || shapeType === 'arrow') {
+        newLayer.fillColor = 'none';
+        newLayer.strokeWidth = 2;
+    }
+
+    setLayers(prev => [newLayer, ...prev]);
+    setSelectedLayerId(newLayer.id);
+    recordHistory(`Add ${shapeType} Layer`, currentEditState, [newLayer, ...layers]);
+    showSuccess(`Added ${shapeType} Layer.`);
+  }, [createBaseLayer, foregroundColor, backgroundColor, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
 
   const addGradientLayer = useCallback((startPoint: Point, endPoint: Point) => {
     if (!dimensions) {
@@ -76,19 +145,14 @@ export const useLayers = ({
       return;
     }
     
+    // Convert pixel coordinates (startPoint, endPoint) to percentage (0-100)
+    const startPercent: Point = { x: (startPoint.x / dimensions.width) * 100, y: (startPoint.y / dimensions.height) * 100 };
+    const endPercent: Point = { x: (endPoint.x / dimensions.width) * 100, y: (endPoint.y / dimensions.height) * 100 };
+    
     const newLayer: GradientLayerData = {
-      id: uuidv4(),
-      name: 'Gradient Layer',
+      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }), // Center position
       type: 'gradient',
-      visible: true,
-      opacity: 100,
-      blendMode: 'normal',
-      isLocked: false,
-      maskDataUrl: null,
-      isClippingMask: false,
-      
-      // Position and size (relative to canvas 0-100%)
-      x: 50, y: 50, width: 100, height: 100, rotation: 0, scaleX: 1, scaleY: 1,
+      width: 100, height: 100, // Full canvas size
       
       // Gradient specific properties
       gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
@@ -101,16 +165,15 @@ export const useLayers = ({
       gradientCenterY: gradientToolState.centerY,
       gradientRadius: gradientToolState.radius,
       
-      // Store the start/end points relative to the canvas (0-100%) for rendering
-      // Convert pixel coordinates (startPoint, endPoint) to percentage (0-100)
-      startPoint: { x: (startPoint.x / dimensions.width) * 100, y: (startPoint.y / dimensions.height) * 100 },
-      endPoint: { x: (endPoint.x / dimensions.width) * 100, y: (endPoint.y / dimensions.height) * 100 },
-    }; // Removed redundant 'as Layer' cast
+      startPoint: startPercent,
+      endPoint: endPercent,
+    };
     
     setLayers(prev => [newLayer, ...prev]);
     setSelectedLayerId(newLayer.id);
     recordHistory(`Add Gradient Layer`, currentEditState, [newLayer, ...layers]);
-  }, [dimensions, gradientToolState, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
+    showSuccess(`Added Gradient Layer.`);
+  }, [dimensions, gradientToolState, createBaseLayer, setLayers, setSelectedLayerId, recordHistory, currentEditState, layers]);
 
   // --- Layer Actions (Simplified Stubs) ---
   
@@ -204,10 +267,6 @@ export const useLayers = ({
     }
   }, [selectedLayerId, recordHistory, currentEditState, layers, findLayer]);
   
-  const addTextLayer = useCallback((coords: Point, color: string) => {
-    showError("Add Text Layer is a stub.");
-  }, []);
-  
   const addDrawingLayer = useCallback((coords: Point, dataUrl: string) => {
     showError("Add Drawing Layer is a stub.");
     return uuidv4(); // Return a dummy ID
@@ -219,10 +278,6 @@ export const useLayers = ({
   
   const onLayerFromSelection = useCallback(() => {
     showError("Layer From Selection is a stub.");
-  }, []);
-  
-  const addShapeLayer = useCallback((coords: Point, shapeType?: ShapeType, initialWidth?: number, initialHeight?: number, fillColor?: string, strokeColor?: string) => {
-    showError("Add Shape Layer is a stub.");
   }, []);
   
   const onAddAdjustmentLayer = useCallback((type: 'brightness' | 'curves' | 'hsl' | 'grading') => {
