@@ -29,6 +29,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { showError } from "@/utils/toast";
 import { LayersPanel } from "@/components/editor/LayersPanel"; // Import the actual LayersPanel
 import { useSession } from "../integrations/supabase/session-provider"; // ADDED
+import type { TemplateProjectData } from "@/types/template"; // <-- ADDED
 
 const Index: React.FC = () => {
   const logic = useEditorLogic({});
@@ -37,6 +38,18 @@ const Index: React.FC = () => {
   const location = useLocation();
   
   const { isGuest } = useSession(); // ADDED
+
+  // --- Template Loading Effect ---
+  React.useEffect(() => {
+    if (location.state?.templateData) {
+      const templateData = location.state.templateData as TemplateProjectData;
+      logic.handleLoadTemplate(templateData);
+      
+      // Clear state after loading to prevent re-triggering
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, logic.handleLoadTemplate, navigate, location.pathname]);
+  // --- End Template Loading Effect ---
 
   // State for dialogs
   const [isNewProjectOpen, setIsNewProjectOpen] = React.useState(false);
@@ -208,6 +221,7 @@ const Index: React.FC = () => {
             setActiveRightTab={logic.setActiveRightTab}
             activeBottomTab={logic.activeBottomTab}
             setActiveBottomTab={logic.setActiveBottomTab}
+            isProxyMode={logic.currentEditState.isProxyMode} // <-- PASSED
           />
 
           <ResizablePanelGroup direction="horizontal" className="flex-1">

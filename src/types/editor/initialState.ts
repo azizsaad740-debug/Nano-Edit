@@ -176,6 +176,7 @@ export const initialEditState: EditState = {
     brushState: initialBrushState,
     selectiveBlurMask: null,
     selectiveSharpenMask: null,
+    isProxyMode: false, // <-- ADDED
 };
 
 export const initialGradientToolState: GradientToolState = {

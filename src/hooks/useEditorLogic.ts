@@ -101,6 +101,9 @@ export const useEditorLogic = (props: any) => {
     // Auth
     user, isGuest, isAdmin,
     editorApi, // Core API
+    
+    // Proxy Mode
+    checkAndToggleProxyMode,
   } = core;
 
   // --- Derived State ---
@@ -435,7 +438,7 @@ export const useEditorLogic = (props: any) => {
     handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel,
     
     // AI/Export/Project Management
-    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad,
+    geminiApiKey, handleExportClick, handleNewProject, handleLoadProject, handleImageLoad, handleLoadTemplate,
     handleGenerativeFill, handleGenerateImage, handleSwapColors, handleLayerDelete,
     handleNewFromClipboard,
     handleMaskResult,

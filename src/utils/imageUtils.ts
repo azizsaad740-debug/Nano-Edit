@@ -19,6 +19,7 @@ export const renderImageToCanvas = (
   editState: EditState,
   imgElement: HTMLImageElement | null,
   isPreviewingOriginal: boolean = false,
+  isExporting: boolean = false, // <-- ADDED
 ): HTMLCanvasElement => {
   const canvas = document.createElement('canvas');
   canvas.width = dimensions.width;
@@ -29,6 +30,17 @@ export const renderImageToCanvas = (
 
   ctx.fillStyle = '#FFFFFF'; // Default background fill
   ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+
+  // --- PROXY MODE LOGIC STUB ---
+  const isProxyMode = editState.isProxyMode && !isExporting;
+  if (isProxyMode) {
+    // Simulate low quality rendering (e.g., smaller canvas size for internal processing)
+    console.log("Rendering in low quality proxy mode for preview.");
+    // In a real app, we would draw a scaled-down version or apply heavy blur/pixelation here.
+  } else if (isExporting) {
+    console.log("Rendering in full quality for export.");
+  }
+  // --- END PROXY MODE LOGIC STUB ---
 
   // Simplified rendering logic: just draw the background layer
   const backgroundLayer = layers.find(l => l.id === 'background');

@@ -7,6 +7,7 @@ import ExifReader from 'exifreader';
 import { initialLayerState } from '@/types/editor';
 import { v4 as uuidv4 } from 'uuid';
 import * as React from 'react';
+import type { TemplateProjectData } from '@/types/template'; // <-- ADDED
 
 export const useImageLoader = (
   setImage: (image: string | null) => void,
@@ -179,11 +180,46 @@ export const useImageLoader = (
     document.getElementById('file-upload-input')?.click();
   }, []);
   
-  const handleLoadTemplate = useCallback(() => {
-    // Stub for loading template data
-    showError("Template loading is a stub.");
-  }, []);
-  
+  const handleLoadTemplate = useCallback((templateData: TemplateProjectData) => {
+    const { editState: partialEditState, layers: templateLayers, dimensions: templateDimensions } = templateData;
+    
+    resetAllEdits();
+    
+    // 1. Apply dimensions
+    setDimensions(templateDimensions);
+    
+    // 2. Apply layers
+    setLayers(templateLayers);
+    
+    // 3. Apply edit state (merging with initial state)
+    setCurrentEditState(prev => ({
+      ...prev,
+      ...partialEditState,
+      // Ensure complex objects are merged correctly if they exist in the template
+      adjustments: { ...prev.adjustments, ...partialEditState.adjustments },
+      grading: { ...prev.grading, ...partialEditState.grading },
+      effects: { ...prev.effects, ...partialEditState.effects },
+      // Note: We rely on the template provider to ensure layers contain the background image dataUrl
+    }));
+    
+    // 4. Set background image/data if available in layers
+    const backgroundLayer = templateLayers.find(l => l.id === 'background');
+    if (backgroundLayer && isImageOrDrawingLayer(backgroundLayer)) {
+      setImage(backgroundLayer.dataUrl);
+      setFileInfo({ name: `Template: ${templateData.name}`, size: 0 });
+    } else {
+      setImage(null);
+      setFileInfo(null);
+    }
+
+    // 5. Record initial history state
+    const newLayers = templateLayers;
+    recordHistory(`Template Loaded: ${templateData.name}`, currentEditState, newLayers);
+    setSelectedLayerId('background');
+    
+    showSuccess(`Template "${templateData.name}" loaded successfully.`);
+  }, [resetAllEdits, setDimensions, setLayers, setCurrentEditState, recordHistory, currentEditState, setImage, setFileInfo, setSelectedLayerId]);
+
   const handleNewFromClipboard = useCallback((importInSameProject: boolean) => {
     showError("New from clipboard is a stub.");
   }, []);

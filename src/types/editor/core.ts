@@ -272,6 +272,7 @@ export interface EditState {
   brushState: BrushState;
   selectiveBlurMask?: string | null;
   selectiveSharpenMask?: string | null;
+  isProxyMode: boolean; // <-- ADDED
 }
 
 export interface HistoryItem {

@@ -112,6 +112,34 @@ export const useEditorCore = () => {
     setMarqueeCurrent(null);
   }, [setSelectionPath, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent]);
 
+  // --- Proxy Mode Logic ---
+  const checkAndToggleProxyMode = useCallback(() => {
+    if (!fileInfo || !dimensions) {
+      updateCurrentState({ isProxyMode: false });
+      return;
+    }
+    
+    // Simple heuristic: If file size > 5MB OR layer count > 10, enable proxy mode
+    const isHeavyFile = (fileInfo.size || 0) > 5 * 1024 * 1024; // 5MB
+    const isComplexProject = layers.length > 10;
+    
+    const shouldBeProxy = isHeavyFile || isComplexProject;
+    
+    if (shouldBeProxy !== currentEditState.isProxyMode) {
+      updateCurrentState({ isProxyMode: shouldBeProxy });
+      if (shouldBeProxy) {
+        showSuccess("Project complexity detected. Entering Proxy Mode (Low Quality Preview).");
+      } else {
+        showSuccess("Exiting Proxy Mode. Rendering in full quality.");
+      }
+    }
+  }, [fileInfo, dimensions, layers.length, updateCurrentState, currentEditState.isProxyMode]);
+  
+  // Run proxy check whenever project state changes
+  useEffect(() => {
+    checkAndToggleProxyMode();
+  }, [checkAndToggleProxyMode, layers, fileInfo, dimensions]);
+  
   // --- Core API Implementation ---
   
   const updateLayerApi = useCallback((id: string, updates: Partial<Layer>) => {
@@ -374,5 +402,7 @@ export const useEditorCore = () => {
     setIsMouseOverImage,
     // Auth
     user, isGuest, isAdmin,
+    // Proxy Mode
+    checkAndToggleProxyMode,
   };
 };

@@ -4,10 +4,12 @@ import { fetchCommunityTemplates } from "@/utils/templateApi";
 import type { CommunityTemplate } from "../types/template";
 import { TemplateCard } from "@/components/community/TemplateCard";
 import { showError, showSuccess } from "@/utils/toast";
+import { useNavigate } from "react-router-dom"; // <-- ADDED
 
 export const Community: React.FC = () => {
   const [templates, setTemplates] = useState<CommunityTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // <-- ADDED
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -24,9 +26,9 @@ export const Community: React.FC = () => {
   }, []);
   
   const handleSelectTemplate = (template: CommunityTemplate) => {
-    // Stub: In a real app, this would trigger the WASM/Worker pipeline
-    showSuccess(`Template "${template.name}" selected. Loading pipeline... (Stub)`);
-    // Redirect back to editor or trigger loading process
+    showSuccess(`Template "${template.name}" selected. Loading...`);
+    // Navigate back to the editor root path, passing the template data in state
+    navigate('/', { state: { templateData: template.data, templateName: template.name } });
   };
 
   if (loading) {

@@ -24,6 +24,7 @@ interface EditorHeaderProps {
   setActiveRightTab: (tab: string) => void;
   activeBottomTab: string;
   setActiveBottomTab: (tab: string) => void;
+  isProxyMode: boolean; // <-- ADDED
 }
 
 export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
@@ -43,6 +44,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
   setActiveRightTab,
   activeBottomTab,
   setActiveBottomTab,
+  isProxyMode, // <-- DESTRUCTURED
 }) => {
   // Destructuring logic results
   const {
@@ -170,6 +172,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = ({ // Fix 68, 185
       setActiveRightTab={setActiveRightTab}
       activeBottomTab={activeBottomTab}
       setActiveBottomTab={setActiveBottomTab}
+      isProxyMode={isProxyMode} // <-- PASSED
     >
       <MenuBar // Fix 71
         logic={logic}

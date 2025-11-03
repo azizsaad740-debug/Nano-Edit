@@ -44,6 +44,7 @@ import { showSuccess, showError } from "@/utils/toast"; // ADDED: Import toast u
 import { cn } from "@/lib/utils";
 import { WindowsDropdown } from "./WindowsDropdown"; // NEW IMPORT
 import type { PanelTab } from "@/types/editor/core"; // NEW IMPORT
+import { Badge } from "@/components/ui/badge"; // <-- ADDED
 
 interface HeaderProps {
   onReset: () => void;
@@ -73,6 +74,7 @@ interface HeaderProps {
   setActiveRightTab: (id: string) => void;
   activeBottomTab: string;
   setActiveBottomTab: (id: string) => void;
+  isProxyMode: boolean; // <-- ADDED
   children: React.ReactNode;
 }
 
@@ -103,6 +105,7 @@ const Header = ({
   setActiveRightTab, // NEW
   activeBottomTab, // NEW
   setActiveBottomTab, // NEW
+  isProxyMode, // <-- DESTRUCTURED
   children,
 }: HeaderProps) => {
   const [isHoveringPreview, setIsHoveringPreview] = React.useState(false);
@@ -147,34 +150,42 @@ const Header = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuItem onClick={onNewProjectClick}>
-                <FilePlus className="h-4 w-4 mr-2" />
-                New Project
+                <FilePlus className="h-4 w-4 mr-2" /> New Project
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onOpenProject()}>
-                <FolderOpen className="h-4 w-4 mr-2" />
-                Open Image/Project
+                <FolderOpen className="h-4 w-4 mr-2" /> Open Image/Project
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onNewFromClipboard}>
-                <ClipboardPaste className="h-4 w-4 mr-2" />
-                New from Clipboard
+                <ClipboardPaste className="h-4 w-4 mr-2" /> New from Clipboard
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onSaveProject} disabled={!hasImage}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Project (.nanoedit)
+                <Save className="h-4 w-4 mr-2" /> Save Project (.nanoedit)
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onGenerateClick}>
-                <Sparkles className="h-4 w-4 mr-2" />
-                Generate New Image
+                <Sparkles className="h-4 w-4 mr-2" /> Generate New Image
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setOpenImport(true)}>
-                <FilePlus2 className="h-4 w-4 mr-2" />
-                Import Preset / LUT
+                <FilePlus2 className="h-4 w-4 mr-2" /> Import Preset / LUT
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          {/* Proxy Mode Indicator */}
+          {isProxyMode && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="destructive" className="cursor-default">
+                  Proxy Mode
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Project is complex. Preview is rendered in low quality. Export will use full quality.</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
 
           <div className="flex items-center gap-1">
             <Tooltip>
