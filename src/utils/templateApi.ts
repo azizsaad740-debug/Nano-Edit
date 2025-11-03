@@ -1,4 +1,4 @@
-import type { CommunityTemplate, TemplateProjectData } from "../types/template";
+import type { CommunityTemplate, TemplateProjectData } from "@/types/template";
 import { initialEditState, initialLayerState, initialCurvesState, initialSelectionSettings, ImageLayerData, initialAdjustmentState, initialGradingState } from "@/types/editor";
 
 // Mock Template Data (using corrected luminosity property)

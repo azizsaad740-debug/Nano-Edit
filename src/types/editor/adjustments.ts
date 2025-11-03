@@ -1,5 +1,5 @@
 // src/types/editor/adjustments.ts
-import type { Point } from './core'; // REVERT
+import type { Point } from './core';
 
 export interface AdjustmentState {
   brightness: number;
