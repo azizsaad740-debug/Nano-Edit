@@ -13,7 +13,7 @@ export const useSelectiveRetouch = (
   const selectiveBlurMask = useMemo(() => currentEditState.selectiveBlurMask, [currentEditState.selectiveBlurMask]);
   const selectiveSharpenMask = useMemo(() => currentEditState.selectiveSharpenMask, [currentEditState.selectiveSharpenMask]);
 
-  const handleSelectiveRetouchStrokeEnd = useCallback((strokeDataUrl: string, layerId: string, tool: 'blur' | 'sharpen') => {
+  const handleSelectiveRetouchStrokeEnd = useCallback((strokeDataUrl: string, tool: 'blur' | 'sharpen') => {
     // ... implementation logic ...
     
     if (tool === 'blur') {
@@ -33,6 +33,22 @@ export const useSelectiveRetouch = (
       updateCurrentState({ selectiveSharpenMask: state.selectiveSharpenMask });
     }
   }, [updateCurrentState]);
+  
+  const onSelectiveBlurAmountCommit = useCallback((value: number) => {
+    recordHistory(`Set Selective Blur Amount to ${value}`, { ...currentEditState, selectiveBlurAmount: value }, layers);
+  }, [currentEditState, layers, recordHistory]);
+  
+  const onSelectiveSharpenAmountCommit = useCallback((value: number) => {
+    recordHistory(`Set Selective Sharpen Amount to ${value}`, { ...currentEditState, selectiveSharpenAmount: value }, layers);
+  }, [currentEditState, layers, recordHistory]);
 
-  return { selectiveBlurMask, selectiveSharpenMask, handleSelectiveRetouchStrokeEnd, applyPreset };
+
+  return { 
+    selectiveBlurMask, 
+    selectiveSharpenMask, 
+    handleSelectiveRetouchStrokeEnd, 
+    applyPreset,
+    onSelectiveBlurAmountCommit,
+    onSelectiveSharpenAmountCommit,
+  };
 };

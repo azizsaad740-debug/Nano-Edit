@@ -241,7 +241,7 @@ const Index: React.FC = () => {
                 setBrushState={logic.setBrushState}
                 selectiveBlurAmount={logic.selectiveBlurAmount}
                 onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
-                onSelectiveBlurAmountCommit={(v) => logic.updateCurrentState({ selectiveBlurAmount: v })}
+                onSelectiveBlurAmountCommit={logic.onSelectiveBlurAmountCommit}
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
@@ -354,7 +354,7 @@ const Index: React.FC = () => {
                   onSelectiveBlurAmountChange={logic.setSelectiveBlurAmount}
                   onSelectiveSharpenAmountChange={logic.setSelectiveSharpenAmount}
                   onChannelChange={logic.onChannelChange}
-                  onHistoryJump={logic.onHistoryJump}
+                  onHistoryJump={logic.handleHistoryJump}
                   onBrushCommit={logic.onBrushCommit}
                   
                   // ADDED MISSING PROPS (Error 2 fix)
