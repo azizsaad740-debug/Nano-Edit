@@ -49,24 +49,33 @@ const AdminDashboard = () => {
                 {extensions.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No extensions registered.</p>
                 ) : (
-                  extensions.map((ext) => (
-                    <div key={ext.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
-                      <div className="flex items-center gap-3">
-                        <Zap className="h-5 w-5 text-blue-500" />
-                        <div>
-                          <h4 className="font-semibold text-foreground">{ext.name}</h4>
-                          <p className="text-xs text-muted-foreground">{ext.id}</p>
+                  extensions.map((ext) => {
+                    // Check if the extension provides a custom rendering function
+                    if (typeof (ext as any).renderAdminButton === 'function') {
+                      // Render the custom button provided by the extension
+                      return <div key={ext.id}>{(ext as any).renderAdminButton()}</div>;
+                    }
+                    
+                    // Default rendering
+                    return (
+                      <div key={ext.id} className="flex items-center justify-between p-3 border rounded-md bg-background">
+                        <div className="flex items-center gap-3">
+                          <Zap className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <h4 className="font-semibold text-foreground">{ext.name}</h4>
+                            <p className="text-xs text-muted-foreground">{ext.id}</p>
+                          </div>
                         </div>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => handleToggleExtension(ext.id)}
+                        >
+                          <Check className="h-4 w-4 mr-2 text-green-500" /> Enabled (Stub)
+                        </Button>
                       </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleToggleExtension(ext.id)}
-                      >
-                        <Check className="h-4 w-4 mr-2 text-green-500" /> Enabled (Stub)
-                      </Button>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>

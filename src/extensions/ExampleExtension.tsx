@@ -39,9 +39,8 @@ export class InvertToolExtension implements EditorExtension {
   renderAdminButton() {
     return (
       <button 
-        key={this.id} 
         onClick={() => this.runInvert()} 
-        className="p-4 border rounded-lg flex items-center gap-3 bg-accent/50 hover:bg-accent"
+        className="p-4 border rounded-lg flex items-center gap-3 bg-accent/50 hover:bg-accent w-full text-left"
       >
         <Zap className="h-6 w-6 text-primary" />
         <div>
