@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import type { EditState, Layer, Dimensions } from '@/types/editor';
 import { showSuccess, showError } from '@/utils/toast';
+import { mergeMasks } from '@/utils/maskUtils';
 
 export const useSelectiveRetouch = (
   currentEditState: EditState,
@@ -13,18 +14,43 @@ export const useSelectiveRetouch = (
   const selectiveBlurMask = useMemo(() => currentEditState.selectiveBlurMask, [currentEditState.selectiveBlurMask]);
   const selectiveSharpenMask = useMemo(() => currentEditState.selectiveSharpenMask, [currentEditState.selectiveSharpenMask]);
 
-  const handleSelectiveRetouchStrokeEnd = useCallback((strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => {
-    // NOTE: In a real app, we would merge the strokeDataUrl onto the existing mask
-    // using mergeMasks utility, but here we just set the mask for simplicity.
-    
-    if (tool === 'blurBrush') {
-      updateCurrentState({ selectiveBlurMask: strokeDataUrl });
-      recordHistory(`Applied Selective Blur Mask`, { ...currentEditState, selectiveBlurMask: strokeDataUrl }, layers);
-    } else if (tool === 'sharpenTool') {
-      updateCurrentState({ selectiveSharpenMask: strokeDataUrl });
-      recordHistory(`Applied Selective Sharpen Mask`, { ...currentEditState, selectiveSharpenMask: strokeDataUrl }, layers);
+  const handleSelectiveRetouchStrokeEnd = useCallback(async (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => {
+    if (!dimensions) return; // Safety check
+
+    try {
+      let existingMask: string | null;
+      let maskKey: 'selectiveBlurMask' | 'selectiveSharpenMask';
+      let historyName: string;
+
+      if (tool === 'blurBrush') {
+        existingMask = currentEditState.selectiveBlurMask;
+        maskKey = 'selectiveBlurMask';
+        historyName = `Applied Selective Blur Mask (${operation})`;
+      } else if (tool === 'sharpenTool') {
+        existingMask = currentEditState.selectiveSharpenMask;
+        maskKey = 'selectiveSharpenMask';
+        historyName = `Applied Selective Sharpen Mask (${operation})`;
+      } else {
+        return;
+      }
+      
+      // 1. Merge the stroke onto the existing mask
+      const newMaskDataUrl = await mergeMasks(
+        existingMask,
+        strokeDataUrl,
+        dimensions,
+        operation
+      );
+
+      // 2. Update state and record history
+      updateCurrentState({ [maskKey]: newMaskDataUrl });
+      recordHistory(historyName, { ...currentEditState, [maskKey]: newMaskDataUrl }, layers);
+      
+    } catch (error) {
+      console.error("Failed to merge selective retouch mask:", error);
+      showError("Failed to apply retouch stroke.");
     }
-  }, [currentEditState, layers, recordHistory, updateCurrentState]);
+  }, [currentEditState, layers, recordHistory, updateCurrentState, dimensions]);
 
   const applyPreset = useCallback((state: Partial<EditState>) => {
     if (state.selectiveBlurMask !== undefined) {
