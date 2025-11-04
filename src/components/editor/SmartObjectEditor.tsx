@@ -129,7 +129,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   // --- Internal Layer Creation Logic ---
   
-  const createBaseLayer = (type: Layer['type'], name: string, position: { x: number; y: number } = { x: 50, y: 50 }): Omit<Layer, 'type'> => ({
+  const createBaseLayer = (type: Layer['type'], name: string, position: { x: number; y: number } = { x: 50, y: 50 }, initialWidth: number = 10, initialHeight: number = 10): Omit<Layer, 'type'> => ({
     id: uuidv4(),
     name,
     visible: true,
@@ -138,7 +138,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     isLocked: false,
     maskDataUrl: null,
     isClippingMask: false,
-    x: position.x, y: position.y, width: 50, height: 10, rotation: 0, scaleX: 1, scaleY: 1,
+    x: position.x, y: position.y, width: initialWidth, height: initialHeight, rotation: 0, scaleX: 1, scaleY: 1,
   });
 
   const addTextLayer = () => {
@@ -350,7 +350,11 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
               <SmartObjectLayersPanel
                 layers={internalLayers}
                 selectedLayerId={internalSelectedLayerId}
-                onSelectLayer={(id) => setInternalSelectedLayerId(id)}
+                onSelectLayer={(id, ctrlKey, shiftKey) => {
+                    // In the Smart Object editor, we enforce single selection for simplicity.
+                    // We ignore ctrlKey/shiftKey but maintain the signature.
+                    setInternalSelectedLayerId(id);
+                }}
                 onReorder={handleReorder}
                 onAddLayer={handleAddLayer}
                 onDeleteLayer={handleDeleteLayer}

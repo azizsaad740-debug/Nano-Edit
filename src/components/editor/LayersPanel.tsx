@@ -62,14 +62,13 @@ interface LayersPanelProps {
 // Recursive Layer List Component (Internal to LayersPanel)
 const RecursiveLayerList: React.FC<{
   layers: Layer[];
-  selectedLayerId: string | null;
-  selectedLayerIds: string[]; // NEW
+  selectedLayerIds: string[];
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
   toggleLayerVisibility: (id: string) => void;
   toggleGroupExpanded: (id: string) => void;
   onToggleLayerLock: (id: string) => void;
   renameLayer: (id: string, newName: string) => void;
-}> = ({ layers, selectedLayerId, selectedLayerIds, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
+}> = ({ layers, selectedLayerIds, onSelectLayer, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
   const { active } = useDndContext();
   const activeId = active?.id;
 
@@ -80,7 +79,7 @@ const RecursiveLayerList: React.FC<{
           <React.Fragment key={layer.id}>
             <LayerItem
               layer={layer}
-              isSelected={selectedLayerIds.includes(layer.id)} // Use selectedLayerIds for highlighting
+              isSelected={selectedLayerIds.includes(layer.id)} // Correct usage
               onSelect={onSelectLayer}
               toggleVisibility={toggleLayerVisibility}
               toggleGroupExpanded={toggleGroupExpanded}
@@ -92,8 +91,7 @@ const RecursiveLayerList: React.FC<{
               <div className="ml-4 border-l border-muted">
                 <RecursiveLayerList
                   layers={layer.children}
-                  selectedLayerId={selectedLayerId}
-                  selectedLayerIds={selectedLayerIds} // Pass down
+                  selectedLayerIds={selectedLayerIds} // Correct recursive pass
                   onSelectLayer={onSelectLayer}
                   toggleLayerVisibility={toggleLayerVisibility}
                   toggleGroupExpanded={toggleGroupExpanded}
@@ -155,8 +153,7 @@ export const LayersPanel: React.FC<LayersPanelProps> = (props) => {
         <div className="p-2">
           <RecursiveLayerList
             layers={layers}
-            selectedLayerId={selectedLayerId}
-            selectedLayerIds={selectedLayerIds} // PASSED
+            selectedLayerIds={selectedLayerIds}
             onSelectLayer={onSelectLayer}
             toggleLayerVisibility={toggleLayerVisibility}
             toggleGroupExpanded={toggleGroupExpanded}
