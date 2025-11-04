@@ -45,7 +45,7 @@ export interface GradingState {
   highlightsLuminance: number;
 }
 
-export type HslColorKey = 'global' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
+export type HslColorKey = 'master' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
 
 export interface HslAdjustment {
   hue: number;

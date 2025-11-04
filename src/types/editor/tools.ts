@@ -6,7 +6,6 @@ export interface BrushState {
   hardness: number;
   smoothness: number;
   shape: 'circle' | 'square';
-  color: string;
   flow: number;
   angle: number;
   roundness: number;

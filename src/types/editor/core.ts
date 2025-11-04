@@ -1,15 +1,15 @@
 // src/types/editor/core.ts
 
 import type { Icon as LucideIcon } from "lucide-react";
-import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState } from "./adjustments"; // <-- Import FrameState here
+import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState, EffectState, TransformState } from "./adjustments";
+import type { BrushState as BrushStateTool, GradientToolState as GradientToolStateTool, SelectionSettings as SelectionSettingsTool } from "./tools";
 
 // --- Core Types ---
 
 export type BlendMode = 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
-// Expanded ActiveTool and ShapeType
-export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic'; // Added lassoMagnetic
+export type ActiveTool = 'move' | 'crop' | 'brush' | 'eraser' | 'pencil' | 'cloneStamp' | 'patternStamp' | 'historyBrush' | 'artHistoryBrush' | 'selectionBrush' | 'blurBrush' | 'sharpenTool' | 'text' | 'shape' | 'gradient' | 'marqueeRect' | 'marqueeEllipse' | 'lassoFree' | 'lassoPoly' | 'magicWand' | 'objectSelect' | 'eyedropper' | 'hand' | 'zoom' | 'lasso' | 'quickSelect' | 'paintBucket' | 'lassoMagnetic';
 export type ShapeType = 'rect' | 'ellipse' | 'triangle' | 'polygon' | 'star' | 'line' | 'circle' | 'arrow' | 'custom';
-export type HslColorKey = 'master' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta'; // Standard HSL keys
+export type HslColorKey = 'master' | 'red' | 'orange' | 'yellow' | 'green' | 'aqua' | 'blue' | 'purple' | 'magenta';
 
 export interface Point {
   x: number;
@@ -39,7 +39,7 @@ export interface HslAdjustment {
 }
 
 // Exporting the imported types to make them available via '@/types/editor'
-export type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState }; // <-- ADDED EXPORTS
+export type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState, EffectState, TransformState };
 
 // --- Layer Data Interfaces ---
 
@@ -85,7 +85,6 @@ export interface TextLayerData extends BaseLayer {
   letterSpacing: number;
   lineHeight: number;
   padding: number;
-  // Fixed textShadow properties (Fixes 23, 24, 25, 26)
   textShadow?: { color: string; blur: number; offsetX: number; offsetY: number } | null;
   stroke?: { color: string; width: number } | null;
   backgroundColor?: string | null;
@@ -151,7 +150,7 @@ export interface GroupLayerData extends BaseLayer {
 
 export type Layer = ImageLayerData | DrawingLayerData | TextLayerData | VectorShapeLayerData | GradientLayerData | AdjustmentLayerData | SmartObjectLayerData | GroupLayerData;
 
-// --- Type Guards (No changes needed here, assuming they were correct) ---
+// --- Type Guards ---
 
 export const isImageLayer = (layer: Layer): layer is ImageLayerData => layer.type === 'image';
 export const isDrawingLayer = (layer: Layer): layer is DrawingLayerData => layer.type === 'drawing';
@@ -163,32 +162,60 @@ export const isAdjustmentLayer = (layer: Layer): layer is AdjustmentLayerData =>
 export const isSmartObjectLayer = (layer: Layer): layer is SmartObjectLayerData => layer.type === 'smart-object';
 export const isGroupLayer = (layer: Layer): layer is GroupLayerData => layer.type === 'group';
 
-// --- State Interfaces ---
+// --- State Interfaces (from tools.ts) ---
 
-export interface BrushState {
-// ... (BrushState definition)
-}
+export interface BrushState extends BrushStateTool {}
 
-export interface GradientToolState {
-// ... (GradientToolState definition)
-}
+export interface GradientToolState extends GradientToolStateTool {}
 
-export interface SelectionSettings {
-// ... (SelectionSettings definition)
-}
+export interface SelectionSettings extends SelectionSettingsTool {}
 
 export interface EditState {
-// ... (EditState definition)
+  adjustments: AdjustmentState;
+  effects: EffectState;
+  grading: GradingState;
+  hslAdjustments: HslAdjustmentsState;
+  curves: CurvesState;
+  frame: FrameState;
+  crop: CropState;
+  transform: TransformState;
+  rotation: number;
+  aspect: number | null;
+  selectedFilter: string;
+  colorMode: 'rgb' | 'grayscale' | 'cmyk';
+  selectiveBlurAmount: number;
+  selectiveSharpenAmount: number;
+  customHslColor: string;
+  selectionSettings: SelectionSettings;
+  channels: { r: boolean; g: boolean; b: boolean; alpha: boolean };
+  history: HistoryItem[];
+  historyBrushSourceIndex: number;
+  brushState: BrushState;
+  selectiveBlurMask: string | null;
+  selectiveSharpenMask: string | null;
+  isProxyMode: boolean;
+  customFonts: string[];
 }
 
 export interface HistoryItem {
-// ... (HistoryItem definition)
+  name: string;
+  state: EditState;
+  layers: Layer[];
 }
 
 export interface NewProjectSettings {
-// ... (NewProjectSettings definition)
+  width: number;
+  height: number;
+  dpi: number;
+  backgroundColor: string;
+  colorMode: 'rgb' | 'grayscale' | 'cmyk';
 }
 
 export interface PanelTab {
-// ... (PanelTab definition)
+  id: string;
+  name: string;
+  icon: LucideIcon;
+  location: 'right' | 'bottom' | 'hidden';
+  visible: boolean;
+  order: number;
 }
