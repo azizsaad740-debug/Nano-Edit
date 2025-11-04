@@ -195,6 +195,23 @@ export const useLayers = ({
     setSelectedLayerIds(prev => prev.filter(lid => lid !== id));
     recordHistory(`Delete Layer: ${findLayer(id)?.name || 'Unknown'}`, currentEditState, layers.filter(l => l.id !== id));
   }, [layers, recordHistory, currentEditState, setSelectedLayerIds, findLayer, setLayers]);
+  
+  const handleLayerDelete = useCallback(() => {
+    if (selectedLayerIds.length === 0) return;
+
+    const deletableIds = selectedLayerIds.filter(id => id !== 'background');
+    if (deletableIds.length === 0) {
+      showError("Cannot delete the background layer.");
+      return;
+    }
+
+    const deletedNames = deletableIds.map(id => findLayer(id)?.name || 'Unknown').join(', ');
+    
+    setLayers(prev => prev.filter(l => !deletableIds.includes(l.id)));
+    setSelectedLayerIds([]);
+    recordHistory(`Delete Layers: ${deletedNames}`, currentEditState, layers.filter(l => !deletableIds.includes(l.id)));
+  }, [selectedLayerIds, layers, findLayer, recordHistory, currentEditState, setLayers, setSelectedLayerIds]);
+
 
   const onDuplicateLayer = useCallback((id: string) => {
     const originalLayer = findLayer(id);
@@ -668,6 +685,7 @@ export const useLayers = ({
       onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
       onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection,
       addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer,
+      handleLayerDelete, // Exported here
     };
   }, [layers, selectedLayerIds, findLayer, recordHistory, currentEditState, setLayers, setSelectedLayerIds, selectionMaskDataUrl, clearSelectionState, dimensions, activeTool, currentEditState.brushState, updateLayer, setSelectionMaskDataUrl]);
 
@@ -676,6 +694,7 @@ export const useLayers = ({
     updateLayer,
     commitLayerChange,
     deleteLayer, // Use the new deleteLayer
+    handleLayerDelete,
     ...restOfLayerFunctions,
   };
 };

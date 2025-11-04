@@ -18,7 +18,7 @@ import { isGroupLayer } from '@/types/editor';
 interface SmartObjectLayersPanelProps {
   layers: Layer[];
   selectedLayerId: string | null;
-  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void;
+  onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void; // Updated signature
   onReorder: (activeId: string, overId: string) => void;
   onAddLayer: (type: 'text' | 'drawing' | 'vector-shape' | 'gradient') => void;
   onDeleteLayer: (id: string) => void;
@@ -50,7 +50,7 @@ const RecursiveLayerList: React.FC<{
             <LayerItem
               layer={layer}
               isSelected={selectedLayerId === layer.id}
-              onSelect={onSelectLayer}
+              onSelect={onSelectLayer} // Pass the function with the new signature
               toggleVisibility={toggleLayerVisibility}
               toggleGroupExpanded={toggleGroupExpanded}
               onToggleLayerLock={onToggleLayerLock}
@@ -78,7 +78,7 @@ const RecursiveLayerList: React.FC<{
 };
 
 
-const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onReorder, onAddLayer, onDeleteLayer, onGroupLayers, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer }) => {
+const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onReorder, onDeleteLayer, onGroupLayers, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer, onAddLayer }) => {
   // Removed: const { active } = useDndContext();
   // Removed: const activeId = active?.id;
 
@@ -89,7 +89,7 @@ const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers,
           <RecursiveLayerList
             layers={layers}
             selectedLayerId={selectedLayerId}
-            onSelectLayer={(id, ctrlKey, shiftKey) => onSelectLayer(id, ctrlKey, shiftKey)}
+            onSelectLayer={onSelectLayer}
             toggleLayerVisibility={toggleLayerVisibility}
             toggleGroupExpanded={toggleGroupExpanded}
             onToggleLayerLock={onToggleLayerLock}
