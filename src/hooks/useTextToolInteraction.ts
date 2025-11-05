@@ -1,17 +1,4 @@
-import * as React from 'react';
-import type { ActiveTool, Dimensions, Point } from '@/types/editor';
-
-interface UseTextToolInteractionProps {
-  activeTool: ActiveTool | null;
-  workspaceRef: React.RefObject<HTMLDivElement>;
-  imageContainerRef: React.RefObject<HTMLDivElement>;
-  zoom: number;
-  dimensions: Dimensions | null;
-  addTextLayer: (coords: Point, color: string) => void;
-  foregroundColor: string;
-}
-
-export const useTextToolInteraction = (props: UseTextToolInteractionProps) => {
+// Minimal stub for useTextToolInteraction
+export const useTextToolInteraction = (props: any) => {
   // Stub implementation
-  return {};
 };

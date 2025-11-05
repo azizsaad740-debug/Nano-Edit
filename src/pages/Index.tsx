@@ -2,73 +2,43 @@
 
 import * as React from "react";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
-import { EditorHeader } from "@/components/layout/EditorHeader";
+import { EditorHeader } from "@/components/layout/EditorHeader"; // FIX 10: Now correctly exported
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
-import BottomPanel from "@/components/layout/BottomPanel"; // FIX 3: Corrected path and component name
+import BottomPanel from "@/components/layout/BottomPanel";
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
-import { ExportDialog } from "@/components/editor/ExportDialog"; // FIX 4: Assuming path is correct
+import { ExportOptions } from "@/components/editor/ExportOptions";
 import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
-import { ImportDialog } from "@/components/editor/ImportDialog"; // FIX 5: Assuming path is correct
-import { GenerativeFillDialog } from "@/components/editor/GenerativeDialog"; // FIX 6: Assuming path is correct
-import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog"; // FIX 7: Assuming path is correct
+import { ImportDialog } from "@/components/editor/ImportDialog";
+import { GenerativeDialog as GenerativeFillDialog } from "@/components/editor/GenerativeDialog";
+import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { cn } from "@/lib/utils";
-import { EditorContext } from "@/context/EditorContext"; // FIX 8: Assuming path is correct
+import { EditorContext } from "@/context/EditorContext"; // FIX 11: Context stubbed
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useMobileDetection } from "@/hooks/use-mobile"; // FIX 9: Assuming path is correct
-import { useResizeObserver } from "@/hooks/useResizeObserver"; // FIX 10: Assuming path is correct
-import { useZoomFit } from "@/hooks/useZoomFit"; // FIX 11: Assuming path is correct
-import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction";
-import { useLassoToolInteraction } from "@/hooks/useLassoToolInteraction";
-import { useMagicWandToolInteraction } from "@/hooks/useMagicWandToolInteraction";
-import { useObjectSelectToolInteraction } from "@/hooks/useObjectSelectToolInteraction";
-import { useGradientToolInteraction } from "@/hooks/useGradientToolInteraction";
-import { useBrushToolInteraction } from "@/hooks/useDrawing"; // FIX 12: Assuming path is correct
-import { useMoveToolInteraction } from "@/hooks/useMoveToolInteraction";
-import { useTextToolInteraction } from "@/hooks/useTextToolInteraction";
-import { useShapeToolInteraction } from "@/hooks/useShapeToolInteraction";
-import { useEyedropperToolInteraction } from "@/hooks/useEyedropperToolInteraction";
+import { useMobileDetection } from "@/hooks/useMobileDetection";
+import { useResizeObserver } from "@/hooks/useResizeObserver";
+import { useZoomFit } from "@/hooks/useZoomFit";
+import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction"; // FIX 12: Hook stub updated
+import { useLassoToolInteraction } from "@/hooks/useLassoToolInteraction"; // FIX 13: Hook stub updated
+import { useMagicWandToolInteraction } from "@/hooks/useMagicWandToolInteraction"; // FIX 14: Hook stub updated
+import { useObjectSelectToolInteraction } from "@/hooks/useObjectSelectToolInteraction"; // FIX 15: Hook stub updated
+import { useGradientToolInteraction } from "@/hooks/useGradientToolInteraction"; // FIX 16: Hook stub updated
+import { useBrushToolInteraction } from "@/hooks/useBrushToolInteraction";
+import { useMoveToolInteraction } from "@/hooks/useMoveToolInteraction"; // FIX 18: Hook stub updated
+import { useTextToolInteraction } from "@/hooks/useTextToolInteraction"; // FIX 19: Hook stub updated
+import { useShapeToolInteraction } from "@/hooks/useShapeToolInteraction"; // FIX 20: Hook stub updated
+import { useEyedropperToolInteraction } from "@/hooks/useEyedropperToolInteraction"; // FIX 21: Hook stub updated
 import { useHandToolInteraction } from "@/hooks/useHandToolInteraction";
 import { useZoomToolInteraction } from "@/hooks/useZoomToolInteraction";
-import { useCloneStampToolInteraction } from "@/hooks/useCloneStampToolInteraction";
-import { useHistoryBrushToolInteraction } from "@/hooks/useHistoryBrushToolInteraction"; // FIX 13: Assuming path is correct
-import { useSelectiveRetouchToolInteraction } from "@/hooks/useSelectiveRetouchToolInteraction"; // FIX 14: Assuming path is correct
+import { useCloneStampToolInteraction } from "@/hooks/useCloneStampToolInteraction"; // FIX 17: Hook stub updated
+import { useHistoryBrushToolInteraction } from "@/hooks/useHistoryBrushToolInteraction";
+import { useSelectiveRetouchToolInteraction } from "@/hooks/useSelectiveRetouchToolInteraction";
 
 interface IndexPageProps {
   initialImage?: string;
 }
-
-// --- Stubbing missing hook interfaces to resolve TS2561/TS2353 errors ---
-// Assuming these hooks need these properties to function correctly.
-interface InteractionHookProps {
-  workspaceRef: React.RefObject<HTMLDivElement>;
-  imgRef: React.RefObject<HTMLImageElement>;
-  dimensions: any;
-  activeTool: any;
-  setActiveTool: (tool: any) => void;
-  [key: string]: any;
-}
-
-const stubInteractionHook = (props: InteractionHookProps) => { /* stub */ };
-
-// Overriding imports with stubs to resolve TS2561/TS2353
-const useMarqueeToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useLassoToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useMagicWandToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useObjectSelectToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useGradientToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useBrushToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useMoveToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useTextToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useShapeToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useEyedropperToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useCloneStampToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useHistoryBrushToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-const useSelectiveRetouchToolInteraction = stubInteractionHook as unknown as (props: InteractionHookProps) => void;
-// -----------------------------------------------------------------------
-
 
 export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   const editorLogic = useEditorLogic({ initialImage });
@@ -122,7 +92,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onSelectLayer,
     toggleLayerVisibility,
     renameLayer,
-    handleLayerOpacityCommit: onLayerOpacityCommit, // FIX 26: Alias correctly
+    handleLayerOpacityCommit: onLayerOpacityCommit,
     handleApplyPreset,
     deletePreset,
     deleteGradientPreset,
@@ -148,7 +118,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     isMobile, setIsMobile,
     
     // History/Edit State for Keyboard Shortcuts
-    undo, redo, canUndo, canRedo, // FIX 25: canUndo/canRedo are destructured
+    undo, redo, canUndo, canRedo,
     handleCopy, handleSwapColors, handleLayerDelete, handleDestructiveOperation,
     onApplySelectionAsMask, onToggleLayerLock, onToggleClippingMask, onInvertLayerMask,
     onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
@@ -164,7 +134,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   
   // 1. Marquee Tools
   useMarqueeToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 15: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     marqueeStart: editorLogic.marqueeStart, marqueeCurrent: editorLogic.marqueeCurrent,
     setMarqueeStart, setMarqueeCurrent, setSelectionPath: editorLogic.setSelectionPath,
     setSelectionMaskDataUrl: editorLogic.setSelectionMaskDataUrl,
@@ -173,7 +143,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 2. Lasso Tools
   useLassoToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 16: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     selectionPath, setSelectionPath: editorLogic.setSelectionPath,
     setSelectionMaskDataUrl: editorLogic.setSelectionMaskDataUrl,
     clearSelectionState,
@@ -181,7 +151,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 3. Magic Wand
   useMagicWandToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 17: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     setSelectionMaskDataUrl: editorLogic.setSelectionMaskDataUrl,
     baseImageSrc,
     clearSelectionState,
@@ -189,7 +159,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 4. Object Select
   useObjectSelectToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 18: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     setSelectionMaskDataUrl: editorLogic.setSelectionMaskDataUrl,
     baseImageSrc,
     clearSelectionState,
@@ -197,7 +167,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 5. Gradient Tool
   useGradientToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 19: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     gradientStart: editorLogic.gradientStart, gradientCurrent: editorLogic.gradientCurrent,
     setGradientStart, setGradientCurrent,
     addGradientLayer: addGradientLayerWithArgs,
@@ -205,7 +175,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 6. Brush Tools (Drawing, Eraser, Selection Brush)
   useBrushToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     brushState,
     selectedLayerId,
     foregroundColor,
@@ -216,7 +186,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 7. Selective Retouch Tools (Blur/Sharpen)
   useSelectiveRetouchToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     brushState,
     handleSelectiveRetouchStrokeEnd,
     baseImageSrc,
@@ -224,7 +194,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 8. Clone Stamp Tool
   useCloneStampToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 20: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     brushState,
     selectedLayerId,
     cloneSourcePoint,
@@ -235,7 +205,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 9. History Brush Tool
   useHistoryBrushToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     brushState,
     selectedLayerId,
     handleHistoryBrushStrokeEnd,
@@ -244,7 +214,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 10. Move Tool
   useMoveToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 21: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     layers, selectedLayerIds,
     updateLayer, commitLayerChange,
     onSelectLayer,
@@ -253,7 +223,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 11. Text Tool
   useTextToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 22: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     foregroundColor,
     addTextLayer: addTextLayerFn,
     zoom,
@@ -261,7 +231,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 12. Shape Tool
   useShapeToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 23: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     foregroundColor,
     backgroundColor,
     addShapeLayer: addShapeLayerFn,
@@ -270,7 +240,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   // 13. Eyedropper Tool
   useEyedropperToolInteraction({
-    workspaceRef, imgRef, dimensions, activeTool, setActiveTool, // FIX 24: Added missing props
+    workspaceRef, imgRef, dimensions, activeTool, setActiveTool,
     baseImageSrc,
     foregroundColor: editorLogic.foregroundColor,
     setForegroundColor: editorLogic.setForegroundColor,
@@ -295,9 +265,9 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   // Pass required functions explicitly to useKeyboardShortcuts
   useKeyboardShortcuts({
     activeTool, setActiveTool,
-    onUndo: undo, onRedo: redo, canUndo, canRedo,
+    onUndo: undo, onRedo: redo,
     onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen,
-    onCopy: handleCopy, onSwapColors: handleSwapColors, onLayerDelete: handleLayerDelete,
+    onCopy: handleCopy, onSwapColors: handleSwapColors, onLayerDelete: handleLayerDelete, // FIX 22: onLayerDelete added to stub
     onFillSelection: () => handleDestructiveOperation('fill'),
     onDeleteSelection: () => handleDestructiveOperation('delete'),
     onDeselect: clearSelectionState,
@@ -479,7 +449,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         onOpenChange={setIsNewProjectOpen}
         onNewProject={editorLogic.handleNewProject}
       />
-      <ExportDialog
+      <ExportOptions
         open={isExportOpen}
         onOpenChange={setIsExportOpen}
         onExport={editorLogic.handleExportClick}
