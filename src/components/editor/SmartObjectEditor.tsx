@@ -90,6 +90,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
             return { ...layer, ...updates } as Layer;
           }
           if (isGroupLayer(layer) && layer.children) {
+            // FIX: Removed redundant id and updates arguments, relying on closure scope
             return { ...layer, children: updateRecursive(layer.children) } as Layer;
           }
           return layer;
@@ -129,18 +130,9 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     }
   }, [internalLayers, updateInternalLayer]);
 
-  const onInternalLayerReorder = React.useCallback((activeId: string, overId: string) => {
-    const oldIndex = internalLayers.findIndex(l => l.id === activeId);
-    const newIndex = internalLayers.findIndex(l => l.id === overId);
-    
-    if (oldIndex === -1 || newIndex === -1) return;
-    
-    setInternalLayers(prev => arrayMove(prev, oldIndex, newIndex));
-  }, [internalLayers]);
-
   // --- Internal Layer Creation Logic ---
-  
-  const createBaseLayer = (type: Layer['type'], name: string, position: { x: number; y: number } = { x: 50, y: 50 }): Omit<Layer, 'type'> => ({
+
+  const createBaseLayer = (type: Layer['type'], name: string, position: { x: number; y: number } = { x: 50, y: 50 }, initialWidth: number = 10, initialHeight: number = 10): Omit<Layer, 'type'> => ({
     id: uuidv4(),
     name,
     visible: true,
@@ -149,14 +141,14 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     isLocked: false,
     maskDataUrl: null,
     isClippingMask: false,
-    x: position.x, y: position.y, width: 50, height: 10, rotation: 0, scaleX: 1, scaleY: 1,
+    x: position.x, y: position.y, width: initialWidth, height: initialHeight, rotation: 0, scaleX: 1, scaleY: 1,
   });
 
   const addTextLayer = () => {
     const newLayer: TextLayerData = {
-      ...createBaseLayer('text', 'Text Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('text', 'Text Layer', { x: 50, y: 50 }, 50, 10),
       type: 'text',
-      content: 'New Text',
+      content: 'New Text Layer',
       fontSize: 48,
       color: foregroundColor,
       fontFamily: 'Roboto',
@@ -175,7 +167,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addDrawingLayer = () => {
     const newLayer: DrawingLayerData = {
-      ...createBaseLayer('drawing', 'Drawing Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('drawing', 'Drawing Layer', { x: 50, y: 50 }, 100, 100),
       type: 'drawing',
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // 1x1 transparent pixel
       width: 100, height: 100,
@@ -187,14 +179,13 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addShapeLayer = (shapeType: ShapeType = 'rect') => {
     const newLayer: VectorShapeLayerData = {
-      ...createBaseLayer('vector-shape', 'Shape Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('vector-shape', `${shapeType.charAt(0).toUpperCase() + shapeType.slice(1)} Shape`, { x: 50, y: 50 }, 20, 20),
       type: 'vector-shape',
       shapeType: shapeType,
       fillColor: foregroundColor,
       strokeColor: backgroundColor,
       strokeWidth: 2,
       borderRadius: shapeType === 'rect' ? 5 : 0,
-      width: 20, height: 20,
     };
     setInternalLayers(prev => [newLayer, ...prev]);
     setInternalSelectedLayerId(newLayer.id);
@@ -203,7 +194,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addGradientLayer = () => {
     const newLayer: GradientLayerData = {
-      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }),
+      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }, 100, 100),
       type: 'gradient',
       gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
       gradientColors: gradientToolState.colors,
@@ -307,7 +298,6 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
               layers={internalLayers}
               selectedLayerId={internalSelectedLayerId}
               onSelectLayer={(id) => setInternalSelectedLayerId(id)}
-              onReorder={onInternalLayerReorder}
               onAddLayer={(type) => {
                 if (type === 'text') addTextLayer();
                 if (type === 'drawing') addDrawingLayer();

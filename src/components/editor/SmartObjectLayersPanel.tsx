@@ -19,7 +19,6 @@ interface SmartObjectLayersPanelProps {
   layers: Layer[];
   selectedLayerId: string | null;
   onSelectLayer: (id: string, ctrlKey: boolean, shiftKey: boolean) => void; // Updated signature
-  onReorder: (activeId: string, overId: string) => void;
   onAddLayer: (type: 'text' | 'drawing' | 'vector-shape' | 'gradient') => void;
   onDeleteLayer: (id: string) => void;
   onGroupLayers: () => void;
@@ -78,7 +77,7 @@ const RecursiveLayerList: React.FC<{
 };
 
 
-const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onReorder, onDeleteLayer, onGroupLayers, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer, onAddLayer }) => {
+const SmartObjectLayersPanel: React.FC<SmartObjectLayersPanelProps> = ({ layers, selectedLayerId, onSelectLayer, onDeleteLayer, onGroupLayers, toggleLayerVisibility, toggleGroupExpanded, onToggleLayerLock, renameLayer, onAddLayer }) => {
   // Removed: const { active } = useDndContext();
   // Removed: const activeId = active?.id;
 
