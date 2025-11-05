@@ -27,12 +27,13 @@ interface UseLayersProps {
   selectedLayerIds: string[];
   setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>; // FIX 6, 12
   activeTool: string | null;
+  onOpenSmartObject: (id: string) => void; // NEW PROP
 }
 
 export const useLayers = ({
   layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor,
-  gradientToolState, selectedShapeType, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
-  setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool
+  gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
+  setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool, onOpenSmartObject // DESTRUCTURE NEW PROP
 }: UseLayersProps) => {
 
   // --- Recursive Helpers ---
@@ -458,7 +459,7 @@ export const useLayers = ({
     
     showSuccess(`${operation === 'delete' ? 'Deleted' : 'Filled'} selected area on ${targetLayer.name} (Stub).`);
     clearSelectionState();
-    recordHistory(`${operation === 'delete' ? 'Delete' : 'Fill'} Selection`, currentEditState, layers);
+    recordHistory(`Delete Selection`, currentEditState, layers);
   }, [selectionMaskDataUrl, selectedLayerIds, layers, currentEditState, recordHistory, clearSelectionState, findLayer]);
 
   const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
@@ -677,11 +678,11 @@ export const useLayers = ({
     toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask,
     onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd,
     handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer,
-    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject: () => showError("Smart Object Editor is a stub."), onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject: onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection,
     addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer,
     hasActiveSelection: !!selectionMaskDataUrl,
   }), [
-    findLayer, updateLayer, commitLayerChange, deleteLayer, handleLayerDelete, handleDestructiveOperation, onSelectLayer, toggleLayerVisibility, renameLayer, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection, addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer, selectionMaskDataUrl
+    findLayer, updateLayer, commitLayerChange, deleteLayer, handleLayerDelete, handleDestructiveOperation, onSelectLayer, toggleLayerVisibility, renameLayer, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection, addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer, selectionMaskDataUrl
   ]);
 };

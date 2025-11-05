@@ -22,6 +22,7 @@ import {
   type ShapeType,
   type PanelTab,
 } from "@/types/editor";
+import { isSmartObjectLayer, SmartObjectLayerData } from "@/types/editor";
 import { showSuccess, showError, dismissToast, showLoading } from "@/utils/toast";
 import { useFontManager } from "./useFontManager";
 import { useSettings } from "./useSettings";
@@ -54,10 +55,7 @@ import { renderImageToCanvas, copyImageToClipboard } from "@/utils/imageUtils";
 import ExifReader from "exifreader";
 import { polygonToMaskDataUrl } from "@/utils/maskUtils";
 import { useProjectSettings } from "./useProjectSettings";
-import { saveProjectToFile } from '@/utils/projectUtils'; // <-- ADDED IMPORT
-
-// Register extensions immediately (stub for Admin Panel management)
-extensionManager.register(new InvertToolExtension());
+import { saveProjectToFile } from '@/utils/projectUtils';
 
 export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   // Refs for DOM elements
@@ -77,6 +75,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [isMouseOverImage, setIsMouseOverImage] = useState(false);
   const [isFontManagerOpen, setIsFontManagerOpen] = useState(false);
+  const [isSmartObjectEditorOpen, setIsSmartObjectEditorOpen] = useState(false); // NEW
+  const [smartObjectLayerToEdit, setSmartObjectLayerToEdit] = useState<SmartObjectLayerData | null>(null); // NEW
 
   // Core Project State
   const [image, setImage] = useState<string | null>(initialImage || null);
@@ -424,7 +424,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   
   const { 
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
-    onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, // FIX 18
+    onCreateSmartObject, onOpenSmartObject: onOpenSmartObjectProp, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, // FIX 18
     updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 5, 54: Corrected name
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer: addGradientLayerWithArgs, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded, // FIX 21: Renamed alias
@@ -434,7 +434,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     onLayerReorder, findLayer, onSelectLayer, // FIX 11: Removed incorrect alias 'onReorder: onLayerReorder'
     handleLayerDelete, // NEW
   } = useLayers({
-    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool
+    layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool,
+    onOpenSmartObject: (id) => handleOpenSmartObject(id), // Pass the local handler
   });
   
   const addGradientLayerNoArgs = useCallback(() => {
@@ -504,6 +505,41 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   );
   
   const { handleExportClick } = useExport({ layers, dimensions, currentEditState, imgRef, base64Image: image, stabilityApiKey });
+
+  // --- Smart Object Editor Handlers ---
+  const handleOpenSmartObject = useCallback((id: string) => {
+    const layer = findLayer(id);
+    if (isSmartObjectLayer(layer)) {
+      setSmartObjectLayerToEdit(layer);
+      setIsSmartObjectEditorOpen(true);
+    } else {
+      showError("Selected layer is not a Smart Object.");
+    }
+  }, [findLayer]);
+
+  const handleSaveSmartObject = useCallback((rasterizedDataUrl: string, internalLayers: Layer[]) => {
+    if (!smartObjectLayerToEdit) return;
+
+    // 1. Update the Smart Object layer with new contents and rasterized preview
+    const updatedLayer: SmartObjectLayerData = {
+      ...smartObjectLayerToEdit,
+      smartObjectData: {
+        ...smartObjectLayerToEdit.smartObjectData,
+        layers: internalLayers,
+      },
+      dataUrl: rasterizedDataUrl,
+    };
+
+    updateLayerLogic(updatedLayer.id, updatedLayer);
+    
+    // 2. Record history
+    recordHistoryApi(`Edit Smart Object: ${updatedLayer.name}`, currentEditState, layers);
+
+    // 3. Close editor
+    setIsSmartObjectEditorOpen(false);
+    setSmartObjectLayerToEdit(null);
+  }, [smartObjectLayerToEdit, updateLayerLogic, recordHistoryApi, currentEditState, layers]);
+  // --- End Smart Object Editor Handlers ---
 
   // --- Global Interaction Handlers ---
 
@@ -714,7 +750,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
     addShapeLayer, addGradientLayer: addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer,
     deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
-    onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    onCreateSmartObject, onOpenSmartObject: handleOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
@@ -764,18 +800,22 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     isFontManagerOpen, setIsFontManagerOpen,
     isSettingsOpen, setIsSettingsOpen,
     isMobile, setIsMobile, // FIX 112: Export setIsMobile
+    isSmartObjectEditorOpen, setIsSmartObjectEditorOpen, // NEW
+    smartObjectLayerToEdit, setSmartObjectLayerToEdit, // NEW
     
     // Dialog Setters (Exposed for Header/Index)
     isFullscreen, // FIX 32
     setIsFullscreen, // FIX 67: Expose setter
+    
+    // Smart Object Handlers
+    handleSaveSmartObject, // NEW
     
     // Image/File Setters (Exposed for Smart Object Editor)
     setImage, setDimensions, setFileInfo, setExifData, setLayers, // FIX 57, 58, 59, 60, 61
     initialEditState, initialLayerState, // FIX 62, 63
     dismissToast, // FIX 56
     clearSelectionState, // FIX 64
-    // handleProjectSettingsUpdate, // REMOVED DUPLICATE (Error 5)
   }), [
-    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate, handleSelectiveRetouchStrokeEnd, handleSaveProject, handlePolygonalLassoComplete
+    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, handleOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate, handleSelectiveRetouchStrokeEnd, handleSaveProject, handlePolygonalLassoComplete, isSmartObjectEditorOpen, smartObjectLayerToEdit, handleSaveSmartObject
   ]);
 };
