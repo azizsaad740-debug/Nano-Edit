@@ -77,6 +77,16 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
   const [internalSelectedLayerId, setInternalSelectedLayerId] = React.useState<string | null>(null);
   const smartObjectWorkspaceRef = React.useRef<HTMLDivElement>(null); // Persistent ref for the workspace container
 
+  const internalDimensions: Dimensions = React.useMemo(() => {
+    if (smartObjectLayer?.type === 'smart-object') {
+      return {
+        width: smartObjectLayer.smartObjectData.width || dimensions?.width || 1000,
+        height: smartObjectLayer.smartObjectData.height || dimensions?.height || 1000,
+      };
+    }
+    return { width: 1000, height: 1000 }; // Default fallback
+  }, [smartObjectLayer, dimensions]);
+
   React.useEffect(() => {
     if (smartObjectLayer?.type === 'smart-object') {
       setInternalLayers(smartObjectLayer.smartObjectData.layers);
@@ -92,16 +102,13 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
     const toastId = showLoading(`Rasterizing and saving ${smartObjectLayer.name}...`);
 
     try {
-      // 1. Determine internal dimensions (use parent dimensions as fallback)
-      const internalDimensions: Dimensions = {
-        width: smartObjectLayer.smartObjectData.width || dimensions.width,
-        height: smartObjectLayer.smartObjectData.height || dimensions.height,
-      };
+      // 1. Determine internal dimensions (already calculated above)
+      const internalDimensionsToSave: Dimensions = internalDimensions;
       
       // 2. Rasterize internal layers to a single data URL
       const rasterizedDataUrl = await rasterizeLayersToDataUrl(
         internalLayers,
-        internalDimensions,
+        internalDimensionsToSave,
         currentEditState // Pass currentEditState
       );
 
@@ -110,8 +117,8 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
         smartObjectData: {
           ...smartObjectLayer.smartObjectData,
           layers: internalLayers,
-          width: internalDimensions.width,
-          height: internalDimensions.height,
+          width: internalDimensionsToSave.width,
+          height: internalDimensionsToSave.height,
         },
         dataUrl: rasterizedDataUrl, // Update the rasterized preview
       });
@@ -143,7 +150,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addTextLayer = () => {
     const newLayer: TextLayerData = {
-      ...createBaseLayer('text', 'Text Layer'),
+      ...createBaseLayer('text', 'Text Layer', { x: 50, y: 50 }, 50, 10),
       type: 'text',
       content: 'New Text',
       fontSize: 48,
@@ -164,7 +171,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addDrawingLayer = () => {
     const newLayer: DrawingLayerData = {
-      ...createBaseLayer('drawing', 'Drawing Layer'),
+      ...createBaseLayer('drawing', 'Drawing Layer', { x: 50, y: 50 }, 100, 100),
       type: 'drawing',
       dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', // 1x1 transparent pixel
       width: 100, height: 100,
@@ -176,7 +183,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addShapeLayer = () => {
     const newLayer: VectorShapeLayerData = {
-      ...createBaseLayer('vector-shape', 'Shape Layer'),
+      ...createBaseLayer('vector-shape', 'Shape Layer', { x: 50, y: 50 }, 10, 10),
       type: 'vector-shape',
       shapeType: selectedShapeType || 'rect',
       fillColor: foregroundColor,
@@ -192,7 +199,7 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
 
   const addGradientLayer = () => {
     const newLayer: GradientLayerData = {
-      ...createBaseLayer('gradient', 'Gradient Layer'),
+      ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }, 100, 100),
       type: 'gradient',
       gradientType: gradientToolState.type === 'radial' ? 'radial' : 'linear',
       gradientColors: gradientToolState.colors,
@@ -299,11 +306,16 @@ export const SmartObjectEditor: React.FC<SmartObjectEditorProps> = ({
                 <div
                   ref={smartObjectWorkspaceRef}
                   className="relative shadow-xl bg-background border border-border"
-                  style={{ width: '80%', height: '80%', maxWidth: '1000px', maxHeight: '800px' }}
+                  style={{ 
+                    width: `${internalDimensions.width}px`,
+                    height: `${internalDimensions.height}px`,
+                    maxWidth: '80%', 
+                    maxHeight: '80%',
+                  }}
                 >
                   <SmartObjectWorkspace
                     layers={internalLayers}
-                    parentDimensions={dimensions}
+                    parentDimensions={internalDimensions} // Corrected
                     containerRef={smartObjectWorkspaceRef}
                     onUpdate={handleUpdateInternalLayer}
                     onCommit={handleCommitInternalLayer}
