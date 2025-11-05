@@ -229,6 +229,21 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     invokeExtension: (id, method, args) => extensionManager.invokeExtension(id, method, args),
   }), [layers, currentEditState, dimensions, selectedLayerId, brushState, selectionMaskDataUrl, updateLayerApi, setLayers, recordHistoryApi, getRole, geminiApiKey, stabilityApiKey]);
 
+  // --- Polygonal Lasso Completion Logic ---
+  const handlePolygonalLassoComplete = useCallback(async (path: Point[]) => {
+    if (!dimensions) return;
+
+    try {
+      const maskDataUrl = await polygonToMaskDataUrl(path, dimensions.width, dimensions.height);
+      setSelectionMaskDataUrl(maskDataUrl);
+      recordHistoryApi('Polygonal Lasso Selection', currentEditState, layers);
+      showSuccess("Polygonal selection finalized.");
+    } catch (error) {
+      console.error("Failed to finalize polygonal lasso:", error);
+      showError("Failed to create selection mask from path.");
+    }
+  }, [dimensions, recordHistoryApi, currentEditState, layers, setSelectionMaskDataUrl]);
+
   // Initialize Extension Manager once the API is stable
   useEffect(() => {
     extensionManager.initialize(editorApi);
@@ -538,7 +553,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   }, [history, setLayers, setCurrentEditState, setSelectiveBlurAmount, setSelectiveSharpenAmount, setBrushState]);
 
   // --- Workspace Mouse Handlers (Delegation) ---
-  
+
   const handleWorkspaceMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // This is a central handler for tools that don't use dedicated interaction hooks
     if (activeTool === 'eyedropper' && dimensions) {
@@ -554,7 +569,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
       showSuccess(`Color picked: ${randomColor}`);
     }
     
-    // Handle polygonal lasso start
+    // Handle polygonal lasso start/point addition/completion
     if (activeTool === 'lassoPoly' && dimensions) {
       const imgRect = imgRef.current?.getBoundingClientRect();
       if (!imgRect) return;
@@ -575,12 +590,14 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
         const distance = Math.sqrt(Math.pow(x - startPoint.x, 2) + Math.pow(y - startPoint.y, 2));
         
         if (distance < 20 && prev.length >= 3) {
-          // Close the loop (handled by lasso tool interaction on double click/mouse up)
-          return prev;
+          // Close the loop and finalize selection
+          handlePolygonalLassoComplete(prev); 
+          return null; // Clear path drawing state
         }
         
         return [...prev, newPoint];
       });
+      e.preventDefault(); // Prevent default behavior (like dragging)
     }
     
     // Handle clone stamp source selection
@@ -607,7 +624,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
       }
     }
     
-  }, [activeTool, dimensions, setSelectionPath, imgRef, setCloneSourcePoint, setSelectedLayerIds]);
+  }, [activeTool, dimensions, setSelectionPath, imgRef, setCloneSourcePoint, setSelectedLayerIds, handlePolygonalLassoComplete]);
 
   const handleWorkspaceMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     // Placeholder for general mouse move logic (e.g., cursor updates)
@@ -759,6 +776,6 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     clearSelectionState, // FIX 64
     // handleProjectSettingsUpdate, // REMOVED DUPLICATE (Error 5)
   }), [
-    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate, handleSelectiveRetouchStrokeEnd, handleSaveProject
+    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate, handleSelectiveRetouchStrokeEnd, handleSaveProject, handlePolygonalLassoComplete
   ]);
 };
