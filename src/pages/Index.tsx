@@ -51,6 +51,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     layers,
     selectedLayerId,
     selectedLayerIds,
+    selectedLayer,
     activeTool,
     setActiveTool,
     currentEditState,
@@ -93,7 +94,8 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onSelectLayer,
     toggleLayerVisibility,
     renameLayer,
-    handleLayerOpacityCommit: onLayerOpacityCommit,
+    onLayerOpacityCommit,
+    onLayerOpacityChange,
     handleApplyPreset,
     deletePreset,
     deleteGradientPreset,
@@ -122,13 +124,36 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     undo, redo, canUndo, canRedo,
     handleCopy, handleSwapColors, handleLayerDelete, handleDestructiveOperation,
     onApplySelectionAsMask, onToggleLayerLock, onToggleClippingMask, onInvertLayerMask,
-    onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
-    onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers,
+    onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown: onMergeLayerDownFn, onRasterizeLayer: onRasterizeLayerFn,
+    onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers: onConvertSmartObjectToLayersFn,
     onAddLayerFromBackground, onLayerFromSelection,
     rotation,
     crop,
     aspect,
     
+    // Additional Logic Props for RightSidebarTabs
+    history, currentHistoryIndex,
+    onLayerPropertyCommit,
+    deleteLayer, onMergeLayerDown: onMergeLayerDownProp, onRasterizeLayer: onRasterizeLayerProp,
+    onConvertSmartObjectToLayers: onConvertSmartObjectToLayersProp,
+    groupLayers, toggleGroupExpanded, onDeleteHiddenLayers,
+    hasActiveSelection,
+    onBrushCommit, setBrushState,
+    selectiveBlurAmount, setSelectiveBlurAmount, onSelectiveBlurAmountCommit,
+    selectiveSharpenAmount, setSelectiveSharpenAmount, onSelectiveSharpenAmountCommit,
+    onSelectionSettingChange, onSelectionSettingCommit,
+    setHistoryBrushSourceIndex, setForegroundColor,
+    presets, gradientPresets,
+    systemFonts, customFonts, customHslColor, setCustomHslColor,
+    
+    // NEWLY DESTRUCTURED FOR JSX USAGE:
+    addDrawingLayer: addDrawingLayerFnProp,
+    onAddAdjustmentLayer,
+    selectedShapeType,
+    setGradientToolState,
+    onChannelChange: onChannelChangeLogic,
+    addGradientLayerNoArgs,
+    onArrangeLayer,
   } = editorLogic;
 
   // --- Tool Interactions (Fixing prop passing) ---
@@ -273,8 +298,8 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onDeleteSelection: () => handleDestructiveOperation('delete'),
     onDeselect: clearSelectionState,
     onApplySelectionAsMask, onToggleLayerLock, onToggleClippingMask, onInvertLayerMask,
-    onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
-    onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers,
+    onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown: onMergeLayerDownFn, onRasterizeLayer: onRasterizeLayerFn,
+    onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers: onConvertSmartObjectToLayersFn,
     onAddLayerFromBackground, onLayerFromSelection, onAddTextLayer: editorLogic.addTextLayer,
     onAddShapeLayer: editorLogic.addShapeLayer, onAddGradientLayer: editorLogic.addGradientLayerNoArgs,
     rotation,
@@ -311,7 +336,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
             <LeftSidebar
               activeTool={activeTool}
               setActiveTool={setActiveTool}
-              selectedShapeType={editorLogic.selectedShapeType}
+              selectedShapeType={selectedShapeType}
               setSelectedShapeType={editorLogic.setSelectedShapeType}
               foregroundColor={foregroundColor}
               onForegroundColorChange={editorLogic.setForegroundColor}
@@ -395,25 +420,101 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
               <RightSidebarTabs
                 layers={layers}
                 currentEditState={currentEditState}
-                panelLayout={editorLogic.panelLayout}
-                activeRightTab={editorLogic.activeRightTab}
-                setActiveRightTab={editorLogic.setActiveRightTab}
-                activeBottomTab={editorLogic.activeBottomTab}
-                setActiveBottomTab={editorLogic.setActiveBottomTab}
+                history={history}
+                currentHistoryIndex={currentHistoryIndex}
+                selectedLayerId={selectedLayerId}
+                selectedLayerIds={selectedLayerIds}
+                selectedLayer={selectedLayer}
+                dimensions={dimensions}
+                imgRef={imgRef}
+                foregroundColor={foregroundColor}
+                backgroundColor={backgroundColor}
+                
+                activeTool={activeTool}
+                brushState={brushState}
+                gradientToolState={gradientToolState}
+                selectiveBlurAmount={selectiveBlurAmount}
+                selectiveSharpenAmount={selectiveSharpenAmount}
+                cloneSourcePoint={cloneSourcePoint}
+                selectionSettings={editorLogic.selectionSettings}
+                historyBrushSourceIndex={editorLogic.historyBrushSourceIndex}
+                
+                presets={presets}
+                gradientPresets={gradientPresets}
+                
+                onSelectLayer={onSelectLayer}
+                onLayerReorder={onLayerReorder}
                 toggleLayerVisibility={toggleLayerVisibility}
                 renameLayer={renameLayer}
-                onLayerOpacityCommit={onLayerOpacityCommit}
+                deleteLayer={deleteLayer}
+                onDuplicateLayer={onDuplicateLayer}
+                onMergeLayerDown={onMergeLayerDownFn}
+                onRasterizeLayer={onRasterizeLayerFn}
+                onCreateSmartObject={onCreateSmartObject}
                 onOpenSmartObject={onOpenSmartObject}
-                onLayerReorder={onLayerReorder}
+                onLayerUpdate={updateLayer}
+                onLayerCommit={commitLayerChange}
+                onLayerPropertyCommit={onLayerPropertyCommit}
+                onLayerOpacityChange={onLayerOpacityChange}
+                onLayerOpacityCommit={onLayerOpacityCommit}
+                addTextLayer={addTextLayerFn}
+                addDrawingLayer={addDrawingLayerFnProp}
+                onAddLayerFromBackground={onAddLayerFromBackground}
+                onLayerFromSelection={onLayerFromSelection}
+                addShapeLayer={addShapeLayerFn}
+                addGradientLayer={addGradientLayerNoArgs}
+                onAddAdjustmentLayer={onAddAdjustmentLayer}
+                selectedShapeType={selectedShapeType}
+                groupLayers={groupLayers}
+                toggleGroupExpanded={toggleGroupExpanded}
+                onRemoveLayerMask={onRemoveLayerMask}
+                onInvertLayerMask={onInvertLayerMask}
+                onToggleClippingMask={onToggleClippingMask}
+                onToggleLayerLock={onToggleLayerLock}
+                onDeleteHiddenLayers={onDeleteHiddenLayers}
+                onRasterizeSmartObject={onRasterizeSmartObject}
+                onConvertSmartObjectToLayers={onConvertSmartObjectToLayersFn}
+                onExportSmartObjectContents={onExportSmartObjectContents}
+                onArrangeLayer={onArrangeLayer}
+                hasActiveSelection={hasActiveSelection}
+                onApplySelectionAsMask={onApplySelectionAsMask}
+                handleDestructiveOperation={handleDestructiveOperation}
+                onBrushCommit={onBrushCommit}
+                setBrushState={setBrushState as any}
+                setGradientToolState={setGradientToolState}
+                onSelectiveBlurAmountChange={setSelectiveBlurAmount}
+                onSelectiveBlurAmountCommit={onSelectiveBlurAmountCommit}
+                onSelectiveSharpenAmountChange={setSelectiveSharpenAmount}
+                onSelectiveSharpenAmountCommit={onSelectiveSharpenAmountCommit}
+                onSelectionSettingChange={onSelectionSettingChange}
+                onSelectionSettingCommit={onSelectionSettingCommit}
+                setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
+                setForegroundColor={editorLogic.setForegroundColor}
+                onUndo={undo}
+                onRedo={redo}
+                canUndo={canUndo}
+                canRedo={canRedo}
                 onApplyPreset={handleApplyPreset}
                 onSavePreset={handleSavePresetCommit}
                 onDeletePreset={deletePreset}
                 onSaveGradientPreset={saveGradientPreset}
                 onDeleteGradientPreset={deleteGradientPreset}
-                addGradientLayer={addGradientLayerWithArgs}
                 onOpenFontManager={onOpenFontManager}
                 onOpenSettings={() => setIsSettingsOpen(true)}
                 clearSelectionState={clearSelectionState}
+                systemFonts={systemFonts}
+                customFonts={customFonts}
+                customHslColor={customHslColor}
+                setCustomHslColor={editorLogic.setCustomHslColor}
+                
+                panelLayout={editorLogic.panelLayout}
+                reorderPanelTabs={editorLogic.reorderPanelTabs}
+                activeRightTab={editorLogic.activeRightTab}
+                setActiveRightTab={editorLogic.setActiveRightTab}
+                activeBottomTab={editorLogic.activeBottomTab}
+                setActiveBottomTab={editorLogic.setActiveBottomTab}
+                setCurrentHistoryIndex={editorLogic.setCurrentHistoryIndex}
+                onChannelChange={editorLogic.onChannelChange}
               />
             </aside>
           )}
@@ -426,7 +527,6 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
             style={{ marginRight: rightSidebarWidth, marginLeft: leftSidebarWidth }}
           >
             <BottomPanel
-              // Pass all required props to BottomPanel
               foregroundColor={foregroundColor}
               onForegroundColorChange={editorLogic.setForegroundColor}
               backgroundColor={backgroundColor}
@@ -454,7 +554,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
               curves={editorLogic.curves}
               onCurvesChange={editorLogic.onCurvesChange}
               onCurvesCommit={editorLogic.onCurvesCommit}
-              customHslColor={editorLogic.customHslColor}
+              customHslColor={customHslColor}
               setCustomHslColor={editorLogic.setCustomHslColor}
               geminiApiKey={editorLogic.geminiApiKey}
               base64Image={baseImageSrc}
