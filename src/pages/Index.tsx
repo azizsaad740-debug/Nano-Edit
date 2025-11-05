@@ -35,7 +35,14 @@ import { useZoomToolInteraction } from "@/hooks/useZoomToolInteraction";
 import { useCloneStampToolInteraction } from "@/hooks/useCloneStampToolInteraction";
 import { useHistoryBrushToolInteraction } from "@/hooks/useHistoryBrushToolInteraction";
 import { useSelectiveRetouchToolInteraction } from "@/hooks/useSelectiveRetouchToolInteraction";
-import LeftSidebar from "@/components/layout/LeftSidebar"; // NEW IMPORT
+import LeftSidebar from "@/components/layout/LeftSidebar";
+import { MobileHeader } from "@/components/mobile/MobileHeader";
+import { MobileBottomNav, MobileTab } from "@/components/mobile/MobileBottomNav";
+import { MobileToolBar } from "@/components/mobile/MobileToolBar";
+import { MobileToolOptions } from "@/components/mobile/MobileToolOptions";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { SavePresetDialog } from "@/components/editor/SavePresetDialog";
+import { SaveGradientPresetDialog } from "@/components/editor/SaveGradientPresetDialog";
 
 interface IndexPageProps {
   initialImage?: string;
@@ -94,8 +101,8 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onSelectLayer,
     toggleLayerVisibility,
     renameLayer,
-    handleLayerOpacityCommit: onLayerOpacityCommit, // FIX 1: Aliased
-    handleLayerOpacityChange: onLayerOpacityChange, // FIX 2: Aliased
+    handleLayerOpacityCommit: onLayerOpacityCommit,
+    handleLayerOpacityChange: onLayerOpacityChange,
     handleApplyPreset,
     deletePreset,
     deleteGradientPreset,
@@ -155,7 +162,31 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onChannelChange: onChannelChangeLogic,
     addGradientLayerNoArgs,
     onArrangeLayer,
+    isGuest,
   } = editorLogic;
+
+  // --- Preset Dialog State and Handlers ---
+  const [isSavingPreset, setIsSavingPreset] = React.useState(false);
+  const [isSavingGradientPreset, setIsSavingGradientPreset] = React.useState(false);
+
+  const onOpenSavePresetDialog = () => setIsSavingPreset(true);
+  const onOpenSaveGradientPresetDialog = () => setIsSavingGradientPreset(true);
+  // --- End Preset Dialog State and Handlers ---
+
+  // --- Mobile State Management ---
+  const [activeMobileTab, setActiveMobileTab] = React.useState<MobileTab>('layers');
+  const [isMobilePanelOpen, setIsMobilePanelOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isMobile && activeMobileTab) {
+      setIsMobilePanelOpen(true);
+    }
+  }, [activeMobileTab, isMobile]);
+
+  const handleMobileTabSelect = (tab: MobileTab) => {
+    setActiveMobileTab(tab);
+    setIsMobilePanelOpen(true);
+  };
 
   // --- Tool Interactions (Fixing prop passing) ---
   
@@ -289,7 +320,6 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   });
 
   // --- Global Effects ---
-  // Pass required functions explicitly to useKeyboardShortcuts
   useKeyboardShortcuts({
     activeTool, setActiveTool,
     onUndo: undo, onRedo: redo,
@@ -326,252 +356,353 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   const mainContentWidth = `calc(100% - ${rightSidebarWidth}px - ${leftSidebarWidth}px)`;
   const mainContentHeight = `calc(100% - ${bottomSidebarHeight}px)`;
 
-  return (
-    <EditorContext.Provider value={editorLogic}>
-      <div className={cn("flex flex-col h-screen w-screen overflow-hidden", isFullscreen && "fixed inset-0 z-[9999]")}>
-        <EditorHeader />
-        <div className="flex flex-1 overflow-hidden">
-          
-          {/* Left Sidebar (Tools Panel) */}
-          <aside className="w-16 border-r bg-muted/40 flex-shrink-0">
-            <LeftSidebar
-              activeTool={activeTool}
-              setActiveTool={setActiveTool}
-              selectedShapeType={selectedShapeType}
-              setSelectedShapeType={editorLogic.setSelectedShapeType}
-              foregroundColor={foregroundColor}
-              onForegroundColorChange={editorLogic.setForegroundColor}
-              backgroundColor={backgroundColor}
-              onBackgroundColorChange={editorLogic.setBackgroundColor}
-              onSwapColors={editorLogic.handleSwapColors}
-              brushState={brushState}
-              setBrushState={editorLogic.setBrushState as any}
-              selectiveBlurAmount={editorLogic.selectiveBlurAmount}
-              onSelectiveBlurAmountChange={editorLogic.setSelectiveBlurAmount}
-              onSelectiveBlurAmountCommit={editorLogic.onSelectiveBlurAmountCommit}
-            />
-          </aside>
+  const renderDesktopLayout = () => (
+    <div className={cn("flex flex-col h-screen w-screen overflow-hidden", isFullscreen && "fixed inset-0 z-[9999]")}>
+      <EditorHeader />
+      <div className="flex flex-1 overflow-hidden">
+        
+        {/* Left Sidebar (Tools Panel) */}
+        <aside className="w-16 border-r bg-muted/40 flex-shrink-0">
+          <LeftSidebar
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            selectedShapeType={selectedShapeType}
+            setSelectedShapeType={editorLogic.setSelectedShapeType}
+            foregroundColor={foregroundColor}
+            onForegroundColorChange={editorLogic.setForegroundColor}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={editorLogic.setBackgroundColor}
+            onSwapColors={editorLogic.handleSwapColors}
+            brushState={brushState}
+            setBrushState={editorLogic.setBrushState as any}
+            selectiveBlurAmount={editorLogic.selectiveBlurAmount}
+            onSelectiveBlurAmountChange={editorLogic.setSelectiveBlurAmount}
+            onSelectiveBlurAmountCommit={editorLogic.onSelectiveBlurAmountCommit}
+          />
+        </aside>
 
-          {/* Main Content Area */}
-          <main
-            className="flex-1 relative overflow-hidden"
-            style={{
-              width: mainContentWidth,
-              height: mainContentHeight,
-            }}
-          >
-            <EditorWorkspace
-              workspaceRef={workspaceRef}
-              imgRef={imgRef}
-              image={image}
-              dimensions={dimensions}
-              currentEditState={currentEditState}
+        {/* Main Content Area */}
+        <main
+          className="flex-1 relative overflow-hidden"
+          style={{
+            width: mainContentWidth,
+            height: mainContentHeight,
+          }}
+        >
+          <EditorWorkspace
+            workspaceRef={workspaceRef}
+            imgRef={imgRef}
+            image={image}
+            dimensions={dimensions}
+            currentEditState={currentEditState}
+            layers={layers}
+            selectedLayerId={selectedLayerId}
+            activeTool={activeTool}
+            workspaceZoom={zoom}
+            selectionMaskDataUrl={selectionMaskDataUrl}
+            selectionPath={editorLogic.selectionPath}
+            marqueeStart={editorLogic.marqueeStart}
+            marqueeCurrent={editorLogic.marqueeCurrent}
+            gradientStart={editorLogic.gradientStart}
+            gradientCurrent={editorLogic.gradientCurrent}
+            brushState={brushState}
+            foregroundColor={foregroundColor}
+            backgroundColor={backgroundColor}
+            cloneSourcePoint={cloneSourcePoint}
+            isPreviewingOriginal={editorLogic.isPreviewingOriginal}
+            gradientToolState={gradientToolState}
+            
+            handleWorkspaceMouseDown={handleWorkspaceMouseDown}
+            handleWorkspaceMouseMove={handleWorkspaceMouseMove}
+            handleWorkspaceMouseUp={handleWorkspaceMouseUp}
+            handleWheel={handleWheel}
+            setIsMouseOverImage={editorLogic.setIsMouseOverImage}
+            handleZoomIn={handleZoomIn}
+            handleZoomOut={handleZoomOut}
+            handleFitScreen={handleFitScreen}
+            onCropChange={onCropChange}
+            onCropComplete={onCropComplete}
+            handleDrawingStrokeEnd={handleDrawingStrokeEnd}
+            handleSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
+            handleSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
+            handleHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd}
+            addGradientLayer={addGradientLayerWithArgs}
+            addTextLayer={addTextLayerFn}
+            addShapeLayer={addShapeLayerFn}
+            setMarqueeStart={setMarqueeStart}
+            setMarqueeCurrent={setMarqueeCurrent}
+            setGradientStart={setGradientStart}
+            setGradientCurrent={setGradientCurrent}
+            setCloneSourcePoint={setCloneSourcePoint}
+            updateLayer={updateLayer}
+            commitLayerChange={commitLayerChange}
+            setSelectedLayerId={setSelectedLayerId}
+            base64Image={baseImageSrc}
+            historyImageSrc={historyImageSrc}
+            recordHistory={editorLogic.recordHistory}
+            setSelectionMaskDataUrl={editorLogic.setSelectionMaskDataUrl}
+          />
+        </main>
+
+        {/* Right Sidebar */}
+        {rightSidebarTabs.length > 0 && (
+          <aside className="w-72 border-l bg-background/90 flex flex-col flex-shrink-0">
+            <RightSidebarTabs
               layers={layers}
+              currentEditState={currentEditState}
+              history={history}
+              currentHistoryIndex={currentHistoryIndex}
               selectedLayerId={selectedLayerId}
-              activeTool={activeTool}
-              workspaceZoom={zoom}
-              selectionMaskDataUrl={selectionMaskDataUrl}
-              selectionPath={editorLogic.selectionPath}
-              marqueeStart={editorLogic.marqueeStart}
-              marqueeCurrent={editorLogic.marqueeCurrent}
-              gradientStart={editorLogic.gradientStart}
-              gradientCurrent={editorLogic.gradientCurrent}
-              brushState={brushState}
-              foregroundColor={foregroundColor}
-              backgroundColor={backgroundColor}
-              cloneSourcePoint={cloneSourcePoint}
-              isPreviewingOriginal={editorLogic.isPreviewingOriginal}
-              gradientToolState={gradientToolState}
-              
-              handleWorkspaceMouseDown={handleWorkspaceMouseDown}
-              handleWorkspaceMouseMove={handleWorkspaceMouseMove}
-              handleWorkspaceMouseUp={handleWorkspaceMouseUp}
-              handleWheel={handleWheel}
-              setIsMouseOverImage={editorLogic.setIsMouseOverImage}
-              handleZoomIn={handleZoomIn}
-              handleZoomOut={handleZoomOut}
-              handleFitScreen={handleFitScreen}
-              onCropChange={onCropChange}
-              onCropComplete={onCropComplete}
-              handleDrawingStrokeEnd={handleDrawingStrokeEnd}
-              handleSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
-              handleSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
-              handleHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd}
-              addGradientLayer={addGradientLayerWithArgs}
-              addTextLayer={addTextLayerFn}
-              addShapeLayer={addShapeLayerFn}
-              setMarqueeStart={setMarqueeStart}
-              setMarqueeCurrent={setMarqueeCurrent}
-              setGradientStart={setGradientStart}
-              setGradientCurrent={setGradientCurrent}
-              setCloneSourcePoint={setCloneSourcePoint}
-              updateLayer={updateLayer}
-              commitLayerChange={commitLayerChange}
-              setSelectedLayerId={setSelectedLayerId}
-              base64Image={baseImageSrc}
-              historyImageSrc={historyImageSrc}
-              recordHistory={editorLogic.recordHistory}
-              setSelectionMaskDataUrl={editorLogic.setSelectionMaskDataUrl}
-            />
-          </main>
-
-          {/* Right Sidebar */}
-          {rightSidebarTabs.length > 0 && (
-            <aside className="w-72 border-l bg-background/90 flex flex-col flex-shrink-0">
-              <RightSidebarTabs
-                layers={layers}
-                currentEditState={currentEditState}
-                history={history}
-                currentHistoryIndex={currentHistoryIndex}
-                selectedLayerId={selectedLayerId}
-                selectedLayerIds={selectedLayerIds}
-                selectedLayer={selectedLayer}
-                dimensions={dimensions}
-                imgRef={imgRef}
-                foregroundColor={foregroundColor}
-                backgroundColor={backgroundColor}
-                
-                activeTool={activeTool}
-                brushState={brushState}
-                gradientToolState={gradientToolState}
-                selectiveBlurAmount={selectiveBlurAmount}
-                selectiveSharpenAmount={selectiveSharpenAmount}
-                cloneSourcePoint={cloneSourcePoint}
-                selectionSettings={editorLogic.selectionSettings}
-                historyBrushSourceIndex={editorLogic.historyBrushSourceIndex}
-                
-                presets={presets}
-                gradientPresets={gradientPresets}
-                
-                onSelectLayer={onSelectLayer}
-                onLayerReorder={onLayerReorder}
-                toggleLayerVisibility={toggleLayerVisibility}
-                renameLayer={renameLayer}
-                deleteLayer={deleteLayer}
-                onDuplicateLayer={onDuplicateLayer}
-                onMergeLayerDown={onMergeLayerDownFn}
-                onRasterizeLayer={onRasterizeLayerFn}
-                onCreateSmartObject={onCreateSmartObject}
-                onOpenSmartObject={onOpenSmartObject}
-                onLayerUpdate={updateLayer}
-                onLayerCommit={commitLayerChange}
-                onLayerPropertyCommit={onLayerPropertyCommit}
-                onLayerOpacityChange={onLayerOpacityChange}
-                onLayerOpacityCommit={onLayerOpacityCommit}
-                addTextLayer={addTextLayerFn}
-                addDrawingLayer={addDrawingLayerFnProp}
-                onAddLayerFromBackground={onAddLayerFromBackground}
-                onLayerFromSelection={onLayerFromSelection}
-                addShapeLayer={addShapeLayerFn}
-                addGradientLayer={addGradientLayerNoArgs}
-                onAddAdjustmentLayer={onAddAdjustmentLayer}
-                selectedShapeType={selectedShapeType}
-                groupLayers={groupLayers}
-                toggleGroupExpanded={toggleGroupExpanded}
-                onRemoveLayerMask={onRemoveLayerMask}
-                onInvertLayerMask={onInvertLayerMask}
-                onToggleClippingMask={onToggleClippingMask}
-                onToggleLayerLock={onToggleLayerLock}
-                onDeleteHiddenLayers={onDeleteHiddenLayers}
-                onRasterizeSmartObject={onRasterizeSmartObject}
-                onConvertSmartObjectToLayers={onConvertSmartObjectToLayersFn}
-                onExportSmartObjectContents={onExportSmartObjectContents}
-                onArrangeLayer={onArrangeLayer}
-                hasActiveSelection={hasActiveSelection}
-                onApplySelectionAsMask={onApplySelectionAsMask}
-                handleDestructiveOperation={handleDestructiveOperation}
-                onBrushCommit={onBrushCommit}
-                setBrushState={setBrushState as any}
-                setGradientToolState={setGradientToolState}
-                onSelectiveBlurAmountChange={setSelectiveBlurAmount}
-                onSelectiveBlurAmountCommit={onSelectiveBlurAmountCommit}
-                onSelectiveSharpenAmountChange={setSelectiveSharpenAmount}
-                onSelectiveSharpenAmountCommit={onSelectiveSharpenAmountCommit}
-                onSelectionSettingChange={onSelectionSettingChange}
-                onSelectionSettingCommit={onSelectionSettingCommit}
-                setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
-                setForegroundColor={editorLogic.setForegroundColor}
-                onUndo={undo}
-                onRedo={redo}
-                canUndo={canUndo}
-                canRedo={canRedo}
-                onApplyPreset={handleApplyPreset}
-                onSavePreset={handleSavePresetCommit}
-                onDeletePreset={deletePreset}
-                onSaveGradientPreset={saveGradientPreset}
-                onDeleteGradientPreset={deleteGradientPreset}
-                onOpenFontManager={onOpenFontManager}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-                clearSelectionState={clearSelectionState}
-                systemFonts={systemFonts}
-                customFonts={customFonts}
-                customHslColor={customHslColor}
-                setCustomHslColor={editorLogic.setCustomHslColor}
-                
-                panelLayout={editorLogic.panelLayout}
-                reorderPanelTabs={editorLogic.reorderPanelTabs}
-                activeRightTab={editorLogic.activeRightTab}
-                setActiveRightTab={editorLogic.setActiveRightTab}
-                activeBottomTab={editorLogic.activeBottomTab}
-                setActiveBottomTab={editorLogic.setActiveBottomTab}
-                setCurrentHistoryIndex={editorLogic.setCurrentHistoryIndex}
-                onChannelChange={editorLogic.onChannelChange}
-              />
-            </aside>
-          )}
-        </div>
-
-        {/* Bottom Sidebar */}
-        {bottomSidebarTabs.length > 0 && (
-          <footer
-            className="h-[250px] border-t bg-background/90 flex-shrink-0"
-            style={{ marginRight: rightSidebarWidth, marginLeft: leftSidebarWidth }}
-          >
-            <BottomPanel
-              foregroundColor={foregroundColor}
-              onForegroundColorChange={editorLogic.setForegroundColor}
-              backgroundColor={backgroundColor}
-              onBackgroundColorChange={editorLogic.setBackgroundColor}
-              onSwapColors={editorLogic.handleSwapColors}
+              selectedLayerIds={selectedLayerIds}
+              selectedLayer={selectedLayer}
               dimensions={dimensions}
-              fileInfo={editorLogic.fileInfo}
               imgRef={imgRef}
-              exifData={editorLogic.exifData}
-              colorMode={currentEditState.colorMode}
-              zoom={zoom}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onFitScreen={handleFitScreen}
-              hasImage={!!image}
-              adjustments={editorLogic.adjustments}
-              onAdjustmentChange={editorLogic.onAdjustmentChange}
-              onAdjustmentCommit={editorLogic.onAdjustmentCommit}
-              grading={editorLogic.grading}
-              onGradingChange={editorLogic.onGradingChange}
-              onGradingCommit={editorLogic.onGradingCommit}
-              hslAdjustments={editorLogic.hslAdjustments}
-              onHslAdjustmentChange={editorLogic.onHslAdjustmentChange}
-              onHslAdjustmentCommit={editorLogic.onHslAdjustmentCommit}
-              curves={editorLogic.curves}
-              onCurvesChange={editorLogic.onCurvesChange}
-              onCurvesCommit={editorLogic.onCurvesCommit}
+              foregroundColor={foregroundColor}
+              backgroundColor={backgroundColor}
+              
+              activeTool={activeTool}
+              brushState={brushState}
+              gradientToolState={gradientToolState}
+              selectiveBlurAmount={selectiveBlurAmount}
+              selectiveSharpenAmount={selectiveSharpenAmount}
+              cloneSourcePoint={cloneSourcePoint}
+              selectionSettings={editorLogic.selectionSettings}
+              historyBrushSourceIndex={editorLogic.historyBrushSourceIndex}
+              
+              presets={presets}
+              gradientPresets={gradientPresets}
+              
+              onSelectLayer={onSelectLayer}
+              onLayerReorder={onLayerReorder}
+              toggleLayerVisibility={toggleLayerVisibility}
+              renameLayer={renameLayer}
+              deleteLayer={deleteLayer}
+              onDuplicateLayer={onDuplicateLayer}
+              onMergeLayerDown={onMergeLayerDownFn}
+              onRasterizeLayer={onRasterizeLayerFn}
+              onCreateSmartObject={onCreateSmartObject}
+              onOpenSmartObject={onOpenSmartObject}
+              onLayerUpdate={updateLayer}
+              onLayerCommit={commitLayerChange}
+              onLayerPropertyCommit={onLayerPropertyCommit}
+              onLayerOpacityChange={onLayerOpacityChange}
+              onLayerOpacityCommit={onLayerOpacityCommit}
+              addTextLayer={addTextLayerFn}
+              addDrawingLayer={addDrawingLayerFnProp}
+              onAddLayerFromBackground={onAddLayerFromBackground}
+              onLayerFromSelection={onLayerFromSelection}
+              addShapeLayer={addShapeLayerFn}
+              addGradientLayer={addGradientLayerNoArgs}
+              onAddAdjustmentLayer={onAddAdjustmentLayer}
+              selectedShapeType={selectedShapeType}
+              groupLayers={groupLayers}
+              toggleGroupExpanded={toggleGroupExpanded}
+              onRemoveLayerMask={onRemoveLayerMask}
+              onInvertLayerMask={onInvertLayerMask}
+              onToggleClippingMask={onToggleClippingMask}
+              onToggleLayerLock={onToggleLayerLock}
+              onDeleteHiddenLayers={onDeleteHiddenLayers}
+              onRasterizeSmartObject={onRasterizeSmartObject}
+              onConvertSmartObjectToLayers={onConvertSmartObjectToLayersFn}
+              onExportSmartObjectContents={onExportSmartObjectContents}
+              onArrangeLayer={editorLogic.onArrangeLayer}
+              hasActiveSelection={hasActiveSelection}
+              onApplySelectionAsMask={onApplySelectionAsMask}
+              handleDestructiveOperation={handleDestructiveOperation}
+              onBrushCommit={onBrushCommit}
+              setBrushState={setBrushState as any}
+              setGradientToolState={setGradientToolState}
+              onSelectiveBlurAmountChange={setSelectiveBlurAmount}
+              onSelectiveBlurAmountCommit={onSelectiveBlurAmountCommit}
+              onSelectiveSharpenAmountChange={setSelectiveSharpenAmount}
+              onSelectiveSharpenAmountCommit={onSelectiveSharpenAmountCommit}
+              onSelectionSettingChange={onSelectionSettingChange}
+              onSelectionSettingCommit={onSelectionSettingCommit}
+              setHistoryBrushSourceIndex={setHistoryBrushSourceIndex}
+              setForegroundColor={editorLogic.setForegroundColor}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              onApplyPreset={handleApplyPreset}
+              onSavePreset={onOpenSavePresetDialog}
+              onDeletePreset={deletePreset}
+              onSaveGradientPreset={onOpenSaveGradientPresetDialog}
+              onDeleteGradientPreset={deleteGradientPreset}
+              onOpenFontManager={onOpenFontManager}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              clearSelectionState={clearSelectionState}
+              systemFonts={systemFonts}
+              customFonts={customFonts}
               customHslColor={customHslColor}
               setCustomHslColor={editorLogic.setCustomHslColor}
-              geminiApiKey={editorLogic.geminiApiKey}
-              base64Image={baseImageSrc}
-              onImageResult={editorLogic.handleGenerateImage}
-              onMaskResult={editorLogic.handleMaskResult}
-              onOpenSettings={() => setIsSettingsOpen(true)}
+              
               panelLayout={editorLogic.panelLayout}
               reorderPanelTabs={editorLogic.reorderPanelTabs}
+              activeRightTab={editorLogic.activeRightTab}
+              setActiveRightTab={editorLogic.setActiveRightTab}
               activeBottomTab={editorLogic.activeBottomTab}
               setActiveBottomTab={editorLogic.setActiveBottomTab}
-              isGuest={editorLogic.isGuest}
+              setCurrentHistoryIndex={editorLogic.setCurrentHistoryIndex}
+              onChannelChange={editorLogic.onChannelChange}
             />
-          </footer>
+          </aside>
         )}
       </div>
 
+      {/* Bottom Sidebar */}
+      {bottomSidebarTabs.length > 0 && (
+        <footer
+          className="h-[250px] border-t bg-background/90 flex-shrink-0"
+          style={{ marginRight: rightSidebarWidth, marginLeft: leftSidebarWidth }}
+        >
+          <BottomPanel
+            foregroundColor={foregroundColor}
+            onForegroundColorChange={editorLogic.setForegroundColor}
+            backgroundColor={backgroundColor}
+            onBackgroundColorChange={editorLogic.setBackgroundColor}
+            onSwapColors={editorLogic.handleSwapColors}
+            dimensions={dimensions}
+            fileInfo={editorLogic.fileInfo}
+            imgRef={imgRef}
+            exifData={editorLogic.exifData}
+            colorMode={currentEditState.colorMode}
+            zoom={zoom}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onFitScreen={handleFitScreen}
+            hasImage={!!image}
+            adjustments={editorLogic.adjustments}
+            onAdjustmentChange={editorLogic.onAdjustmentChange}
+            onAdjustmentCommit={editorLogic.onAdjustmentCommit}
+            grading={editorLogic.grading}
+            onGradingChange={editorLogic.onGradingChange}
+            onGradingCommit={editorLogic.onGradingCommit}
+            hslAdjustments={editorLogic.hslAdjustments}
+            onHslAdjustmentChange={editorLogic.onHslAdjustmentChange}
+            onHslAdjustmentCommit={editorLogic.onHslAdjustmentCommit}
+            curves={editorLogic.curves}
+            onCurvesChange={editorLogic.onCurvesChange}
+            onCurvesCommit={editorLogic.onCurvesCommit}
+            customHslColor={customHslColor}
+            setCustomHslColor={editorLogic.setCustomHslColor}
+            geminiApiKey={editorLogic.geminiApiKey}
+            base64Image={baseImageSrc}
+            onImageResult={editorLogic.handleGenerateImage}
+            onMaskResult={editorLogic.handleMaskResult}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            panelLayout={editorLogic.panelLayout}
+            reorderPanelTabs={editorLogic.reorderPanelTabs}
+            activeBottomTab={editorLogic.activeBottomTab}
+            setActiveBottomTab={editorLogic.setActiveBottomTab}
+            isGuest={isGuest}
+          />
+        </footer>
+      )}
+    </div>
+  );
+
+  const renderMobileLayout = () => (
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
+      <MobileHeader
+        hasImage={!!image}
+        onNewProjectClick={() => setIsNewProjectOpen(true)}
+        onOpenProject={editorLogic.handleLoadProject}
+        onSaveProject={editorLogic.handleSaveProject}
+        onExportClick={() => editorLogic.setIsExportOpen(true)}
+        onReset={editorLogic.resetAllEdits}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+        onImportClick={() => setIsImportOpen(true)}
+        onNewFromClipboard={() => editorLogic.handleNewFromClipboard(false)}
+      />
+      
+      {/* Main Content Area (Workspace) */}
+      <main className="flex-1 relative overflow-hidden">
+        <EditorWorkspace
+          workspaceRef={workspaceRef}
+          imgRef={imgRef}
+          image={image}
+          dimensions={dimensions}
+          currentEditState={currentEditState}
+          layers={layers}
+          selectedLayerId={selectedLayerId}
+          activeTool={activeTool}
+          workspaceZoom={zoom}
+          selectionMaskDataUrl={selectionMaskDataUrl}
+          selectionPath={editorLogic.selectionPath}
+          marqueeStart={editorLogic.marqueeStart}
+          marqueeCurrent={editorLogic.marqueeCurrent}
+          gradientStart={editorLogic.gradientStart}
+          gradientCurrent={editorLogic.gradientCurrent}
+          brushState={brushState}
+          foregroundColor={foregroundColor}
+          backgroundColor={backgroundColor}
+          cloneSourcePoint={cloneSourcePoint}
+          isPreviewingOriginal={editorLogic.isPreviewingOriginal}
+          gradientToolState={gradientToolState}
+          
+          handleWorkspaceMouseDown={handleWorkspaceMouseDown}
+          handleWorkspaceMouseMove={handleWorkspaceMouseMove}
+          handleWorkspaceMouseUp={handleWorkspaceMouseUp}
+          handleWheel={handleWheel}
+          setIsMouseOverImage={editorLogic.setIsMouseOverImage}
+          handleZoomIn={handleZoomIn}
+          handleZoomOut={handleZoomOut}
+          handleFitScreen={handleFitScreen}
+          onCropChange={onCropChange}
+          onCropComplete={onCropComplete}
+          handleDrawingStrokeEnd={handleDrawingStrokeEnd}
+          handleSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
+          handleSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
+          handleHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd}
+          addGradientLayer={addGradientLayerWithArgs}
+          addTextLayer={addTextLayerFn}
+          addShapeLayer={addShapeLayerFn}
+          setMarqueeStart={setMarqueeStart}
+          setMarqueeCurrent={setMarqueeCurrent}
+          setGradientStart={setGradientStart}
+          setGradientCurrent={setGradientCurrent}
+          setCloneSourcePoint={setCloneSourcePoint}
+          updateLayer={updateLayer}
+          commitLayerChange={commitLayerChange}
+          setSelectedLayerId={setSelectedLayerId}
+          base64Image={baseImageSrc}
+          historyImageSrc={historyImageSrc}
+          recordHistory={editorLogic.recordHistory}
+          setSelectionMaskDataUrl={editorLogic.setSelectionMaskDataUrl}
+        />
+      </main>
+      
+      {/* Mobile Tool Bar (Horizontal Scroll) */}
+      <MobileToolBar activeTool={activeTool} setActiveTool={setActiveTool} />
+
+      {/* Mobile Bottom Navigation (Tabs) */}
+      <MobileBottomNav activeTab={activeMobileTab} setActiveTab={handleMobileTabSelect} />
+
+      {/* Mobile Panel Drawer */}
+      <Drawer open={isMobilePanelOpen} onOpenChange={setIsMobilePanelOpen}>
+        <DrawerContent className="h-[85%]">
+          <DrawerHeader>
+            <DrawerTitle className="capitalize">{activeMobileTab} Panel</DrawerTitle>
+          </DrawerHeader>
+          <MobileToolOptions
+            activeTab={activeMobileTab}
+            setActiveTab={setActiveMobileTab}
+            logic={editorLogic}
+            onOpenFontManager={onOpenFontManager}
+            onSavePreset={onOpenSavePresetDialog}
+            onSaveGradientPreset={onOpenSaveGradientPresetDialog}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSmartObject={onOpenSmartObject}
+            isGuest={isGuest}
+          />
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+
+  return (
+    <EditorContext.Provider value={editorLogic}>
       {/* Hidden file input for 'Open Image/Project' */}
       <input
         type="file"
@@ -624,7 +755,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         onGenerate={editorLogic.handleGenerateImage}
         apiKey={editorLogic.geminiApiKey}
         imageNaturalDimensions={dimensions}
-        isGuest={editorLogic.isGuest}
+        isGuest={isGuest}
       />
       <GenerativeFillDialog
         open={isGenerativeFillOpen}
@@ -635,7 +766,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         selectionPath={selectionPath}
         selectionMaskDataUrl={selectionMaskDataUrl}
         imageNaturalDimensions={dimensions}
-        isGuest={editorLogic.isGuest}
+        isGuest={isGuest}
       />
       <FontManagerDialog
         open={isFontManagerOpen}
@@ -645,6 +776,20 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         addCustomFont={editorLogic.addCustomFont}
         removeCustomFont={editorLogic.removeCustomFont}
       />
+      
+      {/* Preset Save Dialogs */}
+      <SavePresetDialog
+        open={isSavingPreset}
+        onOpenChange={setIsSavingPreset}
+        onSave={handleSavePresetCommit}
+      />
+      <SaveGradientPresetDialog
+        open={isSavingGradientPreset}
+        onOpenChange={setIsSavingGradientPreset}
+        onSave={(name) => saveGradientPreset(name, gradientToolState)}
+      />
+      
+      {isMobile ? renderMobileLayout() : renderDesktopLayout()}
     </EditorContext.Provider>
   );
 };
