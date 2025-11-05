@@ -94,8 +94,8 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onSelectLayer,
     toggleLayerVisibility,
     renameLayer,
-    onLayerOpacityCommit,
-    onLayerOpacityChange,
+    handleLayerOpacityCommit: onLayerOpacityCommit, // FIX 1: Aliased
+    handleLayerOpacityChange: onLayerOpacityChange, // FIX 2: Aliased
     handleApplyPreset,
     deletePreset,
     deleteGradientPreset,
@@ -126,7 +126,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onApplySelectionAsMask, onToggleLayerLock, onToggleClippingMask, onInvertLayerMask,
     onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown: onMergeLayerDownFn, onRasterizeLayer: onRasterizeLayerFn,
     onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers: onConvertSmartObjectToLayersFn,
-    onExportSmartObjectContents, // <-- ADDED HERE
+    onExportSmartObjectContents,
     onAddLayerFromBackground, onLayerFromSelection,
     rotation,
     crop,
