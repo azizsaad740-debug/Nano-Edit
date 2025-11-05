@@ -502,7 +502,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
             cloneSourcePoint={cloneSourcePoint}
             selectedLayerId={selectedLayerId}
             zoom={workspaceZoom}
-            baseImageSrc={baseImageSrc}
+            baseImageSrc={base64Image}
             historyImageSrc={historyImageSrc}
           />
         )}
