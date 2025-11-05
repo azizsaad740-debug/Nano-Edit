@@ -50,7 +50,7 @@ import {
   Ungroup,
   Merge,
   Layers3,
-  Mask, // FIX 8: Mask is a valid Lucide icon
+  Mask, // FIX 1: Mask is a valid Lucide icon
   Move,
   LayoutGrid,
   List,
@@ -85,7 +85,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button as ShadButton } from "@/components/ui/button";
-import { useEditorContext } from "@/context/EditorContext";
+import { useEditorContext } from "@/context/EditorContext"; // FIX 2: Assuming path is correct
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";

@@ -1,5 +1,6 @@
+import React from 'react';
 import { createRoot } from "react-dom/client";
-import App from "./App.tsx"; // FIX 56: Import default export
+import App from "./App.tsx";
 import "./globals.css";
 
 const container = document.getElementById("root");

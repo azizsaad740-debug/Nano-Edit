@@ -285,7 +285,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
       }
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
-      setCurrentHistoryIndex(newIndex);
+      setCurrentHistoryIndex(newIndex); // Line 512
       setSelectedLayerIds([]); // NEW
       
       // Restore local state amounts from history entry
@@ -509,7 +509,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     if (entry) {
       setCurrentEditState(entry.state);
       setLayers(entry.layers);
-      setCurrentHistoryIndex(newIndex);
+      setCurrentHistoryIndex(index); // Corrected to use index
       setSelectedLayerIds([]); // NEW
       
       // Restore local state amounts from history entry
@@ -740,7 +740,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     initialEditState, initialLayerState, // FIX 62, 63
     dismissToast, // FIX 56
     clearSelectionState, // FIX 64
-    handleProjectSettingsUpdate, // FIX 7: Keep only one instance
+    // handleProjectSettingsUpdate, // REMOVED DUPLICATE (Error 5)
   }), [
     workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate, handleSelectiveRetouchStrokeEnd
   ]);
