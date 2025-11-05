@@ -8,14 +8,23 @@ export function useIsMobile() {
   );
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    // Client-side check only
+    if (typeof window === 'undefined') return;
+    
     const onChange = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
+    
+    // Use matchMedia for better performance and consistency
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
     mql.addEventListener("change", onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    
+    // Set initial state
+    onChange(); 
+    
     return () => mql.removeEventListener("change", onChange);
   }, []);
 
+  // Return true only if explicitly determined to be mobile
   return !!isMobile;
 }

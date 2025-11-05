@@ -17,7 +17,7 @@ import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { cn } from "@/lib/utils";
 import { EditorContext } from "@/context/EditorContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useMobileDetection } from "@/hooks/useMobileDetection";
+import { useIsMobile } from "@/hooks/use-mobile"; // Use the existing hook
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useZoomFit } from "@/hooks/useZoomFit";
 import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction";
@@ -50,6 +50,15 @@ interface IndexPageProps {
 
 export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   const editorLogic = useEditorLogic({ initialImage });
+  
+  // Use the actual mobile detection hook
+  const isMobile = useIsMobile();
+  
+  // Sync mobile state to editor logic
+  React.useEffect(() => {
+    editorLogic.setIsMobile(isMobile);
+  }, [isMobile, editorLogic]);
+
   const {
     workspaceRef,
     imgRef,
@@ -125,7 +134,6 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     isGenerativeFillOpen, setIsGenerativeFillOpen,
     isFontManagerOpen, setIsFontManagerOpen,
     isSettingsOpen,
-    isMobile, setIsMobile,
     
     // History/Edit State for Keyboard Shortcuts
     undo, redo, canUndo, canRedo,
@@ -338,7 +346,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     aspect,
   });
   
-  useMobileDetection(setIsMobile);
+  // useMobileDetection(setIsMobile); // Removed stub, using useIsMobile directly
   useResizeObserver(workspaceRef, dimensions, setZoom, handleFitScreen);
   useZoomFit(workspaceRef, dimensions, rotation, crop, aspect, handleFitScreen);
 
@@ -350,7 +358,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
   const bottomSidebarHeight = bottomSidebarTabs.length > 0 ? 250 : 0;
   
   // Left sidebar is 64px wide if not mobile
-  const leftSidebarWidth = editorLogic.isMobile ? 0 : 64;
+  const leftSidebarWidth = isMobile ? 0 : 64;
   
   // Calculate main content area width based on visible sidebars
   const mainContentWidth = `calc(100% - ${rightSidebarWidth}px - ${leftSidebarWidth}px)`;
