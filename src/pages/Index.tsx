@@ -5,19 +5,19 @@ import { useEditorLogic } from "@/hooks/useEditorLogic";
 import { EditorHeader } from "@/components/layout/EditorHeader";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
-import { BottomSidebarTabs } from "@/components/layout/BottomSidebarTabs"; // FIX 3: Assuming path is correct
+import BottomPanel from "@/components/layout/BottomPanel"; // FIX 3: Corrected path and component name
 import { NewProjectDialog } from "@/components/editor/NewProjectDialog";
 import { ExportDialog } from "@/components/editor/ExportDialog"; // FIX 4: Assuming path is correct
 import { ProjectSettingsDialog } from "@/components/editor/ProjectSettingsDialog";
 import { SettingsDialog } from "@/components/layout/SettingsDialog";
 import { ImportDialog } from "@/components/editor/ImportDialog"; // FIX 5: Assuming path is correct
-import { GenerativeFillDialog } from "@/components/ai/GenerativeFillDialog"; // FIX 6: Assuming path is correct
-import { GenerateImageDialog } from "@/components/ai/GenerateImageDialog"; // FIX 7: Assuming path is correct
+import { GenerativeFillDialog } from "@/components/editor/GenerativeDialog"; // FIX 6: Assuming path is correct
+import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog"; // FIX 7: Assuming path is correct
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { cn } from "@/lib/utils";
 import { EditorContext } from "@/context/EditorContext"; // FIX 8: Assuming path is correct
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useMobileDetection } from "@/hooks/useMobileDetection"; // FIX 9: Assuming path is correct
+import { useMobileDetection } from "@/hooks/use-mobile"; // FIX 9: Assuming path is correct
 import { useResizeObserver } from "@/hooks/useResizeObserver"; // FIX 10: Assuming path is correct
 import { useZoomFit } from "@/hooks/useZoomFit"; // FIX 11: Assuming path is correct
 import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction";
@@ -25,7 +25,7 @@ import { useLassoToolInteraction } from "@/hooks/useLassoToolInteraction";
 import { useMagicWandToolInteraction } from "@/hooks/useMagicWandToolInteraction";
 import { useObjectSelectToolInteraction } from "@/hooks/useObjectSelectToolInteraction";
 import { useGradientToolInteraction } from "@/hooks/useGradientToolInteraction";
-import { useBrushToolInteraction } from "@/hooks/useBrushToolInteraction"; // FIX 12: Assuming path is correct
+import { useBrushToolInteraction } from "@/hooks/useDrawing"; // FIX 12: Assuming path is correct
 import { useMoveToolInteraction } from "@/hooks/useMoveToolInteraction";
 import { useTextToolInteraction } from "@/hooks/useTextToolInteraction";
 import { useShapeToolInteraction } from "@/hooks/useShapeToolInteraction";
@@ -426,48 +426,48 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
             className="h-[250px] border-t bg-background/90"
             style={{ marginRight: rightSidebarWidth }}
           >
-            <BottomSidebarTabs
-              currentEditState={currentEditState}
-              updateCurrentState={editorLogic.updateCurrentState}
-              recordHistory={editorLogic.recordHistory}
-              layers={layers}
-              selectedLayerId={selectedLayerId}
-              activeBottomTab={editorLogic.activeBottomTab}
-              setActiveBottomTab={editorLogic.setActiveBottomTab}
-              onSelectionSettingChange={editorLogic.onSelectionSettingChange}
-              onSelectionSettingCommit={editorLogic.onSelectionSettingCommit}
-              onSelectiveBlurAmountCommit={editorLogic.onSelectiveBlurAmountCommit}
-              onSelectiveSharpenAmountCommit={editorLogic.onSelectiveSharpenAmountCommit}
-              customHslColor={editorLogic.customHslColor}
-              setCustomHslColor={editorLogic.setCustomHslColor}
+            <BottomPanel
+              // FIX 3: Renamed component to BottomPanel
+              // Pass all required props to BottomPanel
+              foregroundColor={foregroundColor}
+              onForegroundColorChange={editorLogic.setForegroundColor}
+              backgroundColor={backgroundColor}
+              onBackgroundColorChange={editorLogic.setBackgroundColor}
+              onSwapColors={editorLogic.handleSwapColors}
+              dimensions={dimensions}
+              fileInfo={editorLogic.fileInfo}
+              imgRef={imgRef}
+              exifData={editorLogic.exifData}
+              colorMode={currentEditState.colorMode}
+              zoom={zoom}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
+              onFitScreen={handleFitScreen}
+              hasImage={!!image}
+              adjustments={editorLogic.adjustments}
               onAdjustmentChange={editorLogic.onAdjustmentChange}
               onAdjustmentCommit={editorLogic.onAdjustmentCommit}
-              onEffectChange={editorLogic.onEffectChange}
-              onEffectCommit={editorLogic.onEffectCommit}
+              grading={editorLogic.grading}
               onGradingChange={editorLogic.onGradingChange}
               onGradingCommit={editorLogic.onGradingCommit}
+              hslAdjustments={editorLogic.hslAdjustments}
               onHslAdjustmentChange={editorLogic.onHslAdjustmentChange}
               onHslAdjustmentCommit={editorLogic.onHslAdjustmentCommit}
+              curves={editorLogic.curves}
               onCurvesChange={editorLogic.onCurvesChange}
               onCurvesCommit={editorLogic.onCurvesCommit}
-              onTransformChange={editorLogic.onTransformChange}
-              onRotationChange={editorLogic.onRotationChange}
-              onRotationCommit={editorLogic.onRotationCommit}
-              onCropChange={editorLogic.onCropChange}
-              onCropComplete={editorLogic.onCropComplete}
-              onAspectChange={editorLogic.onAspectChange}
-              onFramePresetChange={editorLogic.onFramePresetChange}
-              onFramePropertyChange={editorLogic.onFramePropertyChange}
-              onFramePropertyCommit={editorLogic.onFramePropertyCommit}
-              onFilterChange={editorLogic.onFilterChange}
-              onChannelChange={editorLogic.onChannelChange}
-              presets={editorLogic.presets}
-              gradientPresets={editorLogic.gradientPresets}
-              saveGradientPreset={editorLogic.saveGradientPreset}
-              deleteGradientPreset={editorLogic.deleteGradientPreset}
-              handleApplyPreset={handleApplyPreset}
-              handleSavePresetCommit={handleSavePresetCommit}
-              deletePreset={deletePreset}
+              customHslColor={editorLogic.customHslColor}
+              setCustomHslColor={editorLogic.setCustomHslColor}
+              geminiApiKey={editorLogic.geminiApiKey}
+              base64Image={baseImageSrc}
+              onImageResult={editorLogic.handleGenerateImage}
+              onMaskResult={editorLogic.handleMaskResult}
+              onOpenSettings={() => setIsSettingsOpen(true)}
+              panelLayout={editorLogic.panelLayout}
+              reorderPanelTabs={editorLogic.reorderPanelTabs}
+              activeBottomTab={editorLogic.activeBottomTab}
+              setActiveBottomTab={editorLogic.setActiveBottomTab}
+              isGuest={editorLogic.isGuest}
             />
           </footer>
         )}
@@ -483,6 +483,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         open={isExportOpen}
         onOpenChange={setIsExportOpen}
         onExport={editorLogic.handleExportClick}
+        dimensions={dimensions}
       />
       <ProjectSettingsDialog
         open={isProjectSettingsOpen}
@@ -506,12 +507,20 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         open={isGenerateOpen}
         onOpenChange={setIsGenerateOpen}
         onGenerate={editorLogic.handleGenerateImage}
+        apiKey={editorLogic.geminiApiKey}
+        imageNaturalDimensions={dimensions}
+        isGuest={editorLogic.isGuest}
       />
       <GenerativeFillDialog
         open={isGenerativeFillOpen}
         onOpenChange={setIsGenerativeFillOpen}
-        onGenerate={editorLogic.handleGenerativeFill}
-        hasActiveSelection={!!selectionMaskDataUrl}
+        onApply={editorLogic.handleGenerativeFill}
+        apiKey={editorLogic.geminiApiKey}
+        originalImage={image}
+        selectionPath={selectionPath}
+        selectionMaskDataUrl={selectionMaskDataUrl}
+        imageNaturalDimensions={dimensions}
+        isGuest={editorLogic.isGuest}
       />
       <FontManagerDialog
         open={isFontManagerOpen}
