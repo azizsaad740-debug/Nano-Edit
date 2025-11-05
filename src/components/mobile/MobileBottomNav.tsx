@@ -15,7 +15,7 @@ interface MobileBottomNavProps {
 
 const tabs: { name: string; icon: React.ElementType; tab: MobileTab }[] = [
   { name: "Layers", icon: Layers, tab: "layers" },
-  { name: "Properties", icon: Settings, tab: "properties" },
+  { name: "Tools/Props", icon: Brush, tab: "properties" }, // Combines Tool Options and Layer Properties
   { name: "Adjustments", icon: SlidersHorizontal, tab: "adjustments" },
   { name: "Color", icon: Palette, tab: "color" },
   { name: "AI Tools", icon: Zap, tab: "ai" },
@@ -39,13 +39,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ activeTab, set
               variant="ghost"
               size="sm"
               className={cn(
-                "flex flex-col h-14 w-16 p-1 shrink-0",
-                activeTab === tab ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground"
+                "flex flex-col h-14 w-16 p-1 shrink-0 transition-all duration-150",
+                activeTab === tab 
+                  ? "text-primary bg-primary/10 border border-primary/50" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               )}
               onClick={() => setActiveTab(tab)}
             >
               <Icon className="h-5 w-5" />
-              <span className="text-xs mt-1 font-medium">{name}</span>
+              <span className="text-xs mt-1 font-medium truncate max-w-full">{name}</span>
             </Button>
           ))}
         </div>
