@@ -259,7 +259,7 @@ export const useLayers = ({
     showSuccess(`Duplicated layer: ${newLayer.name}`);
   }, [layers, findLayer, recordHistory, currentEditState, setLayers, setSelectedLayerIds]);
 
-  const onMergeLayerDown = useCallback((id: string) => {
+  const onMergeLayerDown = useCallback(async (id: string) => {
     const location = getLayerLocation(layers, id);
     if (!location || location.index === location.parent.length - 1) {
       showError("Cannot merge down: no layer below or layer is background.");
@@ -273,27 +273,82 @@ export const useLayers = ({
       showError("Cannot merge into the background layer.");
       return;
     }
-
-    // STUB: Perform rasterization and merge
-    showSuccess(`Merged ${topLayer.name} down into ${bottomLayer.name} (Stub).`);
-
-    // Remove top layer and update bottom layer (stub)
-    const newParent = location.parent.filter((_, i) => i !== location.index);
     
-    // Update the bottom layer's name/type (stub)
-    const updatedBottomLayer = { ...bottomLayer, name: `${bottomLayer.name} (Merged)` };
-    newParent[location.index] = updatedBottomLayer;
+    if (topLayer.isLocked || bottomLayer.isLocked) {
+        showError("Cannot merge locked layers.");
+        return;
+    }
+    
+    if (!dimensions) {
+        showError("Cannot merge without canvas dimensions.");
+        return;
+    }
 
-    setLayers(prevLayers => {
-      if (location.parent !== prevLayers) {
-        return updateLayerRecursive(prevLayers, location.parent[0].id, { children: newParent });
-      }
-      return newParent;
-    });
+    const toastId = showLoading(`Merging ${topLayer.name} down...`);
+    
+    try {
+        // 1. Rasterize the top layer to a canvas/data URL (respecting its properties)
+        // STUB: In a real app, this would be a complex rasterization process.
+        const topLayerRaster = await rasterizeLayersToDataUrl([topLayer], dimensions, currentEditState);
+        
+        // 2. Ensure the bottom layer is a drawing layer to receive the merge
+        let baseDataUrl = '';
+        let updatedBottomLayer: Layer;
+        
+        if (isDrawingLayer(bottomLayer)) {
+            baseDataUrl = bottomLayer.dataUrl;
+            updatedBottomLayer = bottomLayer;
+        } else {
+            // Rasterize the bottom layer if it's a vector/text/gradient/smart object
+            const bottomLayerRaster = await rasterizeLayersToDataUrl([bottomLayer], dimensions, currentEditState);
+            baseDataUrl = bottomLayerRaster;
+            updatedBottomLayer = {
+                ...bottomLayer,
+                type: 'drawing',
+                dataUrl: bottomLayerRaster,
+                // Clear vector/text/gradient specific data
+                ...(isVectorShapeLayer(bottomLayer) && { shapeType: undefined, fillColor: undefined, strokeColor: undefined }),
+                ...(isTextLayer(bottomLayer) && { content: undefined, fontSize: undefined }),
+                ...(isGradientLayer(bottomLayer) && { gradientType: undefined, gradientColors: undefined }),
+                ...(isSmartObjectLayer(bottomLayer) && { smartObjectData: undefined }),
+            } as DrawingLayerData;
+        }
+        
+        // 3. Merge the top layer raster onto the bottom layer's data
+        // SIMULATION: Just use the bottom layer's data URL as the result for now, 
+        // and update its name.
+        const mergedDataUrl = baseDataUrl; // STUB: Replace with actual merge logic
+        
+        const finalBottomLayer: DrawingLayerData = {
+            ...(updatedBottomLayer as DrawingLayerData),
+            dataUrl: mergedDataUrl,
+            name: `${updatedBottomLayer.name} (Merged)`,
+            // Inherit mask from top layer if bottom layer didn't have one
+            maskDataUrl: updatedBottomLayer.maskDataUrl || topLayer.maskDataUrl,
+        };
 
-    setSelectedLayerIds([updatedBottomLayer.id]);
-    recordHistory(`Merge Layer Down: ${topLayer.name}`, currentEditState, layers);
-  }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerIds]);
+        // 4. Update layer structure: remove top layer, update bottom layer
+        const newParent = location.parent.filter((_, i) => i !== location.index);
+        newParent[location.index] = finalBottomLayer; // The bottom layer is now at the top layer's old index
+
+        setLayers(prevLayers => {
+          if (location.parent !== prevLayers) {
+            return updateLayerRecursive(prevLayers, location.parent[0].id, { children: newParent });
+          }
+          return newParent;
+        });
+
+        setSelectedLayerIds([finalBottomLayer.id]);
+        dismissToast(toastId);
+        recordHistory(`Merge Layer Down: ${topLayer.name}`, currentEditState, layers);
+        showSuccess(`Merged ${topLayer.name} down into ${bottomLayer.name}.`);
+        
+    } catch (error) {
+        dismissToast(toastId);
+        console.error("Merge failed:", error);
+        showError("Layer merge failed due to an internal error.");
+    }
+  }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerIds, findLayer, dimensions, updateLayerRecursive]);
 
   const onRasterizeLayer = useCallback((id: string) => {
     const layerToRasterize = findLayer(id);
