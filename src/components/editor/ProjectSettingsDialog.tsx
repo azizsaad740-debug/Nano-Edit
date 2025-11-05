@@ -138,10 +138,10 @@ export const ProjectSettingsDialog = ({
               <SelectContent>
                 <SelectItem value="rgb">RGB (Standard)</SelectItem>
                 <SelectItem value="grayscale">Grayscale</SelectItem>
-                <SelectItem value="cmyk">CMYK (Print Simulation - Stub)</SelectItem> {/* FIX 30 */}
+                <SelectItem value="cmyk">CMYK (Print Simulation - Stub)</SelectItem>
               </SelectContent>
             </Select>
-            {colorMode === 'cmyk' && ( {/* FIX 30 */}
+            {colorMode === 'cmyk' && (
               <p className="text-xs text-orange-500 mt-1">
                 CMYK mode is a visual simulation using CSS filters and may not accurately represent final print output.
               </p>

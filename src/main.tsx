@@ -1,13 +1,13 @@
 import { createRoot } from "react-dom/client";
-import { App } from "./App.tsx";
+import App from "./App.tsx"; // FIX 56: Import default export
 import "./globals.css";
-import { ThemeProvider } from "./components/layout/ThemeProvider";
-import { SessionProvider } from "./integrations/supabase/session-provider";
 
-createRoot(document.getElementById("root")!).render(
-  <ThemeProvider defaultTheme="system" storageKey="nanoedit-theme">
-    <SessionProvider>
-      <App />
-    </SessionProvider>
-  </ThemeProvider>
+const container = document.getElementById("root");
+if (!container) throw new Error("Failed to find the root element");
+
+const root = createRoot(container);
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
 );
