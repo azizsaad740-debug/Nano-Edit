@@ -126,6 +126,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     onApplySelectionAsMask, onToggleLayerLock, onToggleClippingMask, onInvertLayerMask,
     onRemoveLayerMask, onDuplicateLayer, onMergeLayerDown: onMergeLayerDownFn, onRasterizeLayer: onRasterizeLayerFn,
     onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers: onConvertSmartObjectToLayersFn,
+    onExportSmartObjectContents, // <-- ADDED HERE
     onAddLayerFromBackground, onLayerFromSelection,
     rotation,
     crop,
