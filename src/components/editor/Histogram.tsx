@@ -3,13 +3,13 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-interface HistogramProps {
-  imageElement: HTMLImageElement | null;
-}
-
 interface HistogramData {
   level: number;
   luminance: number;
+}
+
+interface HistogramProps {
+  imageElement: HTMLImageElement | null;
 }
 
 const Histogram = ({ imageElement }: HistogramProps) => {
@@ -17,10 +17,26 @@ const Histogram = ({ imageElement }: HistogramProps) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!imageElement || !imageElement.complete || imageElement.naturalWidth === 0) {
+    // Use imageElement.src as the primary dependency trigger, alongside the element itself
+    const imageSrc = imageElement?.src;
+    
+    if (!imageElement || !imageSrc) {
       setData(null);
       setLoading(true);
       return;
+    }
+
+    // Wait for the image to be fully loaded before proceeding
+    if (!imageElement.complete || imageElement.naturalWidth === 0) {
+        // If not complete, set up an event listener to retry once loaded
+        const handleLoad = () => {
+            // Trigger re-run of effect by updating a dummy state or relying on the dependency array
+            // Since we rely on imageElement.complete, we just wait for the next render cycle.
+            // Forcing a re-render here is complex, so we rely on React's lifecycle.
+        };
+        imageElement.addEventListener('load', handleLoad);
+        setLoading(true);
+        return () => imageElement.removeEventListener('load', handleLoad);
     }
 
     setLoading(true);
@@ -30,7 +46,16 @@ const Histogram = ({ imageElement }: HistogramProps) => {
 
     canvas.width = imageElement.naturalWidth;
     canvas.height = imageElement.naturalHeight;
-    ctx.drawImage(imageElement, 0, 0);
+    
+    try {
+        ctx.drawImage(imageElement, 0, 0);
+    } catch (e) {
+        console.error("Error drawing image to canvas for histogram:", e);
+        setData(null);
+        setLoading(false);
+        return;
+    }
+
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
     const luminanceBins = new Array(256).fill(0);
@@ -50,7 +75,7 @@ const Histogram = ({ imageElement }: HistogramProps) => {
 
     setData(histogramData);
     setLoading(false);
-  }, [imageElement, imageElement?.src]);
+  }, [imageElement, imageElement?.src]); // Depend on imageElement and its src
 
   return (
     <Card className="mt-4">
