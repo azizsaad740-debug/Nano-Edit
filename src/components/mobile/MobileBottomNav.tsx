@@ -15,10 +15,11 @@ interface MobileBottomNavProps {
 
 const tabs: { name: string; icon: React.ElementType; tab: MobileTab }[] = [
   { name: "Layers", icon: Layers, tab: "layers" },
-  { name: "Tools/Props", icon: Brush, tab: "properties" }, // Combines Tool Options and Layer Properties
+  { name: "Properties", icon: Settings, tab: "properties" }, // Updated to Properties/Settings
   { name: "Adjustments", icon: SlidersHorizontal, tab: "adjustments" },
   { name: "Color", icon: Palette, tab: "color" },
   { name: "AI Tools", icon: Zap, tab: "ai" },
+  // Secondary tabs (scrollable)
   { name: "History", icon: History, tab: "history" },
   { name: "Channels", icon: SquareStack, tab: "channels" },
   { name: "Brushes", icon: Brush, tab: "brushes" },
