@@ -471,6 +471,22 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         )}
       </div>
 
+      {/* Hidden file input for 'Open Image/Project' */}
+      <input
+        type="file"
+        id="file-upload-input"
+        accept="image/*,.nanoedit"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            editorLogic.handleImageLoad(file);
+          }
+          // Clear the input value so the same file can be selected again
+          e.target.value = '';
+        }}
+      />
+
       {/* Dialogs */}
       <NewProjectDialog
         open={isNewProjectOpen}
