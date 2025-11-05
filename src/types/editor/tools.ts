@@ -11,6 +11,24 @@ export interface BrushState {
   roundness: number;
   spacing: number;
   blendMode: string;
+  // FIX 2: Added missing properties
+  jitter: number;
+  scatter: number;
+  texture: any;
+  dualBrush: any;
+  smoothing: boolean;
+  protectTexture: boolean;
+  wetEdges: boolean;
+  buildUp: boolean;
+  flipX: boolean;
+  flipY: boolean;
+  colorDynamics: boolean;
+  transfer: boolean;
+  noise: boolean;
+  wetness: number;
+  mix: number;
+  load: number;
+  historySource: string;
 }
 
 export interface GradientToolState {
@@ -23,8 +41,8 @@ export interface GradientToolState {
   radius: number;
   feather: number;
   inverted: boolean;
-  dither: boolean;
-  transparency: boolean;
+  dither: boolean; // FIX 5
+  transparency: boolean; // FIX 5
 }
 
 export interface SelectionSettings {

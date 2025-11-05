@@ -77,6 +77,7 @@ interface EditorWorkspaceProps {
   backgroundColor: string;
   cloneSourcePoint: Point | null;
   isPreviewingOriginal: boolean;
+  gradientToolState: GradientToolState; // FIX 24: Added prop
   
   // Handlers
   handleWorkspaceMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
@@ -92,7 +93,7 @@ interface EditorWorkspaceProps {
   handleDrawingStrokeEnd: (strokeDataUrl: string, layerId: string) => void;
   handleSelectionBrushStrokeEnd: (strokeDataUrl: string, operation: 'add' | 'subtract') => void;
   handleSelectiveRetouchStrokeEnd: (strokeDataUrl: string, tool: 'blurBrush' | 'sharpenTool', operation: 'add' | 'subtract') => void;
-  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // FIX 16: Added prop
+  handleHistoryBrushStrokeEnd: (strokeDataUrl: string, layerId: string) => void; // FIX 23: Added prop
   addGradientLayer: (start: Point, end: Point) => void;
   addTextLayer: (coords: Point, color: string) => void;
   addShapeLayer: (coords: Point, shapeType?: ShapeType) => void;
@@ -138,6 +139,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
     backgroundColor,
     cloneSourcePoint,
     isPreviewingOriginal,
+    gradientToolState, // FIX 24: Destructure
     
     // Handlers
     handleWorkspaceMouseDown,
@@ -153,7 +155,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
     handleDrawingStrokeEnd,
     handleSelectionBrushStrokeEnd,
     handleSelectiveRetouchStrokeEnd,
-    handleHistoryBrushStrokeEnd,
+    handleHistoryBrushStrokeEnd, // FIX 23: Destructure
     addGradientLayer,
     addTextLayer,
     addShapeLayer,
@@ -493,7 +495,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
             onStrokeEnd={handleDrawingStrokeEnd}
             onSelectionBrushStrokeEnd={handleSelectionBrushStrokeEnd}
             onSelectiveRetouchStrokeEnd={handleSelectiveRetouchStrokeEnd}
-            onHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd}
+            onHistoryBrushStrokeEnd={handleHistoryBrushStrokeEnd} // FIX 23
             activeTool={activeTool as any}
             brushState={brushState}
             foregroundColor={foregroundColor}
@@ -539,7 +541,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
           <GradientPreviewCanvas
             start={gradientStart}
             current={gradientCurrent}
-            gradientToolState={currentEditState.gradientToolState}
+            gradientToolState={gradientToolState} // FIX 24
             containerRect={imageContainerRef.current?.getBoundingClientRect() || new DOMRect()}
             imageNaturalDimensions={dimensions}
           />

@@ -66,7 +66,7 @@ export const ProjectSettingsDialog = ({
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newHeight = parseInt(e.target.value, 10) || 0;
     setHeight(newHeight);
-    if (keepAspectRatio && currentDimensions && currentDimensions.height > 0) {
+    if (keepAspectRatio && currentDimensions && currentDimensions.width > 0) {
       const aspect = currentDimensions.width / currentDimensions.height;
       setWidth(Math.round(newHeight * aspect));
     }
@@ -136,12 +136,12 @@ export const ProjectSettingsDialog = ({
                 <SelectValue placeholder="Select color mode" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="RGB">RGB (Standard)</SelectItem>
-                <SelectItem value="Grayscale">Grayscale</SelectItem>
-                <SelectItem value="CMYK">CMYK (Print Simulation - Stub)</SelectItem>
+                <SelectItem value="rgb">RGB (Standard)</SelectItem>
+                <SelectItem value="grayscale">Grayscale</SelectItem>
+                <SelectItem value="cmyk">CMYK (Print Simulation - Stub)</SelectItem> {/* FIX 30 */}
               </SelectContent>
             </Select>
-            {colorMode === 'CMYK' && (
+            {colorMode === 'cmyk' && ( {/* FIX 30 */}
               <p className="text-xs text-orange-500 mt-1">
                 CMYK mode is a visual simulation using CSS filters and may not accurately represent final print output.
               </p>

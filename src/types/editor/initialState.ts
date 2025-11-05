@@ -14,6 +14,8 @@ export const initialBrushState: BrushState = {
     shape: 'circle',
     angle: 0,
     roundness: 100,
+    smoothness: 0, // Added
+    // FIX 2: Added missing properties
     jitter: 0,
     scatter: 0,
     texture: null,
@@ -31,7 +33,6 @@ export const initialBrushState: BrushState = {
     mix: 0,
     load: 0,
     historySource: 'current',
-    smoothness: 0, // Added
 };
 
 export const initialAdjustmentState: AdjustmentState = {
@@ -143,6 +144,7 @@ export const initialEditState: EditState = {
         noise: 0,
         sharpen: 0,
         clarity: 0,
+        grain: 0, // FIX 3
     },
     grading: initialGradingState,
     hslAdjustments: initialHslAdjustmentsState,
@@ -152,7 +154,9 @@ export const initialEditState: EditState = {
     transform: {
         scaleX: 1,
         scaleY: 1,
-        skewX: 0,
+        rotation: 0,
+        // FIX 4: Added missing properties
+        skewX: 0, 
         skewY: 0,
         perspectiveX: 0,
         perspectiveY: 0,
@@ -177,6 +181,7 @@ export const initialEditState: EditState = {
     selectiveBlurMask: null,
     selectiveSharpenMask: null,
     isProxyMode: false, // <-- ADDED
+    customFonts: [],
 };
 
 export const initialGradientToolState: GradientToolState = {
@@ -189,6 +194,8 @@ export const initialGradientToolState: GradientToolState = {
     centerX: 50,
     centerY: 50,
     radius: 50,
+    dither: false, // FIX 5
+    transparency: true, // FIX 5
 };
 
 export const initialLayerState: Layer[] = [

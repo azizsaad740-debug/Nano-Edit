@@ -146,48 +146,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     setMarqueeCurrent(null);
   }, [setSelectionPath, setSelectionMaskDataUrl, setMarqueeStart, setMarqueeCurrent]);
 
-  // --- Selection Settings Handlers (Now updating EditState) ---
-  const onSelectionSettingChange = useCallback((key: keyof SelectionSettings, value: any) => {
-    updateCurrentState({ selectionSettings: { ...currentEditState.selectionSettings, [key]: value } });
-  }, [currentEditState.selectionSettings, updateCurrentState]);
-
-  const onSelectionSettingCommit = useCallback((key: keyof SelectionSettings, value: any) => {
-    const newSettings = { ...currentEditState.selectionSettings, [key]: value };
-    updateCurrentState({ selectionSettings: newSettings });
-    recordHistoryApi(`Set Selection Setting ${key} to ${value}`, { selectionSettings: newSettings }, layers);
-  }, [currentEditState.selectionSettings, updateCurrentState, recordHistoryApi, layers]);
-  // --- End Selection Settings Handlers ---
-
-
-  // --- Proxy Mode Logic ---
-  const checkAndToggleProxyMode = useCallback(() => {
-    if (!fileInfo || !dimensions) {
-      updateCurrentState({ isProxyMode: false });
-      return;
-    }
-    
-    // Simple heuristic: If file size > 5MB OR layer count > 10, enable proxy mode
-    const isHeavyFile = (fileInfo.size || 0) > 5 * 1024 * 1024; // 5MB
-    const isComplexProject = layers.length > 10;
-    
-    const shouldBeProxy = isHeavyFile || isComplexProject;
-    
-    if (shouldBeProxy !== currentEditState.isProxyMode) {
-      updateCurrentState({ isProxyMode: shouldBeProxy });
-      if (shouldBeProxy) {
-        showSuccess("Project complexity detected. Entering Proxy Mode (Low Quality Preview).");
-      } else {
-        showSuccess("Exiting Proxy Mode. Rendering in full quality.");
-      }
-    }
-  }, [fileInfo, dimensions, layers.length, updateCurrentState, currentEditState.isProxyMode]);
-  
-  // Run proxy check whenever project state changes
-  useEffect(() => {
-    checkAndToggleProxyMode();
-  }, [checkAndToggleProxyMode, layers, fileInfo, dimensions]);
-  
-  // --- Core API Implementation ---
+  // --- Core API Implementation (Moved up to define recordHistoryApi early) ---
   
   const updateLayerApi = useCallback((id: string, updates: Partial<Layer>) => {
     setLayers(prevLayers => {
@@ -273,6 +232,46 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   useEffect(() => {
     extensionManager.initialize(editorApi);
   }, [editorApi]);
+  
+  // --- Selection Settings Handlers (Now updating EditState) ---
+  const onSelectionSettingChange = useCallback((key: keyof SelectionSettings, value: any) => {
+    updateCurrentState({ selectionSettings: { ...currentEditState.selectionSettings, [key]: value } });
+  }, [currentEditState.selectionSettings, updateCurrentState]);
+
+  const onSelectionSettingCommit = useCallback((key: keyof SelectionSettings, value: any) => { // FIX 17: Moved after recordHistoryApi
+    const newSettings = { ...currentEditState.selectionSettings, [key]: value };
+    updateCurrentState({ selectionSettings: newSettings });
+    recordHistoryApi(`Set Selection Setting ${key} to ${value}`, { selectionSettings: newSettings }, layers);
+  }, [currentEditState.selectionSettings, updateCurrentState, recordHistoryApi, layers]);
+  // --- End Selection Settings Handlers ---
+
+  // --- Proxy Mode Logic ---
+  const checkAndToggleProxyMode = useCallback(() => {
+    if (!fileInfo || !dimensions) {
+      updateCurrentState({ isProxyMode: false });
+      return;
+    }
+    
+    // Simple heuristic: If file size > 5MB OR layer count > 10, enable proxy mode
+    const isHeavyFile = (fileInfo.size || 0) > 5 * 1024 * 1024; // 5MB
+    const isComplexProject = layers.length > 10;
+    
+    const shouldBeProxy = isHeavyFile || isComplexProject;
+    
+    if (shouldBeProxy !== currentEditState.isProxyMode) {
+      updateCurrentState({ isProxyMode: shouldBeProxy });
+      if (shouldBeProxy) {
+        showSuccess("Project complexity detected. Entering Proxy Mode (Low Quality Preview).");
+      } else {
+        showSuccess("Exiting Proxy Mode. Rendering in full quality.");
+      }
+    }
+  }, [fileInfo, dimensions, layers.length, updateCurrentState, currentEditState.isProxyMode]);
+  
+  // Run proxy check whenever project state changes
+  useEffect(() => {
+    checkAndToggleProxyMode();
+  }, [checkAndToggleProxyMode, layers, fileInfo, dimensions]);
   
   // --- History Handlers (using API) ---
   
@@ -394,14 +393,14 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
   
   const { 
     toggleLayerVisibility, renameLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
-    onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, // FIX 18
     updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 5, 54: Corrected name
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
-    addShapeLayer, addGradientLayer: addGradientLayerLogic, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded,
+    addShapeLayer, addGradientLayer: addGradientLayerWithArgs, onAddAdjustmentLayer, groupLayers, toggleGroupExpanded, // FIX 21: Renamed alias
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, onArrangeLayer,
-    hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation,
+    hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, // FIX 19
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
-    onReorder: onLayerReorder, findLayer, onSelectLayer, // NEW
+    onReorder: onLayerReorder, findLayer, onSelectLayer, // FIX 20
     handleLayerDelete, // NEW
   } = useLayers({
     layers, setLayers, recordHistory: recordHistoryApi, currentEditState, dimensions, foregroundColor, backgroundColor, gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState, setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool
@@ -413,8 +412,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
       return;
     }
     // Default gradient across the whole canvas
-    addGradientLayerLogic({ x: 0, y: 0 }, { x: dimensions.width, y: dimensions.height });
-  }, [dimensions, addGradientLayerLogic]);
+    addGradientLayerWithArgs({ x: 0, y: 0 }, { x: dimensions.width, y: dimensions.height }); // FIX 21: Use new alias
+  }, [dimensions, addGradientLayerWithArgs]);
   
   const { adjustments, onAdjustmentChange, onAdjustmentCommit, selectedFilter, onFilterChange, applyPreset: applyAdjustmentPreset } = useAdjustments(currentEditState, updateCurrentState, recordHistoryApi, layers);
   const { effects, onEffectChange, onEffectCommit, applyPreset: applyEffectsPreset } = useEffects(currentEditState, updateCurrentState, recordHistoryApi, layers);
@@ -679,14 +678,14 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     updateLayer: updateLayerLogic, commitLayerChange, onLayerPropertyCommit,
     handleLayerOpacityChange, handleLayerOpacityCommit, // FIX 5, 54: Corrected name
     addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection,
-    addShapeLayer, addGradientLayer: addGradientLayerLogic, addGradientLayerNoArgs, onAddAdjustmentLayer,
+    addShapeLayer, addGradientLayer: addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer,
     deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer,
     onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer,
     onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers,
     hasActiveSelection: !!selectionMaskDataUrl, onApplySelectionAsMask, handleDestructiveOperation,
     handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd,
-    onSelectLayer, // NEW
+    onSelectLayer, toggleLayerVisibility, renameLayer, // FIX 18, 19, 20, 25, 26, 27, 28
     
     // Filters/Adjustments
     adjustments, onAdjustmentChange, onAdjustmentCommit,
@@ -721,6 +720,7 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     onSelectiveSharpenAmountCommit,
     
     // Dialog Setters (Exposed for Header/Index)
+    isFullscreen, // FIX 32
     setIsFullscreen, // FIX 67: Expose setter
     setIsSettingsOpen,
     setIsImportOpen,
@@ -736,7 +736,8 @@ export const useEditorLogic = ({ initialImage }: { initialImage?: string }) => {
     initialEditState, initialLayerState, // FIX 62, 63
     dismissToast, // FIX 56
     clearSelectionState, // FIX 64
-  ]), [
-    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, setSelectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerLogic, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate
+    handleProjectSettingsUpdate,
+  }), [
+    workspaceRef, imgRef, image, dimensions, fileInfo, exifData, layers, selectedLayerId, setSelectedLayerId, selectedLayerIds, selectedLayer, currentEditState, updateCurrentState, resetAllEdits, base64Image, historyImageSrc, history, currentHistoryIndex, recordHistoryApi, undo, redo, canUndo, canRedo, handleHistoryJump, historyBrushSourceIndex, setHistoryBrushSourceIndex, activeTool, setActiveTool, brushState, setBrushState, gradientToolState, setGradientToolState, foregroundColor, setForegroundColor, backgroundColor, setBackgroundColor, selectedShapeType, setSelectedShapeType, selectionPath, setSelectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, marqueeStart, setMarqueeStart, marqueeCurrent, setMarqueeCurrent, gradientStart, setGradientStart, gradientCurrent, setGradientCurrent, cloneSourcePoint, setCloneSourcePoint, selectiveBlurAmount, setSelectiveBlurAmount, selectiveSharpenAmount, setSelectiveSharpenAmount, customHslColor, setCustomHslColor, onSelectionSettingChange, onSelectionSettingCommit, zoom, setZoom, handleWorkspaceMouseDown, handleWorkspaceMouseMove, handleWorkspaceMouseUp, handleWheel, handleZoomIn, handleZoomOut, handleFitScreen, handleCopy, handleSwapColors, handleLayerDelete, handleImageLoad, handleNewProject, handleLoadProject, handleLoadTemplate, handleNewFromClipboard, handleExportClick, handleGenerateImage, handleGenerativeFill, handleMaskResult, updateLayerLogic, commitLayerChange, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, addTextLayer, addDrawingLayer, onAddLayerFromBackground, onLayerFromSelection, addShapeLayer, addGradientLayerWithArgs, addGradientLayerNoArgs, onAddAdjustmentLayer, deleteLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, groupLayers, toggleGroupExpanded, onLayerReorder, onArrangeLayer, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onDeleteHiddenLayers, hasActiveSelection, onApplySelectionAsMask, handleDestructiveOperation, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onSelectLayer, toggleLayerVisibility, renameLayer, adjustments, onAdjustmentChange, onAdjustmentCommit, effects, onEffectChange, onEffectCommit, grading, onGradingChange, onGradingCommit, hslAdjustments, onHslAdjustmentChange, onHslAdjustmentCommit, curves, onCurvesChange, onCurvesCommit, transforms, onTransformChange, rotation, onRotationChange, onRotationCommit, crop, onCropChange, onCropComplete, onAspectChange, aspect, frame, onFramePresetChange, onFramePropertyChange, onFramePropertyCommit, selectedFilter, onFilterChange, channels, onChannelChangeLogic, presets, handleApplyPreset, handleSavePresetCommit, deletePreset, gradientPresets, saveGradientPreset, deleteGradientPreset, geminiApiKey, stabilityApiKey, systemFonts, customFonts, addCustomFont, removeCustomFont, setIsPreviewingOriginal, setIsMouseOverImage, user, isGuest, isAdmin, panelLayout, reorderPanelTabs, togglePanelVisibility, activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab, onSelectiveBlurAmountCommit, onSelectiveSharpenAmountCommit, setIsFullscreen, setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen, setIsGenerativeFillOpen, setIsNewProjectOpen, setIsExportOpen, setIsProjectSettingsOpen, setIsFontManagerOpen, setImage, setDimensions, setFileInfo, setExifData, setLayers, initialEditState, initialLayerState, dismissToast, clearSelectionState, handleProjectSettingsUpdate
   ]);
 };

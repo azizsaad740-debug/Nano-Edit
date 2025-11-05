@@ -1,6 +1,6 @@
 // src/types/editor/core.ts
 
-import type { Icon as LucideIcon } from "lucide-react";
+import type { Icon } from "lucide-react"; // FIX 1: Change import to type Icon
 import type { AdjustmentState, CurvesState, GradingState, HslAdjustmentsState, FrameState, EffectState, TransformState } from "./adjustments";
 import type { BrushState as BrushStateTool, GradientToolState as GradientToolStateTool, SelectionSettings as SelectionSettingsTool } from "./tools";
 
@@ -214,7 +214,7 @@ export interface NewProjectSettings {
 export interface PanelTab {
   id: string;
   name: string;
-  icon: LucideIcon;
+  icon: Icon; // FIX 1: Use Icon type
   location: 'right' | 'bottom' | 'hidden';
   visible: boolean;
   order: number;

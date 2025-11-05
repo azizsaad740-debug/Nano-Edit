@@ -21,7 +21,7 @@ export interface AdjustmentState {
 
 export interface EffectState {
   vignette: number;
-  grain: number;
+  grain: number; // FIX 3
   sharpen: number;
   blur: number;
   hueShift: number;
@@ -76,8 +76,11 @@ export interface TransformState {
   rotation: number;
   scaleX: number;
   scaleY: number;
-  flipX: boolean;
-  flipY: boolean;
+  // FIX 4: Added missing properties
+  skewX: number;
+  skewY: number;
+  perspectiveX: number;
+  perspectiveY: number;
 }
 
 export interface CropState {

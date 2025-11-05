@@ -2,8 +2,8 @@ import { useState, useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Layer, EditState, Dimensions, Point, ShapeType, GradientToolState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData } from '@/types/editor';
-import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isGradientLayer, isAdjustmentLayer, isSmartObjectLayer, isGroupLayer, initialAdjustmentState, initialGradingState, initialHslAdjustmentsState, initialCurvesState } from '@/types/editor';
-import { showError, showSuccess } from '@/utils/toast';
+import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isGradientLayer, isAdjustmentLayer, isSmartObjectLayer, isGroupLayer, initialAdjustmentState, initialGradingState, initialHslAdjustmentsState, initialCurvesState, isDrawingLayer } from '@/types/editor';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast'; // FIX 8, 9, 10
 import { invertMaskDataUrl, mergeMasks } from '@/utils/maskUtils';
 import { mergeStrokeOntoLayer } from '@/utils/imageUtils';
 import { rasterizeLayersToDataUrl, rasterizeLayerToCanvas } from '@/utils/layerUtils';
@@ -25,7 +25,7 @@ interface UseLayersProps {
   setImage: (image: string | null) => void;
   setFileInfo: (info: { name: string; size: number } | null) => void;
   selectedLayerIds: string[];
-  setSelectedLayerIds: (ids: string[]) => void;
+  setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>; // FIX 6, 12
   activeTool: string | null;
 }
 
@@ -145,7 +145,7 @@ export const useLayers = ({
     addLayerToTop(newLayer, `Add ${newLayer.name}`);
   }, [foregroundColor, backgroundColor, addLayerToTop]);
 
-  const addGradientLayer = useCallback(() => {
+  const addGradientLayer = useCallback((start: Point, end: Point) => {
     const newLayer: GradientLayerData = {
       ...createBaseLayer('gradient', 'Gradient Layer', { x: 50, y: 50 }, 100, 100),
       type: 'gradient',
@@ -158,6 +158,8 @@ export const useLayers = ({
       gradientCenterX: gradientToolState.centerX,
       gradientCenterY: gradientToolState.centerY,
       gradientRadius: gradientToolState.radius,
+      startPoint: start,
+      endPoint: end,
     };
     addLayerToTop(newLayer, 'Add Gradient Layer');
   }, [gradientToolState, addLayerToTop]);
@@ -192,7 +194,7 @@ export const useLayers = ({
       return;
     }
     setLayers(prev => prev.filter(l => l.id !== id));
-    setSelectedLayerIds(prev => prev.filter(lid => lid !== id));
+    setSelectedLayerIds(prev => prev.filter(lid => lid !== id)); // FIX 6, 12
     recordHistory(`Delete Layer: ${findLayer(id)?.name || 'Unknown'}`, currentEditState, layers.filter(l => l.id !== id));
   }, [layers, recordHistory, currentEditState, setSelectedLayerIds, findLayer, setLayers]);
   
@@ -300,10 +302,7 @@ export const useLayers = ({
       type: 'drawing',
       name: `${layerToRasterize.name} (Rasterized)`,
       dataUrl: rasterizedDataUrl,
-      // Reset vector/text specific properties
-      fillColor: undefined, strokeColor: undefined, strokeWidth: undefined, borderRadius: undefined,
-      points: undefined, starPoints: undefined, lineThickness: undefined,
-      content: undefined, fontSize: undefined, fontFamily: undefined,
+      // FIX 7: Remove properties not present in DrawingLayerData
     } as DrawingLayerData;
 
     updateLayer(id, newLayer);
@@ -350,7 +349,7 @@ export const useLayers = ({
     const soLayer = findLayer(id);
     if (!isSmartObjectLayer(soLayer) || !dimensions) return;
 
-    const toastId = showLoading(`Rasterizing Smart Object: ${soLayer.name}...`);
+    const toastId = showLoading(`Rasterizing Smart Object: ${soLayer.name}...`); // FIX 8
     try {
       const internalDimensions: Dimensions = {
         width: soLayer.smartObjectData.width || dimensions.width,
@@ -373,11 +372,11 @@ export const useLayers = ({
       } as DrawingLayerData;
 
       updateLayer(id, newLayer);
-      dismissToast(toastId);
+      dismissToast(toastId); // FIX 9
       recordHistory(`Rasterize Smart Object: ${soLayer.name}`, currentEditState, layers);
       showSuccess(`Smart Object ${soLayer.name} rasterized to Drawing Layer.`);
     } catch (error) {
-      dismissToast(toastId);
+      dismissToast(toastId); // FIX 10
       showError("Failed to rasterize Smart Object.");
     }
   }, [layers, findLayer, dimensions, updateLayer, recordHistory, currentEditState]);
@@ -448,253 +447,241 @@ export const useLayers = ({
 
   // --- Existing Layer Functions (Ensuring they use recursive helpers) ---
 
-  const {
-    deleteLayer: deleteLayerBase, // Renamed to avoid conflict
-    ...restOfLayerFunctions
-  } = useMemo(() => {
-    // This block contains the existing logic from the previous step, ensuring it uses the new recursive helpers.
-    // Since I don't have the full previous source, I'll rely on the snippets provided in the context.
-    // I will ensure the core functions are defined here.
+  const handleDestructiveOperation = useCallback((operation: 'delete' | 'fill') => {
+    if (!selectionMaskDataUrl) return;
     
-    const handleDestructiveOperation = useCallback((operation: 'delete' | 'fill') => {
-      if (!selectionMaskDataUrl) return;
-      
-      const targetLayer = selectedLayerIds.length > 0 ? findLayer(selectedLayerIds[0]) : layers.find(l => l.id === 'background');
-      if (!targetLayer || targetLayer.isLocked) {
-        showError("Cannot perform destructive operation on a locked or non-existent layer.");
-        return;
-      }
-      
-      showSuccess(`${operation === 'delete' ? 'Deleted' : 'Filled'} selected area on ${targetLayer.name} (Stub).`);
-      clearSelectionState();
-      recordHistory(`${operation === 'delete' ? 'Delete' : 'Fill'} Selection`, currentEditState, layers);
-    }, [selectionMaskDataUrl, selectedLayerIds, layers, currentEditState, recordHistory, clearSelectionState, findLayer]);
+    const targetLayer = selectedLayerIds.length > 0 ? findLayer(selectedLayerIds[0]) : layers.find(l => l.id === 'background');
+    if (!targetLayer || targetLayer.isLocked) {
+      showError("Cannot perform destructive operation on a locked or non-existent layer.");
+      return;
+    }
+    
+    showSuccess(`${operation === 'delete' ? 'Deleted' : 'Filled'} selected area on ${targetLayer.name} (Stub).`);
+    clearSelectionState();
+    recordHistory(`${operation === 'delete' ? 'Delete' : 'Fill'} Selection`, currentEditState, layers);
+  }, [selectionMaskDataUrl, selectedLayerIds, layers, currentEditState, recordHistory, clearSelectionState, findLayer]);
 
-    const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
-      if (ctrlKey) {
-        setSelectedLayerIds(prev => {
-          if (prev.includes(id)) {
-            return prev.filter(lid => lid !== id);
-          } else {
-            return [id, ...prev.filter(lid => lid !== id)];
-          }
-        });
-      } else if (shiftKey) {
-        if (selectedLayerIds.length === 0) {
-          setSelectedLayerIds([id]);
-          return;
+  const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
+    if (ctrlKey) {
+      setSelectedLayerIds(prev => { // FIX 6, 12
+        if (prev.includes(id)) {
+          return prev.filter(lid => lid !== id);
+        } else {
+          return [id, ...prev.filter(lid => lid !== id)];
         }
-        
-        const layersInOrder = layers.map(l => l.id);
-        const lastSelectedId = selectedLayerIds[0];
-        
-        const startIndex = layersInOrder.indexOf(lastSelectedId);
-        const endIndex = layersInOrder.indexOf(id);
-        
-        if (startIndex === -1 || endIndex === -1) {
-          setSelectedLayerIds([id]);
-          return;
-        }
-        
-        const start = Math.min(startIndex, endIndex);
-        const end = Math.max(startIndex, endIndex);
-        
-        const newSelection = layersInOrder.slice(start, end + 1);
-        
-        setSelectedLayerIds([id, ...newSelection.filter(lid => lid !== id)]);
-        
-      } else {
+      });
+    } else if (shiftKey) {
+      if (selectedLayerIds.length === 0) {
         setSelectedLayerIds([id]);
-      }
-    }, [layers, selectedLayerIds, setSelectedLayerIds]);
-    
-    const toggleLayerVisibility = useCallback((id: string) => {
-      updateLayer(id, { visible: !findLayer(id)?.visible });
-      recordHistory(`Toggle Visibility: ${findLayer(id)?.name}`, currentEditState, layers);
-    }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
-    
-    const renameLayer = useCallback((id: string, newName: string) => {
-      updateLayer(id, { name: newName });
-      recordHistory(`Rename Layer to ${newName}`, currentEditState, layers);
-    }, [updateLayer, recordHistory, currentEditState, layers]);
-    
-    const onLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
-      updateLayer(id, updates);
-      recordHistory(historyName, currentEditState, layers);
-    }, [updateLayer, recordHistory, currentEditState, layers]);
-    
-    const handleLayerOpacityChange = useCallback((opacity: number) => {
-      if (selectedLayerIds.length > 0) {
-        selectedLayerIds.forEach(id => updateLayer(id, { opacity }));
-      }
-    }, [selectedLayerIds, updateLayer]);
-    
-    const handleLayerOpacityCommit = useCallback(() => {
-      if (selectedLayerIds.length > 0) {
-        recordHistory(`Change Opacity of ${selectedLayerIds.length} layers`, currentEditState, layers);
-      }
-    }, [selectedLayerIds, recordHistory, currentEditState, layers]);
-    
-    const toggleGroupExpanded = useCallback((id: string) => {
-      updateLayer(id, { isExpanded: !(findLayer(id) as GroupLayerData)?.isExpanded });
-    }, [updateLayer, findLayer]);
-    
-    const onRemoveLayerMask = useCallback((id: string) => {
-      updateLayer(id, { maskDataUrl: null });
-      recordHistory(`Remove Mask from ${findLayer(id)?.name}`, currentEditState, layers);
-    }, [updateLayer, recordHistory, currentEditState, layers, findLayer]);
-    
-    const onInvertLayerMask = useCallback(async (id: string) => {
-      const layerToUpdate = findLayer(id);
-      if (!layerToUpdate || !layerToUpdate.maskDataUrl || !dimensions) {
-        showError("Cannot invert mask: layer or mask data missing.");
         return;
       }
       
-      try {
-        const invertedMaskUrl = await invertMaskDataUrl(
-          layerToUpdate.maskDataUrl,
-          dimensions.width,
-          dimensions.height
-        );
-        updateLayer(id, { maskDataUrl: invertedMaskUrl });
-        recordHistory(`Invert Mask on ${layerToUpdate.name}`, currentEditState, layers);
-        showSuccess(`Mask inverted on ${layerToUpdate.name}.`);
-      } catch (error) {
-        console.error("Failed to invert mask:", error);
-        showError("Failed to invert layer mask.");
-      }
-    }, [updateLayer, findLayer, dimensions, recordHistory, currentEditState, layers]);
-    
-    const onToggleClippingMask = useCallback((id: string) => {
-      updateLayer(id, { isClippingMask: !findLayer(id)?.isClippingMask });
-      recordHistory(`Toggle Clipping Mask: ${findLayer(id)?.name}`, currentEditState, layers);
-    }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
-    
-    const onToggleLayerLock = useCallback((id: string) => {
-      updateLayer(id, { isLocked: !findLayer(id)?.isLocked });
-      recordHistory(`Toggle Lock: ${findLayer(id)?.name}`, currentEditState, layers);
-    }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
-    
-    const onApplySelectionAsMask = useCallback(() => {
-      if (selectedLayerIds.length === 0 || !selectionMaskDataUrl) {
-        showError("Select a layer and make a selection first.");
-        return;
-      }
-      const targetId = selectedLayerIds[0];
-      updateLayer(targetId, { maskDataUrl: selectionMaskDataUrl });
-      clearSelectionState();
-      recordHistory(`Apply Selection as Mask to ${findLayer(targetId)?.name}`, currentEditState, layers);
-    }, [selectedLayerIds, selectionMaskDataUrl, updateLayer, clearSelectionState, recordHistory, currentEditState, layers, findLayer]);
-    
-    const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
-      if (!dimensions) return;
-      const targetLayer = findLayer(layerId);
-      if (!targetLayer || !isDrawingLayer(targetLayer)) {
-        showError("Cannot draw: target layer is not a drawing layer.");
+      const layersInOrder = layers.map(l => l.id);
+      const lastSelectedId = selectedLayerIds[0];
+      
+      const startIndex = layersInOrder.indexOf(lastSelectedId);
+      const endIndex = layersInOrder.indexOf(id);
+      
+      if (startIndex === -1 || endIndex === -1) {
+        setSelectedLayerIds([id]);
         return;
       }
       
-      const isEraser = activeTool === 'eraser';
+      const start = Math.min(startIndex, endIndex);
+      const end = Math.max(startIndex, endIndex);
       
-      try {
-        const newLayerDataUrl = await mergeStrokeOntoLayer(
-          targetLayer.dataUrl,
+      const newSelection = layersInOrder.slice(start, end + 1);
+      
+      setSelectedLayerIds([id, ...newSelection.filter(lid => lid !== id)]);
+      
+    } else {
+      setSelectedLayerIds([id]);
+    }
+  }, [layers, selectedLayerIds, setSelectedLayerIds]);
+    
+  const toggleLayerVisibility = useCallback((id: string) => {
+    updateLayer(id, { visible: !findLayer(id)?.visible });
+    recordHistory(`Toggle Visibility: ${findLayer(id)?.name}`, currentEditState, layers);
+  }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
+    
+  const renameLayer = useCallback((id: string, newName: string) => {
+    updateLayer(id, { name: newName });
+    recordHistory(`Rename Layer to ${newName}`, currentEditState, layers);
+  }, [updateLayer, recordHistory, currentEditState, layers]);
+    
+  const onLayerPropertyCommit = useCallback((id: string, updates: Partial<Layer>, historyName: string) => {
+    updateLayer(id, updates);
+    recordHistory(historyName, currentEditState, layers);
+  }, [updateLayer, recordHistory, currentEditState, layers]);
+    
+  const handleLayerOpacityChange = useCallback((opacity: number) => {
+    if (selectedLayerIds.length > 0) {
+      selectedLayerIds.forEach(id => updateLayer(id, { opacity }));
+    }
+  }, [selectedLayerIds, updateLayer]);
+    
+  const handleLayerOpacityCommit = useCallback(() => {
+    if (selectedLayerIds.length > 0) {
+      recordHistory(`Change Opacity of ${selectedLayerIds.length} layers`, currentEditState, layers);
+    }
+  }, [selectedLayerIds, recordHistory, currentEditState, layers]);
+    
+  const toggleGroupExpanded = useCallback((id: string) => {
+    updateLayer(id, { isExpanded: !(findLayer(id) as GroupLayerData)?.isExpanded });
+  }, [updateLayer, findLayer]);
+    
+  const onRemoveLayerMask = useCallback((id: string) => {
+    updateLayer(id, { maskDataUrl: null });
+    recordHistory(`Remove Mask from ${findLayer(id)?.name}`, currentEditState, layers);
+  }, [updateLayer, recordHistory, currentEditState, layers, findLayer]);
+    
+  const onInvertLayerMask = useCallback(async (id: string) => {
+    const layerToUpdate = findLayer(id);
+    if (!layerToUpdate || !layerToUpdate.maskDataUrl || !dimensions) {
+      showError("Cannot invert mask: layer or mask data missing.");
+      return;
+    }
+    
+    try {
+      const invertedMaskUrl = await invertMaskDataUrl(
+        layerToUpdate.maskDataUrl,
+        dimensions.width,
+        dimensions.height
+      );
+      updateLayer(id, { maskDataUrl: invertedMaskUrl });
+      recordHistory(`Invert Mask on ${layerToUpdate.name}`, currentEditState, layers);
+      showSuccess(`Mask inverted on ${layerToUpdate.name}.`);
+    } catch (error) {
+      console.error("Failed to invert mask:", error);
+      showError("Failed to invert layer mask.");
+    }
+  }, [updateLayer, findLayer, dimensions, recordHistory, currentEditState, layers]);
+    
+  const onToggleClippingMask = useCallback((id: string) => {
+    updateLayer(id, { isClippingMask: !findLayer(id)?.isClippingMask });
+    recordHistory(`Toggle Clipping Mask: ${findLayer(id)?.name}`, currentEditState, layers);
+  }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
+    
+  const onToggleLayerLock = useCallback((id: string) => {
+    updateLayer(id, { isLocked: !findLayer(id)?.isLocked });
+    recordHistory(`Toggle Lock: ${findLayer(id)?.name}`, currentEditState, layers);
+  }, [updateLayer, findLayer, recordHistory, currentEditState, layers]);
+    
+  const onApplySelectionAsMask = useCallback(() => {
+    if (selectedLayerIds.length === 0 || !selectionMaskDataUrl) {
+      showError("Select a layer and make a selection first.");
+      return;
+    }
+    const targetId = selectedLayerIds[0];
+    updateLayer(targetId, { maskDataUrl: selectionMaskDataUrl });
+    clearSelectionState();
+    recordHistory(`Apply Selection as Mask to ${findLayer(targetId)?.name}`, currentEditState, layers);
+  }, [selectedLayerIds, selectionMaskDataUrl, updateLayer, clearSelectionState, recordHistory, currentEditState, layers, findLayer]);
+    
+  const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    if (!dimensions) return;
+    const targetLayer = findLayer(layerId);
+    if (!targetLayer || !isDrawingLayer(targetLayer)) { // FIX 13
+      showError("Cannot draw: target layer is not a drawing layer.");
+      return;
+    }
+    
+    const isEraser = activeTool === 'eraser';
+    
+    try {
+      const newLayerDataUrl = await mergeStrokeOntoLayer(
+          (targetLayer as DrawingLayerData).dataUrl, // FIX 14
           strokeDataUrl,
           dimensions,
           currentEditState.brushState,
           isEraser
-        );
+      );
         
-        updateLayer(layerId, { dataUrl: newLayerDataUrl });
-        recordHistory(`${isEraser ? 'Erase' : 'Draw'} on ${targetLayer.name}`, currentEditState, layers);
-      } catch (error) {
-        console.error("Failed to merge drawing stroke:", error);
-        showError("Failed to apply drawing stroke.");
-      }
-    }, [dimensions, findLayer, activeTool, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
+      updateLayer(layerId, { dataUrl: newLayerDataUrl });
+      recordHistory(`${isEraser ? 'Erase' : 'Draw'} on ${targetLayer.name}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge drawing stroke:", error);
+      showError("Failed to apply drawing stroke.");
+    }
+  }, [dimensions, findLayer, activeTool, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
 
-    const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
-      if (!dimensions) return;
+  const handleSelectionBrushStrokeEnd = useCallback(async (strokeDataUrl: string, operation: 'add' | 'subtract') => {
+    if (!dimensions) return;
+    
+    try {
+      const existingMask = selectionMaskDataUrl || '';
+      const newMaskDataUrl = await mergeMasks(
+        existingMask,
+        strokeDataUrl,
+        dimensions,
+        operation
+      );
       
-      try {
-        const existingMask = selectionMaskDataUrl || '';
-        const newMaskDataUrl = await mergeMasks(
-          existingMask,
-          strokeDataUrl,
-          dimensions,
-          operation
-        );
-        
-        setSelectionMaskDataUrl(newMaskDataUrl);
-        recordHistory(`Selection Brush: ${operation}`, currentEditState, layers);
-      } catch (error) {
-        console.error("Failed to merge selection brush stroke:", error);
-        showError("Failed to update selection mask.");
-      }
-    }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
+      setSelectionMaskDataUrl(newMaskDataUrl);
+      recordHistory(`Selection Brush: ${operation}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge selection brush stroke:", error);
+      showError("Failed to update selection mask.");
+    }
+  }, [dimensions, selectionMaskDataUrl, setSelectionMaskDataUrl, recordHistory, currentEditState, layers]);
 
-    const handleHistoryBrushStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
-      if (!dimensions) return;
-      const targetLayer = findLayer(layerId);
-      if (!targetLayer || !isDrawingLayer(targetLayer)) {
-        showError("Cannot use History Brush: target layer is not a drawing layer.");
-        return;
-      }
-      
-      try {
-        const newLayerDataUrl = await mergeStrokeOntoLayer(
-          targetLayer.dataUrl,
+  const handleHistoryBrushStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
+    if (!dimensions) return;
+    const targetLayer = findLayer(layerId);
+    if (!targetLayer || !isDrawingLayer(targetLayer)) { // FIX 15
+      showError("Cannot use History Brush: target layer is not a drawing layer.");
+      return;
+    }
+    
+    try {
+      const newLayerDataUrl = await mergeStrokeOntoLayer(
+          (targetLayer as DrawingLayerData).dataUrl, // FIX 16
           strokeDataUrl,
           dimensions,
           currentEditState.brushState,
           false
-        );
+      );
         
-        updateLayer(layerId, { dataUrl: newLayerDataUrl });
-        recordHistory(`History Brush applied to ${targetLayer.name}`, currentEditState, layers);
-      } catch (error) {
-        console.error("Failed to merge history brush stroke:", error);
-        showError("Failed to apply history brush stroke.");
-      }
-    }, [dimensions, findLayer, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
+      updateLayer(layerId, { dataUrl: newLayerDataUrl });
+      recordHistory(`History Brush applied to ${targetLayer.name}`, currentEditState, layers);
+    } catch (error) {
+      console.error("Failed to merge history brush stroke:", error);
+      showError("Failed to apply history brush stroke.");
+    }
+  }, [dimensions, findLayer, currentEditState.brushState, updateLayer, recordHistory, currentEditState, layers]);
     
-    const onLayerReorder = useCallback((activeId: string, overId: string) => {
-      const oldIndex = layers.findIndex(l => l.id === activeId);
-      const newIndex = layers.findIndex(l => l.id === overId);
-      
-      if (oldIndex === -1 || newIndex === -1) return;
-      
-      const newLayers = arrayMove(layers, oldIndex, newIndex);
-      setLayers(newLayers);
-      recordHistory("Reorder Layers", currentEditState, newLayers);
-    }, [layers, setLayers, recordHistory, currentEditState]);
+  const onLayerReorder = useCallback((activeId: string, overId: string) => {
+    const oldIndex = layers.findIndex(l => l.id === activeId);
+    const newIndex = layers.findIndex(l => l.id === overId);
     
-    // Stubbed functions
-    const groupLayers = useCallback((layerIds: string[]) => { showError("Group Layers is a stub."); }, []);
-    const onDeleteHiddenLayers = useCallback(() => { showError("Delete Hidden Layers is a stub."); }, []);
-    const onArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => { showError(`Arrange Layer ${direction} is a stub.`); }, []);
+    if (oldIndex === -1 || newIndex === -1) return;
     
-    return {
-      handleDestructiveOperation, onSelectLayer, toggleLayerVisibility, renameLayer,
-      onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
-      toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask,
-      onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd,
-      handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer,
-      // Functions implemented in this step:
-      onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
-      onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection,
-      addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer,
-      handleLayerDelete, // Exported here
-    };
-  }, [layers, selectedLayerIds, findLayer, recordHistory, currentEditState, setLayers, setSelectedLayerIds, selectionMaskDataUrl, clearSelectionState, dimensions, activeTool, currentEditState.brushState, updateLayer, setSelectionMaskDataUrl]);
-
-  return {
+    const newLayers = arrayMove(layers, oldIndex, newIndex);
+    setLayers(newLayers);
+    recordHistory("Reorder Layers", currentEditState, newLayers);
+  }, [layers, setLayers, recordHistory, currentEditState]);
+    
+  // Stubbed functions
+  const groupLayers = useCallback((layerIds: string[]) => { showError("Group Layers is a stub."); }, []);
+  const onDeleteHiddenLayers = useCallback(() => { showError("Delete Hidden Layers is a stub."); }, []);
+  const onArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => { showError(`Arrange Layer ${direction} is a stub.`); }, []);
+    
+  return useMemo(() => ({
     findLayer,
     updateLayer,
     commitLayerChange,
-    deleteLayer, // Use the new deleteLayer
+    deleteLayer,
     handleLayerDelete,
-    ...restOfLayerFunctions,
-  };
+    handleDestructiveOperation, onSelectLayer, toggleLayerVisibility, renameLayer,
+    onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit,
+    toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask,
+    onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd,
+    handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer,
+    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject: () => showError("Smart Object Editor is a stub."), onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection,
+    addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer,
+    hasActiveSelection: !!selectionMaskDataUrl,
+  }), [
+    findLayer, updateLayer, commitLayerChange, deleteLayer, handleLayerDelete, handleDestructiveOperation, onSelectLayer, toggleLayerVisibility, renameLayer, onLayerPropertyCommit, handleLayerOpacityChange, handleLayerOpacityCommit, toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask, onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd, handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer, onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents, onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection, addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer, selectionMaskDataUrl
+  ]);
 };
