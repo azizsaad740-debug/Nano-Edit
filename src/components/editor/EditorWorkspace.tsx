@@ -447,6 +447,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
                 src={isPreviewingOriginal ? image : layer.dataUrl}
                 alt="Base Image"
                 className="w-full h-full object-contain pointer-events-none"
+                crossOrigin="anonymous"
                 style={{
                   ...filterStyle,
                   transform: `rotateZ(0deg) scaleX(1) scaleY(1)`, // Filters applied to the image element
