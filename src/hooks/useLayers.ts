@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Layer, EditState, Dimensions, Point, ShapeType, GradientToolState, ImageLayerData, DrawingLayerData, TextLayerData, VectorShapeLayerData, GradientLayerData, AdjustmentLayerData, SmartObjectLayerData, GroupLayerData } from '@/types/editor';
 import { isImageOrDrawingLayer, isTextLayer, isVectorShapeLayer, isGradientLayer, isAdjustmentLayer, isSmartObjectLayer, isGroupLayer, initialAdjustmentState, initialGradingState, initialHslAdjustmentsState, initialCurvesState, isDrawingLayer } from '@/types/editor';
-import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast'; // FIX 8, 9, 10
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { invertMaskDataUrl, mergeMasks } from '@/utils/maskUtils';
 import { mergeStrokeOntoLayer } from '@/utils/imageUtils';
 import { rasterizeLayersToDataUrl, rasterizeLayerToCanvas } from '@/utils/layerUtils';
@@ -25,15 +25,15 @@ interface UseLayersProps {
   setImage: (image: string | null) => void;
   setFileInfo: (info: { name: string; size: number } | null) => void;
   selectedLayerIds: string[];
-  setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>; // FIX 6, 12
+  setSelectedLayerIds: React.Dispatch<React.SetStateAction<string[]>>;
   activeTool: string | null;
-  onOpenSmartObject: (id: string) => void; // NEW PROP
+  onOpenSmartObject: (id: string) => void;
 }
 
 export const useLayers = ({
   layers, setLayers, recordHistory, currentEditState, dimensions, foregroundColor, backgroundColor,
   gradientToolState, selectedShapeType, selectionPath, selectionMaskDataUrl, setSelectionMaskDataUrl, clearSelectionState,
-  setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool, onOpenSmartObject // DESTRUCTURE NEW PROP
+  setImage, setFileInfo, selectedLayerIds, setSelectedLayerIds, activeTool, onOpenSmartObject
 }: UseLayersProps) => {
 
   // --- Recursive Helpers ---
@@ -70,7 +70,7 @@ export const useLayers = ({
   const commitLayerChange = useCallback((id: string, name: string) => {
     recordHistory(name, currentEditState, layers);
   }, [recordHistory, currentEditState, layers]);
-
+  
   // Helper to get the parent array and index of a layer
   const getLayerLocation = (layers: Layer[], id: string, parent: Layer[] = layers): { parent: Layer[], index: number } | null => {
     const index = parent.findIndex(l => l.id === id);
@@ -83,6 +83,16 @@ export const useLayers = ({
       }
     }
     return null;
+  };
+  
+  // Helper to recursively filter layers
+  const filterLayersRecursive = (currentLayers: Layer[], filterFn: (layer: Layer) => boolean): Layer[] => {
+    return currentLayers.filter(layer => {
+      if (isGroupLayer(layer) && layer.children) {
+        layer.children = filterLayersRecursive(layer.children, filterFn);
+      }
+      return filterFn(layer);
+    });
   };
 
   // --- Layer Creation Functions ---
@@ -119,6 +129,7 @@ export const useLayers = ({
       letterSpacing: 0,
       lineHeight: 1.2,
       padding: 0,
+      width: 50, height: 10,
     };
     addLayerToTop(newLayer, 'Add Text Layer');
   }, [foregroundColor, addLayerToTop]);
@@ -195,7 +206,7 @@ export const useLayers = ({
       return;
     }
     setLayers(prev => prev.filter(l => l.id !== id));
-    setSelectedLayerIds(prev => prev.filter(lid => lid !== id)); // FIX 6, 12
+    setSelectedLayerIds(prev => prev.filter(lid => lid !== id));
     recordHistory(`Delete Layer: ${findLayer(id)?.name || 'Unknown'}`, currentEditState, layers.filter(l => l.id !== id));
   }, [layers, recordHistory, currentEditState, setSelectedLayerIds, findLayer, setLayers]);
   
@@ -238,7 +249,6 @@ export const useLayers = ({
 
       // Rebuild the layer tree if necessary (only if inside a group)
       if (location.parent !== prevLayers) {
-        // This is complex recursive state update, simplified here:
         return updateLayerRecursive(prevLayers, location.parent[0].id, { children: newParent });
       }
       return newParent;
@@ -303,7 +313,6 @@ export const useLayers = ({
       type: 'drawing',
       name: `${layerToRasterize.name} (Rasterized)`,
       dataUrl: rasterizedDataUrl,
-      // FIX 7: Remove properties not present in DrawingLayerData
     } as DrawingLayerData;
 
     updateLayer(id, newLayer);
@@ -338,7 +347,13 @@ export const useLayers = ({
     // 4. Update layers: remove originals, insert SO layer
     setLayers(prev => {
       const remainingLayers = prev.filter(l => !layerIds.includes(l.id));
-      return [newSoLayer, ...remainingLayers];
+      
+      // Find the index of the topmost layer being grouped
+      const topLayerIndex = prev.findIndex(l => l.id === layersToMove[0].id);
+      
+      const newLayers = [...remainingLayers];
+      newLayers.splice(topLayerIndex, 0, newSoLayer);
+      return newLayers;
     });
 
     setSelectedLayerIds([newSoLayer.id]);
@@ -350,7 +365,7 @@ export const useLayers = ({
     const soLayer = findLayer(id);
     if (!isSmartObjectLayer(soLayer) || !dimensions) return;
 
-    const toastId = showLoading(`Rasterizing Smart Object: ${soLayer.name}...`); // FIX 8
+    const toastId = showLoading(`Rasterizing Smart Object: ${soLayer.name}...`);
     try {
       const internalDimensions: Dimensions = {
         width: soLayer.smartObjectData.width || dimensions.width,
@@ -373,11 +388,11 @@ export const useLayers = ({
       } as DrawingLayerData;
 
       updateLayer(id, newLayer);
-      dismissToast(toastId); // FIX 9
+      dismissToast(toastId);
       recordHistory(`Rasterize Smart Object: ${soLayer.name}`, currentEditState, layers);
       showSuccess(`Smart Object ${soLayer.name} rasterized to Drawing Layer.`);
     } catch (error) {
-      dismissToast(toastId); // FIX 10
+      dismissToast(toastId);
       showError("Failed to rasterize Smart Object.");
     }
   }, [layers, findLayer, dimensions, updateLayer, recordHistory, currentEditState]);
@@ -464,7 +479,7 @@ export const useLayers = ({
 
   const onSelectLayer = useCallback((id: string, ctrlKey: boolean, shiftKey: boolean) => {
     if (ctrlKey) {
-      setSelectedLayerIds(prev => { // FIX 6, 12
+      setSelectedLayerIds(prev => {
         if (prev.includes(id)) {
           return prev.filter(lid => lid !== id);
         } else {
@@ -582,7 +597,7 @@ export const useLayers = ({
   const handleDrawingStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
     if (!dimensions) return;
     const targetLayer = findLayer(layerId);
-    if (!targetLayer || !isDrawingLayer(targetLayer)) { // FIX 13
+    if (!targetLayer || !isDrawingLayer(targetLayer)) {
       showError("Cannot draw: target layer is not a drawing layer.");
       return;
     }
@@ -591,7 +606,7 @@ export const useLayers = ({
     
     try {
       const newLayerDataUrl = await mergeStrokeOntoLayer(
-          (targetLayer as DrawingLayerData).dataUrl, // FIX 14
+          (targetLayer as DrawingLayerData).dataUrl,
           strokeDataUrl,
           dimensions,
           currentEditState.brushState,
@@ -629,14 +644,14 @@ export const useLayers = ({
   const handleHistoryBrushStrokeEnd = useCallback(async (strokeDataUrl: string, layerId: string) => {
     if (!dimensions) return;
     const targetLayer = findLayer(layerId);
-    if (!targetLayer || !isDrawingLayer(targetLayer)) { // FIX 15
+    if (!targetLayer || !isDrawingLayer(targetLayer)) {
       showError("Cannot use History Brush: target layer is not a drawing layer.");
       return;
     }
     
     try {
       const newLayerDataUrl = await mergeStrokeOntoLayer(
-          (targetLayer as DrawingLayerData).dataUrl, // FIX 16
+          (targetLayer as DrawingLayerData).dataUrl,
           strokeDataUrl,
           dimensions,
           currentEditState.brushState,
@@ -662,10 +677,119 @@ export const useLayers = ({
     recordHistory("Reorder Layers", currentEditState, newLayers);
   }, [layers, setLayers, recordHistory, currentEditState]);
     
-  // Stubbed functions
-  const groupLayers = useCallback((layerIds: string[]) => { showError("Group Layers is a stub."); }, []);
-  const onDeleteHiddenLayers = useCallback(() => { showError("Delete Hidden Layers is a stub."); }, []);
-  const onArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => { showError(`Arrange Layer ${direction} is a stub.`); }, []);
+  // --- Implemented Stubs ---
+  
+  const onDeleteHiddenLayers = useCallback(() => {
+    const layersToDelete = layers.filter(l => !l.visible && l.id !== 'background');
+    if (layersToDelete.length === 0) {
+      showError("No hidden layers found to delete (excluding background).");
+      return;
+    }
+
+    const newLayers = filterLayersRecursive(layers, (layer) => {
+      return layer.visible || layer.id === 'background';
+    });
+
+    setLayers(newLayers);
+    setSelectedLayerIds([]);
+    recordHistory(`Delete ${layersToDelete.length} Hidden Layers`, currentEditState, newLayers);
+    showSuccess(`${layersToDelete.length} hidden layers deleted.`);
+  }, [layers, recordHistory, currentEditState, setLayers, setSelectedLayerIds]);
+
+  const groupLayers = useCallback((layerIds: string[]) => {
+    if (!dimensions || layerIds.length < 1) {
+      showError("Select at least one layer to group.");
+      return;
+    }
+    
+    // 1. Sort layers to group by their current index (top to bottom)
+    const sortedLayersToGroup = layers
+      .filter(l => layerIds.includes(l.id))
+      .sort((a, b) => layers.findIndex(l => l.id === a.id) - layers.findIndex(l => l.id === b.id));
+    
+    if (sortedLayersToGroup.length === 0) return;
+
+    // 2. Find the index of the topmost layer in the group
+    const topLayerIndex = layers.findIndex(l => l.id === sortedLayersToGroup[0].id);
+    if (topLayerIndex === -1) return;
+
+    // 3. Create the new Group layer
+    const newGroup: GroupLayerData = {
+      ...createBaseLayer('group', 'New Group', { x: 50, y: 50 }, 100, 100),
+      type: 'group',
+      children: sortedLayersToGroup,
+      isExpanded: true,
+    };
+    
+    // 4. Update layers: remove originals, insert group layer at the top layer's position
+    setLayers(prev => {
+      const remainingLayers = prev.filter(l => !layerIds.includes(l.id));
+      
+      // Find the index in the original array where the group should be inserted
+      const insertionIndex = prev.findIndex(l => l.id === sortedLayersToGroup[0].id);
+      
+      // Reconstruct the array: layers above insertion point + new group + layers below the group
+      const layersBefore = prev.slice(0, insertionIndex).filter(l => !layerIds.includes(l.id));
+      const layersAfter = prev.slice(insertionIndex + sortedLayersToGroup.length).filter(l => !layerIds.includes(l.id));
+      
+      return [...layersBefore, newGroup, ...layersAfter];
+    });
+
+    setSelectedLayerIds([newGroup.id]);
+    recordHistory(`Group ${layerIds.length} Layers`, currentEditState, layers);
+    showSuccess(`Created group: ${newGroup.name}`);
+  }, [layers, dimensions, recordHistory, currentEditState, setLayers, setSelectedLayerIds, createBaseLayer]);
+
+  // Helper to move a layer within its parent array
+  const moveLayerInParent = (layers: Layer[], id: string, direction: 'front' | 'back' | 'forward' | 'backward'): Layer[] => {
+    const location = getLayerLocation(layers, id);
+    if (!location) return layers;
+
+    const { parent, index } = location;
+    const layerToMove = parent[index];
+
+    let newIndex = index;
+
+    if (direction === 'forward') {
+      newIndex = Math.max(0, index - 1);
+    } else if (direction === 'backward') {
+      newIndex = Math.min(parent.length - 1, index + 1);
+    } else if (direction === 'front') {
+      newIndex = 0;
+    } else if (direction === 'back') {
+      newIndex = parent.length - 1;
+    }
+    
+    // Prevent moving the background layer
+    if (layerToMove.id === 'background' && (direction === 'forward' || direction === 'front')) {
+        return layers;
+    }
+
+    if (newIndex === index) return layers;
+
+    const newParent = arrayMove(parent, index, newIndex);
+
+    // If we moved a top-level layer, return the new top-level array
+    if (parent === layers) {
+      return newParent;
+    }
+
+    // If we moved a nested layer, we need to update the parent group recursively
+    return updateLayerRecursive(layers, location.parent[0].id, { children: newParent });
+  };
+
+  const onArrangeLayer = useCallback((direction: 'front' | 'back' | 'forward' | 'backward') => {
+    if (selectedLayerIds.length !== 1) {
+      showError("Please select exactly one layer to arrange.");
+      return;
+    }
+    const id = selectedLayerIds[0];
+    
+    setLayers(prevLayers => moveLayerInParent(prevLayers, id, direction));
+    recordHistory(`Arrange Layer: ${direction}`, currentEditState, layers);
+  }, [selectedLayerIds, recordHistory, currentEditState, layers, setLayers]);
+    
+  // --- Final Return Object ---
     
   return useMemo(() => ({
     findLayer,
@@ -678,7 +802,7 @@ export const useLayers = ({
     toggleGroupExpanded, onRemoveLayerMask, onInvertLayerMask, onToggleClippingMask,
     onToggleLayerLock, onApplySelectionAsMask, handleDrawingStrokeEnd, handleSelectionBrushStrokeEnd,
     handleHistoryBrushStrokeEnd, onLayerReorder, groupLayers, onDeleteHiddenLayers, onArrangeLayer,
-    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject: onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
+    onDuplicateLayer, onMergeLayerDown, onRasterizeLayer, onCreateSmartObject, onOpenSmartObject, onRasterizeSmartObject, onConvertSmartObjectToLayers, onExportSmartObjectContents,
     onAddAdjustmentLayer, onAddLayerFromBackground, onLayerFromSelection,
     addTextLayer, addDrawingLayer, addShapeLayer, addGradientLayer,
     hasActiveSelection: !!selectionMaskDataUrl,
