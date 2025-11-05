@@ -1,148 +1,99 @@
 "use client";
 
 import * as React from "react";
-import {
-  Menu,
-  File,
-  FolderOpen,
-  Save,
-  Download,
-  Clipboard,
-  Plus,
-  Settings,
-  Maximize,
-  Minimize,
-  Undo,
-  Redo,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Copy,
-  Trash2,
-  Layers,
-  Palette,
-  Type,
-  Square, // FIX 1: Corrected Lucide import syntax
-  Droplet,
-  Eraser,
-  Pencil,
-  Stamp,
-  History,
-  Brush,
-  Scissors,
-  Wand,
-  MousePointer,
-  Hand,
-  Eye,
-  Zap,
-  ImagePlus,
-  PaintBucket,
-  RotateCw,
-  RotateCcw,
-  FlipHorizontal,
-  FlipVertical,
-  Crop,
-  Grid,
-  Lock,
-  Unlock,
-  EyeOff,
-  Group,
-  Ungroup,
-  Merge,
-  Layers3,
-  Move, // FIX 1: Corrected Lucide import syntax
-  LayoutGrid,
-  List,
-  ChevronDown,
-  ChevronUp,
-  Minus,
-  PlusCircle,
-  MinusCircle,
-  RefreshCw,
-  GripVertical,
-  AlignJustify,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Code,
-  Link,
-  ListOrdered,
-  Quote,
-  Code2,
-  CodeIcon,
-} from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from "@/components/ui/dropdown-menu";
-import { Button as ShadButton } from "@/components/ui/button";
-import { useEditorContext } from "@/context/EditorContext";
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
-import { ActiveTool } from "@/types/editor";
+import { useEditorContext } from '@/context/EditorContext';
+import Header from './Header';
+import { MenuBar } from './MenuBar';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { MobileHeader } from '../mobile/MobileHeader';
+import { showError, showSuccess } from "@/utils/toast";
 
-export const EditorHeader = () => { // FIX 10: Ensure component is exported
+export const EditorHeader = () => {
   const editor = useEditorContext();
+  const isMobile = useIsMobile();
 
   const {
-    image,
-    activeTool,
-    setActiveTool,
-    canUndo,
-    canRedo,
-    undo,
-    redo,
-    handleZoomIn,
-    handleZoomOut,
-    handleFitScreen,
-    handleCopy,
-    handleSwapColors,
-    handleLayerDelete,
-    handleImageLoad,
-    handleNewProject,
-    handleLoadProject,
-    handleLoadTemplate,
-    handleNewFromClipboard,
-    handleExportClick,
-    handleGenerateImage,
-    handleGenerativeFill,
-    setIsFullscreen,
-    isFullscreen,
-    setIsSettingsOpen,
-    setIsImportOpen,
-    setIsGenerateOpen,
-    setIsGenerativeFillOpen,
-    setIsNewProjectOpen,
-    setIsExportOpen,
-    setIsProjectSettingsOpen,
-    onOpenFontManager,
-    selectedLayerId,
-    selectedLayer,
-    onDuplicateLayer,
-    onMergeLayerDown,
-    onRasterizeLayer,
-    onCreateSmartObject,
-    onOpenSmartObject,
-    onRasterizeSmartObject,
-    // ... rest of the logic
+    hasImage, undo, redo, canUndo, canRedo, handleCopy,
+    setIsSettingsOpen, setIsImportOpen, setIsGenerateOpen,
+    setIsNewProjectOpen, handleSaveProject, handleLoadProject,
+    handleExportClick, onToggleFullscreen, isFullscreen,
+    handleNewFromClipboard, currentEditState, panelLayout, togglePanelVisibility,
+    activeRightTab, setActiveRightTab, activeBottomTab, setActiveBottomTab,
+    setIsProjectSettingsOpen, resetAllEdits,
   } = editor;
 
-  // ... rest of the component
+  const onTogglePreview = React.useCallback((isPreviewing: boolean) => {
+    editor.setIsPreviewingOriginal(isPreviewing);
+  }, [editor]);
+
+  const onSyncProject = React.useCallback(() => {
+    showError("Cloud sync is a stub.");
+  }, []);
+
+  if (isMobile) {
+    return (
+      <MobileHeader
+        hasImage={hasImage}
+        onNewProjectClick={() => setIsNewProjectOpen(true)}
+        onOpenProject={handleLoadProject}
+        onSaveProject={handleSaveProject}
+        onExportClick={() => editor.setIsExportOpen(true)}
+        onReset={resetAllEdits}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+        onImportClick={() => setIsImportOpen(true)}
+        onNewFromClipboard={handleNewFromClipboard}
+      />
+    );
+  }
+
   return (
-    <header className="flex items-center justify-between h-10 px-2 border-b bg-background/90 z-10">
-      {/* ... content ... */}
-    </header>
+    <Header
+      onReset={resetAllEdits}
+      onDownloadClick={() => editor.setIsExportOpen(true)}
+      onCopy={handleCopy}
+      hasImage={hasImage}
+      onTogglePreview={onTogglePreview}
+      onUndo={undo}
+      onRedo={redo}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      setOpenSettings={setIsSettingsOpen}
+      setOpenImport={setIsImportOpen}
+      onGenerateClick={() => setIsGenerateOpen(true)}
+      onNewProjectClick={() => setIsNewProjectOpen(true)}
+      onNewFromClipboard={handleNewFromClipboard}
+      onSaveProject={handleSaveProject}
+      onOpenProject={handleLoadProject}
+      onToggleFullscreen={onToggleFullscreen}
+      isFullscreen={isFullscreen}
+      onSyncProject={onSyncProject}
+      setOpenProjectSettings={() => setIsProjectSettingsOpen(true)}
+      panelLayout={panelLayout}
+      togglePanelVisibility={togglePanelVisibility}
+      activeRightTab={activeRightTab}
+      setActiveRightTab={activeRightTab}
+      activeBottomTab={activeBottomTab}
+      setActiveBottomTab={activeBottomTab}
+      isProxyMode={currentEditState.isProxyMode}
+    >
+      <MenuBar
+        logic={editor}
+        setIsNewProjectOpen={setIsNewProjectOpen}
+        setIsExportOpen={editor.setIsExportOpen}
+        setIsSettingsOpen={setIsSettingsOpen}
+        setIsImportOpen={setIsImportOpen}
+        setIsGenerateOpen={setIsGenerateOpen}
+        setIsGenerativeFillOpen={editor.setIsGenerativeFillOpen}
+        setIsProjectSettingsOpen={setIsProjectSettingsOpen}
+        isFullscreen={isFullscreen}
+        onToggleFullscreen={onToggleFullscreen}
+        panelLayout={panelLayout}
+        togglePanelVisibility={togglePanelVisibility}
+        activeRightTab={activeRightTab}
+        setActiveRightTab={activeRightTab}
+        activeBottomTab={activeBottomTab}
+        setActiveBottomTab={activeBottomTab}
+      />
+    </Header>
   );
 };

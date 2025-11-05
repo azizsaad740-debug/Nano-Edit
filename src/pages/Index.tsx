@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useEditorLogic } from "@/hooks/useEditorLogic";
-import { EditorHeader } from "@/components/layout/EditorHeader"; // FIX 10: Now correctly exported
+import { EditorHeader } from "@/components/layout/EditorHeader";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { RightSidebarTabs } from "@/components/layout/RightSidebarTabs";
 import BottomPanel from "@/components/layout/BottomPanel";
@@ -15,26 +15,27 @@ import { GenerativeDialog as GenerativeFillDialog } from "@/components/editor/Ge
 import { GenerateImageDialog } from "@/components/editor/GenerateImageDialog";
 import { FontManagerDialog } from "@/components/editor/FontManagerDialog";
 import { cn } from "@/lib/utils";
-import { EditorContext } from "@/context/EditorContext"; // FIX 11: Context stubbed
+import { EditorContext } from "@/context/EditorContext";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useMobileDetection } from "@/hooks/useMobileDetection";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
 import { useZoomFit } from "@/hooks/useZoomFit";
-import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction"; // FIX 12: Hook stub updated
-import { useLassoToolInteraction } from "@/hooks/useLassoToolInteraction"; // FIX 13: Hook stub updated
-import { useMagicWandToolInteraction } from "@/hooks/useMagicWandToolInteraction"; // FIX 14: Hook stub updated
-import { useObjectSelectToolInteraction } from "@/hooks/useObjectSelectToolInteraction"; // FIX 15: Hook stub updated
-import { useGradientToolInteraction } from "@/hooks/useGradientToolInteraction"; // FIX 16: Hook stub updated
+import { useMarqueeToolInteraction } from "@/hooks/useMarqueeToolInteraction";
+import { useLassoToolInteraction } from "@/hooks/useLassoToolInteraction";
+import { useMagicWandToolInteraction } from "@/hooks/useMagicWandToolInteraction";
+import { useObjectSelectToolInteraction } from "@/hooks/useObjectSelectToolInteraction";
+import { useGradientToolInteraction } from "@/hooks/useGradientToolInteraction";
 import { useBrushToolInteraction } from "@/hooks/useBrushToolInteraction";
-import { useMoveToolInteraction } from "@/hooks/useMoveToolInteraction"; // FIX 18: Hook stub updated
-import { useTextToolInteraction } from "@/hooks/useTextToolInteraction"; // FIX 19: Hook stub updated
-import { useShapeToolInteraction } from "@/hooks/useShapeToolInteraction"; // FIX 20: Hook stub updated
-import { useEyedropperToolInteraction } from "@/hooks/useEyedropperToolInteraction"; // FIX 21: Hook stub updated
+import { useMoveToolInteraction } from "@/hooks/useMoveToolInteraction";
+import { useTextToolInteraction } from "@/hooks/useTextToolInteraction";
+import { useShapeToolInteraction } from "@/hooks/useShapeToolInteraction";
+import { useEyedropperToolInteraction } from "@/hooks/useEyedropperToolInteraction";
 import { useHandToolInteraction } from "@/hooks/useHandToolInteraction";
 import { useZoomToolInteraction } from "@/hooks/useZoomToolInteraction";
-import { useCloneStampToolInteraction } from "@/hooks/useCloneStampToolInteraction"; // FIX 17: Hook stub updated
+import { useCloneStampToolInteraction } from "@/hooks/useCloneStampToolInteraction";
 import { useHistoryBrushToolInteraction } from "@/hooks/useHistoryBrushToolInteraction";
 import { useSelectiveRetouchToolInteraction } from "@/hooks/useSelectiveRetouchToolInteraction";
+import LeftSidebar from "@/components/layout/LeftSidebar"; // NEW IMPORT
 
 interface IndexPageProps {
   initialImage?: string;
@@ -267,7 +268,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
     activeTool, setActiveTool,
     onUndo: undo, onRedo: redo,
     onZoomIn: handleZoomIn, onZoomOut: handleZoomOut, onFitScreen: handleFitScreen,
-    onCopy: handleCopy, onSwapColors: handleSwapColors, onLayerDelete: handleLayerDelete, // FIX 22: onLayerDelete added to stub
+    onCopy: handleCopy, onSwapColors: handleSwapColors, onLayerDelete: handleLayerDelete,
     onFillSelection: () => handleDestructiveOperation('fill'),
     onDeleteSelection: () => handleDestructiveOperation('delete'),
     onDeselect: clearSelectionState,
@@ -291,18 +292,46 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
   const rightSidebarWidth = rightSidebarTabs.length > 0 ? 280 : 0;
   const bottomSidebarHeight = bottomSidebarTabs.length > 0 ? 250 : 0;
+  
+  // Left sidebar is 64px wide if not mobile
+  const leftSidebarWidth = editorLogic.isMobile ? 0 : 64;
+  
+  // Calculate main content area width based on visible sidebars
+  const mainContentWidth = `calc(100% - ${rightSidebarWidth}px - ${leftSidebarWidth}px)`;
+  const mainContentHeight = `calc(100% - ${bottomSidebarHeight}px)`;
 
   return (
     <EditorContext.Provider value={editorLogic}>
       <div className={cn("flex flex-col h-screen w-screen overflow-hidden", isFullscreen && "fixed inset-0 z-[9999]")}>
         <EditorHeader />
         <div className="flex flex-1 overflow-hidden">
+          
+          {/* Left Sidebar (Tools Panel) */}
+          <aside className="w-16 border-r bg-muted/40 flex-shrink-0">
+            <LeftSidebar
+              activeTool={activeTool}
+              setActiveTool={setActiveTool}
+              selectedShapeType={editorLogic.selectedShapeType}
+              setSelectedShapeType={editorLogic.setSelectedShapeType}
+              foregroundColor={foregroundColor}
+              onForegroundColorChange={editorLogic.setForegroundColor}
+              backgroundColor={backgroundColor}
+              onBackgroundColorChange={editorLogic.setBackgroundColor}
+              onSwapColors={editorLogic.handleSwapColors}
+              brushState={brushState}
+              setBrushState={editorLogic.setBrushState as any}
+              selectiveBlurAmount={editorLogic.selectiveBlurAmount}
+              onSelectiveBlurAmountChange={editorLogic.setSelectiveBlurAmount}
+              onSelectiveBlurAmountCommit={editorLogic.onSelectiveBlurAmountCommit}
+            />
+          </aside>
+
           {/* Main Content Area */}
           <main
             className="flex-1 relative overflow-hidden"
             style={{
-              width: `calc(100% - ${rightSidebarWidth}px)`,
-              height: `calc(100% - ${bottomSidebarHeight}px)`,
+              width: mainContentWidth,
+              height: mainContentHeight,
             }}
           >
             <EditorWorkspace
@@ -362,7 +391,7 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
 
           {/* Right Sidebar */}
           {rightSidebarTabs.length > 0 && (
-            <aside className="w-72 border-l bg-background/90 flex flex-col">
+            <aside className="w-72 border-l bg-background/90 flex flex-col flex-shrink-0">
               <RightSidebarTabs
                 layers={layers}
                 currentEditState={currentEditState}
@@ -393,11 +422,10 @@ export const IndexPage: React.FC<IndexPageProps> = ({ initialImage }) => {
         {/* Bottom Sidebar */}
         {bottomSidebarTabs.length > 0 && (
           <footer
-            className="h-[250px] border-t bg-background/90"
-            style={{ marginRight: rightSidebarWidth }}
+            className="h-[250px] border-t bg-background/90 flex-shrink-0"
+            style={{ marginRight: rightSidebarWidth, marginLeft: leftSidebarWidth }}
           >
             <BottomPanel
-              // FIX 3: Renamed component to BottomPanel
               // Pass all required props to BottomPanel
               foregroundColor={foregroundColor}
               onForegroundColorChange={editorLogic.setForegroundColor}
