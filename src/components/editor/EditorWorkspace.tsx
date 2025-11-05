@@ -454,7 +454,6 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
                   opacity: isPreviewingOriginal ? 1 : (layer.opacity / 100),
                   mixBlendMode: layer.blendMode as any || 'normal',
                 }}
-                crossOrigin="anonymous"
               />
             );
           }
@@ -503,7 +502,7 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = (props) => {
             cloneSourcePoint={cloneSourcePoint}
             selectedLayerId={selectedLayerId}
             zoom={workspaceZoom}
-            baseImageSrc={base64Image}
+            baseImageSrc={baseImageSrc}
             historyImageSrc={historyImageSrc}
           />
         )}
