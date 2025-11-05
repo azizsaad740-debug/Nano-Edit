@@ -15,7 +15,7 @@ interface SmartObjectWorkspaceProps {
   parentDimensions: { width: number; height: number } | null;
   containerRef: React.RefObject<HTMLDivElement>;
   onUpdate: (id: string, updates: Partial<Layer>) => void;
-  onCommit: (id: string) => void;
+  onCommit: (id: string, historyName: string) => void;
   selectedLayerId: string | null;
   activeTool: ActiveTool | null;
   globalSelectedLayerId: string | null;
@@ -53,7 +53,7 @@ export const SmartObjectWorkspace: React.FC<SmartObjectWorkspaceProps> = (props)
       layer,
       containerRef: currentContainerRef,
       onUpdate: onUpdate, // Use internal update handler
-      onCommit: (id: string) => onCommit(id), // Use internal commit handler
+      onCommit: onCommit, // Pass the function directly (it now matches the required signature)
       isSelected,
       activeTool,
       zoom,
