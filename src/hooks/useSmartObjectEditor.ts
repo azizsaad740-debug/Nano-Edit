@@ -1,6 +1,11 @@
-import * as React from 'react';
+import { create } from 'zustand';
 
-export const useSmartObjectEditor = () => {
-  // This hook is currently unused as Smart Object logic is consolidated in useLayers.
-  return {};
-};
+interface SmartObjectEditorState {
+  isSmartObjectEditorOpen: boolean;
+  toggleSmartObjectEditor: () => void;
+}
+
+export const useSmartObjectEditor = create<SmartObjectEditorState>((set) => ({
+  isSmartObjectEditorOpen: false,
+  toggleSmartObjectEditor: () => set((state) => ({ isSmartObjectEditorOpen: !state.isSmartObjectEditorOpen })),
+}));
